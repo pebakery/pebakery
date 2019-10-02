@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -355,7 +355,7 @@ namespace PEBakery.Core.Tests.Command
         #region Template
         public void ReadTemplate(EngineState s, string rawCode, string listStr, string destCheck, ErrorCheck check = ErrorCheck.Success)
         {
-            s.Variables.Delete(VarsType.Local, "Dest");
+            s.Variables.DeleteKey(VarsType.Local, "Dest");
             s.Variables["ListStr"] = listStr;
 
             EngineTests.Eval(s, rawCode, CodeType.List, check);
@@ -369,7 +369,7 @@ namespace PEBakery.Core.Tests.Command
         public void WriteTemplate(EngineState s, string rawCode, string listStr, string destCheck, ErrorCheck check = ErrorCheck.Success)
         {
             if (listStr == null)
-                s.Variables.Delete(VarsType.Local, "listStr");
+                s.Variables.DeleteKey(VarsType.Local, "listStr");
             else
                 s.Variables["ListStr"] = listStr;
 

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -226,21 +226,29 @@ namespace PEBakery.Core.Commands
                 case MathType.BoolOr:
                 case MathType.BoolXor:
                     {
-                        MathInfo_BoolLogicOper subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOper>();
+                        MathInfo_BoolLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOperation>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
-                        bool src1 = false;
-                        if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        bool src1;
+                        if (NumberHelper.ParseInt64(srcStr1, out long srcInt1)) // C-Style Boolean
+                            src1 = srcInt1 != 0;
+                        else if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src1 = true;
-                        else if (!srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src1 = false;
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not valid boolean value");
 
-                        bool src2 = false;
-                        if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        bool src2;
+                        if (NumberHelper.ParseInt64(srcStr2, out long srcInt2)) // C-Style Boolean
+                            src2 = srcInt2 != 0;
+                        else if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src2 = true;
-                        else if (!srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src2 = false;
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not valid boolean value");
 
                         bool dest;
@@ -266,11 +274,15 @@ namespace PEBakery.Core.Commands
                     {
                         MathInfo_BoolNot subInfo = info.SubInfo.Cast<MathInfo_BoolNot>();
 
-                        bool src = false;
+                        bool src;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
-                        if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        if (NumberHelper.ParseInt64(srcStr, out long srcInt)) // C-Style Boolean
+                            src = srcInt != 0;
+                        else if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src = true;
-                        else if (!srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src = false;
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not valid boolean value");
 
                         bool dest = !src;
@@ -281,7 +293,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BitOr:
                 case MathType.BitXor:
                     {
-                        MathInfo_BitLogicOper subInfo = info.SubInfo.Cast<MathInfo_BitLogicOper>();
+                        MathInfo_BitLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BitLogicOperation>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -567,7 +579,7 @@ namespace PEBakery.Core.Commands
                             if (max < 0)
                                 return LogInfo.LogErrorMessage(logs, $"[{max}] must be positive integer");
                             if (max <= min)
-                                return LogInfo.LogErrorMessage(logs, "Maximum bound must be larger than minimum value");
+                                return LogInfo.LogErrorMessage(logs, "Maximum bounds must be larger than minimum value");
                         }
 
                         int destInt = s.Random.Next() % (max - min) + min;

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -23,10 +23,10 @@
     SOFTWARE.
 */
 
+using PEBakery.Helper.ThirdParty;
 using System;
 using System.IO;
 using System.Text;
-using PEBakery.Helper.ThirdParty;
 
 namespace PEBakery.Helper
 {
@@ -37,13 +37,16 @@ namespace PEBakery.Helper
         private static readonly byte[] Utf16BeBom = { 0xFE, 0xFF };
 
         private static readonly Encoding Utf8EncodingNoBom = new UTF8Encoding(false);
-        public static Encoding DefaultAnsi 
+        public static Encoding DefaultAnsi
         {
             get
             {
                 // In .Net Framework, Encoding.Default is system's active code page.
                 // In .Net Core, System.Default is always UTF8.
                 // To prepare .Net Core migration, implement .Net Framework's Encoding.Default.
+                // 
+                // .Net Core does not know about ANSI encodings, so do not forget to install this package.
+                // https://www.nuget.org/packages/System.Text.Encoding.CodePages/
                 int codepage = NativeMethods.GetACP();
                 switch (codepage)
                 {
@@ -204,7 +207,7 @@ namespace PEBakery.Helper
             }
 
             // [Stage 2] Check if a chunk can be decoded as system default ANSI locale.
-            // Many multibyte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
+            // Many multi-byte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
             // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
             bool isText = true;
             Encoding ansiEnc = Encoding.GetEncoding(DefaultAnsi.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());
@@ -234,20 +237,20 @@ namespace PEBakery.Helper
                     idxZeroBuffer = new byte[count];
                     Array.Copy(buffer, offset, idxZeroBuffer, 0, count);
                 }
-                    
+
                 switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
                 {
                     // Binary
-                    case TextEncodingDetect.Encoding.None:
+                    case TextEncodingDetect.DetectedEncoding.None:
                     // PEBakery mandates unicode text to have BOM.
                     // They must have been filtered out in stage 1.
-                    case TextEncodingDetect.Encoding.Utf16LeBom:
-                    case TextEncodingDetect.Encoding.Utf16BeBom:
-                    case TextEncodingDetect.Encoding.Utf8Bom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16LeBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16BeBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf8Bom:
                     // Treat unicode text file without a BOM as a binary.
-                    case TextEncodingDetect.Encoding.Utf16LeNoBom:
-                    case TextEncodingDetect.Encoding.Utf16BeNoBom:
-                    case TextEncodingDetect.Encoding.Utf8NoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16LeNoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16BeNoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf8NoBom:
                         isText = false;
                         break;
                 }

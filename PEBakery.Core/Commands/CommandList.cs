@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,11 +25,11 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using PEBakery.Helper;
 using NaturalSort.Extension;
+using PEBakery.Helper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -173,7 +173,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            logs.Add(new LogInfo(LogState.Ignore, "No item was deleted"));
+                            logs.Add(new LogInfo(LogState.Ignore, "No items were deleted"));
                         }
                     }
                     break;
@@ -268,7 +268,7 @@ namespace PEBakery.Core.Commands
                         else if (order.Equals("DESC", StringComparison.OrdinalIgnoreCase))
                             reverse = true;
                         else
-                            return LogInfo.LogErrorMessage(logs, "Order should be [ASC] or [DESC]");
+                            return LogInfo.LogErrorMessage(logs, "Order must be [ASC] or [DESC]");
 
                         List<string> list = StringEscaper.UnpackListStr(listStr, delimiter);
                         switch (type)

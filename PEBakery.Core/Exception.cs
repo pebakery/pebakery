@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -26,15 +26,10 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
     #region CodeParser, UIParser, Commands
-    [Serializable]
     public class InvalidCommandException : Exception
     {
         public string RawLine { get; }
@@ -44,7 +39,6 @@ namespace PEBakery.Core
         public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
-    [Serializable]
     public class InvalidCodeCommandException : Exception
     {
         public CodeCommand Cmd { get; }
@@ -58,7 +52,6 @@ namespace PEBakery.Core
     /// <summary>
     /// Unable to continue parsing because of internal parser error
     /// </summary>
-    [Serializable]
     public class InternalParserException : Exception
     {
         public InternalParserException() { }
@@ -68,7 +61,6 @@ namespace PEBakery.Core
     #endregion
 
     #region Script
-    [Serializable]
     public class ScriptParseException : Exception
     {
         public ScriptParseException() { }
@@ -76,7 +68,6 @@ namespace PEBakery.Core
         public ScriptParseException(string message, Exception inner) : base(message, inner) { }
     }
 
-    [Serializable]
     public class ScriptSectionException : Exception
     {
         public ScriptSectionException() { }
@@ -89,7 +80,6 @@ namespace PEBakery.Core
     /// <summary>
     /// Such a critical error that build must be halt
     /// </summary>
-    [Serializable]
     public class CriticalErrorException : Exception
     {
         public CriticalErrorException() { }
@@ -97,7 +87,6 @@ namespace PEBakery.Core
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
-    [Serializable]
     public class ExecuteException : Exception
     {
         public ExecuteException() { }
@@ -107,7 +96,6 @@ namespace PEBakery.Core
     #endregion
 
     #region Variables
-    [Serializable]
     public class VariableCircularReferenceException : Exception
     {
         public VariableCircularReferenceException() { }
@@ -117,7 +105,6 @@ namespace PEBakery.Core
     #endregion
 
     #region Internal
-    [Serializable]
     public class InternalException : Exception
     {
         public InternalException() { }

@@ -68,7 +68,7 @@ namespace PEBakery.Properties {
         ///specified on a per-file basis or LICENSE file placed in
         ///a subdirectory.
         ///-----------------------------------------------------------
-        ///Copyright (C) 2016-2018 Hajin Jang
+        ///Copyright (C) 2016-2019 Hajin Jang
         ///
         ///PEBakery is free software: you can redistribute it and/or
         ///modify it under the terms of the GNU General Public License

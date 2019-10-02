@@ -1,50 +1,64 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2016-2019 Hajin Jang
+    Licensed under MIT License.
+ 
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+using Microsoft.Win32.SafeHandles;
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
+
 // ReSharper disable IdentifierTypo
 
 namespace PEBakery.Helper
 {
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public class NativeMethods
+    public static class NativeMethods
     {
         #region FileHelper
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, SHFILEINFO psfi, uint cbFileInfo, uint uFalgs);
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class SHFILEINFO
-        {
-            public IntPtr hIcon;
-            public int iIcon;
-            public uint dwAttributes;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            public string szDisplayName;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
-            public string szTypeName;
-        }
-
         #region DOS 8.3 Path
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int GetShortPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string longPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder shortPath,
+            [MarshalAs(UnmanagedType.LPWStr)] string longPath,
+            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder shortPath,
             int cchBuffer
         );
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int GetLongPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string shortPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder longPath,
+            [MarshalAs(UnmanagedType.LPWStr)] string shortPath,
+            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder longPath,
             int cchBuffer
         );
         #endregion
         #endregion
 
         #region FontHelper
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal class LOGFONT
         {
             public int lfHeight;
@@ -157,7 +171,7 @@ namespace PEBakery.Helper
             FF_DECORATIVE = 5 << 4,
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct CHOOSEFONT
         {
             public int lStructSize;
@@ -214,7 +228,7 @@ namespace PEBakery.Helper
             CF_INACTIVEFONTS = 0x02000000
         }
 
-        [DllImport("comdlg32.dll", CharSet = CharSet.Auto, EntryPoint = "ChooseFont", SetLastError = true)]
+        [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, EntryPoint = "ChooseFont", SetLastError = true)]
         internal static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
         #endregion
 
@@ -226,6 +240,102 @@ namespace PEBakery.Helper
         #region EncodingHelper
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetACP();
+        #endregion
+
+        #region RegistryHelper
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr GetCurrentProcess();
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+
+        [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern unsafe int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName, uint* lpReserved, uint* lpType, void* lpData, uint* lpcbData);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern unsafe int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName, uint reserved, uint dwType, void* lpData, uint cbData);
+
+        [DllImport("shlwapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        [SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CloseHandle(IntPtr hObject);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct LUID
+        {
+            public uint LowPart;
+            public int HighPart;
+        }
+        // ReSharper disable once UnusedMember.Local
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct LUID_AND_ATTRIBUTES
+        {
+            public LUID pLuid;
+            public uint Attributes;
+        }
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        internal struct TOKEN_PRIVILEGES
+        {
+            public int Count;
+            public LUID Luid;
+            public uint Attr;
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        internal const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+        internal const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        internal const uint TOKEN_QUERY = 0x0008;
+
+        /*
+        public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
+        public const UInt32 HKCU = 0x80000001; // HKEY_CURRENT_USER
+        public const UInt32 HKLM = 0x80000002; // HKEY_LOCAL_MACHINE
+        public const UInt32 HKU = 0x80000003; // HKEY_USERS
+        public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
+        public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
+        */
+        #endregion
+
+        #region SystemHelper
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool GlobalMemoryStatusEx(MEMORYSTATUSEX lpBuffer);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal class MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+
+            public MEMORYSTATUSEX()
+            {
+                dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            }
+        }
         #endregion
     }
 }

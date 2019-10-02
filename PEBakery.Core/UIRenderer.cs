@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -27,8 +27,8 @@
 
 using MahApps.Metro.IconPacks;
 using Ookii.Dialogs.Wpf;
-using PEBakery.Core.WpfControls;
 using PEBakery.Core.ViewModels;
+using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -38,6 +38,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -55,38 +56,32 @@ namespace PEBakery.Core
     public class UIRenderer
     {
         #region Fields and Properties
-        public const int MaxDpiScale = 4;
-        public const int MaxUrlDisplayLen = 47;
+        public const int MaxUrlDisplayLen = 50 - 3;
         private readonly Variables _variables;
 
         private readonly Canvas _canvas;
         private readonly Window _window; // Can be null
         private readonly Script _sc;
         /// <summary>
-        /// Custom scale factor of interface. Independent from system monitor dpi.
-        /// </summary>
-        public double ScaleFactor;
-        /// <summary>
         /// true in MainWindow, false in ScriptEditWindow
         /// </summary>
         private readonly bool _viewMode;
         // Compatibility Option
-        private readonly bool _ignoreWidthOfWebLabel = false;
+        private readonly bool _ignoreWidthOfWebLabel;
 
         public readonly List<UIControl> UICtrls;
-        private UIControl[] _visibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
-        private UIControl[] _radioButtons => _visibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+        private IEnumerable<UIControl> VisibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility) : UICtrls;
+        private IEnumerable<UIControl> RadioButtons => VisibleCtrls.Where(x => x.Type == UIControlType.RadioButton);
         private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
-            ScaleFactor = scaleFactor;
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
@@ -96,13 +91,12 @@ namespace PEBakery.Core
             Global.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
-            ScaleFactor = scaleFactor;
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
@@ -111,10 +105,16 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Utility
-        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc)
+        /// <summary>
+        /// Load script interface's UIControl list.
+        /// </summary>
+        /// <param name="sc">Script to get interface.</param>
+        /// <param name="sectionName">Set to null for auto detection.</param>
+        /// <returns></returns>
+        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, string sectionName = null)
         {
             // Check if script has custom interface section
-            string ifaceSectionName = GetInterfaceSectionName(sc);
+            string ifaceSectionName = sectionName ?? sc.InterfaceSectionName;
 
             if (sc.Sections.ContainsKey(ifaceSectionName))
             {
@@ -134,14 +134,6 @@ namespace PEBakery.Core
             }
             return (new List<UIControl>(), new List<LogInfo>());
         }
-
-        public static string GetInterfaceSectionName(Script sc)
-        {
-            // Check if script has custom interface section
-            if (sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
-                return sc.MainInfo[ScriptSection.Names.Interface];
-            return ScriptSection.Names.Interface;
-        }
         #endregion
 
         #region Render
@@ -152,7 +144,7 @@ namespace PEBakery.Core
 
             InitCanvas(_canvas);
             _cleanInfos.Clear();
-            foreach (UIControl uiCtrl in _visibleCtrls)
+            foreach (UIControl uiCtrl in VisibleCtrls)
             {
                 try
                 {
@@ -194,7 +186,7 @@ namespace PEBakery.Core
                             RenderBevel(uiCtrl);
                             break;
                         case UIControlType.FileBox:
-                            clean = RenderFileBox(uiCtrl, _variables);
+                            clean = RenderFileBox(uiCtrl);
                             break;
                         case UIControlType.RadioGroup:
                             clean = RenderRadioGroup(uiCtrl);
@@ -273,12 +265,12 @@ namespace PEBakery.Core
         #region TextBox
         public RenderCleanInfo RenderTextBox(UIControl uiCtrl)
         {
-            // WB082 textbox control's y coord is of textbox's, not textlabel's.
+            // WB082 textbox control's y co-ord is of textbox's, not textlabel's.
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
             TextBox box = new TextBox
             {
-                Text = info.Value,
+                Text = StringEscaper.Unescape(info.Value),
                 Height = uiCtrl.Height,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -286,7 +278,10 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
+            {
                 ManageTextBoxEvent(box, true);
+                box.SetValue(SelectTextOnFocus.ActiveProperty, true);
+            }
 
             if (uiCtrl.Text.Length == 0)
             { // No caption
@@ -298,7 +293,7 @@ namespace PEBakery.Core
             { // Print caption
                 TextBlock block = new TextBlock
                 {
-                    Text = uiCtrl.Text,
+                    Text = StringEscaper.Unescape(uiCtrl.Text),
                     VerticalAlignment = VerticalAlignment.Top,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                     LineHeight = CalcFontPointScale(),
@@ -343,7 +338,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.TextBox, $"Wrong UIControlType in [{nameof(TextBox_LostFocus)}]");
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
-            info.Value = box.Text;
+            info.Value = StringEscaper.Escape(box.Text);
             uiCtrl.Update();
         }
         #endregion
@@ -355,7 +350,7 @@ namespace PEBakery.Core
 
             TextBlock block = new TextBlock
             {
-                Text = uiCtrl.Text,
+                Text = StringEscaper.Unescape(uiCtrl.Text),
                 TextWrapping = TextWrapping.Wrap,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 LineHeight = CalcFontPointScale(info.FontSize),
@@ -444,7 +439,7 @@ namespace PEBakery.Core
 
             CheckBox box = new CheckBox
             {
-                Content = uiCtrl.Text,
+                Content = StringEscaper.Unescape(uiCtrl.Text),
                 IsChecked = info.Value,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -526,7 +521,8 @@ namespace PEBakery.Core
             ComboBox box = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
-                ItemsSource = new ObservableCollection<string>(info.Items),
+                FontFamily = Global.Setting.Interface.MonospacedFontFamily,
+                ItemsSource = new ObservableCollection<string>(info.Items.Select(x => StringEscaper.Unescape(x))),
                 SelectedIndex = info.Index,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
@@ -593,7 +589,8 @@ namespace PEBakery.Core
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-            if (uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
+            string imageSection = uiCtrl.Text;
+            if (imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
             { // Empty image
                 PackIconMaterial noImage = new PackIconMaterial
                 {
@@ -618,7 +615,7 @@ namespace PEBakery.Core
                 return null;
             }
 
-            if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
+            if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, imageSection))
             { // Encoded image does not exist
                 PackIconMaterial alertImage = new PackIconMaterial
                 {
@@ -641,13 +638,13 @@ namespace PEBakery.Core
                 SetEditModeProperties(border, uiCtrl);
                 DrawToCanvas(border, uiCtrl);
 
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{imageSection}] ({uiCtrl.RawLine})"));
                 return null;
             }
 
-            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType imgType))
+            if (!ImageHelper.GetImageFormat(imageSection, out ImageHelper.ImageFormat imgType))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(imageSection)}] is not supported"));
                 return null;
             }
 
@@ -656,11 +653,11 @@ namespace PEBakery.Core
                 Brush brush;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
                             break;
                         default:
@@ -669,25 +666,26 @@ namespace PEBakery.Core
                     }
                 }
 
+                Style imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
+                Debug.Assert(imageButtonStyle != null);
                 Button button = new Button
                 {
-                    Style = Application.Current.FindResource("ImageButtonStyle") as Style,
+                    Style = imageButtonStyle,
                     Background = brush,
                 };
 
                 bool hasUrl = false;
+                string url = null;
                 if (!string.IsNullOrEmpty(info.Url))
                 {
-                    if (Uri.TryCreate(info.Url, UriKind.Absolute, out Uri _)) // Success
-                        hasUrl = true;
-                    else // Failure
-                        throw new InvalidCommandException($"Invalid URL [{info.Url}]");
+                    url = StringEscaper.Unescape(info.Url);
+                    hasUrl = StringEscaper.IsUrlValid(url);
                 }
 
                 string toolTip = info.ToolTip;
                 ManageImageEvent(button, true, hasUrl);
                 if (hasUrl) // Open URL
-                    toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
+                    toolTip = AppendUrlToToolTip(info.ToolTip, url);
 
                 SetToolTip(button, toolTip);
                 DrawToCanvas(button, uiCtrl);
@@ -698,11 +696,11 @@ namespace PEBakery.Core
                 FrameworkElement element;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             Border border = new Border
                             {
                                 Background = ImageHelper.SvgToDrawingBrush(ms),
@@ -764,7 +762,9 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenUrl)}]");
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-            FileHelper.OpenUri(info.Url);
+            string url = StringEscaper.Unescape(info.Url);
+            Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
+            FileHelper.OpenUri(url);
         }
 
         /// <summary>
@@ -780,21 +780,34 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenImage)}]");
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenImage)}]");
 
-            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+            string imageSection = StringEscaper.Unescape(uiCtrl.Text);
+            if (!ImageHelper.GetImageFormat(imageSection, out _))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image format [{Path.GetExtension(imageSection)}] is not supported"));
                 return;
             }
 
-            string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
-            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+            try
             {
-                ms.Position = 0;
-                ms.CopyTo(fs);
+                string imageFile;
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
+                {
+                    // Do not clear tempDir right after calling OpenPath(). Doing this will trick the image viewer.
+                    // Instead, leave it to Global.Cleanup() when program is exited.
+                    string tempDir = FileHelper.GetTempDir();
+                    imageFile = Path.Combine(tempDir, imageSection);
+                    using (FileStream fs = new FileStream(imageFile, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.Position = 0;
+                        ms.CopyTo(fs);
+                    }
+                }
+                FileHelper.OpenPath(imageFile);
             }
-
-            FileHelper.OpenPath(path);
+            catch (Exception ex)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+            }
         }
         #endregion
 
@@ -803,16 +816,16 @@ namespace PEBakery.Core
         {
             UIInfo_TextFile info = uiCtrl.Info.Cast<UIInfo_TextFile>();
 
-            string encodedText = uiCtrl.Text;
+            string textSection = uiCtrl.Text;
             TextBoxBase box;
 
-            if (encodedText.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
+            if (textSection.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
                 box = new TextBox { IsReadOnly = true };
             }
             else
             {
-                string ext = Path.GetExtension(encodedText);
+                string ext = Path.GetExtension(textSection);
                 if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 { // RichTextBox
                     RichTextBox rtfBox = new RichTextBox
@@ -823,7 +836,7 @@ namespace PEBakery.Core
                     };
 
                     TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                     {
                         textRange.Load(ms, DataFormats.Rtf);
                     }
@@ -835,24 +848,27 @@ namespace PEBakery.Core
                     // Even if a file extension is not a ".txt", just display.
                     TextBox textBox = new TextBox
                     {
-                        TextWrapping = TextWrapping.Wrap,
                         AcceptsReturn = true,
                         IsReadOnly = true,
                         FontSize = CalcFontPointScale(),
                     };
 
-                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, encodedText))
+                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, textSection))
                     { // Wrong encoded text
-                        string errMsg = $"Unable to find encoded text [{encodedText}]";
+                        string errMsg = $"Unable to find encoded text [{textSection}]";
                         textBox.Text = errMsg;
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
                     }
                     else
                     {
-                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
-                        using (StreamReader sr = new StreamReader(ms, EncodingHelper.DetectBom(ms)))
+                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                         {
-                            textBox.Text = sr.ReadToEnd();
+                            Encoding encoding = EncodingHelper.DetectBom(ms);
+                            ms.Position = 0;
+                            using (StreamReader sr = new StreamReader(ms, encoding, false))
+                            {
+                                textBox.Text = sr.ReadToEnd();
+                            }
                         }
                     }
 
@@ -884,21 +900,22 @@ namespace PEBakery.Core
             if (_viewMode)
                 ManageButtonEvent(button, true, info.SectionName);
 
-            if (info.Picture != null &&
-                !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
-                EncodedFile.ContainsInterface(uiCtrl.Section.Script, info.Picture))
+            string pictureSection = info.Picture;
+            if (pictureSection != null &&
+                !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
+                EncodedFile.ContainsInterface(uiCtrl.Section.Script, pictureSection))
             { // Has Picture
-                if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType imgType))
+                if (!ImageHelper.GetImageFormat(pictureSection, out ImageHelper.ImageFormat imgType))
                     return null;
 
                 FrameworkElement imageContent;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, info.Picture))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
                             Rect svgSize = svgDrawing.Bounds;
                             (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, uiCtrl.Width, uiCtrl.Height);
@@ -913,7 +930,7 @@ namespace PEBakery.Core
                             };
                             imageContent = border;
                             break;
-                        case ImageHelper.ImageType.Bmp:
+                        case ImageHelper.ImageFormat.Bmp:
                             BitmapSource srcBitmap = ImageHelper.ImageToBitmapImage(ms);
                             BitmapSource newBitmap = ImageHelper.MaskWhiteAsTransparent(srcBitmap);
                             Image bitmapImage = new Image
@@ -956,7 +973,7 @@ namespace PEBakery.Core
                 { // Button has text
                     TextBlock text = new TextBlock
                     {
-                        Text = uiCtrl.Text,
+                        Text = StringEscaper.Unescape(uiCtrl.Text),
                         FontSize = CalcFontPointScale(),
                         Height = double.NaN,
                         VerticalAlignment = VerticalAlignment.Center,
@@ -977,7 +994,7 @@ namespace PEBakery.Core
             }
             else
             { // No picture
-                button.Content = uiCtrl.Text;
+                button.Content = StringEscaper.Unescape(uiCtrl.Text);
                 button.FontSize = CalcFontPointScale();
             }
 
@@ -1027,13 +1044,16 @@ namespace PEBakery.Core
                 FontSize = CalcFontPointScale(),
             };
 
-            Hyperlink link = new Hyperlink { NavigateUri = new Uri(info.Url) };
-            link.Inlines.Add(uiCtrl.Text);
+            string url = StringEscaper.Unescape(info.Url);
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+                throw new InvalidCommandException($"Invalid URL [{url}]");
+            Hyperlink link = new Hyperlink { NavigateUri = uri };
+            link.Inlines.Add(StringEscaper.Unescape(uiCtrl.Text));
             if (_viewMode)
                 ManageWebLabelEvent(link, true);
             block.Inlines.Add(link);
 
-            string toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
+            string toolTip = AppendUrlToToolTip(info.ToolTip, url);
             SetToolTip(block, toolTip);
             SetEditModeProperties(block, uiCtrl);
 
@@ -1075,7 +1095,7 @@ namespace PEBakery.Core
             RadioButton radio = new RadioButton
             {
                 GroupName = _sc.RealPath,
-                Content = uiCtrl.Text,
+                Content = StringEscaper.Unescape(uiCtrl.Text),
                 FontSize = fontSize,
                 IsChecked = info.Selected,
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -1120,7 +1140,7 @@ namespace PEBakery.Core
             info.Selected = true;
 
             // Uncheck the other RadioButtons
-            List<UIControl> updateList = _radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+            List<UIControl> updateList = RadioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (UIControl uncheck in updateList)
             {
                 UIInfo_RadioButton unInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
@@ -1151,41 +1171,33 @@ namespace PEBakery.Core
 
             Border bevel = new Border
             {
-                IsHitTestVisible = false, // Focus is not given when clicked
+                // Focusable only in edit mode
+                IsHitTestVisible = !_viewMode,
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0.7),
                 BorderBrush = Brushes.Gray,
             };
 
             if (!_viewMode)
-            {
-                bevel.IsHitTestVisible = true; // Focus is given when clicked
                 Panel.SetZIndex(bevel, -1); // Should have lowest z-index
-            }
 
             SetToolTip(bevel, info.ToolTip);
-            if (info.FontSize == null)
-            { // No caption (WinBuilder compatible)
-                SetEditModeProperties(bevel, uiCtrl);
-                DrawToCanvas(bevel, uiCtrl);
-            }
-            else
+            if (info.FontSize != null)
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 int fontSize = info.FontSize ?? UIControl.DefaultFontPoint;
 
                 Border textBorder = new Border
                 {
+                    // Focusable only in edit mode
+                    IsHitTestVisible = !_viewMode,
                     // Don't use info.FontSize for border thickness. It throws off X Pos.
                     BorderThickness = new Thickness(CalcFontPointScale() / 3),
                     BorderBrush = Brushes.Transparent,
                 };
 
-                if (!_viewMode) // Focus is given when clicked
-                    textBorder.IsHitTestVisible = true;
-
                 TextBlock textBlock = new TextBlock
                 {
-                    Text = uiCtrl.Text,
+                    Text = StringEscaper.Unescape(uiCtrl.Text),
                     FontSize = CalcFontPointScale(fontSize),
                     Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
                     Background = Brushes.White,
@@ -1212,28 +1224,26 @@ namespace PEBakery.Core
                 }
 
                 Canvas subCanvas = new Canvas();
-                Canvas.SetLeft(bevel, 0);
-                Canvas.SetTop(bevel, 0);
-                bevel.Width = uiCtrl.Rect.Width;
-                bevel.Height = uiCtrl.Rect.Height;
-                subCanvas.Children.Add(bevel);
+                bevel.Child = subCanvas;
+
                 Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
                 subCanvas.Children.Add(textBorder);
-                SetEditModeProperties(subCanvas, uiCtrl);
-                DrawToCanvas(subCanvas, uiCtrl);
             }
+
+            SetEditModeProperties(bevel, uiCtrl);
+            DrawToCanvas(bevel, uiCtrl);
         }
         #endregion
 
         #region FileBox
-        public RenderCleanInfo RenderFileBox(UIControl uiCtrl, Variables variables)
+        public RenderCleanInfo RenderFileBox(UIControl uiCtrl)
         {
             UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
             TextBox box = new TextBox
             {
-                Text = uiCtrl.Text,
+                Text = StringEscaper.Unescape(uiCtrl.Text),
                 FontSize = CalcFontPointScale(),
                 Margin = new Thickness(0, 0, 5, 0),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -1253,7 +1263,10 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
+            {
                 ManageFileBoxEvent(box, button, true);
+                box.SetValue(SelectTextOnFocus.ActiveProperty, true);
+            }
 
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -1294,7 +1307,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(FileBox_TextChanged)}]");
             Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_TextChanged)}]");
 
-            uiCtrl.Text = box.Text;
+            uiCtrl.Text = StringEscaper.Escape(box.Text);
             uiCtrl.Update();
         }
 
@@ -1332,13 +1345,14 @@ namespace PEBakery.Core
             }
             else
             { // Directory
+                // TODO: Someone reports that native FolderBrowserDialog of .Net Core 3.0 is Vista-style by default.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
                 if (Directory.Exists(currentPath))
                     dialog.SelectedPath = currentPath;
 
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     bool? result = _window == null ? dialog.ShowDialog() : dialog.ShowDialog(_window);
                     if (result == true)
@@ -1378,7 +1392,7 @@ namespace PEBakery.Core
                 RadioButton radio = new RadioButton
                 {
                     GroupName = $"{_sc.RealPath}_{uiCtrl.Key}",
-                    Content = info.Items[i],
+                    Content = StringEscaper.Unescape(info.Items[i]),
                     Tag = new Tuple<UIControl, int>(uiCtrl, i),
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
@@ -1506,7 +1520,7 @@ namespace PEBakery.Core
         private static void SetToolTip(FrameworkElement element, string toolTip)
         {
             if (toolTip != null)
-                element.ToolTip = toolTip;
+                element.ToolTip = StringEscaper.Unescape(toolTip);
         }
 
         private void SetEditModeProperties(FrameworkElement element, UIControl uiCtrl)
@@ -1515,7 +1529,7 @@ namespace PEBakery.Core
             if (_viewMode)
                 return;
 
-            // Only for EditMode (ScriptEditWindow)
+            // Only for edit mode (ScriptEditWindow)
             if (!uiCtrl.Visibility)
                 element.Opacity = 0.5;
         }
@@ -1528,14 +1542,14 @@ namespace PEBakery.Core
         private static string AppendUrlToToolTip(string toolTip, string url)
         {
             if (url == null)
-                return toolTip;
+                return StringEscaper.Unescape(toolTip);
 
             if (MaxUrlDisplayLen < url.Length)
                 url = url.Substring(0, MaxUrlDisplayLen) + "...";
 
             if (toolTip == null)
                 return url;
-            return toolTip + Environment.NewLine + Environment.NewLine + url;
+            return StringEscaper.Unescape(toolTip) + Environment.NewLine + Environment.NewLine + url;
         }
 
         public static int GetMaxZIndex(Canvas canvas)
@@ -1567,13 +1581,14 @@ namespace PEBakery.Core
 
         private static async void InternalRunOneSection(ScriptSection section, string logMsg, bool hideProgress)
         {
-            if (Engine.WorkingLock == 0)
-            {
-                Interlocked.Increment(ref Engine.WorkingLock);
+            MainViewModel mainModel = Global.MainViewModel;
 
+            if (!Engine.TryEnterLock())
+                return;
+            try
+            {
                 Logger logger = Global.Logger;
 
-                MainViewModel mainModel = Global.MainViewModel;
                 // Populate BuildTree
                 if (!hideProgress)
                 {
@@ -1582,19 +1597,13 @@ namespace PEBakery.Core
                     mainModel.BuildTreeItems.Add(itemRoot);
                     mainModel.CurBuildTree = null;
                 }
-                /*
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
 
-                    
-                });
-                */
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
-                s.SetOptions(Global.Setting, section.Project.Compat);
+                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne,
+                    section.Script, section.Name);
+                s.SetOptions(Global.Setting);
+                s.SetCompat(section.Project.Compat);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
                     s.LogMode = LogMode.FullDefer;
 
@@ -1604,43 +1613,54 @@ namespace PEBakery.Core
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = false;
 
-                // Set StatusBar Text
-                CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainViewModel.PrintBuildElapsedStatus(logMsg, s, ct.Token);
+                Task printStatus;
+                using (CancellationTokenSource ct = new CancellationTokenSource())
+                {
+                    // Set StatusBar Text
+                    printStatus = MainViewModel.PrintBuildElapsedStatus(logMsg, s, ct.Token);
 
-                // Run
-                await Engine.WorkingEngine.Run(logMsg);
+                    // Run
+                    await Engine.WorkingEngine.Run(logMsg);
 
-                // Cancel and Wait until PrintBuildElapsedStatus stops
-                ct.Cancel();
-                await printStatus;
-                mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
+                    // Cancel and wait until PrintBuildElapsedStatus stops
+                    ct.Cancel();
+                }
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = true;
 
+                // Report elapsed time
+                await printStatus;
+                string reason = s.RunResultReport();
+                if (reason != null)
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                else
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
+
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)
                 {
-                    DeferredLogging deferred = logger.Deferred;
+                    DeferredLogging deferred = logger.ReadAndClearDeferredLogs();
                     deferred.FlushFullDeferred(s);
                 }
 
                 // Turn off ProgressRing
                 mainModel.BuildTreeItems.Clear();
                 mainModel.WorkInProgress = false;
-
+            }
+            finally
+            {
                 Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
+                Engine.ExitLock();
+            }
 
-                if (!hideProgress)
+            if (!hideProgress)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
-                    });
-                }
+                    mainModel.DisplayScript(mainModel.CurMainTree.Script);
+                });
             }
         }
         #endregion

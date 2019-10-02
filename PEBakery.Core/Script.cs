@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -50,15 +49,35 @@ namespace PEBakery.Core
     [Serializable]
     public class Script : IEquatable<Script>
     {
+        #region Const
+        public static class Const
+        {
+            // %ScriptFile%
+            public const string ScriptFile = "%ScriptFile%";
+            // MainInfo
+            public const string Selected = "Selected";
+            public const string Interface = "Interface";
+            public const string InterfaceList = "InterfaceList";
+            // PathSetting
+            public const string PathSetting = "PathSetting";
+            public const string SourceDir = "SourceDir";
+            public const string TargetDir = "TargetDir";
+            public const string IsoFile = "ISOFile";
+            // Update
+            public const string UpdateType = @"UpdateType";
+            public const string Url = @"Url";
+        }
+        #endregion
+
         #region Fields
+        private bool _fullyParsed;
+        private readonly ScriptType _type;
         private readonly string _realPath;
         [NonSerialized]
-        private string _treePath; // No readonly for script caching
-        private bool _fullyParsed;
+        private string _treePath; // _treePath should bypass serialization
         private readonly bool _isMainScript;
         private readonly bool _ignoreMain;
         private Dictionary<string, ScriptSection> _sections;
-        private readonly ScriptType _type;
         [NonSerialized]
         private Project _project;
         [NonSerialized]
@@ -71,10 +90,12 @@ namespace PEBakery.Core
         private string _author = string.Empty;
         private string _description = string.Empty;
         private string _version = "0";
+        private VersionEx _parsedVersion = new VersionEx(0);
         private int _level;
         private SelectedState _selected = SelectedState.None;
         private bool _mandatory = false;
         private readonly List<string> _interfaceList = new List<string>();
+        private string _updateUrl;
         #endregion
 
         #region Properties
@@ -113,8 +134,8 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.MainInfo;
-                if (_sections.ContainsKey("Main"))
-                    return _sections["Main"].IniDict;
+                if (_sections.ContainsKey(ScriptSection.Names.Main))
+                    return _sections[ScriptSection.Names.Main].IniDict;
 
                 // Section not found, Just return empty dictionary
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -164,17 +185,18 @@ namespace PEBakery.Core
                 return _description;
             }
         }
-        public string Version
+        public string RawVersion
         {
             get
             {
                 if (_type == ScriptType.Link && _linkLoaded)
-                    return _link.Version;
+                    return _link.RawVersion;
                 return _version;
             }
         }
 
-        public string TidyVersion => StringEscaper.ProcessVersionString(Version) ?? Version;
+        public string TidyVersion => StringEscaper.ProcessVersionString(RawVersion) ?? RawVersion;
+        public VersionEx ParsedVersion => _parsedVersion;
         public int Level
         {
             get
@@ -203,15 +225,29 @@ namespace PEBakery.Core
 
                 _selected = value;
                 string valStr = value.ToString();
-                if (_type != ScriptType.Directory && _sections.ContainsKey("Main"))
+                if (_type != ScriptType.Directory && _sections.ContainsKey(ScriptSection.Names.Main))
                 {
-                    _sections["Main"].IniDict["Selected"] = valStr;
-                    IniReadWriter.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
+                    _sections[ScriptSection.Names.Main].IniDict[Const.Selected] = valStr;
+                    IniReadWriter.WriteKey(_realPath, new IniKey(ScriptSection.Names.Main, Const.Selected, valStr));
                 }
             }
         }
 
         public ScriptSection this[string key] => Sections[key];
+
+        public string InterfaceSectionName
+        {
+            get
+            {
+                // Check if script has custom interface section
+                if (MainInfo.ContainsKey(ScriptSection.Names.Interface))
+                    return MainInfo[ScriptSection.Names.Interface];
+                return ScriptSection.Names.Interface;
+            }
+        }
+
+        public string UpdateUrl => _updateUrl;
+        public bool IsUpdateable => _updateUrl != null || Type == ScriptType.Directory;
         #endregion
 
         #region Constructor
@@ -221,7 +257,6 @@ namespace PEBakery.Core
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-
             Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
             Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
@@ -233,11 +268,21 @@ namespace PEBakery.Core
             _linkLoaded = false;
             _isDirLink = isDirLink;
             _ignoreMain = ignoreMain;
+            _updateUrl = null;
 
             if (level is int lv)
                 _level = lv;
             else
                 _level = 0;
+
+            // Read from file
+            switch (Type)
+            {
+                case ScriptType.Link:
+                case ScriptType.Script:
+                    _sections = ParseSections();
+                    break;
+            }
 
             ReadMainSection(true);
         }
@@ -272,7 +317,7 @@ namespace PEBakery.Core
             {
                 int idx = 0;
                 int sectionIdx = 0;
-                string line;
+                string rawLine;
                 string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
@@ -288,17 +333,18 @@ namespace PEBakery.Core
                     }
                 }
 
-                while ((line = r.ReadLine()) != null)
+                while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
                     idx++;
-                    line = line.Trim();
+                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
-                    if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         FinalizeSection();
 
                         sectionIdx = idx;
-                        currentSection = line.Substring(1, line.Length - 2);
+                        currentSection = line.Slice(1, line.Length - 2).ToString();
                         type = DetectTypeOfSection(currentSection, false);
                         if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
@@ -306,7 +352,7 @@ namespace PEBakery.Core
                     }
                     else if (inSection && loadSection)
                     { // line of section
-                        lines.Add(line);
+                        lines.Add(line.ToString());
                     }
 
                     if (r.Peek() == -1) // End of .script
@@ -338,12 +384,7 @@ namespace PEBakery.Core
                     return false;
             }
 
-            foreach (string folder in encodedFolders)
-            {
-                if (folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
+            return encodedFolders.Any(folder => folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
         }
 
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
@@ -366,26 +407,25 @@ namespace PEBakery.Core
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
             else // Can be SectionType.Code or SectionType.AttachFileList
-                type = inspectCode ? DetectTypeOfUninspectedSection(sectionName) : SectionType.Uninspected;
+                type = inspectCode ? DetectTypeOfNotInspectedSection(sectionName) : SectionType.NotInspected;
             return type;
         }
 
-        private void InspectTypeOfUninspectedCodeSection()
+        private void DetectTypeFromNotInspectedCodeSection()
         {
-            // Dictionary<string, ScriptSection>
-            foreach (var key in _sections.Keys)
+            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NotInspected))
             {
-                if (_sections[key].Type == SectionType.Uninspected)
-                    _sections[key].Type = DetectTypeOfUninspectedSection(_sections[key].Name);
+                ScriptSection section = kv.Value;
+                section.Type = DetectTypeOfNotInspectedSection(section.Name);
             }
         }
 
-        private SectionType DetectTypeOfUninspectedSection(string sectionName)
+        private SectionType DetectTypeOfNotInspectedSection(string sectionName)
         {
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
                 type = SectionType.AttachFileList;
-            else if (_interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
+            else if (_interfaceList.Any(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)))
                 type = SectionType.Interface;
             else // Load it!
                 type = SectionType.Code;
@@ -400,7 +440,7 @@ namespace PEBakery.Core
                 case SectionType.Variables:
                 case SectionType.Interface:
                 case SectionType.Code:
-                case SectionType.Uninspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
@@ -420,7 +460,7 @@ namespace PEBakery.Core
                 case SectionType.Variables:
                 case SectionType.Interface:
                 case SectionType.Code:
-                case SectionType.Uninspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
@@ -471,6 +511,7 @@ namespace PEBakery.Core
                         // Optional Entries
                         _author = string.Empty;
                         _version = "0";
+                        _parsedVersion = new VersionEx(0);
                         _selected = SelectedState.None; // This value should be adjusted later!
                         _mandatory = false;
                         _link = null;
@@ -490,16 +531,15 @@ namespace PEBakery.Core
                     break;
                 case ScriptType.Link:
                     { // Parse only [Main] Section
-                        _sections = ParseSections();
                         CheckMainSection(ScriptType.Link);
                         ScriptSection mainSection = _sections[ScriptSection.Names.Main];
 
                         if (!mainSection.IniDict.ContainsKey("Link"))
                             throw new ScriptParseException($"Invalid link path in script {RealPath}");
 
-                        if (mainSection.IniDict.ContainsKey("Selected"))
+                        if (mainSection.IniDict.ContainsKey(Const.Selected))
                         {
-                            string value = mainSection.IniDict["Selected"];
+                            string value = mainSection.IniDict[Const.Selected];
                             if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 _selected = SelectedState.True;
                             else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -511,8 +551,7 @@ namespace PEBakery.Core
                     break;
                 case ScriptType.Script:
                     {
-                        _sections = ParseSections();
-                        InspectTypeOfUninspectedCodeSection();
+                        _interfaceList.Clear();
                         if (!_ignoreMain)
                         {
                             CheckMainSection(ScriptType.Script);
@@ -540,10 +579,13 @@ namespace PEBakery.Core
                             if (mainSection.IniDict.ContainsKey("Author"))
                                 _author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
-                                _version = mainSection.IniDict["Version"];
-                            if (mainSection.IniDict.ContainsKey("Selected"))
                             {
-                                string src = mainSection.IniDict["Selected"];
+                                _version = mainSection.IniDict["Version"];
+                                _parsedVersion = VersionEx.Parse(_version) ?? new VersionEx(0);
+                            }
+                            if (mainSection.IniDict.ContainsKey(Const.Selected))
+                            {
+                                string src = mainSection.IniDict[Const.Selected];
                                 if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
                                     _selected = SelectedState.True;
                                 else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -553,37 +595,64 @@ namespace PEBakery.Core
                             }
                             if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {
-                                if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    _mandatory = true;
-                                else
-                                    _mandatory = false;
+                                _mandatory = mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase);
                             }
-                            if (mainSection.IniDict.ContainsKey("InterfaceList"))
-                            {
-                                string rawList = mainSection.IniDict["InterfaceList"];
-                                if (rawList.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            if (mainSection.IniDict.ContainsKey(Const.InterfaceList))
+                            { // Hint for multiple Interface. Useful when supporting multi-interface editing.
+                                string rawList = mainSection.IniDict[Const.InterfaceList];
+                                try
                                 {
-                                    try
+                                    string remainder = rawList;
+                                    while (remainder != null)
                                     {
-                                        string remainder = rawList;
-                                        while (remainder != null)
+                                        string next;
+                                        (next, remainder) = CodeParser.GetNextArgument(remainder);
+
+                                        // Avoid duplicate, only add if section exists
+                                        if (_sections.ContainsKey(next))
                                         {
-                                            string next;
-                                            (next, remainder) = CodeParser.GetNextArgument(remainder);
-                                            _interfaceList.Add(next);
+                                            if (!_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
+                                                _interfaceList.Add(next);
+                                        }
+                                        else
+                                        {
+                                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{next}] does not exist ({rawList}"));
                                         }
                                     }
-                                    catch (InvalidCommandException) { } // Just Ignore
+                                }
+                                catch (InvalidCommandException e)
+                                {
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
                                 }
                             } // InterfaceList
                             _link = null;
+                            ParseUpdateUrl();
                         }
-                        else
+                        else // _ignoreMain is true
                         {
-                            _title = Path.GetFileName(RealPath);
-                            _description = string.Empty;
-                            _level = 0;
+                            if (_sections.ContainsKey(ScriptSection.Names.Main))
+                            { // Try to parse basic information if it is available
+                                ScriptSection mainSection = _sections[ScriptSection.Names.Main];
+                                Dictionary<string, string> mainIniDict = mainSection.IniDict;
+
+                                _title = SilentDictParser.ParseString(mainIniDict, "Title", Path.GetFileName(RealPath));
+                                _description = SilentDictParser.ParseString(mainIniDict, "Description", string.Empty);
+                                _level = SilentDictParser.ParseInteger(mainIniDict, "Level", 0, null, null);
+                            }
+                            else
+                            {
+                                _title = Path.GetFileName(RealPath);
+                                _description = string.Empty;
+                                _level = 0;
+                            }
                         }
+
+                        // Add default interface section if not added
+                        if (!_interfaceList.Contains(InterfaceSectionName, StringComparer.OrdinalIgnoreCase))
+                            _interfaceList.Add(InterfaceSectionName);
+
+                        // Inspect previously not inspected sections
+                        DetectTypeFromNotInspectedCodeSection();
                     }
                     break;
                 default:
@@ -677,14 +746,217 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region GetUpdateUrl
+        private enum ScriptUpdateType
+        {
+            None,
+            Project,
+            Standalone,
+        }
+
+        private static ScriptUpdateType ParseScriptUpdateType(string str)
+        {
+            if (str.Equals("Project", StringComparison.OrdinalIgnoreCase))
+                return ScriptUpdateType.Project;
+            if (str.Equals("Standalone", StringComparison.OrdinalIgnoreCase))
+                return ScriptUpdateType.Standalone;
+            return ScriptUpdateType.None;
+        }
+
+        private void ParseUpdateUrl()
+        {
+            // Check local script's [ScriptUpdate] section
+            if (!Sections.ContainsKey(ScriptSection.Names.ScriptUpdate))
+                return;
+
+            Dictionary<string, string> scUpdateDict = Sections[ScriptSection.Names.ScriptUpdate].IniDict;
+
+            // Parse ScriptUpdateType
+            if (!scUpdateDict.ContainsKey(Const.UpdateType))
+                return;
+
+            ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[Const.UpdateType]);
+            if (scType == ScriptUpdateType.None)
+                return;
+
+            // Get ScriptUrl (.script and .meta.json)
+            if (!scUpdateDict.ContainsKey(Const.Url))
+                return;
+            string updateUrl = scUpdateDict[Const.Url].TrimStart('/');
+
+            // ScriptUpdateType is a project
+            if (scType == ScriptUpdateType.Project)
+            {
+                if (Project.UpdateInfo.IsUpdateable)
+                    return;
+
+                string baseUrl = Project.UpdateInfo.BaseUrl;
+                string channel = Project.UpdateInfo.SelectedChannel;
+                updateUrl = $"{baseUrl}/{channel}/{updateUrl}";
+            }
+
+            _updateUrl = updateUrl;
+        }
+        #endregion
+
         #region Interface Methods - Get, Apply
         public ScriptSection GetInterfaceSection(out string sectionName)
         {
-            sectionName = "Interface";
-            if (MainInfo.ContainsKey("Interface"))
-                sectionName = MainInfo["Interface"];
+            sectionName = ScriptSection.Names.Interface;
+            if (MainInfo.ContainsKey(ScriptSection.Names.Interface))
+                sectionName = MainInfo[ScriptSection.Names.Interface];
 
             return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
+        }
+
+        public List<string> GetInterfaceSectionNames(bool deepScan)
+        {
+            // Basic scan : Refer only _interfaceList
+            List<string> interfaceSections = _interfaceList.ToList();
+            if (!deepScan)
+                return interfaceSections;
+
+            // Deep scan : Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
+            List<string> visitedSections = new List<string>();
+
+            // Parse interface controls.
+            ScriptSection section = GetInterfaceSection(out string defaultInterfaceSection);
+            if (section == null) // No interface section -> return empty list
+                return interfaceSections;
+
+            // Add defaultInterfaceSection to visited sections.
+            Debug.Assert(!visitedSections.Contains(defaultInterfaceSection, StringComparer.OrdinalIgnoreCase));
+            visitedSections.Add(defaultInterfaceSection);
+
+            // Queue for checking sections.
+            Queue<ScriptSection> sectionQueue = new Queue<ScriptSection>();
+
+            // Parse interface controls, and get a queue of code sections to inspect.
+            // Inspect only default interface section for performance
+            // 전제) The multi-interface script should have buttons for switching to another interface, in current interface.
+            (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(section.Lines, section);
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                string sectionToRun = null;
+                switch (uiCtrl.Type)
+                {
+                    case UIControlType.CheckBox:
+                        {
+                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.Button:
+                        {
+                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.RadioButton:
+                        {
+                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.RadioGroup:
+                        {
+                            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                }
+
+                if (sectionToRun != null && Sections.ContainsKey(sectionToRun))
+                    sectionQueue.Enqueue(Sections[sectionToRun]);
+            }
+
+            // Run section queue
+            while (0 < sectionQueue.Count)
+            {
+                // Dequeue targetSection
+                ScriptSection targetSection = sectionQueue.Dequeue();
+
+                // Check if targetSection was already visited
+                if (visitedSections.Contains(targetSection.Name, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                visitedSections.Add(targetSection.Name);
+
+                // Parse commands (depth 0)
+                CodeParser parser = new CodeParser(targetSection, Global.Setting, targetSection.Project.Compat);
+                (CodeCommand[] cmds, _) = parser.ParseStatements();
+
+                // Queue for checking commands
+                Queue<CodeCommand> commandQueue = new Queue<CodeCommand>(cmds);
+
+                // Run command queue
+                while (0 < commandQueue.Count)
+                {
+                    CodeCommand cmd = commandQueue.Dequeue();
+                    switch (cmd.Type)
+                    {
+                        case CodeType.If:
+                            {
+                                CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                                foreach (CodeCommand nextCmd in info.Link)
+                                    commandQueue.Enqueue(nextCmd);
+                            }
+                            break;
+                        case CodeType.Else:
+                            {
+                                CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                                foreach (CodeCommand nextCmd in info.Link)
+                                    commandQueue.Enqueue(nextCmd);
+                            }
+                            break;
+                        case CodeType.Run:
+                        case CodeType.Exec:
+                        case CodeType.RunEx:
+                            {
+                                CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+
+                                if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.SectionName) &&
+                                    Sections.ContainsKey(info.SectionName))
+                                    sectionQueue.Enqueue(Sections[info.SectionName]);
+                            }
+                            break;
+                        case CodeType.Loop:
+                        case CodeType.LoopLetter:
+                        case CodeType.LoopEx:
+                        case CodeType.LoopLetterEx:
+                            {
+                                CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+
+                                if (info.Break)
+                                    continue;
+
+                                if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.SectionName) &&
+                                    Sections.ContainsKey(info.SectionName))
+                                    sectionQueue.Enqueue(Sections[info.SectionName]);
+                            }
+                            break;
+                        case CodeType.IniWrite:
+                            {
+                                CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+
+                                // To detect multi-interface without `InterfaceList=`,
+                                // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
+                                if (info.FileName.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Section.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Key.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.Value))
+                                {
+                                    if (!interfaceSections.Contains(info.Value, StringComparer.OrdinalIgnoreCase))
+                                        interfaceSections.Add(info.Value);
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+
+            return interfaceSections;
         }
 
         public (string sectionName, List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls()
@@ -708,57 +980,9 @@ namespace PEBakery.Core
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIParser.ParseStatements(lines, ifaceSection);
             return (uiCtrls, errLogs);
         }
-
-        public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = "Interface")
-        {
-            if (!Sections.ContainsKey(destSection))
-                return false; // Section [destSection] not found
-
-            (List<UIControl> oldCtrls, _) = GetInterfaceControls(destSection);
-            List<UIControl> updatedCtrls = new List<UIControl>();
-            foreach (UIControl newCtrl in newCtrls)
-            {
-                UIControl oldCtrl = oldCtrls.Find(x => x.Key.Equals(newCtrl.Key, StringComparison.OrdinalIgnoreCase));
-                if (oldCtrl == null)
-                { // newCtrl not exist in oldCtrls, append it.
-                    updatedCtrls.Add(newCtrl);
-                    continue;
-                }
-
-                // newCtrl exist in oldCtrls
-                oldCtrls.Remove(oldCtrl);
-                if (oldCtrl.Type != newCtrl.Type)
-                { // Keep oldCtrl. They are different uiCtrls even though they have same key.
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                string val = newCtrl.GetValue(false);
-                if (val == null)
-                { // This ctrl does not have 'value'. Keep oldCtrl.
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                if (!oldCtrl.SetValue(val, false, out _))
-                { // Unable to write value to oldCtrl
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                // Apply newCtrl
-                updatedCtrls.Add(newCtrl);
-            }
-
-            // Append leftover oldCtrls
-            updatedCtrls.AddRange(oldCtrls);
-
-            // Write to file
-            return UIControl.Update(updatedCtrls);
-        }
         #endregion
 
-        #region Virtual, Interface Methods
+        #region Virtual, Overriden Methods
         public override string ToString()
         {
             switch (_type)
@@ -802,7 +1026,9 @@ namespace PEBakery.Core
     #region Enums
     public enum ScriptType
     {
-        Script, Link, Directory
+        Script = 0,
+        Link = 1,
+        Directory = 2,
     }
 
     public enum SelectedState
@@ -822,7 +1048,7 @@ namespace PEBakery.Core
         // [Process], ...
         Code = 40,
         // Code or AttachFileList
-        Uninspected = 90,
+        NotInspected = 90,
         // [EncodedFolders]
         AttachFolderList = 100,
         // [AuthorEncoded], [InterfaceEncoded], and other folders
@@ -851,279 +1077,6 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region ScriptSection
-    [Serializable]
-    public class ScriptSection : IEquatable<ScriptSection>
-    {
-        #region (Const) Known Section Names
-        public static class Names
-        {
-            public const string Main = "Main";
-            public const string Variables = "Variables";
-            public const string Interface = "Interface";
-            public const string Process = "Process";
-            public const string EncodedFolders = "EncodedFolders";
-            public const string AuthorEncoded = "AuthorEncoded";
-            public const string InterfaceEncoded = "InterfaceEncoded";
-            public const string EncodedFileInterfaceEncodedPrefix = "EncodedFile-InterfaceEncoded-";
-            public const string EncodedFileAuthorEncodedPrefix = "EncodedFile-AuthorEncoded-";
-            public const string EncodedFilePrefix = "EncodedFile-";
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static string GetEncodedSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
-        }
-
-        #endregion
-
-        #region Fields and Properties
-        public Script Script { get; }
-        public Project Project => Script.Project;
-        public string Name { get; }
-        public SectionType Type { get; set; }
-        public int LineIdx { get; }
-        private string[] _lines;
-
-        /// <summary>
-        /// Get lines of this section (Cached)
-        /// </summary>
-        public string[] Lines
-        {
-            get
-            {
-                // Already loaded, return directly
-                if (_lines != null)
-                    return _lines;
-
-                // Load from file, do not keep in memory.
-                // AttachEncodeLazy sections are too large.
-                if (Type == SectionType.AttachEncodeLazy)
-                {
-                    List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
-                    return lineList?.ToArray();
-                }
-
-                // Load from file, keep in memory.
-                if (LoadLines())
-                    return _lines;
-
-                return null;
-            }
-        }
-
-        private Dictionary<string, string> _iniDict;
-        public Dictionary<string, string> IniDict
-        {
-            get
-            {
-                // Already loaded, return directly
-                if (_iniDict != null)
-                    return _iniDict;
-
-                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
-                if (Type == SectionType.AttachEncodeLazy)
-                    return IniReadWriter.ParseIniSectionToDict(Script.RealPath, Name);
-
-                // Load from file, keep in memory.
-                if (LoadIniDict())
-                    return _iniDict;
-                return null;
-            }
-        }
-        #endregion
-
-        #region Constructor
-        public ScriptSection(Script script, string sectionName, SectionType type, bool load, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            LineIdx = lineIdx;
-            if (load)
-                LoadLines();
-        }
-
-        public ScriptSection(Script script, string sectionName, SectionType type, string[] lines, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            LineIdx = lineIdx;
-            _lines = lines;
-        }
-        #endregion
-
-        #region Load, Unload, Reload
-        /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
-        /// </summary>
-        /// <returns>
-        /// true if _lines is valid
-        /// </returns>
-        public bool LoadLines()
-        {
-            if (_lines != null)
-                return true;
-
-            List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
-            if (lineList == null)
-                return false;
-            _lines = lineList.ToArray();
-            return true;
-        }
-
-        /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
-        /// </summary>
-        /// <returns>
-        /// true if _lines is valid
-        /// </returns>
-        public bool LoadIniDict()
-        {
-            bool result = true;
-            if (_lines == null)
-                result = LoadLines();
-            if (!result) // LoadLines failed
-                return false;
-
-            if (_iniDict != null)
-                return true;
-
-            _iniDict = IniReadWriter.ParseIniLinesIniStyle(_lines);
-            return true;
-        }
-
-        /// <summary>
-        /// Discard loaded _lines.
-        /// </summary>
-        /// <remarks>
-        /// Useful to reduce memory usage.
-        /// </remarks>
-        public void Unload()
-        {
-            _lines = null;
-            _iniDict = null;
-        }
-
-        /// <summary>
-        /// Reload _lines from file.
-        /// </summary>
-        public bool Reload()
-        {
-            Unload();
-            return LoadLines();
-        }
-        #endregion
-
-        #region UpdateIniKey, DeleteIniKey
-        /// <summary>
-        /// Update Lines property.
-        /// ScriptSection must not be SectionType.AttachEncodeLazy
-        /// </summary>
-        /// <returns>true if succeeded</returns>
-        public bool UpdateIniKey(string key, string value)
-        {
-            // AttachEncodeLazy cannot be updated 
-            if (Type == SectionType.AttachEncodeLazy)
-                return false;
-            if (_lines == null)
-                return false;
-            _iniDict = null;
-
-            bool updated = false;
-            for (int i = 0; i < _lines.Length; i++)
-            {
-                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
-                string line = _lines[i];
-                
-                int eIdx = line.IndexOf('=');
-                if (eIdx != -1 && eIdx != 0)
-                { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _lines[i] = $"{key}={value}";
-                        updated = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!updated)
-            { // Append to last line
-                Array.Resize(ref _lines, _lines.Length + 1);
-                _lines[_lines.Length - 1] = $"{key}={value}";
-            }
-
-            return true;
-        }
-
-        public bool DeleteIniKey(string key)
-        {
-            // AttachEncodeLazy cannot be updated 
-            if (Type == SectionType.AttachEncodeLazy)
-                return false;
-            if (_lines == null)
-                return false;
-            _iniDict = null;
-
-            int targetIdx = -1;
-            for (int i = 0; i < _lines.Length; i++)
-            {
-                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
-                string line = _lines[i];
-
-                int eIdx = line.IndexOf('=');
-                if (eIdx != -1 && eIdx != 0)
-                { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        targetIdx = i;
-                        break;
-                    }
-                }
-            }
-
-            if (targetIdx != -1)
-            { // Delete target line
-                List<string> newLines = _lines.ToList();
-                newLines.RemoveAt(targetIdx);
-                _lines = newLines.ToArray();
-            }
-
-            return true;
-        }
-        #endregion
-
-        #region Equals, GetHashCode
-        public override bool Equals(object obj)
-        {
-            if (obj is ScriptSection section)
-                return Equals(section);
-            return false;
-        }
-
-        public bool Equals(ScriptSection section)
-        {
-            if (section == null) throw new ArgumentNullException(nameof(section));
-
-            return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override int GetHashCode()
-        {
-            return Script.GetHashCode() ^ Name.GetHashCode() ^ LineIdx.GetHashCode();
-        }
-        #endregion
-
-        #region Override Methods
-        public override string ToString()
-        {
-            return Name;
-        }
-        #endregion
-    }
-    #endregion
-
     #region Struct ScriptParseInfo
     public struct ScriptParseInfo : IEquatable<ScriptParseInfo>
     {
@@ -1135,7 +1088,7 @@ namespace PEBakery.Core
         public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
 
         public bool Equals(ScriptParseInfo y)
-        { 
+        {
             // IsDir, IsDirLink
             if (IsDir != y.IsDir || IsDirLink != y.IsDirLink)
                 return false;

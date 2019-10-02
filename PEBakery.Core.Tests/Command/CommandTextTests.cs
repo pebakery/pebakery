@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -46,10 +46,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
                 string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
 
@@ -115,10 +114,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
                 string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
 
@@ -158,11 +156,10 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             string sampleStr = GenerateSampleText(true, true, true, true);
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
                 string tempFile2 = Path.Combine(tempDir, "TXTReplace2.txt");
 
@@ -218,10 +215,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
 
                 StringBuilder b = new StringBuilder();
@@ -257,10 +253,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
 
                 StringBuilder b = new StringBuilder();

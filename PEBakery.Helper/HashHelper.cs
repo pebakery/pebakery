@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -60,51 +60,67 @@ namespace PEBakery.Helper
 
         public static byte[] GetHash(HashType type, byte[] input, int reportInterval, IProgress<long> progress)
         {
-            HashAlgorithm hash;
-            switch (type)
+            HashAlgorithm hash = null;
+            try
             {
-                case HashType.MD5:
-                    hash = MD5.Create();
-                    break;
-                case HashType.SHA1:
-                    hash = SHA1.Create();
-                    break;
-                case HashType.SHA256:
-                    hash = SHA256.Create();
-                    break;
-                case HashType.SHA384:
-                    hash = SHA384.Create();
-                    break;
-                case HashType.SHA512:
-                    hash = SHA512.Create();
-                    break;
-                default:
-                    throw new InvalidOperationException("Invalid Hash Type");
-            }
-
-            // No progress report
-            if (reportInterval <= 0 || progress == null)
-                return hash.ComputeHash(input);
-
-            // With progress report
-            int offset = 0;
-            while (offset < input.Length)
-            {
-                if (offset + reportInterval < input.Length)
+                switch (type)
                 {
-                    hash.TransformBlock(input, offset, reportInterval, input, offset);
-                    offset += reportInterval;
-                }
-                else // Last run
-                {
-                    int bytesRead = input.Length - offset;
-                    hash.TransformFinalBlock(input, offset, bytesRead);
-                    offset += bytesRead;
+                    case HashType.MD5:
+                        hash = MD5.Create();
+                        break;
+                    case HashType.SHA1:
+                        hash = SHA1.Create();
+                        break;
+                    case HashType.SHA256:
+                        hash = SHA256.Create();
+                        break;
+                    case HashType.SHA384:
+                        hash = SHA384.Create();
+                        break;
+                    case HashType.SHA512:
+                        hash = SHA512.Create();
+                        break;
+                    default:
+                        throw new InvalidOperationException("Invalid Hash Type");
                 }
 
-                progress.Report(offset);
+                // No progress report
+                if (reportInterval <= 0 || progress == null)
+                    return hash.ComputeHash(input);
+
+                // With progress report
+                int offset = 0;
+                while (offset < input.Length)
+                {
+                    if (offset + reportInterval < input.Length)
+                    {
+                        hash.TransformBlock(input, offset, reportInterval, input, offset);
+                        offset += reportInterval;
+                    }
+                    else // Last run
+                    {
+                        int bytesRead = input.Length - offset;
+                        hash.TransformFinalBlock(input, offset, bytesRead);
+                        offset += bytesRead;
+                    }
+
+                    progress.Report(offset);
+                }
+                return hash.Hash;
             }
-            return hash.Hash;
+            finally
+            {
+                if (hash != null)
+                    hash.Dispose();
+            }
+        }
+
+        public static byte[] GetHash(HashType type, string file)
+        {
+            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return GetHash(type, fs, 0, null);
+            }
         }
 
         public static byte[] GetHash(HashType type, Stream stream)
@@ -114,57 +130,65 @@ namespace PEBakery.Helper
 
         public static byte[] GetHash(HashType type, Stream stream, long reportInterval, IProgress<long> progress)
         {
-            HashAlgorithm hash;
-            switch (type)
+            HashAlgorithm hash = null;
+            try
             {
-                case HashType.MD5:
-                    hash = MD5.Create();
-                    break;
-                case HashType.SHA1:
-                    hash = SHA1.Create();
-                    break;
-                case HashType.SHA256:
-                    hash = SHA256.Create();
-                    break;
-                case HashType.SHA384:
-                    hash = SHA384.Create();
-                    break;
-                case HashType.SHA512:
-                    hash = SHA512.Create();
-                    break;
-                default:
-                    throw new InvalidOperationException("Invalid Hash Type");
-            }
-
-            // No progress report
-            if (reportInterval <= 0 || progress == null)
-                return hash.ComputeHash(stream);
-
-            // With progress report
-            long nextReport = reportInterval;
-            long offset = stream.Position;
-            byte[] buffer = new byte[BufferSize];
-            int bytesRead = 0;
-            do
-            {
-                bytesRead = stream.Read(buffer, 0, buffer.Length);
-                hash.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-                offset += bytesRead;
-                if (nextReport <= offset)
+                switch (type)
                 {
-                    progress.Report(offset);
-                    nextReport += reportInterval;
+                    case HashType.MD5:
+                        hash = MD5.Create();
+                        break;
+                    case HashType.SHA1:
+                        hash = SHA1.Create();
+                        break;
+                    case HashType.SHA256:
+                        hash = SHA256.Create();
+                        break;
+                    case HashType.SHA384:
+                        hash = SHA384.Create();
+                        break;
+                    case HashType.SHA512:
+                        hash = SHA512.Create();
+                        break;
+                    default:
+                        throw new InvalidOperationException("Invalid Hash Type");
                 }
-            }
-            while (0 < bytesRead);
 
-            hash.TransformFinalBlock(buffer, 0, 0);
-            return hash.Hash;
+                // No progress report
+                if (reportInterval <= 0 || progress == null)
+                    return hash.ComputeHash(stream);
+
+                // With progress report
+                long nextReport = reportInterval;
+                long offset = stream.Position;
+                byte[] buffer = new byte[BufferSize];
+                int bytesRead;
+                do
+                {
+                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    hash.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                    offset += bytesRead;
+                    if (nextReport <= offset)
+                    {
+                        progress.Report(offset);
+                        nextReport += reportInterval;
+                    }
+                }
+                while (0 < bytesRead);
+
+                hash.TransformFinalBlock(buffer, 0, 0);
+                return hash.Hash;
+            }
+            finally
+            {
+                if (hash != null)
+                    hash.Dispose();
+            }
         }
         #endregion
 
         #region DetectHashType
-        public static HashType DetectHashType(byte[] data)
+        public static HashType DetectHashType(ReadOnlySpan<byte> data)
         {
             return InternalDetectHashType(data.Length);
         }

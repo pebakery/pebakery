@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
  
     MIT License
 
@@ -22,8 +22,9 @@
     SOFTWARE.
 */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -32,7 +33,25 @@ namespace PEBakery.Helper.Tests
     [TestClass]
     public class EncodingHelperTests
     {
-        #region DetectTextEncoding
+        #region LogCodePage
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("EncodingHelper")]
+        public void LogCodePage()
+        {
+            // Determined by current system default locale
+            Console.WriteLine($"System.Text.Encoding.Default.CodePage = {Encoding.Default.CodePage}");
+            Console.WriteLine($"EncodingHelper.DefaultAnsi.CodePage   = {EncodingHelper.DefaultAnsi.CodePage}");
+            Console.WriteLine($"Console.OutputEncoding.CodePage       = {Console.OutputEncoding.CodePage}");
+            // Determined by display language?
+            Console.WriteLine($"CultureInfo.CurrentCulture.TextInfo.ANSICodePage   = {CultureInfo.CurrentCulture.TextInfo.ANSICodePage}");
+            Console.WriteLine($"CultureInfo.CurrentCulture.TextInfo.OEMCodePage    = {CultureInfo.CurrentCulture.TextInfo.OEMCodePage}");
+            Console.WriteLine($"CultureInfo.CurrentUICulture.TextInfo.ANSICodePage = {CultureInfo.CurrentUICulture.TextInfo.ANSICodePage}");
+            Console.WriteLine($"CultureInfo.CurrentUICulture.TextInfo.OEMCodePage  = {CultureInfo.CurrentUICulture.TextInfo.OEMCodePage}");
+        }
+        #endregion
+
+        #region DetectBom
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("EncodingHelper")]
@@ -45,13 +64,20 @@ namespace PEBakery.Helper.Tests
             try
             {
                 // Empty -> ANSI
+                // No BOM -> Treat them as ANSI
                 File.Create(tempFile).Close();
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), EncodingHelper.DefaultAnsi);
+                string srcFile = Path.Combine(srcDir, "UTF8woBOM.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
+                srcFile = Path.Combine(srcDir, "CP949.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
+                srcFile = Path.Combine(srcDir, "ShiftJIS.html");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
 
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Unicode);
-                string srcFile = Path.Combine(srcDir, "UTF16LE.txt");
+                srcFile = Path.Combine(srcDir, "UTF16LE.txt");
                 Assert.AreEqual(EncodingHelper.DetectBom(srcFile), Encoding.Unicode);
 
                 // UTF-16 BE
@@ -128,7 +154,6 @@ namespace PEBakery.Helper.Tests
             LogTemplate("Random.bin");
             LogTemplate("Banner.zip");
             LogTemplate("Banner.7z");
-            
         }
         #endregion
     }

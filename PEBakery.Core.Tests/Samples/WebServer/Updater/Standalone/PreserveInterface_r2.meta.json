@@ -1,0 +1,23 @@
+{
+  "schema_ver": "0.1.1",
+  "pebakery_min_ver": "0.9.6",
+  "created_at": "2019-09-23T16:54:39.5425644Z",
+  "index": {
+    "kind": "script",
+    "name": "PreserveInterface.script",
+    "file_metadata": {
+      "updated_at": "2019-08-16T20:13:47.2649463Z",
+      "file_size": 1093,
+      "sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE="
+    },
+    "script_info": {
+      "format": "ini_based",
+      "ini_based": {
+        "title": "PreserveInterface",
+        "desc": "Standalone PreserveInterface",
+        "author": "ied206",
+        "version": "1.2"
+      }
+    }
+  }
+}

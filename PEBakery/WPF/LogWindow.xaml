@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -34,64 +34,83 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         FontFamily="Segoe UI"
         Closed="Window_Closed"
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
-        Width="900" Height="640"
+        Width="{Binding WindowWidth, Mode=TwoWay, FallbackValue=900}" 
+        Height="{Binding WindowHeight, Mode=TwoWay, FallbackValue=640}"
         MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
     <Window.CommandBindings>
         <CommandBinding x:Name="CloseCommand"
                         Command="local:LogViewCommands.CloseCommand"
-                        CanExecute="CloseCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="CloseCommand_Executed"/>
         <CommandBinding x:Name="RefreshCommand"
                         Command="local:LogViewCommands.RefreshCommand"
-                        CanExecute="RefreshCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="RefreshCommand_Executed"/>
         <CommandBinding x:Name="ClearCommand"
                         Command="local:LogViewCommands.ClearCommand"
                         CanExecute="ClearCommand_CanExecute"
                         Executed="ClearCommand_Executed"/>
+        <CommandBinding x:Name="ClearCurrentBuildCommand"
+                        Command="local:LogViewCommands.ClearCurrentBuildCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearCurrentBuildCommand_Executed"/>
+        <CommandBinding x:Name="ClearEntireBuildCommand"
+                        Command="local:LogViewCommands.ClearEntireBuildCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearEntireCommand_Executed"/>
         <CommandBinding x:Name="ExportCommand"
                         Command="local:LogViewCommands.ExportCommand"
-                        CanExecute="ExportCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="ExportCommand_Executed"/>
+        <CommandBinding x:Name="LogOptionsCommand"
+                        Command="local:LogViewCommands.LogOptionsCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="LogOptionsCommand_Executed"/>
+        <CommandBinding x:Name="ResetLayoutCommand"
+                        Command="local:LogViewCommands.ResetLayoutCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ResetLayoutCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
-        <Style x:Key="AlternativeListViewColor" TargetType="{x:Type ListViewItem}">
-            <Style.Triggers>
-                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
-                    <Setter Property="TextBlock.Foreground" Value="Black"/>
-                    <Setter Property="Background" Value="White"/>
-                </Trigger>
-                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                    <Setter Property="TextBlock.Foreground" Value="Black"/>
-                    <Setter Property="Background" Value="#f2f2f2"/>
-                </Trigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="LightBlue"/>
-                </Trigger>
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="Background" Value="LightBlue"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="ListItemFocusColorOverride">
-            <Style.Resources>
-                <!-- For Windows 7 Classic Theme -->
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
-            </Style.Resources>
-        </Style>
+        <ContextMenu x:Key="FullBuildLogColumnContextMenu" x:Shared="true">
+            <MenuItem Header="Log Filters" IsEnabled="False" />
+            <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
+            <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
+            <Separator />
+            <MenuItem Header="Show Columns" IsEnabled="False" />
+            <CheckBox IsChecked="{Binding BuildFullLogTimeVisible}" Content="Time" />
+            <CheckBox IsChecked="{Binding BuildFullLogScriptOriginVisible}" Content="Script Origin" />
+            <CheckBox IsChecked="{Binding BuildFullLogDepthVisible}" Content="Depth" />
+            <CheckBox IsChecked="{Binding BuildFullLogStateVisible}" Content="State" />
+            <CheckBox IsChecked="{Binding BuildFullLogFlagsVisible}" Content="Flags" />
+            <CheckBox IsChecked="{Binding BuildFullLogMessageVisible}" Content="Message" />
+            <CheckBox IsChecked="{Binding BuildFullLogRawCodeVisible}" Content="Raw Code" />
+            <CheckBox IsChecked="{Binding BuildFullLogLineNumberVisible}" Content="Line #" />
+            <Separator />
+            <MenuItem Header="Reset Layout" Command="local:LogViewCommands.ResetLayoutCommand"/>
+        </ContextMenu>
+        <ContextMenu x:Key="ClearBuildLogContextMenu" x:Shared="true">
+            <MenuItem Command="local:LogViewCommands.ClearCurrentBuildCommand"/>
+            <MenuItem Command="local:LogViewCommands.ClearEntireBuildCommand"/>
+        </ContextMenu>
+        <!-- Converters -->
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
         <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
         <local:LineIdxToStrConverter x:Key="LineIdxToStrConverter"/>
+        <local:RefScriptIdToTitleConverter x:Key="RefScriptIdToTitleConverter"/>
+        <local:GridViewColumnWidthConverter x:Key="GridViewColumnWidthConverter"/>
         <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
     </Window.Resources>
     <Grid>
@@ -106,7 +125,7 @@
                 <Grid>
                     <ListView Name="SystemLogListView"
                               HorizontalContentAlignment="Stretch"
-                              SelectedIndex="{Binding SystemLogsSelectedIndex}"
+                              SelectedIndex="{Binding SystemLogSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
@@ -124,6 +143,15 @@
                                                 DisplayMemberBinding="{Binding Message}" />
                             </cc:AutoSizedGridView>
                         </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SystemLogViewCopy_Click">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                     </ListView>
                 </Grid>
             </TabItem>
@@ -148,7 +176,7 @@
                                   ItemsSource="{Binding BuildEntries}">
                              <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"/>
+                                    <TextBlock Text="{Binding Text}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
@@ -175,7 +203,7 @@
 
                     <TabControl Margin="15, 15, 15, 0"
                                 Grid.Row="2">
-                        <TabItem Header="Statistics">
+                        <TabItem Header="Statistics" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding LogStats}"
@@ -193,7 +221,7 @@
                                 </ListView.View>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Simple Logs">
+                        <TabItem Header="Simple Logs" Width="90">
                             <ListView Name="BuildLogSimpleListView"
                                       SelectedIndex="{Binding SimpleBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
@@ -217,52 +245,188 @@
                                 </ListView.ContextMenu>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Full Logs">
+                        <TabItem Header="Full Logs" Width="90">
                             <ListView Name="BuildLogDetailListView"
                                       SelectedIndex="{Binding FullBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2"
+                                      ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"
                                       FontSize="11">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Time"
-                                                        Width="135"
-                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}" />
-                                        <GridViewColumn Header="Depth"
-                                                        Width="35"
-                                                        DisplayMemberBinding="{Binding Depth}" />
-                                        <GridViewColumn Header="State"
-                                                        Width="55"
-                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}}" />
-                                        <GridViewColumn Header="Line#"
-                                                        Width="40"
-                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}}" />
-                                        <GridViewColumn Header="Message"
-                                                        Width="340" 
-                                                        DisplayMemberBinding="{Binding Message}" />
-                                        <GridViewColumn Header="RawCode"
-                                                        Width="175"
-                                                        DisplayMemberBinding="{Binding RawCode}" />
-                                        <GridViewColumn Header="Flags"
-                                                        Width="35"
-                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}}" />
+                                        <GridViewColumn x:Name="BuildFullLogTimeColumn"
+                                                        Header="Time" 
+                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" 
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogTimeVisible"/>
+                                                        <Binding Path="BuildFullLogTimeWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>135</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>135</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogScriptOriginColumn" 
+                                                        Header="Script Origin">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" 
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogScriptOriginVisible"/>
+                                                        <Binding Path="BuildFullLogScriptOriginWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>135</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>135</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                            <GridViewColumn.DisplayMemberBinding>
+                                                <MultiBinding Converter="{StaticResource RefScriptIdToTitleConverter}">
+                                                    <Binding Path="RefScriptId" Mode="OneWay"/>
+                                                    <Binding Path="DataContext.ScriptTitleDict" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Mode="OneWay"/>
+                                                </MultiBinding>
+                                            </GridViewColumn.DisplayMemberBinding>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogDepthColumn"
+                                                        Header="Depth"
+                                                        DisplayMemberBinding="{Binding Depth, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogDepthVisible"/>
+                                                        <Binding Path="BuildFullLogDepthWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>35</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>35</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogStateColumn"
+                                                        Header="State"
+                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogStateVisible"/>
+                                                        <Binding Path="BuildFullLogStateWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>55</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>55</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogFlagsColumn"
+                                                        Header="Flags"
+                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogFlagsVisible"/>
+                                                        <Binding Path="BuildFullLogFlagsWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>35</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>35</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogMessageColumn"
+                                                        Header="Message"
+                                                        DisplayMemberBinding="{Binding Message, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogMessageVisible"/>
+                                                        <Binding Path="BuildFullLogMessageWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>340</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>340</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogRawCodeColumn"
+                                                        Header="RawCode"
+                                                        DisplayMemberBinding="{Binding RawCode, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogRawCodeVisible"/>
+                                                        <Binding Path="BuildFullLogRawCodeWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>175</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>175</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
+                                        <GridViewColumn x:Name="BuildFullLogLineNumberColumn"
+                                                        Header="Line#"
+                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogLineNumberVisible"/>
+                                                        <Binding Path="BuildFullLogLineNumberWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
+                                                        <s:Int32>40</s:Int32>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>40</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                     </GridView>
                                 </ListView.View>
-                                <ListView.ContextMenu>
-                                    <ContextMenu>
-                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
-                                            <cc:CorrectMenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
-                                            </cc:CorrectMenuItem.Icon>
-                                        </cc:CorrectMenuItem>
-                                    </ContextMenu>
-                                </ListView.ContextMenu>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource AlternativeListViewColor}">
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu>
+                                                    <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                                        <cc:CorrectMenuItem.Icon>
+                                                            <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                                        </cc:CorrectMenuItem.Icon>
+                                                    </cc:CorrectMenuItem>
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Variables">
+                        <TabItem Header="Variables" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
                                       Style="{StaticResource ListItemFocusColorOverride}"
@@ -327,23 +491,15 @@
                     Command="local:LogViewCommands.ExportCommand"
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Export"/>
-            <StackPanel Orientation="Horizontal" 
-                        Visibility="{Binding BuildLogSelected}">
-                <CheckBox DockPanel.Dock="Left"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowComments}"
-                          Content="Show Comments"/>
-                <CheckBox DockPanel.Dock="Left"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowMacros}"
-                          Content="Show Macros"/>
-            </StackPanel>
+            <Button DockPanel.Dock="Left"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Margin="0, 0, 10, 0"
+                    Command="local:LogViewCommands.LogOptionsCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                    Visibility="{Binding BuildLogSelected}"
+                    ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"
+                    Content="Options"/>
         </DockPanel>
     </Grid>
 </Window>

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -40,6 +40,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 
 namespace PEBakery.Core.ViewModels
@@ -76,7 +77,21 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region TreeItem Properties
-        public ProjectTreeItemModel CurMainTree { get; set; }
+        private ProjectTreeItemModel _curMainTree;
+        public ProjectTreeItemModel CurMainTree
+        {
+            get => _curMainTree;
+            set
+            {
+                SetProperty(ref _curMainTree, value);
+
+                Script sc = value?.Script;
+                if (sc == null)
+                    return;
+                IsTreeEntryFile = sc.Type != ScriptType.Directory;
+                IsTreeEntryMain = sc.Equals(sc.Project.MainScript);
+            }
+        }
         public ProjectTreeItemModel CurBuildTree { get; set; }
         #endregion
 
@@ -88,6 +103,10 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _workInProgress = value;
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    MainCanvas.IsEnabled = !_workInProgress;
+                }));
                 OnPropertyUpdate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -115,7 +134,7 @@ namespace PEBakery.Core.ViewModels
             {
                 _interfaceSize = value;
                 OnPropertyUpdate();
-                UpdateTopInterfaceSize();
+                UpdateTopPanelSize();
             }
         }
 
@@ -126,7 +145,7 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _windowWidth = value;
-                UpdateTopInterfaceSize();
+                UpdateTopPanelSize();
             }
         }
         private const int WindowWidthThreshold = 700;
@@ -143,22 +162,28 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        public void UpdateTopInterfaceSize()
+        public void UpdateTopPanelSize()
         {
             // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
+            OnPropertyUpdate(nameof(TopPanelHeight));
+            OnPropertyUpdate(nameof(BannerIconSize));
             OnPropertyUpdate(nameof(BannerFontSize));
             OnPropertyUpdate(nameof(BannerMargin));
+            OnPropertyUpdate(nameof(MainIconGridWidth));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
+        public int TopPanelHeight => GetAdaptiveSize(80, 60);
+        public int BannerIconSize => GetAdaptiveSize(56, 36);
         public int BannerFontSize => GetAdaptiveSize(40, 32);
         public Thickness BannerMargin => GetAdaptiveSize(new Thickness(0, 0, 15, 0), new Thickness(0, 0, 0, 0));
-        public int MainIconButtonSize => GetAdaptiveSize(60, 48);
-        public int MainIconButtonMargin => GetAdaptiveSize(4, 2);
+        public int MainIconGridWidth => GetAdaptiveSize(54, 44);
+        public int MainIconButtonSize => GetAdaptiveSize(48, 36);
+        public int MainIconButtonMargin => GetAdaptiveSize(6, 4);
         #endregion
 
         #region Color Theme
@@ -174,6 +199,13 @@ namespace PEBakery.Core.ViewModels
         {
             get => _topPanelForeground;
             set => SetProperty(ref _topPanelForeground, value);
+        }
+
+        private Color _topPanelReportIssueColor = Colors.OrangeRed;
+        public Color TopPanelReportIssueColor
+        {
+            get => _topPanelReportIssueColor;
+            set => SetProperty(ref _topPanelReportIssueColor, value);
         }
 
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
@@ -226,8 +258,17 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region UpdateServerManager
+        private bool _enableUpdateServerManagement;
+        public bool EnableUpdateServerManagement
+        {
+            get => _enableUpdateServerManagement;
+            set => SetProperty(ref _enableUpdateServerManagement, value);
+        }
+        #endregion
+
         #region Normal Interface Properties
-        public const string DefaultTitleBar = "PEBakery";
+        public const string DefaultTitleBar = "PEBakery " + Global.Const.ProgramVersionStrFull;
         private string _titleBar = DefaultTitleBar;
         public string TitleBar
         {
@@ -249,7 +290,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _scriptAuthorText, value);
         }
 
-        private string _scriptVersionText = Global.Const.StringVersionFull;
+        private string _scriptVersionText = Global.Const.ProgramVersionStrFull;
         public string ScriptVersionText
         {
             get => _scriptVersionText;
@@ -261,6 +302,13 @@ namespace PEBakery.Core.ViewModels
         {
             get => _scriptDescriptionText;
             set => SetProperty(ref _scriptDescriptionText, value);
+        }
+
+        private bool _buildEndedWithIssue = false;
+        public bool BuildEndedWithIssue
+        {
+            get => _buildEndedWithIssue;
+            set => SetProperty(ref _buildEndedWithIssue, value);
         }
 
         #region ScriptLogo
@@ -294,6 +342,20 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
+        private double _scriptLogoImageWidth;
+        public double ScriptLogoImageWidth
+        {
+            get => _scriptLogoImageWidth;
+            set => SetProperty(ref _scriptLogoImageWidth, value);
+        }
+
+        private double _scriptLogoImageHeight;
+        public double ScriptLogoImageHeight
+        {
+            get => _scriptLogoImageHeight;
+            set => SetProperty(ref _scriptLogoImageHeight, value);
+        }
+
         private DrawingBrush _scriptLogoSvg;
         public DrawingBrush ScriptLogoSvg
         {
@@ -324,24 +386,38 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region TreeEntry
         private bool _isTreeEntryFile = true;
+        /// <summary>
+        /// Selected script is a script (.Script or .Link)
+        /// </summary>
         public bool IsTreeEntryFile
         {
             get => _isTreeEntryFile;
             set
             {
-                _isTreeEntryFile = value;
-                OnPropertyUpdate(nameof(IsTreeEntryFile));
+                SetProperty(ref _isTreeEntryFile, value);
                 OnPropertyUpdate(nameof(ScriptCheckVisibility));
                 OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
         }
 
+        private bool _isTreeEntryMain = true;
+        /// <summary>
+        /// Selected script is a MainScript
+        /// </summary>
+        public bool IsTreeEntryMain
+        {
+            get => _isTreeEntryMain;
+            set => SetProperty(ref _isTreeEntryMain, value);
+        }
+
         public string OpenExternalButtonToolTip => IsTreeEntryFile ? "Edit Script" : "Open Folder";
         public PackIconMaterialKind OpenExternalButtonIconKind => IsTreeEntryFile ? PackIconMaterialKind.Pencil : PackIconMaterialKind.Folder;
 
         public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
+        #endregion
 
         private SyntaxChecker.Result _scriptCheckResult = SyntaxChecker.Result.Unknown;
         public SyntaxChecker.Result ScriptCheckResult
@@ -439,8 +515,8 @@ namespace PEBakery.Core.ViewModels
                 _switchNormalBuildInterface = value;
                 if (value)
                 { // To Normal View
-                    BuildScriptProgressBarValue = 0;
-                    BuildFullProgressBarValue = 0;
+                    BuildScriptProgressValue = 0;
+                    BuildFullProgressValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.None;
 
                     NormalInterfaceVisibility = Visibility.Visible;
@@ -451,8 +527,8 @@ namespace PEBakery.Core.ViewModels
                     BuildPosition = string.Empty;
                     BuildEchoMessage = string.Empty;
 
-                    BuildScriptProgressBarValue = 0;
-                    BuildFullProgressBarValue = 0;
+                    BuildScriptProgressValue = 0;
+                    BuildFullProgressValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.Normal;
 
                     NormalInterfaceVisibility = Visibility.Collapsed;
@@ -525,18 +601,42 @@ namespace PEBakery.Core.ViewModels
         }
 
         // ProgressBar
-        private double _buildScriptProgressBarMax = 100;
-        public double BuildScriptProgressBarMax
+        private Visibility _buildScriptProgressVisibility = Visibility.Visible;
+        public Visibility BuildScriptProgressVisibility
         {
-            get => _buildScriptProgressBarMax;
-            set => SetProperty(ref _buildScriptProgressBarMax, value);
+            get => _buildScriptProgressVisibility;
+            set => SetProperty(ref _buildScriptProgressVisibility, value);
         }
 
-        private double _buildScriptProgressBarValue = 0;
-        public double BuildScriptProgressBarValue
+        public string BuildScriptProgressPercentStr
         {
-            get => _buildScriptProgressBarValue;
-            set => SetProperty(ref _buildScriptProgressBarValue, value);
+            get
+            {
+                double percent = (BuildScriptProgressValue + 1) / BuildScriptProgressMax;
+                return $"{BuildScriptProgressValue + 1}/{BuildScriptProgressMax} ({percent:P1})";
+            }
+        }
+
+        private double _buildScriptProgressMax = 100;
+        public double BuildScriptProgressMax
+        {
+            get => _buildScriptProgressMax;
+            set
+            {
+                SetProperty(ref _buildScriptProgressMax, value);
+                OnPropertyUpdate(nameof(BuildScriptProgressPercentStr));
+            }
+        }
+
+        private double _buildScriptProgressValue = 0;
+        public double BuildScriptProgressValue
+        {
+            get => _buildScriptProgressValue;
+            set
+            {
+                SetProperty(ref _buildScriptProgressValue, value);
+                OnPropertyUpdate(nameof(BuildScriptProgressPercentStr));
+            }
         }
 
         private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
@@ -546,18 +646,35 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildScriptFullProgressVisibility, value);
         }
 
-        private double _buildFullProgressBarMax = 100;
-        public double BuildFullProgressBarMax
+        public string BuildFullProgressPercentStr
         {
-            get => _buildFullProgressBarMax;
-            set => SetProperty(ref _buildFullProgressBarMax, value);
+            get
+            {
+                double percent = (BuildFullProgressValue + 1) / BuildFullProgressMax;
+                return $"{BuildFullProgressValue + 1}/{BuildFullProgressMax} ({percent:P1})";
+            }
         }
 
-        private double _buildFullProgressBarValue = 0;
-        public double BuildFullProgressBarValue
+        private double _buildFullProgressMax = 100;
+        public double BuildFullProgressMax
         {
-            get => _buildFullProgressBarValue;
-            set => SetProperty(ref _buildFullProgressBarValue, value);
+            get => _buildFullProgressMax;
+            set
+            {
+                SetProperty(ref _buildFullProgressMax, value);
+                OnPropertyUpdate(nameof(BuildFullProgressPercentStr));
+            }
+        }
+
+        private double _buildFullProgressValue = 0;
+        public double BuildFullProgressValue
+        {
+            get => _buildFullProgressValue;
+            set
+            {
+                SetProperty(ref _buildFullProgressValue, value);
+                OnPropertyUpdate(nameof(BuildFullProgressPercentStr));
+            }
         }
 
         // ShellExecute Console Output
@@ -577,7 +694,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildConOutRedirectVisibility, value);
         }
 
-        private FontHelper.FontInfo _monospacedFont;
+        private FontHelper.FontInfo _monospacedFont = FontHelper.FontInfo.DefaultMonospaced;
         public FontHelper.FontInfo MonospacedFont
         {
             get => _monospacedFont;
@@ -623,15 +740,29 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildCommandProgressValue, value);
         }
 
-        private Visibility _buildCommandProgressVisibility;
+        private bool _buildCommandProgressIndeterminate = false;
+        public bool BuildCommandProgressIndeterminate
+        {
+            get => _buildCommandProgressIndeterminate;
+            set => SetProperty(ref _buildCommandProgressIndeterminate, value);
+        }
+
+        private Visibility _buildCommandProgressVisibility = Visibility.Collapsed;
         public Visibility BuildCommandProgressVisibility
         {
             get => _buildCommandProgressVisibility;
             set => SetProperty(ref _buildCommandProgressVisibility, value);
         }
 
-        // TaskBar Progress State
-        //
+        private bool _waitingSubProcFinish = false;
+        public bool WaitingSubProcFinish
+        {
+            get => _waitingSubProcFinish;
+            set => SetProperty(ref _waitingSubProcFinish, value);
+        }
+        #endregion
+
+        #region TaskBar Progress State
         // None - Hidden
         // Indeterminate - Pulsing green indicator
         // Normal - Green
@@ -641,29 +772,35 @@ namespace PEBakery.Core.ViewModels
         public TaskbarItemProgressState TaskBarProgressState
         {
             get => _taskBarProgressState;
-            set
-            {
-                _taskBarProgressState = value;
-                OnPropertyUpdate(nameof(TaskBarProgressState));
-            }
+            set => SetProperty(ref _taskBarProgressState, value);
         }
         #endregion
 
         #region Build Interface Methods
         public void SetBuildCommandProgress(string title, double max = 100)
         {
+            // String Value
             BuildCommandProgressTitle = title;
             BuildCommandProgressText = string.Empty;
             BuildCommandProgressMax = max;
+            BuildCommandProgressValue = 0;
+            BuildCommandProgressIndeterminate = false;
+
+            // Visibility last
             BuildCommandProgressVisibility = Visibility.Visible;
         }
 
         public void ResetBuildCommandProgress()
         {
+            // Visibility first 
             BuildCommandProgressVisibility = Visibility.Collapsed;
+
+            // String Value
             BuildCommandProgressTitle = "Progress";
             BuildCommandProgressText = string.Empty;
+            BuildCommandProgressMax = 100;
             BuildCommandProgressValue = 0;
+            BuildCommandProgressIndeterminate = false;
         }
         #endregion
 
@@ -829,7 +966,7 @@ namespace PEBakery.Core.ViewModels
                             .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
                         CurMainTree = itemModel ?? MainTreeItems.Last();
                         CurMainTree.IsExpanded = true;
-                        Application.Current?.Dispatcher.Invoke(() => { DisplayScript(CurMainTree.Script); });
+                        Application.Current?.Dispatcher?.Invoke(() => { DisplayScript(CurMainTree.Script); });
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
 
@@ -871,7 +1008,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref ProjectsLoading);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -901,7 +1038,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref ScriptCache.DbLock);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -926,7 +1063,7 @@ namespace PEBakery.Core.ViewModels
                 try
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
-                    (List<LogInfo> logs, SyntaxChecker.Result result) = v.Validate();
+                    (List<LogInfo> logs, SyntaxChecker.Result result) = v.CheckScript();
                     LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
                     LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
 
@@ -994,9 +1131,9 @@ namespace PEBakery.Core.ViewModels
                         switch (result)
                         {
                             case SyntaxChecker.Result.Clean:
-                                b.AppendLine("No syntax issue detected");
+                                b.AppendLine("No syntax issue detected.");
                                 b.AppendLine();
-                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
                                 MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
                                 break;
                             case SyntaxChecker.Result.Warning:
@@ -1006,15 +1143,16 @@ namespace PEBakery.Core.ViewModels
                                 MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
                                 if (dialogResult == MessageBoxResult.OK)
                                 {
-                                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                    b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
 
-                                    string tempFile = Path.GetTempFileName();
-                                    File.Delete(tempFile);
-                                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                    // Do not clear tempDir right after calling OpenTextFile(). Doing this will trick the text editor.
+                                    // Instead, leave it to Global.Cleanup() when program is exited.
+                                    string tempDir = FileHelper.GetTempDir();
+                                    string reportFile = Path.Combine(tempDir, Path.ChangeExtension(Path.GetFileName(sc.RealPath), null) + "_Report.txt");
+                                    using (StreamWriter w = new StreamWriter(reportFile, false, Encoding.UTF8))
                                         w.Write(b.ToString());
 
-                                    OpenTextFile(tempFile);
+                                    OpenTextFile(reportFile);
                                 }
                                 break;
                         }
@@ -1027,7 +1165,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref SyntaxChecking);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -1045,7 +1183,8 @@ namespace PEBakery.Core.ViewModels
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref ScriptRefreshing);
-                WorkInProgress = true;
+                if (Engine.WorkingEngine == null)
+                    WorkInProgress = true;
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
@@ -1069,16 +1208,17 @@ namespace PEBakery.Core.ViewModels
                 }
                 finally
                 {
-                    WorkInProgress = false;
+                    if (Engine.WorkingEngine == null)
+                        WorkInProgress = false;
                     Interlocked.Decrement(ref ScriptRefreshing);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
 
-        private void PostRefreshScript(ProjectTreeItemModel node, Script sc)
+        public void PostRefreshScript(ProjectTreeItemModel node, Script sc)
         {
             node.Script = sc;
             node.ParentCheckedPropagation();
@@ -1108,15 +1248,14 @@ namespace PEBakery.Core.ViewModels
                     StartSyntaxCheck(true);
             }
 
-            IsTreeEntryFile = sc.Type != ScriptType.Directory;
             OnPropertyUpdate(nameof(MainCanvas));
         }
 
         public void DisplayScriptInterface(Script sc)
         {
             // Current UIRenderer can only run in interface thread.
-            // Guard instance owner exception using Application.Current.Dispatcher.Invoke()
-            Application.Current?.Dispatcher.Invoke(() =>
+            // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
+            Application.Current?.Dispatcher?.Invoke(() =>
             {
                 // Set scale factor
                 ScaleTransform transform;
@@ -1135,7 +1274,7 @@ namespace PEBakery.Core.ViewModels
                 // Render script interface
                 ClearScriptInterface();
 
-                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, scaleFactor, true, sc.Project.Compat.IgnoreWidthOfWebLabel);
+                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, true, sc.Project.Compat.IgnoreWidthOfWebLabel);
                 _renderer.Render();
             });
         }
@@ -1145,7 +1284,7 @@ namespace PEBakery.Core.ViewModels
             if (_renderer == null)
                 return;
 
-            Application.Current?.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher?.Invoke(() =>
             {
                 _renderer.Clear();
                 _renderer = null;
@@ -1163,32 +1302,44 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-                try
+                bool processed = false;
+                if (EncodedFile.ContainsLogo(sc))
                 {
-                    using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                    try
                     {
-                        switch (type)
+                        // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
-                            case ImageHelper.ImageType.Svg:
-                                DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                                Rect svgSize = svgDrawing.Bounds;
-                                (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
-                                ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                                ScriptLogoSvgWidth = width;
-                                ScriptLogoSvgHeight = height;
-                                break;
-                            default:
-                                Application.Current?.Dispatcher.Invoke(() =>
+                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
+                            {
+                                switch (type)
                                 {
-                                    // ReSharper disable once AccessToDisposedClosure
-                                    ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
-                                });
-                                break;
-                        }
+                                    case ImageHelper.ImageFormat.Svg:
+                                        DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                        Rect svgSize = svgDrawing.Bounds;
+                                        ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                        (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
+                                        break;
+                                    default:
+                                        BitmapImage bitmap;
+                                        ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
+                                        (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
+                                        break;
+                                }
+                            }
+                        });
+
+                        processed = true;
+                    }
+                    catch
+                    { // Problem with displaying logo file - use default icon
+                        processed = false;
                     }
                 }
-                catch
-                { // No logo file - use default
+
+                if (!processed)
+                {
+                    // Default Icon
                     PackIconMaterialKind iconKind = PackIconMaterialKind.None;
                     if (sc.Type == ScriptType.Script)
                         iconKind = sc.IsDirLink ? PackIconMaterialKind.FileSend : PackIconMaterialKind.FileDocument;
@@ -1226,17 +1377,17 @@ namespace PEBakery.Core.ViewModels
                 ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
 
                 // Script Version
-                string verStr = StringEscaper.ProcessVersionString(sc.Version);
+                string verStr = StringEscaper.ProcessVersionString(sc.RawVersion);
                 if (verStr == null)
                 {
                     if (s != null)
                     { // Normal mode -> Notify script developer to fix
                         ScriptVersionText = "Error";
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.RawVersion}]"));
                     }
                     else
                     { // Build mode -> Suppress error log
-                        ScriptVersionText = sc.Version;
+                        ScriptVersionText = sc.RawVersion;
                     }
                 }
                 else
@@ -1322,7 +1473,7 @@ namespace PEBakery.Core.ViewModels
             return item;
         }
 
-        public static void ScriptListToTreeViewModel(Project project, List<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
+        public static void ScriptListToTreeViewModel(Project project, IReadOnlyList<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
         {
             Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
 
@@ -1484,7 +1635,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     UseShellExecute = false,
                     FileName = Global.Setting.Interface.CustomEditorPath,
-                    Arguments = StringEscaper.Doublequote(filePath),
+                    Arguments = StringEscaper.DoubleQuote(filePath),
                 };
 
                 try { UACHelper.UACHelper.StartWithShell(info); }
@@ -1492,7 +1643,9 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
+#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                 FileHelper.OpenPath(filePath);
+#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
             }
         }
 
@@ -1509,11 +1662,11 @@ namespace PEBakery.Core.ViewModels
             }
 
             // In most circumstances, explorer.exe is already running as a shell without Administrator privilege.
-            Process proc = new Process
+            using (Process proc = new Process())
             {
-                StartInfo = new ProcessStartInfo(filePath)
-            };
-            proc.Start();
+                proc.StartInfo = new ProcessStartInfo(filePath);
+                proc.Start();
+            }
         }
         #endregion
     }

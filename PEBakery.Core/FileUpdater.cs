@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,327 +25,471 @@
     not derived from or based on this program. 
 */
 
+using Newtonsoft.Json;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Threading;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace PEBakery.Core
 {
+    #region (Docs) PEBakery Update Scheme
     /*
-     * - script.project
-     * [Update]
-     * // ProjectMethod={Static|...}
-     * ProjectBaseUrl=<Url>
-     *
-     * - Per script
-     * [Update]
-     * ScriptType={Project|Standalone}
-     * ScriptUrl=<Url>
-     */
-    public class FileUpdater
-    {
-        #region Const and Enum
-        private const string UpdateSection = @"Update";
-        private const string MethodKey = @"ProjectMethod";
-        private const string BaseUrlKey = @"ProjectBaseUrl";
-        private const string ScriptTypeKey = @"ScriptType";
-        private const string ScriptUrlKey = @"ScriptUrl";
+    - script.project
+    [Update]
+    // ProjectMethod={Static|...}
+    ProjectBaseUrl=<Url>
+    
+    - Per script
+    [Update]
+    ScriptType={Project|Standalone}
+    ScriptUrl=<Url>
 
-        private enum ScriptUpdateType
+    - Structure
+    Each script has its pair script meta file. (ABC.script -> ABC.meta.json)
+    Deleted script marks its deletiton with empty .deleted file. (ABC.script -> ABC.deleted)
+    */
+    #endregion
+
+    #region (Docs) Script meta file (*.meta.json)
+    /*
+    Example of *.meta.json
+    
+    */
+    #endregion
+
+    #region (Docs) ProjectMetaJson (project.meta.json)
+    /*
+    Example of *.meta.json
+    
+    */
+    #endregion
+
+    #region (Docs) Classic updates.ini (No plan to implement)
+    // ReSharper disable CommentTypo
+    /*
+    - Classic updates.ini
+    [Updates]
+    Win10PESE=Folder
+    Tools=Folder
+
+    [Updates\Win10PESE]
+    Win10PESE\Apps=Folder
+    Win10PESE\Build=Folder
+
+    [Updates\Win10PESE\Apps\Network]
+    Win10PESE\Apps\Network\Firewall=Folder
+    Win10PESE\Apps\Network\Remote Connect=Folder
+    Flash_Add.Script=Projects/Win10PESE/Apps/Network/Flash_Add.Script,93cc0d650b4e1ff459c43d45a531903f,015,Flash#$sAdd,Adds#$sFlash#$sPlayer.,Lancelot,http://TheOven.org,#23082,2,
+    Flash_Package.script=Projects/Win10PESE/Apps/Network/Flash_Package.script,bc42776b7140ea8d022b49d5b6c2f0de,030,Flash#$sPackage#$sx86,(v32.0.0.114#$s-#$s(x86#$s18#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#9821195,0,
+    Flash_Package64.script=Projects/Win10PESE/Apps/Network/Flash_Package64.script,a637cba7ddc866126cf903c07f9e4f79,030,Flash#$sPackage#$sx64,(v32.0.0.114#$s-#$s(x64#$s25#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#11565119,0,
+    folder.project=Projects/Win10PESE/Apps/Network/folder.project,5799a43137daa1554d36361da513b9a5,003,Net,Web#$sBrowsers#$sand#$sother#$sInternet#$srelated#$saddons,TheOven#$sChefs#$s(Galapo#$c#$sLancelot),http://TheOven.org,#4375,0,
+    Mozilla_Firefox_ESR.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR.Script,0b0a4fcaf7113aa4de40f7c10e1fd7a2,009,Mozilla#$sFirefox#$sESR#$s(P),(x86/x64#$sNT6x)#$sMozilla#$sFirefox#$sESR#$s(Extended#$sSupport#$sRelease).#$sCommitted#$sto#$syou#$c#$syour#$sprivacy#$sand#$san#$sopen#$sWeb.,ChrisR,http://TheOven.org,#3249630,2,
+    Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
+    */
+    // ReSharper restore CommentTypo
+    #endregion
+
+    #region ProjectUpdateInfo
+    public class ProjectUpdateInfo
+    {
+        #region Const
+        public static class Const
         {
-            None,
-            Project,
-            Standalone,
+            public const string ProjectUpdateSection = @"ProjectUpdate";
+            public const string SelectedChannel = @"SelectedChannel";
+            public const string BaseUrl = @"BaseUrl";
         }
         #endregion
 
-        #region UpdateScript, UpdateScripts
-        public static (Script newScript, string msg) UpdateScript(Project p, Script sc, FileUpdaterOptions opts)
+        #region Fields and Properties
+        public bool IsUpdateable => SelectedChannel != null && BaseUrl != null;
+        public string SelectedChannel { get; }
+        public string BaseUrl { get; }
+        #endregion
+
+        #region Constructor
+        public ProjectUpdateInfo()
         {
-            if (!sc.Sections.ContainsKey(UpdateSection))
-                return (null, "Unable to find script update information");
-            Dictionary<string, string> scUpdateDict = sc.Sections[UpdateSection].IniDict;
+            SelectedChannel = null;
+            BaseUrl = null;
+        }
 
-            // Parse ScriptUpdateType
-            if (!scUpdateDict.ContainsKey(ScriptTypeKey))
-                return (null, "Unable to find script update type");
-            ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[ScriptTypeKey]);
-            if (scType == ScriptUpdateType.None)
-                return (null, "Invalid script update type");
+        public ProjectUpdateInfo(string selectedChannel, string baseUrl)
+        {
+            // If baseUrl is not a proper uri, throw an exception
+            if (StringHelper.GetUriProtocol(baseUrl) == null)
+                throw new ArgumentException(nameof(baseUrl));
 
-            // Get ScriptUrl
-            if (!scUpdateDict.ContainsKey(ScriptUrlKey))
-                return (null, "Unable to find script server url");
-            string url = scUpdateDict[ScriptUrlKey].TrimStart('/');
+            SelectedChannel = selectedChannel ?? throw new ArgumentNullException(nameof(selectedChannel));
+            BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
+        }
+        #endregion
+    }
+    #endregion
 
-            if (scType == ScriptUpdateType.Project)
+    #region FileUpdater
+    public class FileUpdater
+    {
+        #region Fields and Properties
+        private readonly Project _p;
+        private readonly MainViewModel _m;
+        private readonly HttpFileDownloader _downloader;
+        #endregion
+
+        #region Constructor
+        public FileUpdater(Project p, MainViewModel mainViewModel, string customUserAgent)
+        {
+            _p = p;
+            _m = mainViewModel;
+
+            string userAgent = customUserAgent ?? Engine.DefaultUserAgent;
+            _downloader = new HttpFileDownloader(_m, 10, userAgent);
+        }
+        #endregion
+
+        #region Update one or more scripts
+        public Task<(Script, LogInfo)> UpdateScriptAsync(Script sc, bool preserveScriptState)
+        {
+            return Task.Run(() => UpdateScript(sc, preserveScriptState));
+        }
+
+        public (Script, LogInfo) UpdateScript(Script sc, bool preserveScriptState)
+        {
+            if (!sc.IsUpdateable)
+                return (null, new LogInfo(LogState.Error, $"Script [{sc.Title} is not updateable"));
+
+            // Backup interface state of original script
+            ScriptStateBackup stateBackup = null;
+            if (preserveScriptState)
             {
-                // Get BaseUrl
-                if (!p.MainScript.Sections.ContainsKey(UpdateSection))
-                    return (null, "Unable to find project update information");
-                Dictionary<string, string> pUpdateDict = p.MainScript.Sections[UpdateSection].IniDict;
-                if (!pUpdateDict.ContainsKey(BaseUrlKey))
-                    return (null, "Unable to find project update base url");
-                string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('/');
-
-                url = $"{url}\\{pBaseUrl}";
+                stateBackup = BackupScriptState(sc);
+                Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
             }
 
-            string tempFile = FileHelper.GetTempFileNameEx();
-            opts.Model?.SetBuildCommandProgress("Download Progress");
+            ResultReport<Script> report;
+            _m?.SetBuildCommandProgress("Download Progress", 1);
             try
             {
-                (bool result, string errorMsg) = DownloadFile(url, tempFile, opts);
-                if (result)
-                { // Success
-                    File.Copy(tempFile, sc.DirectRealPath, true);
-                    Script newScript = p.RefreshScript(sc);
-                    return newScript != null ? (newScript, $"Updated script [{sc.Title}] to [v{sc.Version}] from [v{newScript.Version}]") : (null, @"Downloaded script is corrupted");
-                }
-                else
-                { // Failure
-                    return (null, errorMsg);
+                if (_m != null)
+                    _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
+
+                report = InternalUpdateOneScript(sc, stateBackup);
+
+                if (_m != null)
+                    _m.BuildCommandProgressValue = 1;
+            }
+            finally
+            {
+                _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                    _m.BuildEchoMessage = string.Empty;
+            }
+
+            return (report.Result, report.ToLogInfo());
+        }
+
+        public Task<(Script[], LogInfo[])> UpdateScriptsAsync(IEnumerable<Script> scripts, bool preserveScriptState)
+        {
+            return Task.Run(() => UpdateScripts(scripts, preserveScriptState));
+        }
+
+        public (Script[], LogInfo[]) UpdateScripts(IEnumerable<Script> scripts, bool preserveScriptState)
+        {
+            // Get updateable scripts urls
+            Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
+
+            List<Script> newScripts = new List<Script>(updateableScripts.Length);
+            List<LogInfo> logs = new List<LogInfo>(updateableScripts.Length);
+
+            if (_m != null)
+                _m.BuildScriptProgressVisibility = Visibility.Collapsed;
+            _m?.SetBuildCommandProgress("Download Progress", updateableScripts.Length);
+            try
+            {
+                int i = 0;
+                foreach (Script sc in updateableScripts)
+                {
+                    i++;
+
+                    ScriptStateBackup stateBackup = null;
+                    if (preserveScriptState)
+                    {
+                        stateBackup = BackupScriptState(sc);
+                        Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
+                    }
+
+                    if (_m != null)
+                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
+                    ResultReport<Script> report = InternalUpdateOneScript(sc, stateBackup);
+                    if (report.Success && report.Result != null)
+                        newScripts.Add(report.Result);
+                    logs.Add(report.ToLogInfo());
+
+                    if (_m != null)
+                        _m.BuildCommandProgressValue += 1;
                 }
             }
             finally
             {
-                opts.Model?.ResetBuildCommandProgress();
-
-                if (File.Exists(tempFile))
-                    File.Delete(tempFile);
+                _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                {
+                    _m.BuildEchoMessage = string.Empty;
+                    _m.BuildScriptProgressVisibility = Visibility.Visible;
+                }
             }
+
+            return (newScripts.ToArray(), logs.ToArray());
         }
 
-        public static List<LogInfo> UpdateProject(Project p, FileUpdaterOptions opts)
+        private ResultReport<Script> InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
         {
-            List<LogInfo> logs = new List<LogInfo>();
-            return logs;
+            // Never should be triggered, because Script class constructor check it
+            Debug.Assert(sc.ParsedVersion != null, $"Local script [{sc.Title}] does not provide proper version information");
 
-            // Work in Progress
-            /*
-            List<(Script, string)> newScripts = new List<(Script, string)>(p.AllScripts.Count);
-
-            // Get BaseUrl
-            if (!p.MainScript.Sections.ContainsKey(UpdateSection))
-                return LogInfo.LogErrorMessage(logs, "Unable to find project update information");
-            Dictionary<string, string> pUpdateDict = IniUtil.ParseIniLinesIniStyle(p.MainScript.Sections[UpdateSection].GetLines());
-            if (!pUpdateDict.ContainsKey(BaseUrlKey))
-                return LogInfo.LogErrorMessage(logs, "Unable to find project update base url");
-            string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('\\');
-
-            foreach (Script sc in p.AllScripts)
+            string updateUrl = sc.UpdateUrl;
+            string metaJsonUrl = Path.ChangeExtension(updateUrl, ".meta.json");
+            string metaJsonFile = FileHelper.GetTempFile(".meta.json");
+            string tempScriptFile = FileHelper.GetTempFile(".script");
+            try
             {
-                if (!sc.Sections.ContainsKey(UpdateSection))
-                    continue;
-                Dictionary<string, string> scUpdateDict = IniUtil.ParseIniLinesIniStyle(sc.Sections[UpdateSection].GetLines());
-
-                // Parse ScriptUpdateType
-                if (!scUpdateDict.ContainsKey(ScriptTypeKey))
-                    continue;
-                ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[ScriptTypeKey]);
-                if (scType == ScriptUpdateType.None)
+                // Download .meta.json
+                HttpFileDownloader.Report httpReport = DownloadFile(metaJsonUrl, metaJsonFile);
+                if (!httpReport.Result)
                 {
-                    logs.Add(new LogInfo(LogState.Error, "Invalid script update type"));
-                    continue;
-                }
-                    
-                // Get ScriptUrl
-                if (!scUpdateDict.ContainsKey(ScriptUrlKey))
-                {
-                    logs.Add(new LogInfo(LogState.Error, "Unable to find script server url"));
-                    continue;
-                }
-                string url = scUpdateDict[ScriptUrlKey].TrimStart('\\');
+                    // Failed to send a request, such as network not available
+                    if (httpReport.StatusCode == 0)
+                        return new ResultReport<Script>(false, null, $"Unable to connect to the server");
 
-                // Final Url
-                if (scType == ScriptUpdateType.Project)
-                    url = $"{url}\\{pBaseUrl}";
-
-                string tempFile = FileHelper.GetTempFileNameEx();
-                opts.Model?.SetBuildCommandProgress("Download Progress");
-                try
-                {
-                    (bool result, string errorMsg) = DownloadFile(url, tempFile, opts);
-                    if (result)
-                    { // Success
-                        File.Copy(tempFile, sc.DirectRealPath, true);
-                        Script newScript = p.RefreshScript(sc);
-                        if (newScript != null)
-                            newScripts.Add((newScript, $"Updated script [{sc.Title}] to [{sc.Version}] from [{newScript.Version}]"));
+                    // Try downloading .deleted to check if a script is deleted
+                    string errorMsg;
+                    string deletedUrl = Path.ChangeExtension(updateUrl, ".deleted");
+                    string deletedFile = Path.ChangeExtension(metaJsonFile, ".deleted");
+                    try
+                    {
+                        httpReport = DownloadFile(deletedUrl, deletedFile);
+                        if (httpReport.Result)
+                        { // Successfully received response
+                            if (httpReport.StatusCode == 200) // .deleted file exists in the server
+                                errorMsg = $"[{sc.Title}] was deleted from the server";
+                            else // There is no .deleted file in the server
+                                errorMsg = $"Update is not available for [{sc.Title}]";
+                        }
                         else
-                            newScripts.Add((null, @"Downloaded script is corrupted"));
+                        {
+                            if (httpReport.StatusCode == 0) // Failed to send a request, such as network not available
+                                errorMsg = $"Unable to connect to the server";
+                            else
+                                errorMsg = $"Update is not available for [{sc.Title}]";
+                        }
                     }
-                    else
-                    { // Failure
-                        newScripts.Add((null, errorMsg));
+                    finally
+                    {
+                        if (File.Exists(deletedFile))
+                            File.Delete(deletedFile);
                     }
+
+                    return new ResultReport<Script>(false, null, errorMsg);
                 }
-                finally
+
+                // Check and read .meta.json
+                ResultReport<UpdateJson.Root> jsonReport = UpdateJson.ReadUpdateJson(metaJsonFile);
+                if (!jsonReport.Success)
+                    return new ResultReport<Script>(false, null, jsonReport.Message);
+
+                UpdateJson.Root metaJson = jsonReport.Result;
+                UpdateJson.FileIndex index = metaJson.Index;
+                if (index.Kind != UpdateJson.IndexEntryKind.Script)
+                    return new ResultReport<Script>(false, null, "Update json is not of a script file");
+                UpdateJson.ScriptInfo scInfo = index.ScriptInfo;
+                if (scInfo.Format != UpdateJson.ScriptFormat.IniBased)
+                    return new ResultReport<Script>(false, null, $"Format [{scInfo.Format}] of remote script [{sc.Title}] is not supported");
+                UpdateJson.IniBasedScript iniScInfo = scInfo.IniBased;
+                if (iniScInfo.Version <= sc.ParsedVersion)
+                    return new ResultReport<Script>(false, null, $"You are using the lastest version of script [{sc.Title}]");
+
+                // Download .script file
+                httpReport = DownloadFile(updateUrl, tempScriptFile);
+                if (!httpReport.Result)
+                    return new ResultReport<Script>(false, null, httpReport.ErrorMsg);
+
+                // Verify downloaded .script file with FileMetadata
+                ResultReport verifyReport = index.FileMetadata.VerifyFile(tempScriptFile);
+                if (!verifyReport.Success)
+                    return new ResultReport<Script>(false, null, $"Remote script [{sc.Title}] is corrupted");
+
+                // Check downloaded script's version and check
+                // Must have been checked with the UpdateJson
+                string remoteVerStr = IniReadWriter.ReadKey(tempScriptFile, "Main", "Version");
+                VersionEx remoteVer = VersionEx.Parse(remoteVerStr);
+                if (remoteVer == null)
+                    return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
+                if (!remoteVer.Equals(iniScInfo.Version))
+                    return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
+                if (remoteVer <= sc.ParsedVersion)
+                    return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
+
+                // Check if remote script is valid
+                Script remoteScript = _p.LoadScriptRuntime(tempScriptFile, new LoadScriptRuntimeOptions
                 {
-                    opts.Model?.ResetBuildCommandProgress();
+                    IgnoreMain = false,
+                    AddToProjectTree = false,
+                    OverwriteToProjectTree = false,
+                });
+                if (remoteScript == null)
+                    return new ResultReport<Script>(false, null, $"Remote script [{sc.Title}] is corrupted");
 
-                    if (File.Exists(tempFile))
-                        File.Delete(tempFile);
-                }
+                // Overwrite backup state to new script
+                if (stateBackup != null)
+                {
+                    RestoreScriptState(remoteScript, stateBackup);
+
+                    // Let's be extra careful
+                    remoteScript = _p.RefreshScript(remoteScript);
+                    if (remoteScript == null)
+                        return new ResultReport<Script>(false, null, $"Internal error at {nameof(FileUpdater)}.{nameof(RestoreScriptState)}");
+                }                
+
+                // Copy downloaded remote script into new script
+                File.Copy(tempScriptFile, sc.DirectRealPath, true);
+                Script newScript = _p.RefreshScript(sc);
+
+                // Return updated script instance
+                return new ResultReport<Script>(true, newScript, $"Updated script [{sc.Title}] to [v{sc.RawVersion}] from [v{newScript.RawVersion}]");
             }
-
-            return logs;
-            */
+            finally
+            {
+                if (File.Exists(metaJsonFile))
+                    File.Delete(metaJsonFile);
+                if (File.Exists(tempScriptFile))
+                    File.Delete(tempScriptFile);
+            }
         }
         #endregion
 
-        #region {Backup,Restore}Interface
-
-        private struct InterfaceSectionBackup
+        #region UpdateProject
+        public void UpdateProject()
         {
-            public string SectionName;
-            public List<UIControl> ValueCtrls;
+            // List<LogInfo> logs = new List<LogInfo>();
+            // return logs;
+        }
+        #endregion
 
-            public InterfaceSectionBackup(string sectionName, List<UIControl> valueCtrls)
+        #region Backup & Restore Script
+        private class ScriptStateBackup
+        {
+            public readonly SelectedState Selected;
+            public readonly Dictionary<string, List<UIControl>> IfaceSectionDict;
+
+            public ScriptStateBackup(SelectedState selected, Dictionary<string, List<UIControl>> ifaceSectionDict)
             {
-                SectionName = sectionName;
-                ValueCtrls = valueCtrls;
+                Selected = selected;
+                IfaceSectionDict = ifaceSectionDict ?? new Dictionary<string, List<UIControl>>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
-        private static InterfaceSectionBackup BackupInterface(Script sc)
+        private static ScriptStateBackup BackupScriptState(Script sc)
         {
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
+            Dictionary<string, List<UIControl>> ifaceDict =
+                new Dictionary<string, List<UIControl>>(ifaceSectionNames.Count, StringComparer.OrdinalIgnoreCase);
 
-            // Collect uiCtrls which have value
-            List<UIControl> valueCtrls = new List<UIControl>();
-            foreach (UIControl uiCtrl in uiCtrls)
+            foreach (string ifaceSectionName in ifaceSectionNames)
             {
-                string value = uiCtrl.GetValue(false);
-                if (value != null)
-                    valueCtrls.Add(uiCtrl);
+                // Unable to interface section
+                Debug.Assert(ifaceSectionName != null, $"Internal error at {nameof(BackupScriptState)}");
+
+                // Get uiCtrls of a script
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                if (uiCtrls == null) // Mostly [Interface] section does not exist -> return empty ifaceDict
+                    return new ScriptStateBackup(sc.Selected, ifaceDict);
+
+                // Collect uiCtrls which have value
+                List<UIControl> valueCtrls = new List<UIControl>(uiCtrls.Count);
+                foreach (UIControl uiCtrl in uiCtrls)
+                {
+                    string value = uiCtrl.GetValue(false);
+                    if (value != null)
+                        valueCtrls.Add(uiCtrl);
+                }
+
+                ifaceDict[ifaceSectionName] = valueCtrls;
             }
 
-            return new InterfaceSectionBackup(ifaceSectionName, valueCtrls);
+            return new ScriptStateBackup(sc.Selected, ifaceDict);
         }
 
-        private static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
+        /// <summary>
+        /// To the best-effort to restore script state
+        /// </summary>
+        /// <remarks>
+        /// This method does not refresh the Script instance, it is the responsibility of a callee
+        /// </remarks>
+        private static void RestoreScriptState(Script sc, ScriptStateBackup backup)
         {
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
 
-            if (!ifaceSectionName.Equals(backup.SectionName, StringComparison.OrdinalIgnoreCase))
-                return false;
+            // Restore selected state
+            IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.Main, Script.Const.Selected, backup.Selected.ToString());
 
-            List<UIControl> bakCtrls = backup.ValueCtrls;
-            List<UIControl> newCtrls = new List<UIControl>(uiCtrls.Count);
-            foreach (UIControl uiCtrl in uiCtrls)
+            // Restore interfaces
+            List<UIControl> newCtrls = new List<UIControl>();
+            foreach (var kv in backup.IfaceSectionDict)
             {
-                // Get old uiCtrl, equaility identified by Key and Type.
-                UIControl bakCtrl = bakCtrls.FirstOrDefault(bak =>
-                    bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase) && bak.Type == uiCtrl.Type);
-                if (bakCtrl == null)
+                string ifaceSectionName = kv.Key;
+                List<UIControl> bakCtrls = kv.Value;
+
+                if (!ifaceSectionNames.Contains(ifaceSectionName))
                     continue;
 
-                // Get old value
-                string bakValue = bakCtrl.GetValue(false);
-                Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                foreach (UIControl uiCtrl in uiCtrls)
+                {
+                    // Get old uiCtrl, equality identified by Type and Key.
+                    UIControl bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
+                    if (bakCtrl == null)
+                        continue;
 
-                // Add to newCtrls only if apply was successful
-                if (uiCtrl.SetValue(bakValue, false, out _))
-                    newCtrls.Add(uiCtrl);
+                    // Get old value
+                    string bakValue = bakCtrl.GetValue(false);
+                    Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+
+                    // Add to newCtrls only if apply was successful
+                    if (uiCtrl.SetValue(bakValue, false, out _))
+                        newCtrls.Add(uiCtrl);
+                }
             }
 
             // Write to file
             UIControl.Update(newCtrls);
-            sc = sc.Project.RefreshScript(sc);
-            return true;
         }
         #endregion
 
         #region Utility
-        private static ScriptUpdateType ParseScriptUpdateType(string str)
+        private HttpFileDownloader.Report DownloadFile(string url, string destFile)
         {
-            if (str.Equals("Project"))
-                return ScriptUpdateType.Project;
-            if (str.Equals("Standalone"))
-                return ScriptUpdateType.Standalone;
-            return ScriptUpdateType.None;
-        }
-
-        private static (bool, string) DownloadFile(string url, string destFile, FileUpdaterOptions opts)
-        {
-            Uri uri = new Uri(url);
-
-            bool result = true;
-            string errorMsg = null;
-            Stopwatch watch = Stopwatch.StartNew();
-            using (WebClient client = new WebClient())
+            try
             {
-                client.Headers.Add("User-Agent", opts.UserAgent ?? Engine.DefaultUserAgent);
-                if (opts.Model != null)
-                {
-                    client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>
-                    {
-                        opts.Model.BuildCommandProgressValue = e.ProgressPercentage;
+                Task<HttpFileDownloader.Report> task = _downloader.Download(url, destFile);
+                task.Wait();
 
-                        TimeSpan t = watch.Elapsed;
-                        double totalSec = t.TotalSeconds;
-                        string downloaded = NumberHelper.ByteSizeToSIUnit(e.BytesReceived, 1);
-                        string total = NumberHelper.ByteSizeToSIUnit(e.TotalBytesToReceive, 1);
-                        if (Math.Abs(totalSec) < double.Epsilon)
-                        {
-                            opts.Model.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
-                        }
-                        else
-                        {
-                            long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
-                            string speedStr = NumberHelper.ByteSizeToSIUnit((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
-
-                            // ReSharper disable once PossibleLossOfFraction
-                            TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);
-                            int hour = (int)r.TotalHours;
-                            int min = r.Minutes;
-                            int sec = r.Seconds;
-                            opts.Model.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaining Time : {hour}h {min}m {sec}s";
-                        }
-                    };
-                }
-
-                AutoResetEvent resetEvent = new AutoResetEvent(false);
-                client.DownloadFileCompleted += (object sender, AsyncCompletedEventArgs e) =>
-                {
-                    // Check if error occured
-                    if (e.Cancelled || e.Error != null)
-                    {
-                        result = false;
-                        if (e.Error is WebException webEx)
-                            errorMsg = $"[{webEx.Status}] {webEx.Message}";
-
-                        if (File.Exists(destFile))
-                            File.Delete(destFile);
-                    }
-
-                    resetEvent.Set();
-                };
-
-                client.DownloadFileAsync(uri, destFile);
-
-                resetEvent.WaitOne();
+                return task.Result;
             }
-            watch.Stop();
-
-            return (result, errorMsg);
+            catch (Exception e)
+            {
+                return new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+            }
         }
         #endregion
-    }
-
-    #region FileUpdaterOptions
-    public struct FileUpdaterOptions
-    {
-        public string UserAgent { get; set; }
-        public MainViewModel Model { get; set; }
     }
     #endregion
 }

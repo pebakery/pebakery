@@ -1,0 +1,38 @@
+[Main]
+Title=PreserveInterface
+Description=Standalone PreserveInterface
+Author=ied206
+Version=1.0
+Selected=True
+Mandatory=False
+NoWarning=False
+Level=7
+InterfaceList=Interface,SecondInterface,ThirdInterface
+
+[ScriptUpdate]
+UpdateType=Standalone
+Url=http://localhost:8380/Updater/Standalone/PreserveInterface_r2.script
+
+[Interface]
+CheckBox02=CheckBox02,1,3,262,147,200,18,False
+ComboBox02=C,1,4,262,120,150,22,A,B,C
+bvl_Top="Not Updated",1,12,254,101,228,70,8,Normal
+ComboBox01=A,1,4,42,66,150,21,A,B,C
+CheckBox01=CheckBox01,1,3,42,98,173,18,False
+Button01=Button01,1,8,262,46,80,25,TestSection,0,True
+
+[SecondInterface]
+TextLabel01="Second Interface",1,1,10,10,150,16,8,Normal
+RadioButton01=A,1,11,10,30,120,20,True
+RadioButton02=B,1,11,10,50,120,20,False
+RadioButton03=C,1,11,10,70,120,20,False
+
+[ThirdInterface]
+TextLabel01="Third Interface",1,1,10,10,150,16,8,Normal
+RadioGroup01=RadioGroup01,1,14,10,30,150,60,A,B,C,1
+
+[Process]
+Run,%ScriptFile%,TestSection
+
+[TestSection]
+Echo,"Script is not updated to v1.2"

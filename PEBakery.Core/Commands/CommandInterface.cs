@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,11 +25,9 @@
     not derived from or based on this program. 
 */
 
-#define USE_VALUE_OF_FILE
-
 using Ookii.Dialogs.Wpf;
-using PEBakery.Helper;
 using PEBakery.Core.WpfControls;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -83,7 +81,7 @@ namespace PEBakery.Core.Commands
                 sc = s.Project.RefreshScript(sc, s);
                 if (sc == null)
                 {
-                    logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                    logs.Add(new LogInfo(LogState.CriticalError, $"Internal Logic Error at CommandInterface.{nameof(Visible)}"));
                     return logs;
                 }
 
@@ -156,12 +154,12 @@ namespace PEBakery.Core.Commands
             sc = s.Project.RefreshScript(sc, s);
             if (sc == null)
             {
-                logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                logs.Add(new LogInfo(LogState.CriticalError, $"Internal Logic Error at CommandInterface.{nameof(VisibleOp)}"));
                 return logs;
             }
 
             // Render script
-            if (s.MainViewModel.CurMainTree.Script.Equals(sc))
+            if (s.MainViewModel.CurMainTree != null && s.MainViewModel.CurMainTree.Script.Equals(sc))
             {
                 s.MainViewModel.CurMainTree.Script = sc;
                 s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
@@ -177,7 +175,7 @@ namespace PEBakery.Core.Commands
             {
                 #region General
                 case InterfaceElement.Text:
-                    destStr = uiCtrl.Text;
+                    destStr = StringEscaper.Unescape(uiCtrl.Text);
                     break;
                 case InterfaceElement.Visible:
                     destStr = uiCtrl.Visibility.ToString();
@@ -200,7 +198,7 @@ namespace PEBakery.Core.Commands
                         return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
                     break;
                 case InterfaceElement.ToolTip:
-                    destStr = uiCtrl.Info.ToolTip ?? string.Empty;
+                    destStr = uiCtrl.Info.ToolTip == null ? string.Empty : StringEscaper.Unescape(uiCtrl.Info.ToolTip);
                     break;
                 #endregion
                 #region TextLabel, Bevel
@@ -572,6 +570,17 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        private static readonly Dictionary<UIControlType, InterfaceElement[]> WriteNeedVarUpdateDict = new Dictionary<UIControlType, InterfaceElement[]>()
+        {
+            [UIControlType.TextBox] = new InterfaceElement[] { InterfaceElement.Value },
+            [UIControlType.NumberBox] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.NumberMin, InterfaceElement.NumberMax, },
+            [UIControlType.CheckBox] = new InterfaceElement[] { InterfaceElement.Value },
+            [UIControlType.ComboBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value, InterfaceElement.Items },
+            [UIControlType.RadioButton] = new InterfaceElement[] { InterfaceElement.Value },
+            [UIControlType.FileBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
+            [UIControlType.RadioGroup] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.Items },
+        };
+
         // ReSharper disable once UnusedMethodReturnValue.Local
         private static (bool, List<LogInfo>) InternalWriteInterface(UIControl uiCtrl, InterfaceElement element, string delim, string finalValue)
         {
@@ -587,7 +596,7 @@ namespace PEBakery.Core.Commands
             {
                 #region General
                 case InterfaceElement.Text:
-                    uiCtrl.Text = finalValue;
+                    uiCtrl.Text = StringEscaper.DoubleQuote(finalValue);
                     break;
                 case InterfaceElement.Visible:
                     {
@@ -641,7 +650,7 @@ namespace PEBakery.Core.Commands
                         bool success = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
                         logs.AddRange(varLogs);
 
-                        if (success == false && varLogs.Count == 0)
+                        if (!success && varLogs.Count == 0)
                             return ReturnErrorLog($"Writing [{element}] to [{uiCtrl.Type}] is not supported");
                     }
                     break;
@@ -815,8 +824,8 @@ namespace PEBakery.Core.Commands
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0)
                                         uiCtrl.Text = string.Empty;
-                                    else if (!newItems.Contains(uiCtrl.Text, StringComparer.OrdinalIgnoreCase))
-                                        uiCtrl.Text = subInfo.Items[0];
+                                    else if (!newItems.Contains(StringEscaper.Unescape(uiCtrl.Text), StringComparer.OrdinalIgnoreCase))
+                                        uiCtrl.Text = newItems[0];
                                 }
                                 break;
                             case UIControlType.RadioGroup:
@@ -908,9 +917,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -922,9 +929,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -936,9 +941,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.Button:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
 
                                     if (newValue == null)
                                         return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
@@ -948,9 +951,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -962,9 +963,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1025,17 +1024,28 @@ namespace PEBakery.Core.Commands
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
 
             // Write value to uiCtrl
-            (_, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, delim, finalValue);
+            (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, delim, finalValue);
             logs.AddRange(resultLogs);
 
-            // Update uiCtrl into file
-            uiCtrl.Update();
-
-            // Re-render script
-            if (s.MainViewModel.CurMainTree != null)
+            if (success)
             {
-                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
-                    s.MainViewModel.DisplayScript(cmd.Section.Script);
+                // Update uiCtrl into file
+                uiCtrl.Update();
+
+                // Also update local variables
+                if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(info.Element))
+                {
+                    string readValue = uiCtrl.GetValue(false);
+                    if (readValue != null)
+                        logs.AddRange(Variables.SetVariable(s, $"%{uiCtrl.Key}%", readValue, false, false));
+                }
+
+                // Re-render script
+                if (s.MainViewModel.CurMainTree != null)
+                {
+                    if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+                        s.MainViewModel.DisplayScript(cmd.Section.Script);
+                }
             }
 
             return logs;
@@ -1063,7 +1073,7 @@ namespace PEBakery.Core.Commands
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            var targets = new List<(UIControl, InterfaceElement, string, string, CodeCommand)>(infoOp.Cmds.Count);
+            var targets = new List<(UIControl, InterfaceElement, string Delim, string Value, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
                 CodeInfo_WriteInterface info = subCmd.Info.Cast<CodeInfo_WriteInterface>();
@@ -1084,7 +1094,7 @@ namespace PEBakery.Core.Commands
                 targets.Add((uiCtrl, info.Element, delim, finalValue, subCmd));
             }
 
-            List<UIControl> updatedUICtrls = new List<UIControl>(targets.Count);
+            List<(UIControl UICtrl, InterfaceElement Element)> updatedCtrls = new List<(UIControl, InterfaceElement)>(targets.Count);
             foreach ((UIControl uiCtrl, InterfaceElement element, string delim, string finalValue, CodeCommand subCmd) in targets)
             {
                 (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, element, delim, finalValue);
@@ -1092,20 +1102,34 @@ namespace PEBakery.Core.Commands
                 logs.AddRange(resultLogs);
 
                 if (success)
-                    updatedUICtrls.Add(uiCtrl);
+                    updatedCtrls.Add((uiCtrl, element));
             }
 
-            // Update uiCtrl into file
-            UIControl.Update(updatedUICtrls);
+            if (0 < updatedCtrls.Count)
+            {
+                // Update uiCtrl into file
+                UIControl.Update(updatedCtrls.Select(x => x.UICtrl).ToArray());
+
+                // Also update local variables
+                foreach ((UIControl uiCtrl, InterfaceElement element) in updatedCtrls)
+                {
+                    if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(element))
+                    {
+                        string readValue = uiCtrl.GetValue(false);
+                        if (readValue != null)
+                            logs.AddRange(Variables.SetVariable(s, $"%{uiCtrl.Key}%", readValue, false, false));
+                    }
+                }
+            }
 
             // Render Script again
-            if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+            if (s.MainViewModel.CurMainTree != null && s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
                 s.MainViewModel.DisplayScript(cmd.Section.Script);
 
-            if (1 < updatedUICtrls.Count)
-                logs.Add(new LogInfo(LogState.Success, $"Wrote [{updatedUICtrls.Count}] values from section [{section}] of [{scriptFile}]"));
+            if (1 < updatedCtrls.Count)
+                logs.Add(new LogInfo(LogState.Success, $"Wrote [{updatedCtrls.Count}] values from section [{section}] of [{scriptFile}]"));
             else
-                logs.Add(new LogInfo(LogState.Success, $"Wrote [{updatedUICtrls.Count}] value from section [{section}] of [{scriptFile}]"));
+                logs.Add(new LogInfo(LogState.Success, $"Wrote [{updatedCtrls.Count}] value from section [{section}] of [{scriptFile}]"));
             return logs;
         }
 
@@ -1139,8 +1163,8 @@ namespace PEBakery.Core.Commands
                     throw new InternalException("Internal Logic Error at Message");
             }
 
-            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
-            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+            TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+            s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
 
             if (info.Timeout == null)
             {
@@ -1155,13 +1179,13 @@ namespace PEBakery.Core.Commands
                 if (timeout <= 0)
                     return LogInfo.LogErrorMessage(logs, $"Timeout must be a positive integer [{timeoutStr}]");
 
-                Application.Current?.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     CustomMessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
                 });
             }
 
-            s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
+            s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;
 
             string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             string firstLine = message;
@@ -1315,6 +1339,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> AddInterface(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
+            EngineLocalState ls = s.PeekLocalState();
 
             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 
@@ -1337,10 +1362,15 @@ namespace PEBakery.Core.Commands
                 List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
                 if (0 < subLogs.Count)
                 {
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
-                    logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, ls.Depth));
+                    logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, ls.Depth + 1));
                     s.Logger.BuildWrite(s, subLogs);
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
+                    string importVarCount;
+                    if (1 < subLogs.Count)
+                        importVarCount = $"Imported {subLogs.Count} variables";
+                    else
+                        importVarCount = "Imported 1 variable";
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, importVarCount, cmd, ls.Depth));
                 }
             }
 

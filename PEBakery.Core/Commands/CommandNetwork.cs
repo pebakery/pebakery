@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,16 +25,13 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
 using System.Threading;
-using PEBakery.Helper;
+using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
@@ -48,7 +45,15 @@ namespace PEBakery.Core.Commands
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
-            const string destVar = @"%StatusCode%";
+            int timeOut = 10;
+            if (info.TimeOut != null)
+            {
+                string timeOutStr = StringEscaper.Preprocess(s, info.TimeOut);
+                if (!NumberHelper.ParseInt32(timeOutStr, out timeOut))
+                    return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
+                if (timeOut <= 0)
+                    return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
+            }
 
             // Check PathSecurity in destPath
             if (!StringEscaper.PathSecurityCheck(destPath, out string pathErrorMsg))
@@ -79,37 +84,92 @@ namespace PEBakery.Core.Commands
                 destFile = destPath;
             }
 
+            string destFileExt = Path.GetExtension(destFile);
+
             s.MainViewModel.SetBuildCommandProgress("WebGet Progress");
             try
             {
                 if (info.HashType == HashHelper.HashType.None)
                 { // Standard WebGet
-                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, destFile);
-                    if (result)
+                    string tempPath = FileHelper.GetTempFile(destFileExt);
+
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent);
+                    HttpFileDownloader.Report report;
+                    try
                     {
-                        logs.Add(new LogInfo(LogState.Success, $"[{destPath}] downloaded from [{url}]"));
+                        CancellationTokenSource ct = new CancellationTokenSource();
+                        s.CancelWebGet = ct;
+
+                        Task<HttpFileDownloader.Report> task = downloader.Download(url, tempPath, ct.Token);
+                        task.Wait(ct.Token);
+
+                        report = task.Result;
+                    }
+                    catch (Exception e)
+                    {
+                        report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+                    }
+                    finally
+                    {
+                        s.CancelWebGet = null;
+                    }
+
+                    int statusCode = report.StatusCode;
+                    if (report.Result)
+                    {
+                        FileHelper.FileReplaceEx(tempPath, destFile);
+                        logs.Add(new LogInfo(LogState.Success, $"[{destFile}] downloaded from [{url}]"));
                     }
                     else
                     {
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
                         logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
-                        logs.Add(new LogInfo(LogState.Info, errorMsg));
+                        logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP status code [{statusCode}]"));
                     }
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
-                    logs.AddRange(varLogs);
+                    // PEBakery extension -> Report exit code via #r
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.ReturnValue = statusCode.ToString();
+                        if (statusCode < 100)
+                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                    }
                 }
                 else
                 { // Validate downloaded file with hash
                     Debug.Assert(info.HashDigest != null);
 
-                    string tempPath = Path.GetTempFileName();
-                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, tempPath);
-                    if (result)
+                    string tempPath = FileHelper.GetTempFile(destFileExt);
+
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent);
+                    HttpFileDownloader.Report report;
+                    try
+                    {
+                        CancellationTokenSource ct = new CancellationTokenSource();
+                        s.CancelWebGet = ct;
+
+                        Task<HttpFileDownloader.Report> task = downloader.Download(url, tempPath, ct.Token);
+                        task.Wait(ct.Token);
+
+                        report = task.Result;
+                    }
+                    catch (Exception e)
+                    {
+                        report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+                    }
+                    finally
+                    {
+                        s.CancelWebGet = null;
+                    }
+
+                    int statusCode = report.StatusCode;
+                    if (report.Result)
                     { // Success -> Check hash
                         string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
                         if (hashDigest.Length != 2 * HashHelper.GetHashByteLen(info.HashType))
@@ -124,12 +184,12 @@ namespace PEBakery.Core.Commands
 
                         if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                         {
-                            File.Move(tempPath, destFile);
-                            logs.Add(new LogInfo(LogState.Success, $"[{destPath}] downloaded from [{url}] and verified "));
+                            FileHelper.FileReplaceEx(tempPath, destFile);
+                            logs.Add(new LogInfo(LogState.Success, $"[{destFile}] downloaded from [{url}] and verified "));
                         }
                         else
                         {
-                            statusCode = 1;
+                            statusCode = 1; // 1 means hash mismatch
                             logs.Add(new LogInfo(LogState.Error, $"Downloaded file from [{url}] was corrupted"));
                         }
                     }
@@ -137,15 +197,22 @@ namespace PEBakery.Core.Commands
                     { // Failure -> Log error message
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
                         logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
-                        logs.Add(new LogInfo(LogState.Info, errorMsg));
+                        logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else
                             logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
                     }
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
-                    logs.AddRange(varLogs);
+                    // PEBakery extension -> Report exit code via #r
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.ReturnValue = statusCode.ToString();
+                        if (statusCode < 100)
+                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                    }
                 }
             }
             finally
@@ -155,84 +222,5 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
-
-        #region Utility
-        /// <summary>
-        /// Return true if success
-        /// </summary>
-        /// <returns></returns>
-        private static (bool, int, string) DownloadFile(EngineState s, string url, string destPath)
-        {
-            Uri uri = new Uri(url);
-
-            bool result = true;
-            int statusCode = 200;
-            string errorMsg = null;
-            Stopwatch watch = Stopwatch.StartNew();
-            using (WebClient client = new WebClient())
-            {
-                string userAgent = s.CustomUserAgent ?? Engine.DefaultUserAgent;
-                client.Headers.Add("User-Agent", userAgent);
-
-                client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>
-                {
-                    s.MainViewModel.BuildCommandProgressValue = e.ProgressPercentage;
-
-                    TimeSpan t = watch.Elapsed;
-                    double totalSec = t.TotalSeconds;
-                    string downloaded = NumberHelper.ByteSizeToSIUnit(e.BytesReceived, 1);
-                    string total = NumberHelper.ByteSizeToSIUnit(e.TotalBytesToReceive, 1);
-                    if (Math.Abs(totalSec) < double.Epsilon)
-                    {
-                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
-                    }
-                    else
-                    {
-                        long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
-                        string speedStr = NumberHelper.ByteSizeToSIUnit((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
-
-                        // ReSharper disable once PossibleLossOfFraction
-                        TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);
-                        int hour = (int)r.TotalHours;
-                        int min = r.Minutes;
-                        int sec = r.Seconds;
-                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaining Time : {hour}h {min}m {sec}s";
-                    }
-                };
-
-                AutoResetEvent resetEvent = new AutoResetEvent(false);
-                client.DownloadFileCompleted += (object sender, AsyncCompletedEventArgs e) =>
-                {
-                    s.RunningWebClient = null;
-
-                    // Check if error occured
-                    if (e.Cancelled || e.Error != null)
-                    {
-                        result = false;
-                        statusCode = 0; // Unknown Error
-                        if (e.Error is WebException webEx)
-                        {
-                            errorMsg = $"[{webEx.Status}] {webEx.Message}";
-                            if (webEx.Response is HttpWebResponse res)
-                                statusCode = (int)res.StatusCode;
-                        }
-
-                        if (File.Exists(destPath))
-                            File.Delete(destPath);
-                    }
-
-                    resetEvent.Set();
-                };
-
-                s.RunningWebClient = client;
-                client.DownloadFileAsync(uri, destPath);
-
-                resetEvent.WaitOne();
-            }
-            watch.Stop();
-
-            return (result, statusCode, errorMsg);
-        }
-        #endregion
     }
 }

@@ -38,7 +38,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void StartProgressDialog(
             IntPtr hwndParent,
             [MarshalAs(UnmanagedType.IUnknown)]
-			object punkEnableModless,
+            object punkEnableModless,
             ProgressDialogFlags dwFlags,
             IntPtr pvReserved
             );
@@ -66,9 +66,9 @@ namespace Ookii.Dialogs.Wpf.Interop
         void SetLine(
             uint dwLineNum,
             [MarshalAs(UnmanagedType.LPWStr)]
-			string pwzString,
+            string pwzString,
             [MarshalAs(UnmanagedType.VariantBool)]
-			bool fCompactPath,
+            bool fCompactPath,
             IntPtr pvReserved
             );
 

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -30,7 +30,6 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -68,6 +67,7 @@ namespace PEBakery.Core
             public bool ShowLogAfterBuild;
             public bool StopBuildOnError;
             public bool EnableLongFilePath;
+            public bool EnableUpdateServerManagement;
             public bool UseCustomUserAgent;
             public string CustomUserAgent;
 
@@ -82,11 +82,10 @@ namespace PEBakery.Core
                 ShowLogAfterBuild = true;
                 StopBuildOnError = true;
                 EnableLongFilePath = false;
+                EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
-                // Default custom User-Agent is set to Edge's on Windows 10 v1809
-                CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
-                // Or Firefox 64?
-                // Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0
+                // Default custom User-Agent is set to Edge's on Windows 10 v1903
+                CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18362";
             }
         }
 
@@ -127,7 +126,7 @@ namespace PEBakery.Core
                 UseCustomEditor = false;
                 CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
                 // Every Windows PC has Consolas pre-installed.
-                MonospacedFont = new FontHelper.FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
+                MonospacedFont = FontHelper.FontInfo.DefaultMonospaced;
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
                 InterfaceSize = InterfaceSize.Adaptive;
@@ -136,10 +135,12 @@ namespace PEBakery.Core
 
         public enum ThemeType
         {
-            Black = 0,
+            Dark = 0,
+            Darker = 4,
             Red = 1,
             Green = 2,
-            Blue = 3,
+            Ocean = 3,
+            Marine = 5,
             Custom = 255,
         }
 
@@ -152,6 +153,7 @@ namespace PEBakery.Core
             // Custom
             public Color CustomTopPanelBackground;
             public Color CustomTopPanelForeground;
+            public Color CustomTopPanelReportIssue;
             public Color CustomTreePanelBackground;
             public Color CustomTreePanelForeground;
             public Color CustomTreePanelHighlight;
@@ -167,10 +169,11 @@ namespace PEBakery.Core
 
             public void Default()
             {
-                ThemeType = ThemeType.Black;
+                ThemeType = ThemeType.Dark;
                 // Apply Classic Theme to Custom Properties
                 CustomTopPanelBackground = Colors.LightBlue;
                 CustomTopPanelForeground = Colors.Black;
+                CustomTopPanelReportIssue = Colors.Red;
                 CustomTreePanelBackground = Colors.LightGreen;
                 CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
@@ -187,14 +190,17 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Colors.Black;
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                            return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
-                            return Colors.DarkRed;
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Colors.DarkGreen;
-                        case ThemeType.Blue:
-                            return Colors.DarkBlue;
+                            return Color.FromRgb(42, 110, 82);
+                        case ThemeType.Ocean:
+                            return Color.FromRgb(47, 82, 108);
+                        case ThemeType.Marine:
+                            return Color.FromRgb(44, 110, 151);
                         case ThemeType.Custom:
                             return CustomTopPanelBackground;
                         default:
@@ -208,16 +214,35 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
                         case ThemeType.Red:
-                            return Colors.White;
                         case ThemeType.Green:
-                            return Colors.White;
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.White;
                         case ThemeType.Custom:
                             return CustomTopPanelForeground;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color TopPanelReportIssue
+            {
+                get
+                {
+                    switch (ThemeType)
+                    {
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                        case ThemeType.Red:
+                        case ThemeType.Green:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Colors.Orange;
+                        case ThemeType.Custom:
+                            return CustomTopPanelReportIssue;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -229,14 +254,15 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(204, 204, 204);
+                        case ThemeType.Dark:
+                            return Color.FromRgb(215, 215, 215);
+                        case ThemeType.Darker:
+                            return Color.FromRgb(66, 66, 66);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 211, 94);
                         case ThemeType.Green:
-                            return Color.FromRgb(180, 255, 180);
-                        case ThemeType.Blue:
-                            return Color.FromRgb(180, 180, 255);
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomTreePanelBackground;
                         default:
@@ -250,10 +276,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                            return Colors.Black;
+                        case ThemeType.Darker:
+                            return Color.FromRgb(215, 215, 215);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.Black;
                         case ThemeType.Custom:
                             return CustomTreePanelForeground;
@@ -268,14 +298,16 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Colors.Red;
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                            return Color.FromRgb(230, 0, 0);
                         case ThemeType.Red:
-                            return Colors.DarkRed;
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Colors.DarkGreen;
-                        case ThemeType.Blue:
-                            return Colors.DarkBlue;
+                            return Color.FromRgb(42, 110, 82);
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Color.FromRgb(47, 82, 108);
                         case ThemeType.Custom:
                             return CustomTreePanelHighlight;
                         default:
@@ -289,14 +321,15 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                            return Color.FromRgb(241, 241, 241);
+                        case ThemeType.Darker:
+                            return Color.FromRgb(83, 83, 83);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 255, 192);
                         case ThemeType.Green:
-                            return Color.FromRgb(230, 255, 230);
-                        case ThemeType.Blue:
-                            return Color.FromRgb(230, 230, 255);
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomScriptPanelBackground;
                         default:
@@ -310,10 +343,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                            return Colors.Black;
+                        case ThemeType.Darker:
+                            return Colors.White;
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.Black;
                         case ThemeType.Custom:
                             return CustomScriptPanelForeground;
@@ -328,14 +365,17 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                            return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 232, 208);
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Color.FromRgb(210, 255, 210);
-                        case ThemeType.Blue:
-                            return Color.FromRgb(210, 210, 255);
+                            return Color.FromRgb(42, 110, 82);
+                        case ThemeType.Ocean:
+                            return Color.FromRgb(47, 82, 108);
+                        case ThemeType.Marine:
+                            return Color.FromRgb(44, 110, 151);
                         case ThemeType.Custom:
                             return CustomStatusBarBackground;
                         default:
@@ -349,11 +389,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                            return Color.FromRgb(240, 240, 240);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
-                            return Colors.Black;
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Colors.White;
                         case ThemeType.Custom:
                             return CustomStatusBarForeground;
                         default:
@@ -408,6 +451,60 @@ namespace PEBakery.Core
                 MinifyHtmlExport = true;
             }
         }
+
+        // For LogWindow, this is not shown to SettingWindow. 
+        public class LogViewerSetting
+        {
+            public const string SectionName = "LogViewer";
+
+            public int LogWindowWidth;
+            public int LogWindowHeight;
+            public bool BuildFullLogTimeVisible;
+            public int BuildFullLogTimeWidth;
+            public bool BuildFullLogScriptOriginVisible;
+            public int BuildFullLogScriptOriginWidth;
+            public bool BuildFullLogDepthVisible;
+            public int BuildFullLogDepthWidth;
+            public bool BuildFullLogStateVisible;
+            public int BuildFullLogStateWidth;
+            public bool BuildFullLogFlagsVisible;
+            public int BuildFullLogFlagsWidth;
+            public bool BuildFullLogMessageVisible;
+            public int BuildFullLogMessageWidth;
+            public bool BuildFullLogRawCodeVisible;
+            public int BuildFullLogRawCodeWidth;
+            public bool BuildFullLogLineNumberVisible;
+            public int BuildFullLogLineNumberWidth;
+
+            public const int MinColumnWidth = 35;
+
+            public LogViewerSetting()
+            {
+                Default();
+            }
+
+            public void Default()
+            {
+                LogWindowWidth = 900;
+                LogWindowHeight = 640;
+                BuildFullLogTimeVisible = true;
+                BuildFullLogTimeWidth = 135;
+                BuildFullLogScriptOriginVisible = false;
+                BuildFullLogScriptOriginWidth = 135;
+                BuildFullLogDepthVisible = true;
+                BuildFullLogDepthWidth = 35;
+                BuildFullLogStateVisible = true;
+                BuildFullLogStateWidth = 55;
+                BuildFullLogFlagsVisible = true;
+                BuildFullLogFlagsWidth = 35;
+                BuildFullLogMessageVisible = true;
+                BuildFullLogMessageWidth = 340;
+                BuildFullLogRawCodeVisible = true;
+                BuildFullLogRawCodeWidth = 175;
+                BuildFullLogLineNumberVisible = true;
+                BuildFullLogLineNumberWidth = 40;
+            }
+        }
         #endregion
 
         #region Fields and Properties
@@ -419,6 +516,7 @@ namespace PEBakery.Core
         public ThemeSetting Theme { get; }
         public ScriptSetting Script { get; }
         public LogSetting Log { get; }
+        public LogViewerSetting LogViewer { get; }
         #endregion
 
         #region Constructor
@@ -432,6 +530,7 @@ namespace PEBakery.Core
             Theme = new ThemeSetting();
             Script = new ScriptSetting();
             Log = new LogSetting();
+            LogViewer = new LogViewerSetting();
 
             ReadFromFile();
         }
@@ -446,7 +545,6 @@ namespace PEBakery.Core
             AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !General.EnableLongFilePath);
 
             // Static
-            Engine.StopBuildOnError = General.StopBuildOnError;
             Logger.DebugLevel = Log.DebugLevel;
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
 
@@ -455,10 +553,12 @@ namespace PEBakery.Core
             Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
+            Global.MainViewModel.EnableUpdateServerManagement = General.EnableUpdateServerManagement;
 
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
             Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
+            Global.MainViewModel.TopPanelReportIssueColor = Theme.TopPanelReportIssue;
             Global.MainViewModel.TreePanelBackground = Theme.TreePanelBackground;
             Global.MainViewModel.TreePanelForeground = Theme.TreePanelForeground;
             Global.MainViewModel.TreePanelHighlight = Theme.TreePanelHighlight;
@@ -477,6 +577,7 @@ namespace PEBakery.Core
             Interface.Default();
             Script.Default();
             Log.Default();
+            LogViewer.Default();
         }
         #endregion
 
@@ -498,6 +599,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent)), // String
                 // Interface
@@ -510,11 +612,12 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize)), // FontSize
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (70 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Integer (0 - 2)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Enum (InterfaceSize)
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight)), // Color
@@ -526,9 +629,28 @@ namespace PEBakery.Core
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache)), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck)), // Boolean
                 // Log
-                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Integer (0 - 2)
+                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // String (Enum)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
+                // LogViewer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth)), // Integer (600 -)
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight)), // Integer (480 -)
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth)), // Integer
             };
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, Dictionary<string, string>> keyDict = keys
@@ -543,7 +665,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> projectDict = keyDict[ProjectSetting.SectionName];
 
-                Project.DefaultProject = DictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
+                Project.DefaultProject = SettingDictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
             }
 
             // General
@@ -551,12 +673,13 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> generalDict = keyDict[GeneralSetting.SectionName];
 
-                General.OptimizeCode = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
-                General.ShowLogAfterBuild = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
-                General.StopBuildOnError = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
-                General.EnableLongFilePath = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
-                General.UseCustomUserAgent = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
-                General.CustomUserAgent = DictParser.ParseString(generalDict, nameof(General.CustomUserAgent), General.CustomUserAgent);
+                General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
+                General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
+                General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
+                General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
+                General.EnableUpdateServerManagement = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement);
+                General.UseCustomUserAgent = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
+                General.CustomUserAgent = SettingDictParser.ParseString(generalDict, nameof(General.CustomUserAgent), General.CustomUserAgent);
             }
 
             // Interface
@@ -571,16 +694,16 @@ namespace PEBakery.Core
                     monoFontFamily = new FontFamily(ifaceDict[nameof(Interface.MonospacedFontFamily)]);
                 if (ifaceDict[nameof(Interface.MonospacedFontWeight)] != null)
                     monoFontWeight = FontHelper.ParseFontWeight(ifaceDict[nameof(Interface.MonospacedFontWeight)]);
-                int monoFontSize = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, -1);
+                int monoFontSize = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, null);
                 Interface.MonospacedFont = new FontHelper.FontInfo(monoFontFamily, monoFontWeight, monoFontSize);
 
-                Interface.UseCustomTitle = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle);
-                Interface.CustomTitle = DictParser.ParseString(ifaceDict, nameof(Interface.CustomTitle), Interface.CustomTitle);
-                Interface.UseCustomEditor = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
-                Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
-                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
-                Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
-                Interface.InterfaceSize = (InterfaceSize)DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), (int)Interface.InterfaceSize, 0, Enum.GetValues(typeof(InterfaceSize)).Length - 1);
+                Interface.UseCustomTitle = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle);
+                Interface.CustomTitle = SettingDictParser.ParseString(ifaceDict, nameof(Interface.CustomTitle), Interface.CustomTitle);
+                Interface.UseCustomEditor = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
+                Interface.CustomEditorPath = SettingDictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
+                Interface.ScaleFactor = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
+                Interface.DisplayShellExecuteConOut = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
+                Interface.InterfaceSize = SettingDictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
             }
 
             // Theme
@@ -588,16 +711,17 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                Theme.ThemeType = (ThemeType)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), (int)Theme.ThemeType, 0, Enum.GetValues(typeof(ThemeType)).Length - 1);
-                Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
-                Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
-                Theme.CustomTreePanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
-                Theme.CustomTreePanelHighlight = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
-                Theme.CustomScriptPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
-                Theme.CustomScriptPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
-                Theme.CustomStatusBarBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
-                Theme.CustomStatusBarForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
+                Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
+                Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
+                Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
+                Theme.CustomTopPanelReportIssue = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
+                Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
+                Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
+                Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
+                Theme.CustomScriptPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
+                Theme.CustomScriptPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
+                Theme.CustomStatusBarBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
+                Theme.CustomStatusBarForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
             }
 
             // Script
@@ -605,8 +729,8 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ScriptSetting.SectionName];
 
-                Script.EnableCache = DictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
-                Script.AutoSyntaxCheck = DictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
+                Script.EnableCache = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
+                Script.AutoSyntaxCheck = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
             }
 
             // Log
@@ -614,9 +738,34 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> logDict = keyDict[LogSetting.SectionName];
 
-                Log.DebugLevel = (LogDebugLevel)DictParser.ParseInteger(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), (int)Log.DebugLevel, 0, Enum.GetValues(typeof(LogDebugLevel)).Length - 1);
-                Log.DeferredLogging = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
-                Log.MinifyHtmlExport = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
+                Log.DebugLevel = SettingDictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
+                Log.DeferredLogging = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
+                Log.MinifyHtmlExport = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
+            }
+
+            // LogViewer
+            if (keyDict.ContainsKey(LogViewerSetting.SectionName))
+            {
+                Dictionary<string, string> logViewDict = keyDict[LogViewerSetting.SectionName];
+
+                LogViewer.LogWindowWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, null);
+                LogViewer.LogWindowHeight = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, null);
+                LogViewer.BuildFullLogTimeVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible);
+                LogViewer.BuildFullLogTimeWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogScriptOriginVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible);
+                LogViewer.BuildFullLogScriptOriginWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogDepthVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible);
+                LogViewer.BuildFullLogDepthWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogStateVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible);
+                LogViewer.BuildFullLogStateWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogFlagsVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible);
+                LogViewer.BuildFullLogFlagsWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogMessageVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible);
+                LogViewer.BuildFullLogMessageWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogRawCodeVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible);
+                LogViewer.BuildFullLogRawCodeWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogLineNumberVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible);
+                LogViewer.BuildFullLogLineNumberWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth, LogViewerSetting.MinColumnWidth, null);
             }
         }
 
@@ -629,10 +778,11 @@ namespace PEBakery.Core
                 // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject), Project.DefaultProject), // String
                 // General
-                new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent), General.CustomUserAgent), // String
                 // Interface
@@ -647,9 +797,10 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), ((int)Theme.ThemeType).ToString()), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), WriteColor(Theme.CustomTopPanelReportIssue)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), WriteColor(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), WriteColor(Theme.CustomTreePanelHighlight)), // Color
@@ -664,6 +815,25 @@ namespace PEBakery.Core
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel), ((int)Log.DebugLevel).ToString()), // Integer
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging.ToString()), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport.ToString()), // Boolean
+                // LogViewer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth.ToString()), // Integer
             };
             IniReadWriter.WriteKeys(_settingFile, keys);
         }
@@ -671,142 +841,54 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region DictParser
-    public static class DictParser
+    #region SettingDictParser
+    public static class SettingDictParser
     {
         public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
         {
-            return dict[key] ?? defaultValue;
-        }
-
-        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue)
-        {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return defaultValue;
+            return SilentDictParser.ParseString(dict, key, defaultValue);
         }
 
         public static bool ParseBoolean(Dictionary<string, string> dict, string section, string key, bool defaultValue)
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
+            bool val = SilentDictParser.ParseBoolean(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int min, int max)
+        public static int ParseInteger(Dictionary<string, string> dict, string section, string key, int defaultValue, int? min, int? max)
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-            {
-                if (min == -1)
-                { // No Min
-                    if (max == -1) // No Max
-                        return valInt;
-                    if (valInt <= max) // Have Min
-                        return valInt;
-                }
-                else
-                { // Have Min
-                    if (max == -1 && min <= valInt) // No Max
-                        return valInt;
-                    if (min <= valInt && valInt <= max) // Have Min
-                        return valInt;
-                }
-            }
-
-            return defaultValue;
+            int val = SilentDictParser.ParseInteger(dict, key, defaultValue, min, max, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string section, string key, int defaultValue, int min, int max)
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
+            where TEnum : struct, Enum
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
+            TEnum val = SilentDictParser.ParseStrEnum(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
+        }
 
-            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-            {
-                if (min == -1)
-                { // No Min
-                    if (max == -1) // No Max
-                        return valInt;
-                    if (valInt <= max) // Have Min
-                        return valInt;
-                }
-                else
-                { // Have Min
-                    if (max == -1 && min <= valInt) // No Max
-                        return valInt;
-                    if (min <= valInt && valInt <= max) // Have Min
-                        return valInt;
-                }
-            }
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
+            where TEnum : Enum
+        {
+            TEnum val = SilentDictParser.ParseIntEnum(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
         public static Color ParseColor(Dictionary<string, string> dict, string section, string key, Color defaultValue)
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            // Format = R, G, B (in base 10)
-            string[] colorStrs = valStr.Split(',').Select(x => x.Trim()).ToArray();
-            if (colorStrs.Length != 3)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-                return defaultValue;
-            }
-
-            byte[] c = new byte[3]; // R, G, B
-            for (int i = 0; i < 3; i++)
-            {
-                string colorStr = colorStrs[i];
-                if (!byte.TryParse(colorStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte valByte))
-                {
-                    char ch;
-                    switch (i)
-                    {
-                        case 0: // Red
-                            ch = 'R';
-                            break;
-                        case 1: // Green
-                            ch = 'G';
-                            break;
-                        case 2: // Blue
-                            ch = 'B';
-                            break;
-                        default: // Unknown
-                            ch = 'U';
-                            break;
-                    }
-                    Debug.Assert(ch != 'U', "Unknown color parsing index");
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong [{ch}] value: {colorStr}"));
-                    return defaultValue;
-                }
-                c[i] = valByte;
-            }
-
-            return Color.FromRgb(c[0], c[1], c[2]);
+            Color val = SilentDictParser.ParseColor(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
     }
     #endregion

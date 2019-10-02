@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,19 +25,16 @@
     not derived from or based on this program. 
 */
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace PEBakery.Core
 {
     // [Basic of Code Optimization]
-    // If a seqeunce of commands access same file, one file will be opened many time.
+    // If a sequence of commands access same file, one file will be opened many time.
     // -> Pack them into one command to reduce disk access
-
     public static class CodeOptimizer
     {
         #region OptimizedCodeTypes

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@
 
 using Microsoft.IO;
 using PEBakery.Core.ViewModels;
+using PEBakery.Helper;
 using SQLite;
 using System;
 using System.Globalization;
@@ -41,33 +42,43 @@ namespace PEBakery.Core
     #region Global
     public static class Global
     {
-        #region Const
+        #region Constants
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r12";
-            public const string StringVersion = "0.9.6";
-            public const string StringVersionFull = "0.9.6 beta6";
+            public const string ScriptCacheRevision = "r15";
+            public const string ProgramVersionStr = "0.9.6";
+            public const string ProgramVersionStrFull = "0.9.6 beta6";
+
+            public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
+
+            // Update json version
+            public const string UpdateSchemaMaxVerStr = "0.1.1";
+            public const string UpdateSchemaMinVerStr = "0.1.1";
+            public static readonly VersionEx UpdateSchemaMaxVerInst = VersionEx.Parse(UpdateSchemaMaxVerStr);
+            public static readonly VersionEx UpdateSchemaMinVerInst = VersionEx.Parse(UpdateSchemaMinVerStr);
         }
         #endregion
 
         #region Fields and Properties
         // Build-time constant
-        public static DateTime BuildDate;
+        public static DateTime BuildDate { get; set; }
 
         // Start-time variables
-        public static string[] Args;
-        public static string BaseDir;
+        public static string[] Args { get; set; }
+        public static string BaseDir { get; set; }
+        public static string MagicFile { get; set; }
 
         // Buffer Pool
         public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
 
         // Global Instances
-        public static Logger Logger;
-        public static MainViewModel MainViewModel;
-        public static Setting Setting;
-        public static ProjectCollection Projects;
-        public static ScriptCache ScriptCache;
+        public static Logger Logger { get; set; }
+        public static MainViewModel MainViewModel { get; set; }
+        public static Setting Setting { get; set; }
+        public static ProjectCollection Projects { get; set; }
+        public static ScriptCache ScriptCache { get; set; }
+        public static FileTypeDetector FileTypeDetector { get; set; }
         #endregion
 
         #region Init
@@ -83,6 +94,10 @@ namespace PEBakery.Core
 
             // Initialize native libraries
             NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
+
+            // Prepare libmagic database
+            MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
+            FileTypeDetector = new FileTypeDetector(MagicFile);
 
             // Load BuildDate
             BuildDate = BuildTimestamp.ReadDateTime();
@@ -188,6 +203,18 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Cleanup
+        public static void Cleanup()
+        {
+            ScriptCache?.WaitClose();
+            Logger?.Dispose();
+            FileTypeDetector?.Dispose();
+            NativeGlobalCleanup();
+
+            FileHelper.CleanBaseTempDir();
+        }
+        #endregion
+
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
@@ -208,11 +235,13 @@ namespace PEBakery.Core
             string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
             string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
+            string magicPath = Path.Combine(baseDir, arch, "libmagic-1.dll");
 
-            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, 64 * 1024); // 64K
-            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath, 64 * 1024); // 64K
+            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
+            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
             ManagedWimLib.Wim.GlobalInit(wimlibPath);
             SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
+            Joveler.FileMagician.Magic.GlobalInit(magicPath);
         }
 
         public static void NativeGlobalCleanup()
@@ -220,6 +249,7 @@ namespace PEBakery.Core
             Joveler.Compression.ZLib.ZLibInit.GlobalCleanup();
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
+            Joveler.FileMagician.Magic.GlobalCleanup();
         }
         #endregion
     }

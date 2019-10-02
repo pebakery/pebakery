@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -30,8 +30,9 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace PEBakery.Helper
 {
@@ -71,19 +72,149 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region Path Operations
-        private static readonly object TempDirLock = new object();
-        public static string GetTempDir()
+        #region Temp Path
+        private static int _tempPathCounter = 0;
+        private static readonly object TempPathLock = new object();
+        private static readonly RNGCryptoServiceProvider SecureRandom = new RNGCryptoServiceProvider();
+
+        private static FileStream _lockFileStream = null;
+        private static string _baseTempDir = null;
+        public static string BaseTempDir()
         {
-            lock (TempDirLock)
+            lock (TempPathLock)
             {
-                string path = Path.GetTempFileName();
-                File.Delete(path);
-                Directory.CreateDirectory(path);
-                return path;
+                if (_baseTempDir != null)
+                    return _baseTempDir;
+
+                byte[] randBytes = new byte[4];
+                string systemTempDir = Path.GetTempPath();
+
+                do
+                {
+                    // Get 4B of random 
+                    SecureRandom.GetBytes(randBytes);
+                    uint randInt = BitConverter.ToUInt32(randBytes, 0);
+
+                    _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
+                }
+                while (Directory.Exists(_baseTempDir) || File.Exists(_baseTempDir));
+
+                // Create base temp directory
+                Directory.CreateDirectory(_baseTempDir);
+
+                // Lock base temp directory
+                string lockFilePath = Path.Combine(_baseTempDir, "f.lock");
+                _lockFileStream = new FileStream(lockFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+
+                return _baseTempDir;
             }
         }
 
+        /// <summary>
+        /// Delete BaseTempDir from disk. Call this method before termination of an application.
+        /// </summary>
+        public static void CleanBaseTempDir()
+        {
+            lock (TempPathLock)
+            {
+                if (_baseTempDir == null)
+                    return;
+
+                _lockFileStream?.Dispose();
+
+                if (Directory.Exists(_baseTempDir))
+                    Directory.Delete(_baseTempDir, true);
+                _baseTempDir = null;
+            }
+        }
+
+        /// <summary>
+        /// Create temp directory with synchronization.
+        /// Returned temp directory path is virtually unique per call.
+        /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
+        public static string GetTempDir()
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            lock (TempPathLock)
+            {
+                string tempDir;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
+                    tempDir = Path.Combine(baseTempDir, $"d{counter:X8}");
+                }
+                while (Directory.Exists(tempDir) || File.Exists(tempDir));
+
+                Directory.CreateDirectory(tempDir);
+                return tempDir;
+            }
+        }
+
+        /// <summary>
+        /// Create temp file with synchronization.
+        /// Returned temp file path is virtually unique per call.
+        /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
+        public static string GetTempFile(string ext = null)
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            // Use tmp by default / Remove '.' from ext
+            ext = ext == null ? "tmp" : ext.Trim('.');
+
+            lock (TempPathLock)
+            {
+                string tempFile;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
+                    tempFile = Path.Combine(baseTempDir, ext.Length == 0 ? $"f{counter:X8}" : $"f{counter:X8}.{ext}");
+                }
+                while (Directory.Exists(tempFile) || File.Exists(tempFile));
+
+                File.Create(tempFile).Dispose();
+                return tempFile;
+            }
+        }
+
+        /// <summary>
+        /// Reserve temp file path with synchronization.
+        /// Returned temp file path is virtually unique per call.
+        /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
+        public static string ReserveTempFile(string ext = null)
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            // Use tmp by default / Remove '.' from ext
+            ext = ext == null ? "tmp" : ext.Trim('.');
+
+            lock (TempPathLock)
+            {
+                string tempFile;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
+                    tempFile = Path.Combine(baseTempDir, ext.Length == 0 ? $"f{counter:X8}" : $"f{counter:X8}.{ext}");
+                }
+                while (Directory.Exists(tempFile) || File.Exists(tempFile));
+                return tempFile;
+            }
+        }
+        #endregion
+
+        #region Path Operations
         /// <summary>
         /// Extends Path.GetDirectoryName().
         /// If returned dir path is empty, change it to "."
@@ -143,25 +274,6 @@ namespace PEBakery.Helper
                 File.Delete(src);
             }
         }
-
-        public static string GetTempFileNameEx()
-        {
-            string path = Path.GetTempFileName();
-            File.Delete(path);
-            return path;
-        }
-
-        public static string RemoveFirstDir(string src, int removeNumber)
-        {
-            int idx = src.IndexOf(Path.DirectorySeparatorChar);
-            return idx == -1 ? null : src.Substring(idx + 1);
-        }
-
-        public static string RemoveLastDir(string src, int removeNumber)
-        {
-            int idx = src.LastIndexOf(Path.DirectorySeparatorChar);
-            return idx == -1 ? null : src.Substring(0, idx);
-        }
         #endregion
 
         #region GetFileSize
@@ -175,7 +287,7 @@ namespace PEBakery.Helper
         #region File Byte Operations
         public static bool FindByteSignature(string srcFile, byte[] signature, out long offset)
         {
-            long size = FileHelper.GetFileSize(srcFile);
+            long size = GetFileSize(srcFile);
 
             bool found = false;
             using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
@@ -293,32 +405,30 @@ namespace PEBakery.Helper
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
 
-            DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
-            if (!dirInfo.Exists)
+            DirectoryInfo root = new DirectoryInfo(dirPath);
+            if (!root.Exists)
                 throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {dirPath}");
 
             List<string> foundDirs = new List<string>();
-            return InternalGetDirsEx(dirInfo, searchPattern, searchOption, foundDirs).ToArray();
-        }
-
-        private static List<string> InternalGetDirsEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundDirs)
-        {
-            if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
-            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
-
-            try
+            Queue<DirectoryInfo> diQueue = new Queue<DirectoryInfo>();
+            diQueue.Enqueue(root);
+            while (0 < diQueue.Count)
             {
-                DirectoryInfo[] dirs = dirInfo.GetDirectories();
-                foreach (DirectoryInfo dir in dirs)
+                DirectoryInfo di = diQueue.Dequeue();
+                try
                 {
-                    foundDirs.Add(dir.FullName);
-                    if (searchOption == SearchOption.AllDirectories)
-                        InternalGetDirsEx(dir, searchPattern, searchOption, foundDirs);
+                    DirectoryInfo[] subDirs = di.GetDirectories(searchPattern);
+                    foreach (DirectoryInfo subDir in subDirs)
+                    {
+                        foundDirs.Add(subDir.FullName);
+                        if (searchOption == SearchOption.AllDirectories)
+                            diQueue.Enqueue(subDir);
+                    }
                 }
+                catch (UnauthorizedAccessException) { } /* Ignore UnauthorizedAccessException */
             }
-            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
-            return foundDirs;
+            return foundDirs.ToArray();
         }
         #endregion
 
@@ -424,19 +534,19 @@ namespace PEBakery.Helper
         public static void DirectoryDeleteEx(string path)
         {
             DirectoryInfo root = new DirectoryInfo(path);
-            Stack<DirectoryInfo> fols = new Stack<DirectoryInfo>();
-            fols.Push(root);
-            while (fols.Count > 0)
+            Stack<DirectoryInfo> dirInfos = new Stack<DirectoryInfo>();
+            dirInfos.Push(root);
+            while (dirInfos.Count > 0)
             {
-                DirectoryInfo fol = fols.Pop();
-                fol.Attributes = fol.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                DirectoryInfo fol = dirInfos.Pop();
+                fol.Attributes &= ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
                 foreach (DirectoryInfo d in fol.GetDirectories())
                 {
-                    fols.Push(d);
+                    dirInfos.Push(d);
                 }
                 foreach (FileInfo f in fol.GetFiles())
                 {
-                    f.Attributes = f.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                    f.Attributes &= ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
                     f.Delete();
                 }
             }
@@ -519,15 +629,16 @@ namespace PEBakery.Helper
         /// </summary>
         /// <param name="uri"></param>
         /// <returns></returns>
-        public static Process OpenUri(string uri)
+        public static void OpenUri(string uri)
         {
+            Process proc = null;
             try
             {
                 string protocol = StringHelper.GetUriProtocol(uri);
                 string exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
                 string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
 
-                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
                     FileName = exePath,
                     Arguments = quoteUri,
@@ -535,9 +646,13 @@ namespace PEBakery.Helper
             }
             catch
             {
-                Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
+                proc = new Process { StartInfo = new ProcessStartInfo(uri) };
                 proc.Start();
-                return proc;
+            }
+            finally
+            {
+                if (proc != null)
+                    proc.Dispose();
             }
         }
 
@@ -546,18 +661,19 @@ namespace PEBakery.Helper
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static Process OpenPath(string path)
+        public static void OpenPath(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
+            Process proc = null;
             try
             {
                 string ext = Path.GetExtension(path);
                 string exePath = RegistryHelper.GetDefaultExecutablePath(ext, true);
                 string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
 
-                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
                     UseShellExecute = false,
                     FileName = exePath,
@@ -566,10 +682,71 @@ namespace PEBakery.Helper
             }
             catch
             {
-                Process proc = new Process { StartInfo = new ProcessStartInfo(path) };
+                proc = new Process { StartInfo = new ProcessStartInfo(path) };
                 proc.Start();
-                return proc;
             }
+            finally
+            {
+                if (proc != null)
+                    proc.Dispose();
+            }
+        }
+        #endregion
+
+        #region WindowsVersion
+        /// <summary>
+        /// Read Windows version information from kernel32.dll, instead of deprecated Environment.OSVersion.
+        /// </summary>
+        public static Version WindowsVersion()
+        {
+            // Environment.OSVersion is deprecated
+            // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
+            int major = fvi.FileMajorPart;
+            int minor = fvi.FileMinorPart;
+            int build = fvi.FileBuildPart;
+            int revision = fvi.FilePrivatePart;
+            return new Version(major, minor, build, revision);
+        }
+        #endregion
+
+        #region CheckWin32Path
+        public static readonly char[] Win32InvalidFileNameChars = new char[]
+        {
+            // ASCII control codes
+            '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
+            '\u0008', '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u000E', '\u000F',
+            '\u0010', '\u0011', '\u0012', '\u0013', '\u0014', '\u0015', '\u0016', '\u0017',
+            '\u0018', '\u0019', '\u001A', '\u001B', '\u001C', '\u001D', '\u001E', '\u001F',
+            // ASCII Punctuation & Symbols
+            ':', '"', '<', '>',  '|',
+        };
+
+        public static readonly char[] Win32Wildcard = new char[]
+        {
+            // ASCII Punctuation & Symbols
+            '*', '?',
+        };
+
+        public static readonly char[] DirSeparators = new char[]
+        {
+            // ASCII Punctuation & Symbols
+            '\\', '/',
+        };
+
+        /// <summary>
+        /// Return true if the path is valid Win32 path.
+        /// </summary>
+        public static bool CheckWin32Path(string path, bool allowDirSep, bool allowWildcard)
+        {
+            bool valid = !path.Any(ch => Win32InvalidFileNameChars.Contains(ch));
+            if (!allowDirSep)
+                valid &= !path.Any(ch => Win32Wildcard.Contains(ch));
+            if (!allowWildcard)
+                valid &= !path.Any(ch => DirSeparators.Contains(ch));
+            return valid;
         }
         #endregion
     }

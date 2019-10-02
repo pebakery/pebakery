@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -131,7 +131,7 @@ namespace PEBakery.Core.ViewModels
             }
             set
             {
-                Task.Run(() => 
+                Task.Run(() =>
                 {
                     SetChecked(value, true);
                 });
@@ -182,7 +182,7 @@ namespace PEBakery.Core.ViewModels
             {
                 Global.MainViewModel.EnableTreeItems = true;
                 Global.MainViewModel.WorkInProgress = false;
-                Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
             }
         }
 
@@ -275,6 +275,35 @@ namespace PEBakery.Core.ViewModels
 
             // Not found in this path
             return null;
+        }
+        #endregion
+
+        #region IsDirectoryUpdateable
+        public bool IsDirectoryUpdateable()
+        {
+            if (Script.Type != ScriptType.Directory)
+                return Script.IsUpdateable;
+
+            Queue<ProjectTreeItemModel> itemQueue = new Queue<ProjectTreeItemModel>();
+            itemQueue.Enqueue(this);
+            while (0 < itemQueue.Count)
+            {
+                ProjectTreeItemModel item = itemQueue.Dequeue();
+                Script sc = item.Script;
+
+                if (sc.Type == ScriptType.Directory)
+                {
+                    foreach (ProjectTreeItemModel subItem in item.Children)
+                        itemQueue.Enqueue(subItem);
+                }
+                else
+                {
+                    if (sc.IsUpdateable)
+                        return true;
+                }
+            }
+
+            return false;
         }
         #endregion
 

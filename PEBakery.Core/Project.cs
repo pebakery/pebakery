@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ namespace PEBakery.Core
         #region Fields
         private readonly string _baseDir;
 
-        // These fields are being used only in preloading/loading stage
+        // These fields are being used only in pre-loading/loading stage
         private readonly List<string> _projectNames = new List<string>();
         /// <summary>
         /// Dictionary for script parsing information
@@ -63,7 +63,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Properties
-        // Auto properties
         public string ProjectRoot { get; }
         public List<Project> ProjectList { get; } = new List<Project>();
 
@@ -129,18 +128,18 @@ namespace PEBakery.Core
             foreach (string projectDir in projectDirs)
             {
                 string mainScript = Path.Combine(projectDir, Project.Names.MainScriptFile);
-                if (File.Exists(mainScript))
-                {
-                    // Feed _projectNames.
-                    string projectName = Path.GetFileName(projectDir);
-                    _projectNames.Add(projectName);
+                if (!File.Exists(mainScript))
+                    continue;
 
-                    // Load per-project compat options.
-                    // Even if compatFile does not exist, CompatOption class will deal with it.
-                    string compatFile = Path.Combine(projectDir, Project.Names.CompatFile);
-                    CompatOption compat = new CompatOption(compatFile);
-                    _compatDict[projectName] = compat;
-                }
+                // Feed _projectNames.
+                string projectName = Path.GetFileName(projectDir);
+                _projectNames.Add(projectName);
+
+                // Load per-project compat options.
+                // Even if compatFile does not exist, CompatOption class will deal with it.
+                string compatFile = Path.Combine(projectDir, Project.Names.CompatFile);
+                CompatOption compat = new CompatOption(compatFile);
+                _compatDict[projectName] = compat;
             }
         }
         #endregion
@@ -378,6 +377,14 @@ namespace PEBakery.Core
         #region Load, LoadLinks
         public List<LogInfo> Load(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
+            if (_projectNames.Count == 0)
+            {
+                return new List<LogInfo>
+                {
+                    new LogInfo(LogState.Error, "No project found"),
+                };
+            }
+
             List<LogInfo> logs = new List<LogInfo>(32);
             try
             {
@@ -598,7 +605,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields
-        private int _mainScriptIdx;
+        private int _mainScriptIdx = -1; // -1 means not initialized
         #endregion
 
         #region Properties
@@ -612,7 +619,9 @@ namespace PEBakery.Core
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
         public List<ScriptParseInfo> DirEntries { get; set; }
         public Variables Variables { get; set; }
-        public CompatOption Compat { get; private set; }
+        public CompatOption Compat { get; }
+        public ProjectUpdateInfo UpdateInfo { get; private set; }
+        public bool IsUpdateable => UpdateInfo != null ? UpdateInfo.IsUpdateable : false;
 
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
@@ -631,7 +640,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Load
+        #region enum LoadReport
         public enum LoadReport
         {
             None,
@@ -672,7 +681,7 @@ namespace PEBakery.Core
             {
                 Debug.Assert(spi.RealPath != null, "spi.RealPath is null");
                 Debug.Assert(spi.TreePath != null, "spi.TreePath is null");
-                Debug.Assert(!spi.IsDir, $"Project.{nameof(Load)} must not handle directory script instance");
+                Debug.Assert(!spi.IsDir, $"{nameof(Project)}.{nameof(Load)} must not handle directory script instance");
 
                 LoadReport cached = LoadReport.Stage1;
                 Script sc = null;
@@ -722,9 +731,62 @@ namespace PEBakery.Core
             });
 
             // mainScriptIdx
-            SetMainScriptIdx();
+            SetMainScriptIndex();
+
+            // Read [ProjectUpdate]
+            ReadUpdateSection();
 
             return logs;
+        }
+        #endregion
+
+        #region SetMainScriptIdx, ReadUpdateSection
+        public void SetMainScriptIndex()
+        {
+            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
+            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
+            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
+        }
+
+        public void ReadUpdateSection()
+        {
+            Debug.Assert(_mainScriptIdx != -1, $"Please call {nameof(SetMainScriptIndex)} first");
+
+            // If [ProjectUpdateSection] is not available, return empty ProjectUpdateInfo
+            if (!MainScript.Sections.ContainsKey(ProjectUpdateInfo.Const.ProjectUpdateSection))
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+
+            // Read [ProjectUpdateSection]
+            Dictionary<string, string> pUpdateDict = MainScript.Sections[ProjectUpdateInfo.Const.ProjectUpdateSection].IniDict;
+
+            // Read AvailableChannel=, SelectedChannel=, BaseUrl
+            if (!(pUpdateDict.ContainsKey(ProjectUpdateInfo.Const.SelectedChannel) &&
+                  pUpdateDict.ContainsKey(ProjectUpdateInfo.Const.BaseUrl)))
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+
+            // Check integrity of IniDict value
+            string selectedChannel = pUpdateDict[ProjectUpdateInfo.Const.SelectedChannel];
+            string pBaseUrl = pUpdateDict[ProjectUpdateInfo.Const.BaseUrl].TrimEnd('/');
+            if (StringHelper.GetUriProtocol(pBaseUrl) == null)
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+
+            try
+            {
+                UpdateInfo = new ProjectUpdateInfo(selectedChannel, pBaseUrl);
+            }
+            catch (ArgumentException)
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+            }
         }
         #endregion
 
@@ -738,10 +800,10 @@ namespace PEBakery.Core
         public void SortAllScripts()
         {
             AllScripts = InternalSortScripts(AllScripts, DirEntries);
-            SetMainScriptIdx();
+            SetMainScriptIndex();
         }
 
-        private List<Script> InternalSortScripts(List<Script> scripts, List<ScriptParseInfo> dpis)
+        private List<Script> InternalSortScripts(IReadOnlyList<Script> scripts, IReadOnlyList<ScriptParseInfo> dpis)
         {
             KwayTree<Script> scTree = new KwayTree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -776,17 +838,10 @@ namespace PEBakery.Core
                         // Find ts, skeleton script instance of the directory
                         string treePath = Path.Combine(ProjectName, pathKey);
 
-                        /*
-                        Script ts = scripts.FirstOrDefault(x => 
-                            x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase) &&
-                            x.IsDirLink == sc.IsDirLink);
-                        Debug.Assert(ts != null, $"Unable to find proper directory ({sc.TreePath})");
-                        */
-
                         ScriptParseInfo dpi = dpis.FirstOrDefault(x =>
                             x.IsDirLink == sc.IsDirLink &&
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                        Debug.Assert(!dpi.Equals(default(ScriptParseInfo)), $"Unable to find proper directory ({sc.TreePath})");
+                        Debug.Assert(!dpi.Equals(default), $"Unable to find proper directory ({sc.TreePath})");
 
                         // Create new directory script instance from a directory parse info.
                         // Do not have to cache these scripts, these directory script instance is only used once.
@@ -799,7 +854,7 @@ namespace PEBakery.Core
                 scTree.AddNode(nodeId, sc);
             }
 
-            // Sort - Script first, Directory last
+            // Sort - script first, directory last
             scTree.Sort((x, y) =>
             {
                 if (x.Data.Level == y.Data.Level)
@@ -825,18 +880,7 @@ namespace PEBakery.Core
                 }
             });
 
-            List<Script> newList = new List<Script>();
-            foreach (Script sc in scTree)
-                newList.Add(sc);
-
-            return newList;
-        }
-
-        public void SetMainScriptIdx()
-        {
-            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
-            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
-            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
+            return scTree.ToList();
         }
         #endregion
 
@@ -1006,10 +1050,10 @@ namespace PEBakery.Core
                             // Need to create directory script instance?
                             Script ts = AllScripts.FirstOrDefault(x =>
                                 x.Level == sc.Level &&
-                                x.IsDirLink == sc.IsDirLink && 
+                                x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
-                            { 
+                            {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
 
@@ -1021,7 +1065,7 @@ namespace PEBakery.Core
                             ScriptParseInfo dpi = DirEntries.FirstOrDefault(x =>
                                 x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                            if (dpi.Equals(default(ScriptParseInfo)))
+                            if (dpi.Equals(default))
                             {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
@@ -1140,16 +1184,12 @@ namespace PEBakery.Core
         public bool IsPathSettingEnabled()
         {
             // If key 'PathSetting' have invalid value or does not exist, default to true
-            if (!MainScript.MainInfo.ContainsKey("PathSetting"))
+            if (!MainScript.MainInfo.ContainsKey(Script.Const.PathSetting))
                 return true;
 
-            string valStr = MainScript.MainInfo["PathSetting"];
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            else if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-            else
-                return true;
+            string valStr = MainScript.MainInfo[Script.Const.PathSetting];
+            return !valStr.Equals("False", StringComparison.OrdinalIgnoreCase) &&
+                   !valStr.Equals("0", StringComparison.OrdinalIgnoreCase);
         }
         #endregion
 
@@ -1178,7 +1218,8 @@ namespace PEBakery.Core
 
         public bool Equals(Project project)
         {
-            if (project == null) throw new ArgumentNullException(nameof(project));
+            if (project == null)
+                return false;
 
             return ProjectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
                    ProjectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&
@@ -1202,8 +1243,17 @@ namespace PEBakery.Core
     #region struct LoadScriptRuntimeOptions
     public struct LoadScriptRuntimeOptions
     {
+        /// <summary>
+        /// Do not check integrity of [Main] section
+        /// </summary>
         public bool IgnoreMain;
+        /// <summary>
+        /// Add to project tree if the script was not
+        /// </summary>
         public bool AddToProjectTree;
+        /// <summary>
+        /// Overwrite script if project tree already has it
+        /// </summary>
         public bool OverwriteToProjectTree;
     }
     #endregion

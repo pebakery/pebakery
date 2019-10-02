@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -97,7 +97,7 @@ namespace PEBakery.WPF
         #region Commands - CodeBox
         private void CodeBoxCommands_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.TabIndex == 0 && _m.CanExecuteCommand && Engine.WorkingLock == 0;
+            e.CanExecute = _m != null && _m.TabIndex == 0 && _m.CanExecuteCommand && !Engine.IsRunning;
         }
 
         private void CodeBoxSaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -131,54 +131,68 @@ namespace PEBakery.WPF
                 _m.SaveCodeBox();
 
                 // Run Engine
-                Interlocked.Increment(ref Engine.WorkingLock);
-                try
+                if (Engine.TryEnterLock())
                 {
-                    Project project = _m.CurrentProject;
-                    Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions());
+                    try
+                    {
+                        Project project = _m.CurrentProject;
+                        Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
 
-                    Global.MainViewModel.BuildTreeItems.Clear();
-                    Global.MainViewModel.SwitchNormalBuildInterface = false;
-                    Global.MainViewModel.WorkInProgress = true;
+                        MainViewModel mainModel = Global.MainViewModel;
+                        mainModel.BuildTreeItems.Clear();
+                        mainModel.SwitchNormalBuildInterface = false;
+                        mainModel.WorkInProgress = true;
 
-                    EngineState s = new EngineState(sc.Project, Global.Logger, Global.MainViewModel, EngineMode.RunMainAndOne, sc);
-                    s.SetOptions(Global.Setting, sc.Project.Compat);
+                        EngineState s = new EngineState(sc.Project, Global.Logger, mainModel, EngineMode.RunMainAndOne, sc);
+                        s.SetOptions(Global.Setting);
+                        s.SetCompat(sc.Project.Compat);
 
-                    Engine.WorkingEngine = new Engine(s);
+                        Engine.WorkingEngine = new Engine(s);
 
-                    // Set StatusBar Text
-                    CancellationTokenSource ct = new CancellationTokenSource();
-                    Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
-
-                    await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
-
-                    // Cancel and Wait until PrintBuildElapsedStatus stops
-                    // Report elapsed build time
-                    ct.Cancel();
-                    await printStatus;
-                    Global.MainViewModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
-
-                    Global.MainViewModel.WorkInProgress = false;
-                    Global.MainViewModel.SwitchNormalBuildInterface = true;
-                    Global.MainViewModel.BuildTreeItems.Clear();
-
-                    s.MainViewModel.DisplayScript(Global.MainViewModel.CurMainTree.Script);
-                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
-                    { // Open BuildLogWindow
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        // Set StatusBar Text
+                        using (CancellationTokenSource ct = new CancellationTokenSource())
                         {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
+                            Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
-                            w.LogDialog = new LogWindow(1);
-                            w.LogDialog.Show();
-                        });
+                            await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+
+                            // Cancel and Wait until PrintBuildElapsedStatus stops
+                            ct.Cancel();
+                            await printStatus;
+                        }
+
+                        // Turn off progress ring
+                        mainModel.WorkInProgress = false;
+
+                        // Build ended, Switch to Normal View
+                        mainModel.SwitchNormalBuildInterface = true;
+                        mainModel.BuildTreeItems.Clear();
+
+                        // Report elapsed build time
+                        string reason = s.RunResultReport();
+                        if (reason != null)
+                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                        else
+                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
+
+                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
+                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                        { // Open BuildLogWindow
+                            Application.Current?.Dispatcher?.Invoke(() =>
+                            {
+                                if (!(Application.Current.MainWindow is MainWindow w))
+                                    return;
+
+                                w.LogDialog = new LogWindow(1);
+                                w.LogDialog.Show();
+                            });
+                        }
                     }
-                }
-                finally
-                {
-                    Engine.WorkingEngine = null;
-                    Interlocked.Decrement(ref Engine.WorkingLock);
+                    finally
+                    {
+                        Engine.WorkingEngine = null;
+                        Engine.ExitLock();
+                    }
                 }
             }
             finally
@@ -416,14 +430,12 @@ Description=Test Commands
             set => SetProperty(ref _codeBoxInput, value);
         }
 
-        public async void SaveCodeBox()
+        public void SaveCodeBox()
         {
-            Encoding encoding = Encoding.UTF8;
-            if (File.Exists(CodeFile))
-                encoding = EncodingHelper.DetectBom(CodeFile);
+            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectBom(CodeFile) : Encoding.UTF8;
             using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
-                await w.WriteAsync(CodeBoxInput);
+                w.Write(CodeBoxInput);
             }
         }
         #endregion

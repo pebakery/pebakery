@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,8 +29,10 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -47,11 +49,11 @@ namespace PEBakery.Core
     {
         /*
          * Variables Search Order
-         * if (OverridableFixedVariables) // WinBuilder Compatible
+         * if (OverridableFixedVariables) // WinBuilder Compatible, enabled by compat option
          *    1. Local Variables
          *    2. Global Variables
          *    3. Fixed Variables
-         * else // PEBakery standard
+         * else // PEBakery Standard
          *    1. Fixed Variables
          *    2. Local Variables
          *    3. Global Variables
@@ -163,50 +165,52 @@ namespace PEBakery.Core
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetValue(VarsType.Fixed, "EngineVersion", Global.Const.EngineVersion.ToString("000")));
-            logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", Global.Const.StringVersion));
+            logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", Global.Const.ProgramVersionStr));
             #endregion
 
             #region Envrionment Variables
             if (_opts.EnableEnvironmentVariables)
             {
-                List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
+                List<(string WinVarName, string PebVarName)> envVarNames = new List<(string, string)>
                 { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
-                    new Tuple<string, string>("TEMP", "TempDir"),
-                    new Tuple<string, string>("USERNAME", "UserName"),
-                    new Tuple<string, string>("USERPROFILE", "UserProfile"),
-                    new Tuple<string, string>("WINDIR", "WindowsDir"),
-                    new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
+                    ("TEMP", "TempDir"),
+                    ("USERNAME", "UserName"),
+                    ("USERPROFILE", "UserProfile"),
+                    ("WINDIR", "WindowsDir"),
+                    ("ProgramFiles", "ProgramFilesDir"),
                 };
 
                 if (Environment.Is64BitProcess)
-                    envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
+                    envVarNames.Add(("ProgramFiles(x86)", "ProgramFilesDir_x86"));
 
-                foreach (var tuple in envVarNames)
+                foreach ((string winVarName, string pebVarName) in envVarNames)
                 {
-                    string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
+                    string envValue = Environment.GetEnvironmentVariable(winVarName);
                     if (envValue == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
+                        logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{winVarName}%] from Windows"));
                     else
-                        logs.Add(SetValue(VarsType.Fixed, tuple.Item2, envValue));
+                        logs.Add(SetValue(VarsType.Fixed, pebVarName, envValue));
                 }
 
                 // WindowsVersion
-                OperatingSystem sysVer = Environment.OSVersion;
-                logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
+                Version winVer = FileHelper.WindowsVersion();
+                logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", winVer.ToString()));
 
                 // Processor Type
-                switch (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture)
+                switch (RuntimeInformation.OSArchitecture)
                 {
-                    case System.Runtime.InteropServices.Architecture.X86:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x86
+                    // https://docs.microsoft.com/en-us/windows/desktop/api/sysinfoapi/ns-sysinfoapi-_system_info
+                    // For compatibility with WinBuilder, use old SYSTEM_INFO.dwProcessorType description for x86 and x64.
+                    case Architecture.X86:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586"));
                         break;
-                    case System.Runtime.InteropServices.Architecture.X64:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x64
+                    case Architecture.X64:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664"));
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm:
+                    case Architecture.Arm:
                         logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm"));
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm64:
+                    case Architecture.Arm64:
                         logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm64"));
                         break;
                     default:
@@ -286,9 +290,9 @@ namespace PEBakery.Core
 
             #region Project Variables
             // [Variables]
-            if (_project.MainScript.Sections.ContainsKey("Variables"))
+            if (_project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
-                logs = AddVariables(VarsType.Global, _project.MainScript.Sections["Variables"]);
+                logs = AddVariables(VarsType.Global, _project.MainScript.Sections[ScriptSection.Names.Variables]);
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeparator));
             }
             #endregion
@@ -306,9 +310,9 @@ namespace PEBakery.Core
             SetValue(VarsType.Fixed, "ScriptTitle", sc.Title);
 
             // [Variables]
-            if (sc.Sections.ContainsKey("Variables"))
+            if (sc.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
-                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections[ScriptSection.Names.Variables]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
@@ -337,7 +341,7 @@ namespace PEBakery.Core
         #endregion
 
         #region UIControlToVariable
-        public LogInfo? UIControlToVariable(UIControl uiCmd, string prefix = null)
+        public LogInfo UIControlToVariable(UIControl uiCmd, string prefix = null)
         {
             string destVar = uiCmd.Key;
             if (!string.IsNullOrEmpty(prefix))
@@ -355,9 +359,9 @@ namespace PEBakery.Core
 
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                LogInfo? log = UIControlToVariable(uiCtrl, prefix);
+                LogInfo log = UIControlToVariable(uiCtrl, prefix);
                 if (log != null)
-                    logs.Add((LogInfo)log);
+                    logs.Add(log);
             }
 
             return logs;
@@ -419,30 +423,64 @@ namespace PEBakery.Core
             return new Dictionary<string, string>(GetVarsMatchesType(type), StringComparer.OrdinalIgnoreCase);
         }
 
-        public void SetVarDict(VarsType type, Dictionary<string, string> varDict)
+        /// <summary>
+        /// Overwrite variable dicts.
+        /// </summary>
+        /// <param name="type">Which variables are to be overwritten?</param>
+        /// <param name="varDict">New key-values to overwrite.</param>
+        /// <param name="keysToPreserve">Do not overwrite these variables. It should not contain %. </param>
+        public void SetVarDict(VarsType type, Dictionary<string, string> varDict, IEnumerable<string> keysToPreserve = null)
         {
+            Dictionary<string, string> newDict = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+
+            // Preserve keys 
+            if (keysToPreserve != null)
+            {
+                Dictionary<string, string> oldDict = null;
+                switch (type)
+                {
+                    case VarsType.Local:
+                        oldDict = _localVars;
+                        break;
+                    case VarsType.Global:
+                        oldDict = _globalVars;
+                        break;
+                    case VarsType.Fixed:
+                        oldDict = _fixedVars;
+                        break;
+                }
+                Debug.Assert(oldDict != null, "Invalid VarsType");
+
+                foreach (string key in keysToPreserve)
+                {
+                    Debug.Assert(key != null, "Invalid key name");
+                    if (oldDict.ContainsKey(key))
+                        newDict[key] = oldDict[key];
+                }
+            }
+
             switch (type)
             {
                 case VarsType.Local:
-                    _localVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _localVars = newDict;
                     break;
                 case VarsType.Global:
-                    _globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _globalVars = newDict;
                     break;
                 case VarsType.Fixed:
-                    _fixedVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _fixedVars = newDict;
                     break;
             }
         }
 
-        public LogInfo SetValue(VarsType type, string key, string _value, bool expand = false)
+        public LogInfo SetValue(VarsType type, string key, string value, bool expand = false)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
             if (expand)
-                vars[key] = Expand(_value);
+                vars[key] = Expand(value);
             else
-                vars[key] = _value;
+                vars[key] = value;
 
             return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
         }
@@ -460,7 +498,7 @@ namespace PEBakery.Core
             return result ? Expand(value) : string.Empty;
         }
 
-        public bool Delete(VarsType type, string key)
+        public bool DeleteKey(VarsType type, string key)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             if (!vars.ContainsKey(key))
@@ -704,14 +742,17 @@ namespace PEBakery.Core
         #endregion
 
         #region Static Methods - Utility
-        public static string TrimPercentMark(string varName)
+        public static string TrimPercentMark(string varKey)
         {
-            if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
+            if (varKey == null)
+                throw new ArgumentNullException(nameof(varKey));
+
+            if (!(varKey.StartsWith("%", StringComparison.Ordinal) && varKey.EndsWith("%", StringComparison.Ordinal)))
                 return null;
-            varName = varName.Substring(1, varName.Length - 2);
-            if (varName.Contains('%'))
+            varKey = varKey.Substring(1, varKey.Length - 2);
+            if (varKey.Contains('%'))
                 return null;
-            return varName;
+            return varKey;
         }
         #endregion
 
@@ -838,9 +879,9 @@ namespace PEBakery.Core
         /// <summary>
         /// Public interface for variables write/delete operation 
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="varKey"></param>
-        /// <param name="varValue"></param>
+        /// <param name="s">EngineState</param>
+        /// <param name="varKey">Key with its prefix/postfix. Ex) %A%, #1, #c, etc</param>
+        /// <param name="varValue">Value to write. Put "NIL" for deletion</param>
         /// <param name="global"></param>
         /// <param name="permanent"></param>
         /// <param name="expand"></param>
@@ -872,8 +913,8 @@ namespace PEBakery.Core
 
                     if (permanent)
                     {
-                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
-                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        bool globalResult = s.Variables.DeleteKey(VarsType.Global, key);
+                        bool localResult = s.Variables.DeleteKey(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
                             // Delete variable line from file
@@ -897,8 +938,8 @@ namespace PEBakery.Core
                     }
                     else // Global, Local
                     {
-                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
-                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        bool globalResult = s.Variables.DeleteKey(VarsType.Global, key);
+                        bool localResult = s.Variables.DeleteKey(VarsType.Local, key);
                         if (globalResult)
                             logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                         else if (localResult)
@@ -922,7 +963,7 @@ namespace PEBakery.Core
                 { // s.SectionReturnValue's default value is string.Empty
                     if (!s.CompatDisableExtendedSectionParams)
                     {
-                        s.SectionReturnValue = string.Empty;
+                        s.ReturnValue = string.Empty;
                         logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
                     }
                     else
@@ -966,7 +1007,7 @@ namespace PEBakery.Core
 
                         // Remove local variable if exist
                         if (log.State == LogState.Success)
-                            s.Variables.Delete(VarsType.Local, key);
+                            s.Variables.DeleteKey(VarsType.Local, key);
                     }
                     else if (permanent)
                     {
@@ -996,7 +1037,7 @@ namespace PEBakery.Core
                             }
 
                             // Remove local variable if exist
-                            s.Variables.Delete(VarsType.Local, key);
+                            s.Variables.DeleteKey(VarsType.Local, key);
                         }
                         else
                         { // SetValue failed
@@ -1023,7 +1064,7 @@ namespace PEBakery.Core
                 {
                     if (!s.CompatDisableExtendedSectionParams)
                     {
-                        s.SectionReturnValue = finalValue;
+                        s.ReturnValue = finalValue;
                         logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
                     }
                     else
@@ -1038,31 +1079,48 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be overriden"));
                         return logs;
                     }
-                        
-                    switch (s.LoopState)
+
+                    // Escape #c (Loop Counter)
+                    if (0 < s.LoopStateStack.Count)
                     {
-                        case LoopState.OnIndex:
-                            if (!NumberHelper.ParseInt64(finalValue, out long ctr))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
-                                return logs;
-                            }
-                            s.LoopCounter = ctr;
-                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopCounter}]"));
-                            break;
-                        case LoopState.OnDriveLetter:
-                            bool valid = finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0]);
-                            if (!valid)
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
-                                return logs;
-                            }
-                            s.LoopLetter = char.ToUpper(finalValue[0]);
-                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopLetter}]"));
-                            break;
-                        default:
-                            logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
-                            return logs;
+                        EngineLoopState peekLoop = s.LoopStateStack.Peek();
+                        switch (peekLoop.State)
+                        {
+                            case EngineLoopState.LoopState.OnIndex:
+                                if (!NumberHelper.ParseInt64(finalValue, out long ctr))
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
+                                    return logs;
+                                }
+
+                                // C#'s struct is immutable, so do pop and push.
+                                EngineLoopState idxLoop = new EngineLoopState(ctr);
+                                s.LoopStateStack.Pop();
+                                s.LoopStateStack.Push(idxLoop);
+
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{ctr}]"));
+                                break;
+                            case EngineLoopState.LoopState.OnDriveLetter:
+                                if (!(finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0])))
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
+                                    return logs;
+                                }
+
+                                // C#'s struct is immutable, so do pop and push.
+                                // EngineLoopState's constructor performs conversion to capital alphabet.
+                                EngineLoopState charLoop = new EngineLoopState(finalValue[0]);
+                                s.LoopStateStack.Pop();
+                                s.LoopStateStack.Push(charLoop);
+
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{charLoop.CounterLetter}]"));
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
+                        return logs;
                     }
                 }
                 else
@@ -1082,6 +1140,9 @@ namespace PEBakery.Core
         /// <returns>Return null at error</returns>
         public static bool? ContainsKey(EngineState s, string varKey)
         {
+            if (varKey == null)
+                throw new ArgumentNullException(nameof(varKey));
+
             VarKeyType type = DetectType(varKey);
             switch (type)
             {

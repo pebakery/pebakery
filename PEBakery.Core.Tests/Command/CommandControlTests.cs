@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ using PEBakery.Ini;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -39,7 +39,6 @@ namespace PEBakery.Core.Tests.Command
     {
         #region Set
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Set()
         {
@@ -143,15 +142,15 @@ namespace PEBakery.Core.Tests.Command
 
             // Turn off compat option
             s.CompatDisableExtendedSectionParams = false;
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
 
             // Turn on compat option
             s.CompatDisableExtendedSectionParams = true;
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.IsTrue(s.SectionReturnValue.Length == 0);
+            Assert.IsTrue(s.ReturnValue.Length == 0);
         }
 
         public void DelReturnValue(EngineState s)
@@ -160,73 +159,67 @@ namespace PEBakery.Core.Tests.Command
 
             // Turn off compat option
             s.CompatDisableExtendedSectionParams = false;
-            s.SectionReturnValue = "PEBakery";
+            s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Length == 0);
+            Assert.IsTrue(s.ReturnValue.Length == 0);
 
             // Turn on compat option
             s.CompatDisableExtendedSectionParams = true;
-            s.SectionReturnValue = "PEBakery";
+            s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
         }
 
         public void SetLoopCounter(EngineState s)
         {
+            s.LoopStateStack.Clear();
+
             // Simulate Loop command
             const string rawLoopCode = "Set,#c,110";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Success);
-            Assert.AreEqual(110, s.LoopCounter);
+            EngineLoopState loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(110, loop.CounterIndex);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
 
             // Simulate LoopLetter command
             const string rawLoopLetterCode = "Set,#c,Z";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Success);
-            Assert.AreEqual('Z', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual('Z', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual('C', loop.CounterLetter);
 
             // Error 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.Off;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.OnDriveLetter;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.Off;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.OnIndex;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
         }
 
         public void DelLoopCounter(EngineState s)
@@ -234,141 +227,77 @@ namespace PEBakery.Core.Tests.Command
             const string rawCode = "Set,#c,NIL";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            EngineLoopState loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
         }
         #endregion
 
         #region AddVariables
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void AddVariables()
         {
-            AddVariables_1();
-            AddVariables_2();
-        }
-
-        public void AddVariables_1()
-        { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
             EngineState s = EngineTests.CreateEngineState();
-            const string tempFile = "AddVariables_1.script";
-            string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            string pDir = Path.GetDirectoryName(pPath);
-            Assert.IsNotNull(pDir);
-            Directory.CreateDirectory(pDir);
+            string scPath = Path.Combine(EngineTests.BaseDir, Project.Names.Projects, "TestSuite", "Control", "General.script");
 
-            using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
+            void Template(string rawCode, VarsType varsType)
             {
-                w.WriteLine("[TestVars]");
-                w.WriteLine("%A%=1");
-                w.WriteLine("%B%=2");
-                w.WriteLine("%C%=3");
+                EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+
+                Assert.IsTrue(s.Variables.GetValue(varsType, "A").Equals("1", StringComparison.Ordinal));
+                Assert.IsTrue(s.Variables.GetValue(varsType, "B").Equals("2", StringComparison.Ordinal));
+                Assert.IsTrue(s.Variables.GetValue(varsType, "C").Equals("3", StringComparison.Ordinal));
             }
 
-            string rawCode = $@"AddVariables,%ProjectTemp%\{tempFile},TestVars";
-            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
-
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "A").Equals("1", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "B").Equals("2", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "C").Equals("3", StringComparison.Ordinal));
-
-            File.Delete(pPath);
-        }
-
-        public void AddVariables_2()
-        { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
-            EngineState s = EngineTests.CreateEngineState();
-            const string tempFile = "AddVariables_2.script";
-            string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            string pDir = Path.GetDirectoryName(pPath);
-            Assert.IsNotNull(pDir);
-            Directory.CreateDirectory(pDir);
-
-            using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
-            {
-                w.WriteLine("[TestVars]");
-                w.WriteLine("%A%=1");
-                w.WriteLine("%B%=2");
-                w.WriteLine("%C%=3");
-            }
-
-            string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars,GLOBAL";
-            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
-
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "A").Equals("1", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "B").Equals("2", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "C").Equals("3", StringComparison.Ordinal));
-
-            File.Delete(pPath);
+            Template($"AddVariables,{scPath},TestVars", VarsType.Local);
+            Template($"AddVariables,{scPath},TestVars,GLOBAL", VarsType.Global);
         }
         #endregion
 
         #region Exit
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Exit()
         {
-            Exit_1();
-            Exit_2();
-        }
+            void Template(string rawCode, ErrorCheck check)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                EngineTests.Eval(s, rawCode, CodeType.Exit, check);
 
-        public void Exit_1()
-        {
-            const string rawCode = "Exit,UnitTest";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Warning);
+                Assert.IsTrue(s.PassCurrentScriptFlag);
+            }
 
-            Assert.IsTrue(s.PassCurrentScriptFlag);
-        }
-
-        public void Exit_2()
-        {
-            const string rawCode = "Exit,UnitTest,NOWARN";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Success);
-
-            Assert.IsTrue(s.PassCurrentScriptFlag);
+            Template("Exit,UnitTest", ErrorCheck.Warning);
+            Template("Exit,UnitTest,NOWARN", ErrorCheck.Success);
         }
         #endregion
 
         #region Halt
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Halt()
-        {
-            Halt_1();
-        }
-
-        public void Halt_1()
         {
             const string rawCode = "Halt,UnitTest";
             EngineState s = EngineTests.CreateEngineState();
@@ -380,14 +309,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region Wait
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Wait()
-        {
-            Wait_1();
-        }
-
-        public void Wait_1()
         {
             Stopwatch w = Stopwatch.StartNew();
 
@@ -402,25 +325,50 @@ namespace PEBakery.Core.Tests.Command
 
         #region Beep
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Beep()
         {
-            EngineState s = EngineTests.CreateEngineState();
+            void Template(string rawCode, BeepType beepType)
+            {
+                CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
+                CodeCommand cmd = parser.ParseStatement(rawCode);
 
-            Beep_Template(s, "Beep,OK", BeepType.OK);
-            Beep_Template(s, "Beep,Error", BeepType.Error);
-            Beep_Template(s, "Beep,Asterisk", BeepType.Asterisk);
-            Beep_Template(s, "Beep,Confirmation", BeepType.Confirmation);
+                CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
+                Assert.AreEqual(beepType, info.Type);
+            }
+
+            Template("Beep,OK", BeepType.OK);
+            Template("Beep,Error", BeepType.Error);
+            Template("Beep,Asterisk", BeepType.Asterisk);
+            Template("Beep,Confirmation", BeepType.Confirmation);
         }
+        #endregion
 
-        public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
+        #region GetParam
+        [TestMethod]
+        [TestCategory("CommandControl")]
+        public void GetParam()
         {
-            CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
-            CodeCommand cmd = parser.ParseStatement(rawCode);
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
 
-            CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
-            Assert.IsTrue(info.Type == beepType);
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = false;
+
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetState, entrySection);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destStr = s.Variables.GetValue(VarsType.Local, "Dest");
+                    Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+                }
+            }
+
+            ScriptTemplate(scPath, "Process-GetParam00");
+            ScriptTemplate(scPath, "Process-GetParam01");
+            ScriptTemplate(scPath, "Process-GetParam09");
+            ScriptTemplate(scPath, "Process-GetParam12");
+            ScriptTemplate(scPath, "Process-GetParam16");
+            ScriptTemplate(scPath, "Process-GetParam18");
         }
         #endregion
     }

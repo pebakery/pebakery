@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -116,7 +116,10 @@ namespace PEBakery.Helper
             /// <summary>
             /// For LOGFONT struct
             /// </summary>
-            public int Win32Size => -(int)Math.Round(PointSize * 96 / 72f); 
+            public int Win32Size => -(int)Math.Round(PointSize * 96 / 72f);
+
+            // Every Windows PC has Consolas pre-installed.
+            public static FontInfo DefaultMonospaced => new FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
 
             public FontInfo(FontFamily fontFamily, FontWeight fontWeight, int fontSize)
             {

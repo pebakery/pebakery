@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -35,11 +35,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -100,6 +98,7 @@ namespace PEBakery.WPF
         private async void SaveSettingCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             _m.CanExecuteCommand = false;
+            _m.Saving = true;
             try
             {
                 await Task.Run(() =>
@@ -114,6 +113,7 @@ namespace PEBakery.WPF
             finally
             {
                 _m.CanExecuteCommand = true;
+                _m.Saving = false;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -230,9 +230,28 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                const string msg = "Enabling this option may cause problems if you do not understand the implications of long path support. Please consult the PEBakery manual for details.\r\n\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 _m.GeneralEnableLongFilePath = res == MessageBoxResult.Yes;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void EnableUpdateServerManager_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.GeneralEnableUpdateServerManagement)
+                return;
+
+            _m.CanExecuteCommand = false;
+            try
+            {
+                const string msg = "This option is intended only for project developers!\r\n\r\nDo you really want to continue?";
+                MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                _m.GeneralEnableUpdateServerManagement = res == MessageBoxResult.Yes;
             }
             finally
             {
@@ -243,6 +262,20 @@ namespace PEBakery.WPF
         #endregion
 
         #region Interface Setting Commands
+        private void ResetScaleFactorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.InterfaceScaleFactor = 100;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         private void SelectMonospacedFontCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             _m.CanExecuteCommand = false;
@@ -259,7 +292,7 @@ namespace PEBakery.WPF
 
         private void SelectCustomEditorPathCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.Setting.Interface.UseCustomEditor;
+            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.InterfaceUseCustomEditor;
         }
 
         private void SelectCustomEditorPathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -357,11 +390,10 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        #endregion
 
         #endregion
 
-        
+        #endregion
     }
     #endregion
 
@@ -386,7 +418,27 @@ namespace PEBakery.WPF
         #endregion
 
         #region CanExecuteCommand
-        public bool CanExecuteCommand { get; set; } = true;
+        private bool _canExecuteCommand = true;
+        public bool CanExecuteCommand
+        {
+            get => _canExecuteCommand;
+            set => SetProperty(ref _canExecuteCommand, value);
+        }
+        #endregion
+
+        #region SaveButtonContent
+        private bool _saving = false;
+        public bool Saving
+        {
+            get => _saving;
+            set
+            {
+                _saving = value;
+                OnPropertyUpdate(nameof(Saving));
+                OnPropertyUpdate(nameof(SaveButtonContent));
+            }
+        }
+        public string SaveButtonContent => _saving ? "Saving..." : "Save";
         #endregion
 
         #region Need Flags
@@ -446,6 +498,27 @@ namespace PEBakery.WPF
             }
         }
 
+        public class ProjectSourceSetup
+        {
+            public bool PathSettingEnabled;
+            public bool Updated;
+            public List<string> SourceDirs;
+            public string TargetDir;
+            public string IsoFile;
+        }
+
+        private readonly List<ProjectSourceSetup> _projectSourceSetups = new List<ProjectSourceSetup>();
+        public ProjectSourceSetup SelectedProjectSourceSetup
+        {
+            get
+            {
+                if (_projectSourceSetups != null && 0 <= SelectedProjectIndex && SelectedProjectIndex < _projectSourceSetups.Count)
+                    return _projectSourceSetups[SelectedProjectIndex];
+                else
+                    return null;
+            }
+        }
+
         private readonly object _projectSourceDirsLock = new object();
         private ObservableCollection<string> _projectSourceDirs;
         public ObservableCollection<string> ProjectSourceDirs
@@ -458,79 +531,21 @@ namespace PEBakery.WPF
         public int ProjectSourceDirIndex
         {
             get => _projectSourceDirIndex;
-            set
-            {
-                _projectSourceDirIndex = value;
-
-                Project p = DefaultProject;
-                if (0 <= value && value < ProjectSourceDirs.Count)
-                {
-                    p.Variables.SetValue(VarsType.Fixed, "SourceDir", ProjectSourceDirs[value]);
-
-                    // Generate new SourceDir string, with selected source dir being first.
-                    StringBuilder b = new StringBuilder(ProjectSourceDirs[value]);
-                    for (int x = 0; x < ProjectSourceDirs.Count; x++)
-                    {
-                        if (x == value)
-                            continue;
-                        b.Append(",");
-                        b.Append(ProjectSourceDirs[x]);
-                    }
-                    string newVal = b.ToString();
-
-                    IniReadWriter.WriteKey(p.MainScript.RealPath, "Main", "SourceDir", newVal);
-                    p.Variables.SetValue(VarsType.Fixed, "SourceDir", newVal);
-                    p.MainScript.MainInfo["SourceDir"] = newVal;
-                }
-
-                OnPropertyUpdate(nameof(ProjectSourceDirIndex));
-            }
+            set => SetProperty(ref _projectSourceDirIndex, value);
         }
 
         private string _projectTargetDir;
         public string ProjectTargetDir
         {
             get => _projectTargetDir;
-            set
-            {
-                if (!value.Equals(_projectTargetDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    Project p = SelectedProject;
-                    if (p != null)
-                    {
-                        string fullPath = p.MainScript.RealPath;
-                        IniReadWriter.WriteKey(fullPath, "Main", "TargetDir", value);
-                        p.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
-                        p.MainScript.MainInfo["TargetDir"] = value;
-                    }
-                }
-
-                _projectTargetDir = value;
-                OnPropertyUpdate(nameof(ProjectTargetDir));
-            }
+            set => SetProperty(ref _projectTargetDir, value);
         }
 
         private string _projectIsoFile;
         public string ProjectIsoFile
         {
             get => _projectIsoFile;
-            set
-            {
-                if (!value.Equals(_projectIsoFile, StringComparison.OrdinalIgnoreCase))
-                {
-                    Project p = SelectedProject;
-                    if (p != null)
-                    {
-                        string fullPath = p.MainScript.RealPath;
-                        IniReadWriter.WriteKey(fullPath, "Main", "ISOFile", value);
-                        p.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
-                        p.MainScript.MainInfo["ISOFile"] = value;
-                    }
-                }
-
-                _projectIsoFile = value;
-                OnPropertyUpdate(nameof(ProjectIsoFile));
-            }
+            set => SetProperty(ref _projectIsoFile, value);
         }
         #endregion
 
@@ -561,6 +576,13 @@ namespace PEBakery.WPF
         {
             get => _generalEnableLongFilePath;
             set => SetProperty(ref _generalEnableLongFilePath, value);
+        }
+
+        private bool _generalEnableUpdateServerManagement;
+        public bool GeneralEnableUpdateServerManagement
+        {
+            get => _generalEnableUpdateServerManagement;
+            set => SetProperty(ref _generalEnableUpdateServerManagement, value);
         }
 
         private bool _generalUseCustomUserAgent;
@@ -674,6 +696,13 @@ namespace PEBakery.WPF
         {
             get => _themeCustomTopPanelForeground;
             set => SetProperty(ref _themeCustomTopPanelForeground, value);
+        }
+
+        private Color _themeCustomTopPanelReportIssue;
+        public Color ThemeCustomTopPanelReportIssue
+        {
+            get => _themeCustomTopPanelReportIssue;
+            set => SetProperty(ref _themeCustomTopPanelReportIssue, value);
         }
 
         private Color _themeCustomTreePanelBackground;
@@ -991,12 +1020,58 @@ namespace PEBakery.WPF
         #region LoadProjectEntries
         public void LoadProjectEntries()
         {
-            // Select default project
-            int idx = Projects.IndexOf(Setting.Project.DefaultProject);
-            if (idx == -1)
-                SelectedProjectIndex = DefaultProjectIndex = Projects.Count - 1;
-            else
-                SelectedProjectIndex = idx;
+            // Source Setup
+            _projectSourceSetups.Clear();
+            foreach (Project p in Projects)
+            {
+                if (p.IsPathSettingEnabled())
+                {
+                    // Project
+                    Dictionary<string, string> infoDict = p.MainScript.MainInfo;
+
+                    // SourceDir
+                    List<string> sourceDirs = new List<string>();
+                    if (infoDict.ContainsKey(Script.Const.SourceDir))
+                    {
+                        string valStr = infoDict[Script.Const.SourceDir];
+                        foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
+                        {
+                            string dir = rawDir.Trim();
+                            if (0 < dir.Length)
+                                sourceDirs.Add(dir);
+                        }
+                    }
+
+                    // TargetDir
+                    string targetDir;
+                    if (infoDict.ContainsKey(Script.Const.TargetDir))
+                        targetDir = infoDict[Script.Const.TargetDir];
+                    else
+                        targetDir = string.Empty;
+
+                    // ISOFile
+                    string isoFile;
+                    if (infoDict.ContainsKey(Script.Const.IsoFile))
+                        isoFile = infoDict[Script.Const.IsoFile];
+                    else
+                        isoFile = string.Empty;
+
+                    _projectSourceSetups.Add(new ProjectSourceSetup()
+                    {
+                        PathSettingEnabled = true,
+                        SourceDirs = sourceDirs,
+                        TargetDir = targetDir,
+                        IsoFile = isoFile,
+                    });
+                }
+                else
+                {
+                    _projectSourceSetups.Add(new ProjectSourceSetup()
+                    {
+                        PathSettingEnabled = false,
+                    });
+                }
+            }
 
             // Compat Options
             _compatOptions.Clear();
@@ -1005,6 +1080,13 @@ namespace PEBakery.WPF
                 CompatOption compat = p.Compat.Clone();
                 _compatOptions.Add(compat);
             }
+
+            // Select default project
+            int idx = Projects.IndexOf(Setting.Project.DefaultProject);
+            if (idx == -1)
+                SelectedProjectIndex = DefaultProjectIndex = Projects.Count - 1;
+            else
+                SelectedProjectIndex = idx;
         }
         #endregion
 
@@ -1016,46 +1098,87 @@ namespace PEBakery.WPF
 
             await Task.Run(() =>
             {
-                // Project 
-                Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
-
-                // SourceDir
-                ProjectSourceDirs.Clear();
-                if (infoDict.ContainsKey("SourceDir"))
-                {
-                    string valStr = infoDict["SourceDir"];
-                    foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
-                    {
-                        string dir = rawDir.Trim();
-                        if (0 < dir.Length)
-                            ProjectSourceDirs.Add(dir);
-                    }
-                }
-                if (0 < ProjectSourceDirs.Count)
-                    ProjectSourceDirIndex = 0;
-
-                // TargetDir
-                if (infoDict.ContainsKey("TargetDir"))
-                    ProjectTargetDir = infoDict["TargetDir"];
-                else
-                    ProjectTargetDir = string.Empty;
-
-                // ISOFile
-                if (infoDict.ContainsKey("ISOFile"))
-                    ProjectIsoFile = infoDict["ISOFile"];
-                else
-                    ProjectIsoFile = string.Empty;
-
-                // Compat Options
+                // Save current selected Project, Compat Options
                 if (!_firstLoad && newIndex != oldIndex &&
                     0 <= oldIndex && oldIndex < _compatOptions.Count)
+                {
+                    // Project
+                    SaveProjectSourceSetupTo(_projectSourceSetups[oldIndex]);
+
+                    // Compat Options
                     SaveCompatOptionTo(_compatOptions[oldIndex]);
+                }
+
+                // Project
+                ProjectSourceSetup srcSetup = SelectedProjectSourceSetup;
+                Debug.Assert(srcSetup != null, "Invalid SelectedProjectIndex");
+                LoadProjectSourceSetupFrom(srcSetup);
+
+                // Compat Options
                 CompatOption compat = SelectedCompatOption;
                 Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
                 LoadCompatOptionFrom(compat);
 
                 _firstLoad = false;
             });
+        }
+        #endregion
+
+        #region LoadProjectSourceSetupFrom, SaveProjectSourceSetupTo
+        public void LoadProjectSourceSetupFrom(ProjectSourceSetup src)
+        {
+            if (src.PathSettingEnabled)
+            {
+                ProjectSourceDirs = new ObservableCollection<string>(src.SourceDirs);
+                ProjectSourceDirIndex = 0;
+                ProjectTargetDir = src.TargetDir;
+                ProjectIsoFile = src.IsoFile;
+            }
+            else
+            {
+                ProjectSourceDirs.Clear();
+                ProjectSourceDirIndex = 0;
+                ProjectTargetDir = string.Empty;
+                ProjectIsoFile = string.Empty;
+            }
+        }
+
+        public void SaveProjectSourceSetupTo(ProjectSourceSetup dest)
+        {
+            if (SelectedProject == null)
+                return;
+
+            if (SelectedProject.IsPathSettingEnabled())
+            {
+                dest.PathSettingEnabled = true;
+
+                if (0 < ProjectSourceDirs.Count)
+                {
+                    Debug.Assert(0 <= ProjectSourceDirIndex && ProjectSourceDirIndex < ProjectSourceDirs.Count, "Invalid ProjectSourceDirs");
+                    List<string> oldSourceDirs = new List<string>(ProjectSourceDirs);
+                    string defaultSourceDir = oldSourceDirs[ProjectSourceDirIndex];
+                    oldSourceDirs.RemoveAt(ProjectSourceDirIndex);
+
+                    List<string> newSourceDirs = new List<string> { defaultSourceDir };
+                    newSourceDirs.AddRange(oldSourceDirs);
+
+                    dest.SourceDirs = newSourceDirs;
+                }
+                else
+                {
+                    dest.SourceDirs = new List<string>();
+                }
+
+                dest.TargetDir = ProjectTargetDir;
+                dest.IsoFile = ProjectIsoFile;
+            }
+            else
+            {
+                dest.PathSettingEnabled = false;
+                dest.SourceDirs = null;
+                dest.TargetDir = null;
+                dest.IsoFile = null;
+            }
         }
         #endregion
 
@@ -1187,6 +1310,7 @@ namespace PEBakery.WPF
             GeneralStopBuildOnError = newGeneral.StopBuildOnError;
             GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
             GeneralUseCustomUserAgent = newGeneral.UseCustomUserAgent;
+            GeneralCustomUserAgent = newGeneral.CustomUserAgent;
 
             // [Interface]
             Setting.InterfaceSetting newInterface = new Setting.InterfaceSetting();
@@ -1255,7 +1379,9 @@ namespace PEBakery.WPF
             GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
             GeneralStopBuildOnError = Setting.General.StopBuildOnError;
             GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
+            GeneralEnableUpdateServerManagement = Setting.General.EnableUpdateServerManagement;
             GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
+            GeneralCustomUserAgent = Setting.General.CustomUserAgent;
 
             // [Interface]
             InterfaceUseCustomTitle = Setting.Interface.UseCustomTitle;
@@ -1271,6 +1397,7 @@ namespace PEBakery.WPF
             ThemeType = Setting.Theme.ThemeType;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
+            ThemeCustomTopPanelReportIssue = Setting.Theme.CustomTopPanelReportIssue;
             ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
             ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
             ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
@@ -1306,13 +1433,18 @@ namespace PEBakery.WPF
                 DefaultProjectIndex = Projects.Count - 1;
             else
                 DefaultProjectIndex = defaultProjectIdx;
+            // Source setup
+            if (SelectedProjectSourceSetup != null)
+                SaveProjectSourceSetupTo(SelectedProjectSourceSetup);
 
             // [General]
             Setting.General.OptimizeCode = GeneralOptimizeCode;
             Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
             Setting.General.StopBuildOnError = GeneralStopBuildOnError;
             Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
+            Setting.General.EnableUpdateServerManagement = GeneralEnableUpdateServerManagement;
             Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
+            Setting.General.CustomUserAgent = GeneralCustomUserAgent;
 
             // [Interface]
             Setting.Interface.UseCustomTitle = InterfaceUseCustomTitle;
@@ -1328,6 +1460,7 @@ namespace PEBakery.WPF
             Setting.Theme.ThemeType = ThemeType;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
+            Setting.Theme.CustomTopPanelReportIssue = ThemeCustomTopPanelReportIssue;
             Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
             Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
             Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;
@@ -1368,6 +1501,52 @@ namespace PEBakery.WPF
 
         public void WriteToFile()
         {
+            // ProjectSourceSetup 
+            for (int i = 0; i < Projects.Count; i++)
+            {
+                Project p = Projects[i];
+                ProjectSourceSetup srcSetup = _projectSourceSetups[i];
+
+                if (srcSetup.PathSettingEnabled)
+                { // PathSetting is enabled
+                    string sourceDir = string.Join(",", srcSetup.SourceDirs.Select(x => StringEscaper.DoubleQuote(x)));
+                    string targetDir = srcSetup.TargetDir;
+                    string isoFile = srcSetup.IsoFile;
+
+                    IniReadWriter.WriteKeys(p.MainScript.RealPath, new IniKey[]
+                    {
+                        new IniKey(ScriptSection.Names.Main, Script.Const.SourceDir, sourceDir),
+                        new IniKey(ScriptSection.Names.Main, Script.Const.TargetDir, targetDir),
+                        new IniKey(ScriptSection.Names.Main, Script.Const.IsoFile, isoFile),
+                    });
+
+                    p.Variables.SetValue(VarsType.Fixed, Script.Const.SourceDir, sourceDir);
+                    p.Variables.SetValue(VarsType.Fixed, Script.Const.TargetDir, targetDir);
+                    p.Variables.SetValue(VarsType.Fixed, Script.Const.IsoFile, isoFile);
+
+                    p.MainScript.MainInfo[Script.Const.SourceDir] = sourceDir;
+                    p.MainScript.MainInfo[Script.Const.TargetDir] = targetDir;
+                    p.MainScript.MainInfo[Script.Const.IsoFile] = isoFile;
+                }
+                else
+                { // PathSetting is disabled
+                    IniReadWriter.DeleteKeys(p.MainScript.RealPath, new IniKey[]
+                    {
+                        new IniKey(ScriptSection.Names.Main, Script.Const.SourceDir),
+                        new IniKey(ScriptSection.Names.Main, Script.Const.TargetDir),
+                        new IniKey(ScriptSection.Names.Main, Script.Const.IsoFile),
+                    });
+
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.SourceDir);
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.TargetDir);
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.IsoFile);
+
+                    p.MainScript.MainInfo.Remove(Script.Const.SourceDir);
+                    p.MainScript.MainInfo.Remove(Script.Const.TargetDir);
+                    p.MainScript.MainInfo.Remove(Script.Const.IsoFile);
+                }
+            }
+
             // Write to file
             Setting.WriteToFile();
             foreach (Project p in Projects)
@@ -1445,9 +1624,11 @@ namespace PEBakery.WPF
 
         #region General Settting
         public static readonly RoutedCommand EnableLongFilePathCommand = new RoutedUICommand("Enable long file path support", "EnableLongFilePath", typeof(SettingViewCommands));
+        public static readonly RoutedCommand EnableUpdateServerManagement = new RoutedUICommand("Enable update server management", "EnableUpdateServerManagement", typeof(SettingViewCommands));
         #endregion
 
         #region Interface Setting
+        public static readonly RoutedCommand ResetScaleFactorCommand = new RoutedUICommand("Reset scale factor", "ResetScaleFactor", typeof(SettingViewCommands));
         public static readonly RoutedCommand SelectMonospacedFontCommand = new RoutedUICommand("Select monospaced font", "SelectMonospacedFont", typeof(SettingViewCommands));
         public static readonly RoutedCommand SelectCustomEditorPathCommand = new RoutedUICommand("Select custom editor path", "SelectCustomEditorPath", typeof(SettingViewCommands));
         #endregion

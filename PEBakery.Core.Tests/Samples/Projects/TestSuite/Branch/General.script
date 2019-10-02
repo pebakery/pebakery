@@ -78,6 +78,10 @@ LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z,Out=%Dest%
 Set,%Dest%,""
 LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z
 
+[Process-LoopNest]
+Set,%Dest%,NIL
+Loop,%ScriptFile%,LoopNestFirst,1,3
+
 [LoopTest]
 List,Append,%Dest%,#c
 List,Append,%Dest%,#1
@@ -91,6 +95,14 @@ List,Append,%Dest%,#c
 List,Append,%Dest%,#1
 If,#c,Equal,#2,Loop,BREAK
 
+[LoopNestFirst]
+List,Append,%Dest%,#c
+Loop,%ScriptFile%,LoopNestSecond,4,5
+List,Append,%Dest%,#c
+
+[LoopNestSecond]
+List,Append,%Dest%,#c
+
 [Process-IfElse]
 Set,%Dest%,F
 Set,#r,False
@@ -101,9 +113,54 @@ Else,Begin
 	Set,%Dest%,T
 End
 
+[Process-IfElseChain01]
+Set,%Dest%,F
+Set,#r,5
+If,#r,Equal,1,Set,%Dest%,F
+Else,If,#r,Equal,2,Set,%Dest%,F
+Else,If,#r,Equal,3,Set,%Dest%,F
+Else,If,#r,Equal,4,Set,%Dest%,F
+Else,If,#r,Equal,5,Set,%Dest%,T
+
+[Process-IfElseChain02]
+Set,%Dest%,F
+Set,#r,5
+If,#r,Equal,1,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,2,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,3,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,4,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,5,Begin
+  Set,%Dest%,T
+End
+
+[Process-IfElseChain03]
+Set,%Dest%,F
+Set,#r,3
+If,#r,Equal,1,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,2,Begin
+  // If-Else chain with Comments
+  Set,%Dest%,F
+  // If-Else chain with Comments
+End
+Else,If,#r,Equal,3,Begin
+  Set,%Dest%,T
+End
+
 [Process-IfBeginEnd]
 Set,%Dest%,F
 Set,#r,True
 If,#r,Equal,True,Begin
     Set,%Dest%,T
 End
+
+

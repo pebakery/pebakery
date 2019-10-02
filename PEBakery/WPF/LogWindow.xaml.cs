@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
@@ -62,6 +63,9 @@ namespace PEBakery.WPF
             _m.Logger.VariableUpdated += VariableUpdateEventHandler;
             _m.Logger.FullRefresh += FullRefreshEventHandler;
 
+            // Read Build-Full log column layout
+            ReadLayoutFromSetting();
+
             SystemLogListView.UpdateLayout();
             if (1 < SystemLogListView.Items.Count)
             {
@@ -74,26 +78,27 @@ namespace PEBakery.WPF
         #region Logger EventHandler
         public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
         {
-            if (e.Log != null)
-            {
-                _m.SystemLogs.Add(e.Log);
-            }
-            else if (e.Logs != null)
-            {
-                // e.Logs
-                foreach (LogModel.SystemLog dbLog in e.Logs)
-                    _m.SystemLogs.Add(dbLog);
-            }
-            else
-            {
-                Debug.Assert(false, $"Invalid {nameof(SystemLogUpdateEventArgs)}");
-            }
-
+            // Another dirty hack (Dispatcher) to avoid crash from threading issue
             Application.Current.Dispatcher.Invoke(() =>
             {
-                _m.SystemLogsSelectedIndex = SystemLogListView.Items.Count - 1;
+                if (e.Log != null)
+                {
+                    _m.SystemLogs.Add(e.Log);
+                }
+                else if (e.Logs != null)
+                {
+                    // e.Logs
+                    foreach (LogModel.SystemLog dbLog in e.Logs)
+                        _m.SystemLogs.Add(dbLog);
+                }
+                else
+                {
+                    Debug.Assert(false, $"Invalid {nameof(SystemLogUpdateEventArgs)}");
+                }
+
+                _m.SystemLogSelectedIndex = SystemLogListView.Items.Count - 1;
                 SystemLogListView.UpdateLayout();
-                SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogsSelectedIndex]);
+                SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogSelectedIndex]);
             });
         }
 
@@ -106,7 +111,7 @@ namespace PEBakery.WPF
         {
             if (_m.BuildEntries != null &&
                 _m.SelectedBuildIndex < _m.BuildEntries.Count &&
-                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId &&
+                _m.BuildEntries[_m.SelectedBuildIndex].Id == e.Log.BuildId &&
                 _m.ScriptEntries != null &&
                 _m.SelectedScriptIndex < _m.ScriptEntries.Count &&
                 _m.ScriptEntries[_m.SelectedScriptIndex].Item2 == e.Log.ScriptId)
@@ -140,7 +145,7 @@ namespace PEBakery.WPF
         {
             if (_m.BuildEntries != null &&
                 0 <= _m.SelectedBuildIndex && _m.SelectedBuildIndex < _m.BuildEntries.Count &&
-                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId)
+                _m.BuildEntries[_m.SelectedBuildIndex].Id == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
                 {
@@ -175,19 +180,38 @@ namespace PEBakery.WPF
             _m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
             _m.Logger.VariableUpdated -= VariableUpdateEventHandler;
 
+            // Save Build-Full log column layout
+            WriteLayoutToSetting();
+
+            // Reset LogWindow Button color to normal
+            Global.MainViewModel.BuildEndedWithIssue = false;
+
+            // Reset TaskBar progress state when build is not running
+            if (Engine.WorkingEngine == null)
+                Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
+
             Interlocked.Decrement(ref LogWindow.Count);
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion
 
-        #region BuildLog Event
+        #region Context Menus
+        private void SystemLogViewCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (_m.SystemLogSelectedIndex < 0 || _m.SystemLogs.Count <= _m.SystemLogSelectedIndex)
+                return;
+
+            LogModel.SystemLog log = _m.SystemLogs[_m.SystemLogSelectedIndex];
+            Clipboard.SetText(log.State == LogState.None ? log.Message : $"[{log.State}] {log.Message}");
+        }
+
         private void FullLogViewCopy_Click(object sender, RoutedEventArgs e)
         {
             if (_m.FullBuildLogSelectedIndex < 0 || _m.BuildLogs.Count <= _m.FullBuildLogSelectedIndex)
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.FullBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportType.Text, false));
+            Clipboard.SetText(log.Export(LogExportType.Text, false, true));
         }
 
         private void SimpleLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -196,7 +220,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.SimpleBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportType.Text, false));
+            Clipboard.SetText(log.Export(LogExportType.Text, false, true));
         }
 
         private void VariableLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -209,10 +233,82 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region ReadLayoutFromSetting, WriteLayoutToSetting
+        public void ReadLayoutFromSetting()
+        {
+            _m.WindowWidth = Global.Setting.LogViewer.LogWindowWidth;
+            _m.WindowHeight = Global.Setting.LogViewer.LogWindowHeight;
+            _m.BuildFullLogTimeVisible = Global.Setting.LogViewer.BuildFullLogTimeVisible;
+            _m.BuildFullLogTimeWidth = Global.Setting.LogViewer.BuildFullLogTimeWidth;
+            _m.BuildFullLogScriptOriginVisible = Global.Setting.LogViewer.BuildFullLogScriptOriginVisible;
+            _m.BuildFullLogScriptOriginWidth = Global.Setting.LogViewer.BuildFullLogScriptOriginWidth;
+            _m.BuildFullLogDepthVisible = Global.Setting.LogViewer.BuildFullLogDepthVisible;
+            _m.BuildFullLogDepthWidth = Global.Setting.LogViewer.BuildFullLogDepthWidth;
+            _m.BuildFullLogStateVisible = Global.Setting.LogViewer.BuildFullLogStateVisible;
+            _m.BuildFullLogStateWidth = Global.Setting.LogViewer.BuildFullLogStateWidth;
+            _m.BuildFullLogFlagsVisible = Global.Setting.LogViewer.BuildFullLogFlagsVisible;
+            _m.BuildFullLogFlagsWidth = Global.Setting.LogViewer.BuildFullLogFlagsWidth;
+            _m.BuildFullLogMessageVisible = Global.Setting.LogViewer.BuildFullLogMessageVisible;
+            _m.BuildFullLogMessageWidth = Global.Setting.LogViewer.BuildFullLogMessageWidth;
+            _m.BuildFullLogRawCodeVisible = Global.Setting.LogViewer.BuildFullLogRawCodeVisible;
+            _m.BuildFullLogRawCodeWidth = Global.Setting.LogViewer.BuildFullLogRawCodeWidth;
+            _m.BuildFullLogLineNumberVisible = Global.Setting.LogViewer.BuildFullLogLineNumberVisible;
+            _m.BuildFullLogLineNumberWidth = Global.Setting.LogViewer.BuildFullLogLineNumberWidth;
+        }
+
+        public void WriteLayoutToSetting()
+        {
+            // Strange enough, using standard binding with converter just locks column width.
+            // Instead, retrieve column width directly from column using old-school method.
+            // Be noted that this will leave some quirk.
+            // Ex) If you adjusted column width and hide it, the modified width will not be saved.
+            Global.Setting.LogViewer.LogWindowWidth = _m.WindowWidth;
+            Global.Setting.LogViewer.LogWindowHeight = _m.WindowHeight;
+            Global.Setting.LogViewer.BuildFullLogTimeVisible = _m.BuildFullLogTimeVisible;
+            Global.Setting.LogViewer.BuildFullLogTimeWidth = (int)(_m.BuildFullLogTimeVisible
+                ? BuildFullLogTimeColumn.Width
+                : _m.BuildFullLogTimeWidth);
+            Global.Setting.LogViewer.BuildFullLogScriptOriginVisible = _m.BuildFullLogScriptOriginVisible;
+            Global.Setting.LogViewer.BuildFullLogScriptOriginWidth = (int)(_m.BuildFullLogScriptOriginVisible
+                ? BuildFullLogScriptOriginColumn.Width
+                : _m.BuildFullLogScriptOriginWidth);
+            Global.Setting.LogViewer.BuildFullLogDepthVisible = _m.BuildFullLogDepthVisible;
+            Global.Setting.LogViewer.BuildFullLogDepthWidth = (int)(_m.BuildFullLogDepthVisible
+                ? BuildFullLogDepthColumn.Width
+                : _m.BuildFullLogDepthWidth);
+            Global.Setting.LogViewer.BuildFullLogStateVisible = _m.BuildFullLogStateVisible;
+            Global.Setting.LogViewer.BuildFullLogStateWidth = (int)(_m.BuildFullLogStateVisible
+                ? BuildFullLogStateColumn.Width
+                : _m.BuildFullLogStateWidth);
+            Global.Setting.LogViewer.BuildFullLogFlagsVisible = _m.BuildFullLogFlagsVisible;
+            Global.Setting.LogViewer.BuildFullLogFlagsWidth = (int)(_m.BuildFullLogFlagsVisible
+                ? BuildFullLogFlagsColumn.Width
+                : _m.BuildFullLogFlagsWidth);
+            Global.Setting.LogViewer.BuildFullLogMessageVisible = _m.BuildFullLogMessageVisible;
+            Global.Setting.LogViewer.BuildFullLogMessageWidth = (int)(_m.BuildFullLogMessageVisible
+                ? BuildFullLogMessageColumn.Width
+                : _m.BuildFullLogMessageWidth);
+            Global.Setting.LogViewer.BuildFullLogRawCodeVisible = _m.BuildFullLogRawCodeVisible;
+            Global.Setting.LogViewer.BuildFullLogRawCodeWidth = (int)(_m.BuildFullLogRawCodeVisible
+                ? BuildFullLogRawCodeColumn.Width
+                : _m.BuildFullLogRawCodeWidth);
+            Global.Setting.LogViewer.BuildFullLogLineNumberVisible = _m.BuildFullLogLineNumberVisible;
+            Global.Setting.LogViewer.BuildFullLogLineNumberWidth = (int)(_m.BuildFullLogLineNumberVisible
+                ? BuildFullLogLineNumberColumn.Width
+                : _m.BuildFullLogLineNumberWidth);
+            Global.Setting.WriteToFile();
+        }
+        #endregion
+
         #region Commands
-        private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void Command_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = _m != null && _m.CanExecuteCommand;
+        }
+
+        private void CloseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Close();
         }
 
         private void RefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -239,7 +335,7 @@ namespace PEBakery.WPF
 
         private void ClearCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand && !Global.MainViewModel.WorkInProgress && Engine.WorkingLock == 0;
+            e.CanExecute = _m != null && _m.CanExecuteCommand && !Global.MainViewModel.WorkInProgress && !Engine.IsRunning;
         }
 
         private async void ClearCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -247,29 +343,30 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                await Task.Run(() =>
+                switch (_m.SelectedTabIndex)
                 {
-                    switch (_m.SelectedTabIndex)
-                    {
-                        case 0: // System Log 
+                    case 0: // System Log 
+                        await Task.Run(() =>
+                        {
                             _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
                             {
                                 SystemLog = true,
                             });
-                            _m.RefreshSystemLog();
-                            break;
-                        case 1: // Build Log
-                            _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
-                            {
-                                BuildInfo = true,
-                                BuildLog = true,
-                                Script = true,
-                                Variable = true,
-                            });
-                            _m.RefreshBuildLog();
-                            break;
-                    }
-                });
+                        });
+                        _m.RefreshSystemLog();
+                        break;
+                    case 1: // Build Log
+                        // Open Context Menu
+                        // Will be redirected to ClearCurrentBuildCommand_Executed or ClearEntireCommand_Executed
+                        ContextMenu menu = FindResource("ClearBuildLogContextMenu") as ContextMenu;
+                        Debug.Assert(menu != null);
+                        if (e.Source is Button button)
+                        {
+                            menu.PlacementTarget = button;
+                            menu.IsOpen = true;
+                        }
+                        break;
+                }
             }
             finally
             {
@@ -278,9 +375,32 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExportCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private async void ClearCurrentBuildCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand;
+            if (!_m.CheckSelectBuildIndex())
+                return;
+            int buildId = _m.BuildEntries[_m.SelectedBuildIndex].Id;
+
+            await Task.Run(() =>
+            {
+                _m.Logger.Db.ClearBuildLog(buildId);
+            });
+            _m.RefreshBuildLog();
+        }
+
+        private async void ClearEntireCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            await Task.Run(() =>
+            {
+                _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
+                {
+                    BuildInfo = true,
+                    BuildLog = true,
+                    Script = true,
+                    Variable = true,
+                });
+            });
+            _m.RefreshBuildLog();
         }
 
         private void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -295,7 +415,7 @@ namespace PEBakery.WPF
                 else // Export Build Logs
                     exportModel.SetBuildLog(_m.SelectedBuildIndex, _m.BuildLogShowComments, _m.BuildLogShowMacros);
 
-                LogExportWindow dialog = new LogExportWindow(exportModel) { Owner = this };
+                LogExportDialog dialog = new LogExportDialog(exportModel) { Owner = this };
                 dialog.ShowDialog();
             }
             finally
@@ -305,14 +425,20 @@ namespace PEBakery.WPF
             }
         }
 
-        private void CloseCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void LogOptionsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand;
+            // Open Context Menu
+            if (e.Source is Button button && button.ContextMenu is ContextMenu menu)
+            {
+                menu.PlacementTarget = button;
+                menu.IsOpen = true;
+            }
         }
 
-        private void CloseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ResetLayoutCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Close();
+            Global.Setting.LogViewer.Default();
+            ReadLayoutFromSetting();
         }
         #endregion
     }
@@ -333,7 +459,7 @@ namespace PEBakery.WPF
 
             // Set ObservableCollection
             SystemLogs = new ObservableCollection<LogModel.SystemLog>();
-            BuildEntries = new ObservableCollection<Tuple<string, int>>();
+            BuildEntries = new ObservableCollection<LogModel.BuildInfo>();
             ScriptEntries = new ObservableCollection<Tuple<string, int, int>>();
             LogStats = new ObservableCollection<Tuple<LogState, int>>();
             BuildLogs = new ObservableCollection<LogModel.BuildLog>();
@@ -358,16 +484,16 @@ namespace PEBakery.WPF
                 log.Time = log.Time.ToLocalTime();
                 SystemLogs.Add(log);
             }
-            SystemLogsSelectedIndex = SystemLogs.Count - 1;
+            SystemLogSelectedIndex = SystemLogs.Count - 1;
         }
 
         public void RefreshBuildLog()
         {
+            // I don't know why, but LogStats.Clear throws thread exception even though EnableCollectionSynchronization is used.
+            // Reproduce: Remove Dispatcher.Invoke, and run CodeBox three times in a row (without closing LogWindow).
+            // TODO: This is a quick dirty fix. Apply better patch later.
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                // I don't know why, but LogStats.Clear throws thread exception even though EnableCollectionSynchronization is used.
-                // Reproduce: Remove Dispatcher.Invoke, and run CodeBox three times in a row (without closing LogWindow).
-                // TODO: This is a quick dirty fix. Apply better patch later.
                 LogStats.Clear();
                 VariableLogs.Clear();
 
@@ -375,9 +501,7 @@ namespace PEBakery.WPF
                 LogModel.BuildInfo[] buildEntries = LogDb.Table<LogModel.BuildInfo>()
                     .OrderByDescending(x => x.StartTime)
                     .ToArray();
-                BuildEntries = new ObservableCollection<Tuple<string, int>>(
-                    buildEntries.Select(x => new Tuple<string, int>(x.Text, x.Id))
-                );
+                BuildEntries = new ObservableCollection<LogModel.BuildInfo>(buildEntries);
             });
 
             SelectedBuildIndex = 0;
@@ -391,7 +515,7 @@ namespace PEBakery.WPF
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 ScriptEntries.Clear();
-                    
+
                 if (buildId == null)
                 {
                     // Clear
@@ -416,7 +540,7 @@ namespace PEBakery.WPF
                         SelectedScriptIndex = 0; // Summary is always index 0
                 }
             });
-            
+
         }
 
         /// <summary>
@@ -472,6 +596,11 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Per Script
+                    // Script Title Dict for script origin
+                    ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>()
+                        .Where(x => x.BuildId == buildId)
+                        .ToDictionary(x => x.Id, x => x.Name);
+
                     // BuildLog
                     var builds = LogDb.Table<LogModel.BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
@@ -514,6 +643,22 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Window Resolution
+        private int _windowWidth = 900;
+        public int WindowWidth
+        {
+            get => _windowWidth;
+            set => SetProperty(ref _windowWidth, value);
+        }
+
+        private int _windowHeight = 640;
+        public int WindowHeight
+        {
+            get => _windowHeight;
+            set => SetProperty(ref _windowHeight, value);
+        }
+        #endregion
+
         #region TabIndex
         private int _selectedTabIndex;
         public int SelectedTabIndex
@@ -532,7 +677,7 @@ namespace PEBakery.WPF
 
         #region SystemLog
         private int _systemLogsSelectedIndex;
-        public int SystemLogsSelectedIndex
+        public int SystemLogSelectedIndex
         {
             get => _systemLogsSelectedIndex;
             set => SetProperty(ref _systemLogsSelectedIndex, value);
@@ -558,7 +703,7 @@ namespace PEBakery.WPF
 
                 if (0 <= value && 0 < _buildEntries.Count)
                 {
-                    int buildId = _buildEntries[value].Item2;
+                    int buildId = _buildEntries[value].Id;
                     RefreshScripts(buildId, false);
                 }
                 else
@@ -570,16 +715,16 @@ namespace PEBakery.WPF
             }
         }
 
-        // Build Name, Build Id
+        // Time, Build Name, Build Id 
         private readonly object _buildEntriesLock = new object();
-        private ObservableCollection<Tuple<string, int>> _buildEntries;
-        public ObservableCollection<Tuple<string, int>> BuildEntries
+        private ObservableCollection<LogModel.BuildInfo> _buildEntries;
+        public ObservableCollection<LogModel.BuildInfo> BuildEntries
         {
             get => _buildEntries;
             set => SetCollectionProperty(ref _buildEntries, _buildEntriesLock, value);
         }
 
-        public bool CheckSelectBulidIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
+        public bool CheckSelectBuildIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
 
         private int _selectedScriptIndex;
         public int SelectedScriptIndex
@@ -619,6 +764,13 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _buildLogs, _buildLogsLock, value);
         }
 
+        private Dictionary<int, string> _scriptTitleDict;
+        public Dictionary<int, string> ScriptTitleDict
+        {
+            get => _scriptTitleDict;
+            set => SetProperty(ref _scriptTitleDict, value);
+        }
+
         private int _simpleBuildLogSelectedIndex;
         public int SimpleBuildLogSelectedIndex
         {
@@ -648,6 +800,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _variableLogSelectedIndex, value);
         }
 
+        // Log Filters
         private bool _buildLogShowComments = true;
         public bool BuildLogShowComments
         {
@@ -655,7 +808,7 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowComments = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
         }
@@ -667,9 +820,122 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowMacros = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
+        }
+
+        // Visibility and Width of Columns
+        private bool _buildFullLogTimeVisible = true;
+        public bool BuildFullLogTimeVisible
+        {
+            get => _buildFullLogTimeVisible;
+            set => SetProperty(ref _buildFullLogTimeVisible, value);
+        }
+
+        private double _buildFullLogTimeWidth = 135;
+        public double BuildFullLogTimeWidth
+        {
+            get => _buildFullLogTimeWidth;
+            set => SetProperty(ref _buildFullLogTimeWidth, value);
+        }
+
+        private bool _buildFullLogScriptOriginVisible = false;
+        public bool BuildFullLogScriptOriginVisible
+        {
+            get => _buildFullLogScriptOriginVisible;
+            set => SetProperty(ref _buildFullLogScriptOriginVisible, value);
+        }
+
+        private double _buildFullLogScriptOriginWidth = 135;
+        public double BuildFullLogScriptOriginWidth
+        {
+            get => _buildFullLogScriptOriginWidth;
+            set => SetProperty(ref _buildFullLogScriptOriginWidth, value);
+        }
+
+        private bool _buildFullLogDepthVisible = true;
+        public bool BuildFullLogDepthVisible
+        {
+            get => _buildFullLogDepthVisible;
+            set => SetProperty(ref _buildFullLogDepthVisible, value);
+        }
+
+        private double _buildFullLogDepthWidth = 35;
+        public double BuildFullLogDepthWidth
+        {
+            get => _buildFullLogDepthWidth;
+            set => SetProperty(ref _buildFullLogDepthWidth, value);
+        }
+
+        private bool _buildFullLogStateVisible = true;
+        public bool BuildFullLogStateVisible
+        {
+            get => _buildFullLogStateVisible;
+            set => SetProperty(ref _buildFullLogStateVisible, value);
+        }
+
+        private double _buildFullLogStateWidth = 55;
+        public double BuildFullLogStateWidth
+        {
+            get => _buildFullLogStateWidth;
+            set => SetProperty(ref _buildFullLogStateWidth, value);
+        }
+
+        private bool _buildFullLogFlagsVisible = true;
+        public bool BuildFullLogFlagsVisible
+        {
+            get => _buildFullLogFlagsVisible;
+            set => SetProperty(ref _buildFullLogFlagsVisible, value);
+        }
+
+        private double _buildFullLogFlagsWidth = 35;
+        public double BuildFullLogFlagsWidth
+        {
+            get => _buildFullLogFlagsWidth;
+            set => SetProperty(ref _buildFullLogFlagsWidth, value);
+        }
+
+        private bool _buildFullLogMessageVisible = true;
+        public bool BuildFullLogMessageVisible
+        {
+            get => _buildFullLogMessageVisible;
+            set => SetProperty(ref _buildFullLogMessageVisible, value);
+        }
+
+        private double _buildFullLogMessageWidth = 340;
+        public double BuildFullLogMessageWidth
+        {
+            get => _buildFullLogMessageWidth;
+            set => SetProperty(ref _buildFullLogMessageWidth, value);
+        }
+
+        private bool _buildFullLogRawCodeVisible = true;
+        public bool BuildFullLogRawCodeVisible
+        {
+            get => _buildFullLogRawCodeVisible;
+            set => SetProperty(ref _buildFullLogRawCodeVisible, value);
+        }
+
+        private double _buildFullLogRawCodeWidth = 175;
+        public double BuildFullLogRawCodeWidth
+        {
+            get => _buildFullLogRawCodeWidth;
+            set => SetProperty(ref _buildFullLogRawCodeWidth, value);
+        }
+
+        private bool _buildFullLogLineNumberVisible = true;
+        public bool BuildFullLogLineNumberVisible
+        {
+            get => _buildFullLogLineNumberVisible;
+            set => SetProperty(ref _buildFullLogLineNumberVisible, value);
+        }
+
+        private double _buildFullLogLineNumberWidth = 40;
+        public double BuildFullLogLineNumberWidth
+        {
+            get => _buildFullLogLineNumberWidth;
+            set => SetProperty(ref _buildFullLogLineNumberWidth, value);
         }
         #endregion
 
@@ -694,7 +960,11 @@ namespace PEBakery.WPF
                 new KeyGesture(Key.F5),
             });
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearCurrentBuildCommand = new RoutedUICommand("Clear current build log", "ClearCurrentBuild", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear all build logs", "ClearEntireBuild", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
+        public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
+        public static readonly RoutedCommand ResetLayoutCommand = new RoutedUICommand("Reset Layout", "Reset Layout", typeof(LogViewCommands));
         public static readonly RoutedCommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(LogViewCommands));
         #endregion
     }

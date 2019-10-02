@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -34,97 +34,92 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         FontSize="12"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
-        Title="PEBakery Settings"
-        Width="600" Height="540"
         WindowStartupLocation="CenterOwner"
+        Title="PEBakery Settings"
+        Width="600" Height="550"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
         <!-- Global -->
-        <CommandBinding x:Name="DefaultSettingCommand"
-                        Command="local:SettingViewCommands.DefaultSettingCommand"
+        <CommandBinding Command="local:SettingViewCommands.DefaultSettingCommand"
                         CanExecute="Command_CanExecute"
                         Executed="DefaultSettingCommand_Executed"/>
-        <CommandBinding x:Name="SaveSettingCommand"
-                        Command="local:SettingViewCommands.SaveSettingCommand"
+        <CommandBinding Command="local:SettingViewCommands.SaveSettingCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SaveSettingCommand_Executed"/>
         <!-- Projects -->
-        <CommandBinding x:Name="SelectSourceDirCommand"
-                        Command="local:SettingViewCommands.SelectSourceDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectSourceDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectSourceDirCommand_Executed"/>
-        <CommandBinding x:Name="ResetSourceDirCommand"
-                        Command="local:SettingViewCommands.ResetSourceDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.ResetSourceDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ResetSourceDirCommand_Executed"/>
-        <CommandBinding x:Name="SelectTargetDirCommand"
-                        Command="local:SettingViewCommands.SelectTargetDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectTargetDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectTargetDirCommand_Executed"/>
-        <CommandBinding x:Name="SelectIsoFileCommand"
-                        Command="local:SettingViewCommands.SelectIsoFileCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectIsoFileCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectIsoFileCommand_Executed"/>
         <!-- General -->
-        <CommandBinding x:Name="EnableLongFilePathCommand"
-                        Command="local:SettingViewCommands.EnableLongFilePathCommand"
+        <CommandBinding Command="local:SettingViewCommands.EnableLongFilePathCommand"
                         CanExecute="Command_CanExecute"
                         Executed="EnableLongFilePathCommand_Executed"/>
+        <CommandBinding Command="local:SettingViewCommands.EnableUpdateServerManagement"
+                        CanExecute="Command_CanExecute"
+                        Executed="EnableUpdateServerManager_Executed"/>
         <!-- Interface -->
-        <CommandBinding x:Name="SelectMonospacedFontCommand"
-                        Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+        <CommandBinding Command="local:SettingViewCommands.ResetScaleFactorCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ResetScaleFactorCommand_Executed"/>
+        <CommandBinding Command="local:SettingViewCommands.SelectMonospacedFontCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectMonospacedFontCommand_Executed"/>
-        <CommandBinding x:Name="SelectCustomEditorPathCommand"
-                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
                         CanExecute="SelectCustomEditorPathCommand_CanExecute"
                         Executed="SelectCustomEditorPathCommand_Executed"/>
         <!-- Theme -->
-        <CommandBinding x:Name="SelectThemeCommand"
-                        Command="local:SettingViewCommands.SelectThemeCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectThemeCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectThemeCommand_Executed"/>
         <!-- Script -->
-        <CommandBinding x:Name="ClearCacheDatabaseCommand"
-                        Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
+        <CommandBinding Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
                         CanExecute="ClearCacheDatabaseCommand_CanExecute"
                         Executed="ClearCacheDatabaseCommand_Executed"/>
         <!-- Log -->
-        <CommandBinding x:Name="ClearLogDatabaseCommand"
-                        Command="local:SettingViewCommands.ClearLogDatabaseCommand"
+        <CommandBinding Command="local:SettingViewCommands.ClearLogDatabaseCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ClearLogDatabaseCommand_Executed"/>
         <!-- Compat -->
-        <CommandBinding x:Name="ToggleCompatOptionsCommand"
-                        Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
+        <CommandBinding Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ToggleCompatOptionsCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <local:ProjectPathEnabledConverter x:Key="ProjectPathEnabledConverter" />
+        <local:ProjectPathEnabledVisibilityConverter x:Key="ProjectPathEnabledVisibilityConverter" />
         <local:FontInfoDescriptionConverter x:Key="FontInfoDescriptionConverter" />
         <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter" />
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
         <local:ThemeTypeIsCustomConverter x:Key="ThemeTypeIsCustomConverter"/>
-        <local:AddPercentConverter x:Key="AddPercentConverter"/>
+        <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
     </Window.Resources>
-    <Grid>
+    <Grid ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
-                    <TextBlock FontSize="13" Text="Projects"/>
+                    <TextBlock FontSize="13" Text="Project"/>
                 </TabItem.Header>
                 <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
                     <TextBlock Margin="0, 0, 0, 5"
@@ -165,9 +160,10 @@
                           VerticalAlignment="Center">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30"/>
+                            <RowDefinition/>
+                            <RowDefinition/>
                             <RowDefinition Height="30"/>
                             <RowDefinition Height="30"/>
-                            <RowDefinition Height="25"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
@@ -189,25 +185,34 @@
                                   VerticalContentAlignment="Center"
                                   ItemsSource="{Binding ProjectNames}"
                                   SelectedIndex="{Binding SelectedProjectIndex}"/>
+                        <!-- Source Setup Disabled Tip -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                               Margin="0, 0, 0, 5"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="#FFE00000"
+                               FontWeight="SemiBold"
+                               Visibility="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledVisibilityConverter}}"
+                               Text="*** Source Setup has been disabled for this project. ***"/>
                         <!-- Source Directory -->
-                        <TextBlock Grid.Row="1" Grid.Column="0"
+                        <TextBlock Grid.Row="2" Grid.Column="0"
                                    Height="25"
                                    Margin="0, 0, 0, 5"
                                    VerticalAlignment="Center"
                                    Text="Source Directory"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1"
+                        <ComboBox Grid.Row="2" Grid.Column="1"
                                   Height="25"
                                   Margin="0, 0, 5, 5"
                                   VerticalAlignment="Center"
                                   VerticalContentAlignment="Center"
-                                  IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                  IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                   ItemsSource="{Binding ProjectSourceDirs}"
                                   SelectedIndex="{Binding ProjectSourceDirIndex}"/>
-                        <Button Grid.Row="1" Grid.Column="2"
+                        <Button Grid.Row="2" Grid.Column="2"
                                 Height="25"
                                 Margin="0, 0, 5, 5"
                                 x:Name="SelectSourceDirButton"
-                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                 Command="local:SettingViewCommands.SelectSourceDirCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <Button.Content>
@@ -217,11 +222,11 @@
                                                                     Margin="2"/>
                             </Button.Content>
                         </Button>
-                        <Button Grid.Row="1" Grid.Column="3"
+                        <Button Grid.Row="2" Grid.Column="3"
                                 Height="25"
                                 Margin="0, 0, 0, 5"
                                 x:Name="ResetSourceDirButton"
-                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                 Command="local:SettingViewCommands.ResetSourceDirCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <Button.Content>
@@ -232,23 +237,23 @@
                             </Button.Content>
                         </Button>
                         <!-- Target Directory -->
-                        <TextBlock Grid.Row="2" Grid.Column="0"
+                        <TextBlock Grid.Row="3" Grid.Column="0"
                                    Height="25"
                                    Margin="0, 0, 0, 5"
                                    VerticalAlignment="Center"
                                    Text="Target Directory"/>
-                        <TextBox Grid.Row="2" Grid.Column="1"
+                        <TextBox Grid.Row="3" Grid.Column="1"
                                  Grid.ColumnSpan="2"
                                  Height="25"
                                  Margin="0, 0, 5, 5"
                                  VerticalContentAlignment="Center"
-                                 IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                 IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                  Text="{Binding ProjectTargetDir}"/>
-                        <Button Grid.Row="2" Grid.Column="3"
+                        <Button Grid.Row="3" Grid.Column="3"
                                 Height="25"
                                 Margin="0, 0, 0, 5"
                                 x:Name="SelectTargetDirButton"
-                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                 Command="local:SettingViewCommands.SelectTargetDirCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <Button.Content>
@@ -259,21 +264,21 @@
                             </Button.Content>
                         </Button>
                         <!-- ISO File -->
-                        <TextBlock Grid.Row="3" Grid.Column="0"
+                        <TextBlock Grid.Row="4" Grid.Column="0"
                                    Height="25"
                                    VerticalAlignment="Center"
                                    Text="ISO File"/>
-                        <TextBox Grid.Row="3" Grid.Column="1"
+                        <TextBox Grid.Row="4" Grid.Column="1"
                                  Grid.ColumnSpan="2"
                                  Height="25"
                                  Margin="0, 0, 5, 0"
-                                 IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                 IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                  VerticalContentAlignment="Center"
                                  Text="{Binding ProjectIsoFile}"/>
-                        <Button Grid.Row="3" Grid.Column="3"
+                        <Button Grid.Row="4" Grid.Column="3"
                                 Height="25"
                                 x:Name="SelectIsoFileButton"
-                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                IsEnabled="{Binding SelectedProject, Converter={StaticResource ProjectPathEnabledConverter}}"
                                 Command="local:SettingViewCommands.SelectIsoFileCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <Button.Content>
@@ -286,7 +291,7 @@
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="General"/>
                 </TabItem.Header>
@@ -306,7 +311,7 @@
                                   IsChecked="{Binding GeneralOptimizeCode}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
-                                  Content="Show LogWindow after build"
+                                  Content="Show log viewer after a build"
                                   IsChecked="{Binding GeneralShowLogAfterBuild}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
@@ -316,7 +321,7 @@
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
                                FontSize="13"
-                               Text="Path Length Limit"/>
+                               Text="Advanced"/>
                     <Separator Margin="0, 0, 0, 5"
                                BorderBrush="Black"
                                BorderThickness="2"/>
@@ -328,6 +333,13 @@
                                   Command="local:SettingViewCommands.EnableLongFilePathCommand"
                                   AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                   IsChecked="{Binding GeneralEnableLongFilePath}" />
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable update server management"
+                                  ToolTip="Intended for project developers and maintainers only"
+                                  Command="local:SettingViewCommands.EnableUpdateServerManagement"
+                                  AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                  IsChecked="{Binding GeneralEnableUpdateServerManagement}" />
                     </StackPanel>
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
@@ -337,19 +349,20 @@
                                BorderBrush="Black"
                                BorderThickness="2"/>
                     <StackPanel Margin="5, 0, 5, 0">
-                        <CheckBox Height="20"
-                                  VerticalContentAlignment="Center"
-                                  Content="Use custom User-Agent in WebGet"
-                                  IsChecked="{Binding GeneralUseCustomUserAgent}" />
                         <Grid Height="25" Margin="0, 0, 0, 3">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="20"/>
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
                                        VerticalAlignment="Center"
-                                       Text="Custom User-Agent" />
-                            <TextBox Grid.Column="1"
+                                       Text="Custom User-Agent for WebGet" />
+                            <CheckBox Grid.Column="1"
+                                      Height="20"
+                                      VerticalContentAlignment="Center"
+                                      IsChecked="{Binding GeneralUseCustomUserAgent}" />
+                            <TextBox Grid.Column="2"
                                      VerticalContentAlignment="Center"
                                      IsEnabled="{Binding GeneralUseCustomUserAgent}"
                                      Text="{Binding GeneralCustomUserAgent}" />
@@ -357,7 +370,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Interface"/>
                 </TabItem.Header>
@@ -377,23 +390,31 @@
                                   IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="25"/>
-                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="20"/>
                                 <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <!-- Custom Title -->
                             <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Margin="0, 0, 0, 5"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        Text="Custom Title" />
                             <CheckBox Grid.Row="0" Grid.Column="1"
+                                      Grid.ColumnSpan="2"
+                                      Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
                                       IsChecked="{Binding InterfaceUseCustomTitle}" />
                             <TextBox Grid.Row="0" Grid.Column="2"
+                                     Grid.ColumnSpan="2"
+                                     Margin="0, 0, 0, 5"
                                      FontSize="12"
                                      VerticalContentAlignment="Center"
                                      IsEnabled="{Binding InterfaceUseCustomTitle}"
@@ -401,19 +422,69 @@
                             <!-- Interface Size -->
                             <TextBlock Grid.Row="1" Grid.Column="0"
                                        Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
                                        Text="Interface Size"
                                        VerticalAlignment="Center"/>
                             <ComboBox Grid.Row="1" Grid.Column="2"
+                                      Grid.ColumnSpan="2"
+                                      Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
                                       ItemsSource="{Binding InterfaceSizes}"
                                       SelectedItem="{Binding InterfaceSize}"/>
+                            <!-- Script Interface Scale Factor -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                       Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       Text="Script Scale Factor (%)"/>
+                            <ccc:NumberBox Grid.Row="2" Grid.Column="2"
+                                          Margin="0, 0, 0, 5"
+                                          Height="25"
+                                          VerticalContentAlignment="Center"
+                                          Minimum="50"
+                                          Maximum="200"
+                                          IncrementUnit="5"
+                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"/>
+                            <Button Grid.Row="2" Grid.Column="3"
+                                    Margin="5, 0, 0, 5"
+                                    Width="25"
+                                    Command="local:SettingViewCommands.ResetScaleFactorCommand"
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                                <Button.Content>
+                                    <iconPacks:Material Kind="Refresh"/>
+                                </Button.Content>
+                            </Button>
+                            <!-- Monospaced Font -->
+                            <TextBlock Grid.Row="3" Grid.Column="0" 
+                                       Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       Text="Monospaced Font"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                                       FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                                       FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
+                                       Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
+                            <Button Grid.Row="3" Grid.Column="3"
+                                    Margin="5, 0, 0, 5"
+                                    Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                                <Button.Content>
+                                    <iconPacks:PackIconMaterial Kind="FormatFont"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="2"/>
+                                </Button.Content>
+                            </Button>
                         </Grid>
                     </StackPanel>
 
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
                                FontSize="13"
-                               Text="Default Code Editor"/>
+                               Text="External Code Editor"/>
                     <Separator Margin="0, 0, 0, 5"
                                BorderBrush="Black"
                                BorderThickness="2"/>
@@ -429,8 +500,7 @@
                                    Text="Custom Editor"/>
                         <CheckBox Grid.Row="0" Grid.Column="1" 
                                   VerticalAlignment="Center"
-                                  IsChecked="{Binding InterfaceUseCustomEditor}"
-                                  Content="Use custom editor" />
+                                  IsChecked="{Binding InterfaceUseCustomEditor}" />
                         <TextBox Grid.Row="0" Grid.Column="2" 
                                  Margin="0, 0, 5, 0"
                                  VerticalContentAlignment="Center"
@@ -446,65 +516,9 @@
                             </Button.Content>
                         </Button>
                     </Grid>
-
-                    <TextBlock Margin="0, 10, 0, 5"
-                               FontWeight="Bold"
-                               FontSize="13"
-                               Text="Default Monospaced Font"/>
-                    <Separator Margin="0, 0, 0, 5"
-                               BorderBrush="Black"
-                               BorderThickness="2"/>
-                    <Grid Height="25" Margin="5, 0, 5, 0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="25"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
-                                   FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
-                                   FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
-                                   Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Command="local:SettingViewCommands.SelectMonospacedFontCommand"
-                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="FormatFont"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="2"/>
-                            </Button.Content>
-                        </Button>
-                    </Grid>
-
-                    <TextBlock Margin="0, 10, 0, 5"
-                               FontWeight="Bold"
-                               FontSize="13"
-                               Text="Scale Factor for Script Interface"/>
-                    <Separator Margin="0, 0, 0, 5"
-                               BorderBrush="Black"
-                               BorderThickness="2"/>
-                    <Grid Margin="5, 0, 5, 0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="32"/>
-                        </Grid.ColumnDefinitions>
-                        <Slider Grid.Column="0"
-                                Minimum="70"
-                                Maximum="200"
-                                TickPlacement="BottomRight"
-                                TickFrequency="10"
-                                IsSnapToTickEnabled="True"
-                                Foreground="Black"
-                                x:Name="ScaleFactorSlider"
-                                Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding InterfaceScaleFactor, Mode=OneWay, Converter={StaticResource AddPercentConverter}}"
-                                   TextAlignment="Right" />
-                    </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Theme"/>
                 </TabItem.Header>
@@ -517,9 +531,11 @@
                                SnapsToDevicePixels="True"
                                BorderBrush="Black"
                                BorderThickness="2"/>
-                    <Grid Height="25">
+                    <Grid Height="25" Margin="5, 0, 5, 0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
@@ -529,24 +545,36 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
-                                   Text="Select Theme"/>
+                                   Text="Select Theme:"/>
                         <TextBlock Grid.Column="1"
                                    VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"
+                                   HorizontalAlignment="Left"
+                                   FontWeight="Bold"
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
-                                x:Name="BlackThemeButton"
-                                Background="Black"
+                                x:Name="DarkThemeButton"
+                                Background="#424242"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Content="Black">
+                                Content="Dark">
                             <Button.CommandParameter>
                                 <s:Int32>0</s:Int32>
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="3" 
-                                Background="DarkRed"
+                                x:Name="DarkerThemeButton"
+                                Background="#2C2C2C"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Darker">
+                            <Button.CommandParameter>
+                                <s:Int32>4</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="4" 
+                                Background="#FFA4373A"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -555,8 +583,8 @@
                                 <s:Int32>1</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        <Button Grid.Column="4" 
-                                Background="DarkGreen"
+                        <Button Grid.Column="5" 
+                                Background="#2A6E52"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -565,19 +593,29 @@
                                 <s:Int32>2</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        <Button Grid.Column="5" 
-                                Background="DarkBlue"
+                        <Button Grid.Column="6" 
+                                Background="#2F526C"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Content="Blue">
+                                Content="Ocean">
                             <Button.CommandParameter>
                                 <s:Int32>3</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        
-                        <Button Grid.Column="6" 
-                                Background="White"
+                        <Button Grid.Column="7" 
+                                Background="#2C6E97"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Marine">
+                            <Button.CommandParameter>
+                                <s:Int32>5</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="8" 
+                                Background="{Binding ThemeCustomTopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
+                                Foreground="{Binding ThemeCustomTopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Custom">
@@ -606,6 +644,7 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90"/>
@@ -614,20 +653,20 @@
                         </Grid.ColumnDefinitions>
                         <!-- Background -->
                         <Border Grid.Row="0" Grid.Column="0"
-                                Grid.RowSpan="2" Grid.ColumnSpan="3"
+                                Grid.RowSpan="3" Grid.ColumnSpan="3"
                                 Background="#FFE0E0E0"/>
-                        <Border Grid.Row="2" Grid.Column="0"
+                        <Border Grid.Row="3" Grid.Column="0"
                                 Grid.RowSpan="3" Grid.ColumnSpan="3"
                                 Background="#FFF0F0F0"/>
-                        <Border Grid.Row="5" Grid.Column="0"
+                        <Border Grid.Row="6" Grid.Column="0"
                                 Grid.RowSpan="2" Grid.ColumnSpan="3"
                                 Background="#FFE0E0E0"/>
-                        <Border Grid.Row="7" Grid.Column="0"
+                        <Border Grid.Row="8" Grid.Column="0"
                                 Grid.RowSpan="2" Grid.ColumnSpan="3"
                                 Background="#FFF0F0F0"/>
                         <!-- Element -->
                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Grid.RowSpan="2"
+                                   Grid.RowSpan="3"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
@@ -648,77 +687,85 @@
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTopPanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="2" Grid.Column="0"
+                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Text="ReportIssue"/>
+                        <cc:ColorEditor Grid.Row="2" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
+                                        Color="{Binding ThemeCustomTopPanelReportIssue, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0"
                                    Grid.RowSpan="3"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Tree Panel"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1"
+                        <TextBlock Grid.Row="3" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="2" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="3" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1"
+                        <TextBlock Grid.Row="4" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="3" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="4" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1"
+                        <TextBlock Grid.Row="5" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Highlight"/>
-                        <cc:ColorEditor Grid.Row="4" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="5" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelHighlight, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="5" Grid.Column="0"
+                        <TextBlock Grid.Row="6" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Script Panel"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1"
+                        <TextBlock Grid.Row="6" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="5" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="6" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1"
+                        <TextBlock Grid.Row="7" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="6" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="7" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="7" Grid.Column="0"
+                        <TextBlock Grid.Row="8" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Status Bar"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1"
+                        <TextBlock Grid.Row="8" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="7" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="8" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1"
+                        <TextBlock Grid.Row="9" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="8" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="9" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Script"/>
                 </TabItem.Header>
@@ -771,7 +818,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Log"/>
                 </TabItem.Header>
@@ -836,7 +883,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Compat"/>
                 </TabItem.Header>
@@ -866,7 +913,8 @@
 
                     <TextBlock Margin="0, 3, 0, 3"
                                VerticalAlignment="Center"
-                               Foreground="Red"
+                               Foreground="#FFE00000"
+                               FontWeight="SemiBold"
                                Text="Delete project temp files after changing compatibility options!"/>
 
                     <TextBlock Margin="0, 0, 0, 3"
@@ -907,21 +955,21 @@
                                       IsChecked="{Binding CompatLegacyBranchCondition}" />
                         <!-- ReSharper disable once MarkupAttributeTypo -->
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
+                                  VerticalContentAlignment="Center"
+                                  Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
                                       IsChecked="{Binding CompatLegacyRegWrite}" />
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow Set to modify interface controls"
-                                      IsChecked="{Binding CompatAllowSetModifyInterface}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Allow Set to modify interface controls"
+                                  IsChecked="{Binding CompatAllowSetModifyInterface}" />
                         <CheckBox Margin="0, 0, 0, 3" 
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy interface commands (e.g. Visible)"
-                                      IsChecked="{Binding CompatLegacyInterfaceCommand}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable legacy interface commands (e.g. Visible)"
+                                  IsChecked="{Binding CompatLegacyInterfaceCommand}" />
                         <CheckBox Margin="0, 0, 0, 3" 
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
-                                      IsChecked="{Binding CompatLegacySectionParamCommand}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable legacy section parameter commands (e.g. PackParam)"
+                                  IsChecked="{Binding CompatLegacySectionParamCommand}" />
                     </StackPanel>
 
                     <TextBlock Margin="0, 3, 0, 3"
@@ -985,9 +1033,10 @@
                     x:Name="SaveSettingButton"
                     Command="local:SettingViewCommands.SaveSettingCommand"
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                    Content="Save"/>
+                    Content="{Binding SaveButtonContent}"/>
             <Button Grid.Row="0"
                     Grid.Column="4"
+                    IsEnabled="{Binding CanExecuteCommand}"
                     IsCancel="True"
                     Content="Cancel"/>
         </Grid>

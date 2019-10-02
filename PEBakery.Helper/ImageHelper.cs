@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -41,20 +41,20 @@ namespace PEBakery.Helper
     public static class ImageHelper
     {
         #region ImageType
-        public enum ImageType
+        public enum ImageFormat
         {
             Bmp, Jpg, Png, Gif, Ico, Svg
         }
 
-        public static readonly ReadOnlyDictionary<string, ImageType> ImageTypeDict = new ReadOnlyDictionary<string, ImageType>(
-            new Dictionary<string, ImageType>(StringComparer.OrdinalIgnoreCase)
+        public static readonly ReadOnlyDictionary<string, ImageFormat> ImageFormatDict = new ReadOnlyDictionary<string, ImageFormat>(
+            new Dictionary<string, ImageFormat>(StringComparer.OrdinalIgnoreCase)
             {
-                { ".bmp", ImageType.Bmp },
-                { ".jpg", ImageType.Jpg },
-                { ".png", ImageType.Png },
-                { ".gif", ImageType.Gif },
-                { ".ico", ImageType.Ico },
-                { ".svg", ImageType.Svg },
+                { ".bmp", ImageFormat.Bmp },
+                { ".jpg", ImageFormat.Jpg },
+                { ".png", ImageFormat.Png },
+                { ".gif", ImageFormat.Gif },
+                { ".ico", ImageFormat.Ico },
+                { ".svg", ImageFormat.Svg },
             });
 
         /// <summary>
@@ -63,19 +63,19 @@ namespace PEBakery.Helper
         /// <param name="path"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool GetImageType(string path, out ImageType type)
+        public static bool GetImageFormat(string path, out ImageFormat type)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             string ext = Path.GetExtension(path);
-            if (ImageTypeDict.ContainsKey(ext))
+            if (ImageFormatDict.ContainsKey(ext))
             {
-                type = ImageTypeDict[ext];
+                type = ImageFormatDict[ext];
                 return true;
             }
             else
             {
-                type = ImageType.Bmp; // Dummy
+                type = ImageFormat.Bmp; // Dummy
                 return false;
             }
         }
@@ -170,7 +170,7 @@ namespace PEBakery.Helper
             int newWidth;
             int newHeight;
             // Aspect ratio is equal, return original target width and height
-            if (currentAspectRatio - targetAspectRatio < double.Epsilon)
+            if (NumberHelper.DoubleEquals(currentAspectRatio, targetAspectRatio))
             {
                 newWidth = targetWidth;
                 newHeight = targetHeight;
@@ -198,7 +198,7 @@ namespace PEBakery.Helper
             double newHeight;
 
             // Aspect ratio is equal, return original target width and height
-            if (Math.Abs(currentAspectRatio - targetAspectRatio) < double.Epsilon)
+            if (NumberHelper.DoubleEquals(currentAspectRatio, targetAspectRatio))
             {
                 newWidth = targetWidth;
                 newHeight = targetHeight;
@@ -215,6 +215,22 @@ namespace PEBakery.Helper
             }
 
             return (newWidth, newHeight);
+        }
+
+        public static (int Width, int Height) DownSizeAspectRatio(int currentWidth, int currentHeight, int targetWidth, int targetHeight)
+        {
+            if (currentWidth <= targetWidth && currentHeight <= targetHeight)
+                return (currentWidth, currentHeight);
+            else
+                return StretchSizeAspectRatio(currentWidth, currentHeight, targetWidth, targetHeight);
+        }
+
+        public static (double Width, double Height) DownSizeAspectRatio(double currentWidth, double currentHeight, double targetWidth, double targetHeight)
+        {
+            if (currentWidth <= targetWidth && currentHeight <= targetHeight)
+                return (currentWidth, currentHeight);
+            else
+                return StretchSizeAspectRatio(currentWidth, currentHeight, targetWidth, targetHeight);
         }
         #endregion
 
@@ -266,14 +282,14 @@ namespace PEBakery.Helper
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
-                        int rgb24idx = (x + y * src.PixelWidth) * 3;
-                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+                        int rgb24Idx = (x + y * src.PixelWidth) * 3;
+                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
 
                         byte a = 255;
-                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24idx);
+                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24Idx);
                         if (r == 255 && g == 255 && b == 255)
                             a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
                     }
                 }
 
@@ -295,12 +311,12 @@ namespace PEBakery.Helper
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
-                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
 
-                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32idx);
+                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32Idx);
                         if (r == 255 && g == 255 && b == 255 & a == 255)
                             a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
                     }
                 }
 

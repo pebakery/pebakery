@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -390,7 +390,7 @@ namespace PEBakery.Core.Commands
                 {
                     progressCount += 1;
                     double percent;
-                    if (Math.Abs(s.MainViewModel.BuildCommandProgressMax) < double.Epsilon)
+                    if (NumberHelper.DoubleEquals(s.MainViewModel.BuildCommandProgressMax, 0))
                         percent = 0;
                     else
                         percent = progressCount / s.MainViewModel.BuildCommandProgressMax * 100;
@@ -464,7 +464,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     if (s.CompatDirCopyBug)
-                    { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy _bug_
+                    { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] FileCopy _bug_
                         Debug.Assert(compatFiles != null, $"Wrong {nameof(compatFiles)}");
                         foreach (FileInfo f in compatFiles)
                         {
@@ -473,8 +473,8 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    // Copy first sublevel directory with wildcard
-                    // Note wildcard will not be applied to subdirectory copy
+                    // Copy first sub-level directory with wildcard
+                    // Note wildcard will not be applied to sub-directory copy
                     foreach (DirectoryInfo d in subDirs)
                     {
                         FileHelper.DirCopy(d.FullName, Path.Combine(destDir, d.Name), new FileHelper.DirCopyOptions

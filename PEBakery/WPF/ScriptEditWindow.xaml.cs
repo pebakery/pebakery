@@ -1,4 +1,31 @@
-﻿using MahApps.Metro.IconPacks;
+﻿/*
+    Copyright (C) 2018-2019 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+*/
+
+using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
@@ -16,13 +43,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
 // ReSharper disable InconsistentNaming
-
 namespace PEBakery.WPF
 {
     #region ScriptEditWindow
@@ -36,23 +63,23 @@ namespace PEBakery.WPF
         #endregion
 
         #region Constructor
-        public ScriptEditWindow(Script sc)
+        public ScriptEditWindow(Script sc, MainViewModel mainViewModel)
         {
             Interlocked.Increment(ref Count);
 
             try
             {
-                DataContext = m = new ScriptEditViewModel(sc, this);
+                DataContext = m = new ScriptEditViewModel(sc, this, mainViewModel);
 
                 InitializeComponent();
 
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
-                m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlMoved;
-                m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlMoved;
+                m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlDragged;
+                m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlDragged;
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 m.ReadScriptGeneral();
-                m.ReadScriptInterface();
+                m.ReadScriptInterface(true);
                 m.ReadScriptAttachment();
             }
             catch (Exception e)
@@ -60,7 +87,7 @@ namespace PEBakery.WPF
                 Interlocked.Decrement(ref Count);
 
                 Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
-                MessageBox.Show($"[Error Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, $"[Error Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -71,7 +98,7 @@ namespace PEBakery.WPF
             bool scriptSaved = false;
             if (m.ScriptHeaderNotSaved)
             {
-                switch (MessageBox.Show("The script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show(this, "The script header was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         if (m.WriteScriptGeneral(false))
@@ -95,11 +122,11 @@ namespace PEBakery.WPF
 
             if (m.InterfaceNotSaved)
             {
-                switch (MessageBox.Show("The interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show(this, "The script interface was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
-                        if (m.WriteScriptInterface(false))
+                        if (m.WriteScriptInterface(m.SelectedInterfaceSectionName, false))
                             scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
@@ -123,8 +150,8 @@ namespace PEBakery.WPF
         private void Window_Closed(object sender, EventArgs e)
         {
             m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
-            m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlMoved;
-            m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlMoved;
+            m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlDragged;
+            m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlDragged;
             m.UIControlModified -= ViewModel_UIControlModified;
 
             m.Renderer.Clear();
@@ -135,9 +162,41 @@ namespace PEBakery.WPF
 
         #region Event Handler - Interface
         #region For Editor
-        private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void ScaleFactor_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
             m.DrawScript();
+        }
+
+        private async void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Run only if selected interface section is different from active interface section
+            if (m.SelectedInterfaceSectionName == null ||
+                m.SelectedInterfaceSectionName.Equals(m.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            m.CanExecuteCommand = false;
+            try
+            {
+                // Must save current edits to switch active interface section
+                MessageBoxResult result = MessageBox.Show(this, "The script must be saved before switching to another interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                {
+                    await m.WriteScriptInterfaceAsync(m.SelectedInterfaceSectionName, false);
+                }
+                else
+                {
+                    // Keep current active interface section in ComboBox
+                    m.SelectedInterfaceSectionName = m.InterfaceSectionName;
+                    return;
+                }
+
+                m.ReadScriptInterface(false);
+            }
+            finally
+            {
+                m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -146,80 +205,170 @@ namespace PEBakery.WPF
                 return;
 
             m.SelectedUICtrl = m.Renderer.UICtrls[m.InterfaceUICtrlIndex];
-            m.InterfaceCanvas.ResetSelectedBorder();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+            m.InterfaceCanvas.ClearSelectedElements(true);
+            m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
         }
 
-        private void InterfaceCanvas_UIControlSelected(object sender, EditCanvas.UIControlSelectedEventArgs e)
+        private void InterfaceCanvas_UIControlSelected(object sender, DragCanvas.UIControlSelectedEventArgs e)
         {
-            if (e.UIControl == null)
-                return;
-
-            m.SelectedUICtrl = e.UIControl;
-
-            if (m.SelectedUICtrl != null)
+            if (e.UIControl == null && e.UIControls == null)
+            { // Reset
+                m.SelectedUICtrl = null;
+                m.SelectedUICtrls = null;
+                m.InterfaceUICtrlIndex = -1;
+            }
+            else if (e.MultiSelect)
+            {
+                m.SelectedUICtrls = e.UIControls;
+                m.InterfaceUICtrlIndex = -1;
+            }
+            else
+            {
+                m.SelectedUICtrl = e.UIControl;
                 m.ReadUIControlInfo(m.SelectedUICtrl);
 
-            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
-            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
-            m.InterfaceUICtrlIndex = idx;
+                int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+                Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
+                m.InterfaceUICtrlIndex = idx;
+            }
         }
 
-        private void InterfaceCanvas_UIControlMoved(object sender, DragCanvas.UIControlDraggedEventArgs e)
+        private void InterfaceCanvas_UIControlDragged(object sender, DragCanvas.UIControlDraggedEventArgs e)
         {
-            if (e.UIControl == null)
-                return;
-
-            // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
-            if (m.SelectedUICtrl != e.UIControl)
-                return;
-
-            if (5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
-                m.InvokeUIControlEvent(true);
-        }
-
-        private void InterfaceCanvasDragMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            switch (m.InterfaceCanvasDragModeIndex)
+            if (!e.MultiSelect)
             {
-                default:
-                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Move;
-                    m.InterfaceCanvas.BorderBrush = Brushes.Red;
-                    break;
-                case 1:
-                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Resize;
-                    m.InterfaceCanvas.BorderBrush = Brushes.Blue;
-                    break;
+                // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
+                Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
             }
 
-            m.InterfaceCanvas.ResetSelectedBorder();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+            if (e.ForceUpdate || 5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
+                m.InvokeUIControlEvent(true);
         }
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
         {
-            UIControl uiCtrl = e.UIControl;
+            if (e.MultiSelect)
+            {
+                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.Renderer.Render();
+                m.InterfaceCanvas.DrawSelectedElements(e.UIControls);
+            }
+            else
+            {
+                UIControl uiCtrl = e.UIControl;
 
-            if (!e.Direct)
-                m.WriteUIControlInfo(uiCtrl);
+                if (!e.InfoNotUpdated)
+                    m.WriteUIControlInfo(uiCtrl);
 
-            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
-            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-            m.Renderer.UICtrls[idx] = uiCtrl;
-
-            m.InterfaceCanvas.ResetSelectedBorder();
-            m.Renderer.Render();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.Renderer.Render();
+                m.InterfaceCanvas.DrawSelectedElement(uiCtrl);
+            }
         }
 
-        private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
-            if (type == UIControlType.None)
+            InterfaceScrollViewer.Focus();
+
+            // Clicked outside of the viewport (== clicked scrollbar) -> Do nothing to let event propagate to scrollbar
+            Point svCursor = e.GetPosition(InterfaceScrollViewer);
+            if (InterfaceScrollViewer.ViewportWidth < svCursor.X ||
+                InterfaceScrollViewer.ViewportHeight < svCursor.Y)
                 return;
-            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), m.Renderer.UICtrls.Select(x => x.Key));
+
+            // Clicked outside of DragCanvas -> Route OnPreviewMouseLeftButtonDown event to DragCanvas
+            Point cvCursor = e.GetPosition(m.InterfaceCanvas);
+            if (cvCursor.X < 0 || m.InterfaceCanvas.Width < cvCursor.X ||
+                cvCursor.Y < 0 || m.InterfaceCanvas.Height < cvCursor.Y)
+                m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
         }
         #endregion  
+        #region For Interface Move/Resize via Keyboard
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (m.TabIndex == 1)
+                InterfaceScrollViewer.Focus();
+        }
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            IInputElement focusedControl = Keyboard.FocusedElement;
+            if (Equals(focusedControl, InterfaceScrollViewer))
+            {
+                int delta;
+                bool move;
+                switch (e.KeyboardDevice.Modifiers)
+                {
+                    case ModifierKeys.None:
+                        move = true;
+                        delta = 5;
+                        break;
+                    case ModifierKeys.Control:
+                        move = true;
+                        delta = 1;
+                        break;
+                    case ModifierKeys.Shift:
+                        move = false;
+                        delta = 5;
+                        break;
+                    case ModifierKeys.Shift | ModifierKeys.Control:
+                        move = false;
+                        delta = 1;
+                        break;
+                    default:
+                        return;
+                }
+
+                // UIControl should have position/size of int
+                int deltaX = 0;
+                int deltaY = 0;
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        deltaX = -1 * delta;
+                        break;
+                    case Key.Right:
+                        deltaX = delta;
+                        break;
+                    case Key.Up:
+                        deltaY = -1 * delta;
+                        break;
+                    case Key.Down:
+                        deltaY = delta;
+                        break;
+                    default:
+                        return;
+                }
+
+                switch (m.SelectMode)
+                {
+                    case ScriptEditViewModel.ControlSelectMode.SingleSelect:
+                        if (move)
+                        {
+                            DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
+                            m.InvokeUIControlEvent(true);
+                        }
+                        else // Resize
+                        {
+                            DragCanvas.ApplyUIControlSize(m.SelectedUICtrl, deltaX, deltaY);
+                            m.InvokeUIControlEvent(true);
+                        }
+                        break;
+                    case ScriptEditViewModel.ControlSelectMode.MultiSelect:
+                        if (move)
+                        {
+                            DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
+                            m.InvokeUIControlEvent(true);
+                        }
+                        else // Resize
+                        {
+                            DragCanvas.ApplyUIControlSizes(m.SelectedUICtrls, deltaX, deltaY);
+                            m.InvokeUIControlEvent(true);
+                        }
+                        break;
+                }
+            }
+        }
+        #endregion
         #region For (Common) ListItemBox
         private void ListNewItem_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -240,17 +389,6 @@ namespace PEBakery.WPF
             OnPreviewTextInput(e);
         }
         #endregion
-        #endregion
-
-        #region Event Handler - Attachment
-        private void ScriptAttachTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            if (e.NewValue is AttachedFileItem item)
-            {
-                m.AttachSelected = item;
-                m.UpdateAttachFileDetail();
-            }
-        }
         #endregion
 
         #region Command - Save
@@ -289,11 +427,19 @@ namespace PEBakery.WPF
     public class ScriptEditViewModel : ViewModelBase
     {
         #region Constructor
-        public ScriptEditViewModel(Script sc, Window window)
+        public ScriptEditViewModel(Script sc, Window window, MainViewModel mainViewModel)
         {
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
             _window = window;
+            MainViewModel = mainViewModel;
+            InterfaceScaleFactor = Global.Setting.Interface.ScaleFactor;
 
+            // Init ObservableCollection
+            AttachedFolders = new ObservableCollection<AttachFolderItem>();
+            AttachedFiles = new ObservableCollection<AttachFileItem>();
+            // SelectedAttachedFiles = new List<AttachFileItem>();
+
+            // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -303,7 +449,6 @@ namespace PEBakery.WPF
             Grid.SetRow(canvas, 0);
             Grid.SetColumn(canvas, 0);
             Panel.SetZIndex(canvas, -1);
-
             InterfaceCanvas = canvas;
         }
         #endregion
@@ -312,12 +457,19 @@ namespace PEBakery.WPF
         public class UIControlModifiedEventArgs : EventArgs
         {
             public UIControl UIControl { get; set; }
-            public bool Direct { get; set; }
+            public List<UIControl> UIControls { get; set; }
+            public bool MultiSelect => UIControls != null;
+            public bool InfoNotUpdated { get; set; }
 
-            public UIControlModifiedEventArgs(UIControl uiCtrl, bool direct)
+            public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
             {
                 UIControl = uiCtrl;
-                Direct = direct;
+                InfoNotUpdated = infoNotUpdated;
+            }
+            public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
+            {
+                UIControls = uiCtrls;
+                InfoNotUpdated = infoNotUpdated;
             }
         }
         public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
@@ -327,6 +479,7 @@ namespace PEBakery.WPF
         #region Property - Basic
         public Script Script;
         private readonly Window _window;
+        public MainViewModel MainViewModel { get; }
         public UIRenderer Renderer { get; private set; }
         public string InterfaceSectionName { get; private set; }
 
@@ -505,6 +658,8 @@ namespace PEBakery.WPF
         #region Property - General - Script Logo
         public bool ScriptLogoUpdated { get; set; } = false;
 
+        public Color ScriptPanelBackground => MainViewModel.ScriptPanelBackground;
+
         #region ScriptLogo
         private PackIconMaterialKind? _scriptLogoIcon;
         public PackIconMaterialKind? ScriptLogoIcon
@@ -602,7 +757,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.RawSize, 1);
+                string str = NumberHelper.NaturalByteSizeToSIUnit(ScriptLogoInfo.RawSize);
                 return $"{str} ({ScriptLogoInfo.RawSize})";
             }
         }
@@ -614,7 +769,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.EncodedSize, 1);
+                string str = NumberHelper.NaturalByteSizeToSIUnit(ScriptLogoInfo.EncodedSize);
                 return $"{str} ({ScriptLogoInfo.EncodedSize})";
             }
         }
@@ -640,24 +795,33 @@ namespace PEBakery.WPF
         public DragCanvas InterfaceCanvas
         {
             get => _interfaceCanvas;
-            set
-            {
-                _interfaceCanvas = value;
-                OnPropertyUpdate(nameof(InterfaceCanvas));
-            }
+            set => SetProperty(ref _interfaceCanvas, value);
         }
+
         private int _interfaceScaleFactor = 100;
         public int InterfaceScaleFactor
         {
             get => _interfaceScaleFactor;
-            set
-            {
-                _interfaceScaleFactor = value;
-                OnPropertyUpdate(nameof(InterfaceScaleFactor));
-            }
+            set => SetProperty(ref _interfaceScaleFactor, value);
         }
 
-        // Add
+        // InterfaceSection
+        private ObservableCollection<string> _interfaceSectionNames;
+        private readonly object _interfaceSectionNamesLock = new object();
+        public ObservableCollection<string> InterfaceSectionNames
+        {
+            get => _interfaceSectionNames;
+            set => SetCollectionProperty(ref _interfaceSectionNames, _interfaceSectionNamesLock, value);
+        }
+
+        private string _selectedInterfaceSectionName;
+        public string SelectedInterfaceSectionName
+        {
+            get => _selectedInterfaceSectionName;
+            set => SetProperty(ref _selectedInterfaceSectionName, value);
+        }
+
+        // Add Control
         private int _uiCtrlAddTypeIndex = -1;
         public int UICtrlAddTypeIndex
         {
@@ -670,18 +834,8 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private string _uiCtrlAddName;
-        public string UICtrlAddName
-        {
-            get => _uiCtrlAddName;
-            set
-            {
-                _uiCtrlAddName = value;
-                OnPropertyUpdate(nameof(UICtrlAddName));
-            }
-        }
 
-        // Delete
+        // Delete Control (not for UI, for code-behind use)
         public List<UIControl> UICtrlToBeDeleted = new List<UIControl>();
         public List<string> UICtrlKeyChanged = new List<string>();
         #endregion
@@ -696,16 +850,6 @@ namespace PEBakery.WPF
             {
                 _interfaceLoaded = value;
                 OnPropertyUpdate(nameof(InterfaceLoaded));
-            }
-        }
-        private int _interfaceCanvasDragModeIndex;
-        public int InterfaceCanvasDragModeIndex
-        {
-            get => _interfaceCanvasDragModeIndex;
-            set
-            {
-                _interfaceCanvasDragModeIndex = value;
-                OnPropertyUpdate(nameof(InterfaceCanvasDragModeIndex));
             }
         }
         private ObservableCollection<string> _interfaceUICtrls = new ObservableCollection<string>();
@@ -728,6 +872,30 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceUICtrlIndex));
             }
         }
+        // Select mode
+        public enum ControlSelectMode
+        {
+            None = 0,
+            SingleSelect = 1,
+            MultiSelect = 2,
+        }
+        public ControlSelectMode SelectMode
+        {
+            get
+            {
+                bool singleSelect = _selectedUICtrl != null;
+                bool multiSelect = _selectedUICtrls != null;
+                Debug.Assert(!(singleSelect && multiSelect), "SelectedUICtrl and SelectedUICtrls cannot be activated at the same time");
+
+                if (singleSelect)
+                    return ControlSelectMode.SingleSelect;
+                else if (multiSelect)
+                    return ControlSelectMode.MultiSelect;
+                else
+                    return ControlSelectMode.None;
+            }
+        }
+        // Single-select
         private UIControl _selectedUICtrl = null;
         public UIControl SelectedUICtrl
         {
@@ -735,6 +903,48 @@ namespace PEBakery.WPF
             set
             {
                 _selectedUICtrl = value;
+                _selectedUICtrls = null;
+
+                // UIControl Shared Argument
+                OnPropertyUpdate(nameof(UICtrlEditEnabled));
+                OnPropertyUpdate(nameof(UICtrlKey));
+                OnPropertyUpdate(nameof(UICtrlText));
+                OnPropertyUpdate(nameof(UICtrlVisible));
+                OnPropertyUpdate(nameof(UICtrlX));
+                OnPropertyUpdate(nameof(UICtrlY));
+                OnPropertyUpdate(nameof(UICtrlWidth));
+                OnPropertyUpdate(nameof(UICtrlHeight));
+                OnPropertyUpdate(nameof(UICtrlToolTip));
+
+                // UIControl Visibility
+                OnPropertyUpdate(nameof(IsUICtrlTextBox));
+                OnPropertyUpdate(nameof(IsUICtrlTextLabel));
+                OnPropertyUpdate(nameof(IsUICtrlNumberBox));
+                OnPropertyUpdate(nameof(IsUICtrlCheckBox));
+                OnPropertyUpdate(nameof(IsUICtrlComboBox));
+                OnPropertyUpdate(nameof(IsUICtrlImage));
+                OnPropertyUpdate(nameof(IsUICtrlTextFile));
+                OnPropertyUpdate(nameof(IsUICtrlButton));
+                OnPropertyUpdate(nameof(IsUICtrlWebLabel));
+                OnPropertyUpdate(nameof(IsUICtrlRadioButton));
+                OnPropertyUpdate(nameof(IsUICtrlBevel));
+                OnPropertyUpdate(nameof(IsUICtrlFileBox));
+                OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
+                OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
+                OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
+
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        // Multi-select
+        private List<UIControl> _selectedUICtrls = null;
+        public List<UIControl> SelectedUICtrls
+        {
+            get => _selectedUICtrls;
+            set
+            {
+                _selectedUICtrl = null;
+                _selectedUICtrls = value;
 
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
@@ -1301,7 +1511,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Text = value;
-                OnPropertyUpdate(nameof(UICtrlBevelFontSize));
+                OnPropertyUpdate(nameof(UICtrlBevelCaption));
                 InvokeUIControlEvent(true);
             }
         }
@@ -1494,133 +1704,57 @@ namespace PEBakery.WPF
         #region Property - Attachment
         public bool ScriptAttachUpdated { get; set; } = false;
 
-        public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();
-
-        public AttachedFileItem AttachSelected;
-
-        public Visibility AttachDetailFileVisibility
+        private long _scriptFileSize;
+        public long ScriptFileSize
         {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Collapsed;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Collapsed;
-                return Visibility.Visible;
-            }
-        }
-
-        public Visibility AttachDetailFolderVisibility
-        {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Collapsed;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Visible;
-                return Visibility.Collapsed;
-            }
-        }
-
-        public Visibility AttachAddFolderVisibility
-        {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Visible;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Visible;
-                return Visibility.Collapsed;
-            }
-        }
-
-        private string _addFolderName = string.Empty;
-        public string AddFolderName
-        {
-            get => _addFolderName;
+            get => _scriptFileSize;
             set
             {
-                _addFolderName = value;
-                OnPropertyUpdate(nameof(AddFolderName));
+                SetProperty(ref _scriptFileSize, value);
+                ScriptFileSizeStr = NumberHelper.NaturalByteSizeToSIUnit(value);
             }
         }
 
-        public string AttachFileName
+        private string _scriptFileSizeStr;
+        public string ScriptFileSizeStr
         {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Empty value
-                return AttachSelected.Name;
-            }
+            get => _scriptFileSizeStr;
+            set => SetProperty(ref _scriptFileSizeStr, value);
         }
 
-        public string AttachFileRawSize
+        private readonly object _attachedFoldersLock = new object();
+        private ObservableCollection<AttachFolderItem> _attachedFolders;
+        public ObservableCollection<AttachFolderItem> AttachedFolders
         {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Invalid value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.RawSize, 1);
-                return $"{str} ({AttachSelected.Detail.RawSize})";
-            }
+            get => _attachedFolders;
+            set => SetCollectionProperty(ref _attachedFolders, _attachedFoldersLock, value);
         }
 
-        public string AttachFileEncodedSize
+        private AttachFolderItem _selectedAttachedFolder;
+        public AttachFolderItem SelectedAttachedFolder
         {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Invalid value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.EncodedSize, 1);
-                return $"{str} ({AttachSelected.Detail.EncodedSize})";
-            }
-        }
-
-        public string AttachFileCompression
-        {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Empty value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                return AttachSelected.Detail.EncodeMode == null ? "-" : EncodedFile.EncodeModeStr(AttachSelected.Detail.EncodeMode, false);
-            }
-        }
-
-        private string _attachNewFilePath = string.Empty;
-        public string AttachNewFilePath
-        {
-            get => _attachNewFilePath;
-            set => SetProperty(ref _attachNewFilePath, value);
-        }
-
-        private string _attachNewFileName = string.Empty;
-        public string AttachNewFileName
-        {
-            get => _attachNewFileName;
+            get => _selectedAttachedFolder;
             set
             {
-                _attachNewFileName = value;
-                OnPropertyUpdate(nameof(AttachNewFileName));
+                _selectedAttachedFolder = value;
+                OnPropertyUpdate();
+
+                if (value != null)
+                    AttachedFiles = SelectedAttachedFolder.Children;
+                else
+                    AttachedFiles.Clear();
             }
         }
 
-        private int _attachNewCompressionIndex = 1;
-        public int AttachNewCompressionIndex
+        private readonly object _attachedFilesLock = new object();
+        private ObservableCollection<AttachFileItem> _attachedFiles;
+        public ObservableCollection<AttachFileItem> AttachedFiles
         {
-            get => _attachNewCompressionIndex;
-            set
-            {
-                _attachNewCompressionIndex = value;
-                OnPropertyUpdate(nameof(AttachNewCompressionIndex));
-            }
+            get => _attachedFiles;
+            set => SetCollectionProperty(ref _attachedFiles, _attachedFilesLock, value);
         }
+
+        public AttachFileItem[] SelectedAttachedFiles => AttachedFiles.Where(x => x.IsSelected).ToArray();
 
         private double _attachProgressValue = -1;
         public double AttachProgressValue
@@ -1635,31 +1769,47 @@ namespace PEBakery.WPF
             get => _attachProgressIndeterminate;
             set => SetProperty(ref _attachProgressIndeterminate, value);
         }
-        #endregion
 
-        #region UpdateAttachFileDetail
-        public void UpdateAttachFileDetail()
+        private bool _attachEnableAdvancedView = false;
+        public bool AttachEnableAdvancedView
         {
-            OnPropertyUpdate(nameof(AttachFileName));
-            OnPropertyUpdate(nameof(AttachFileRawSize));
-            OnPropertyUpdate(nameof(AttachFileEncodedSize));
-            OnPropertyUpdate(nameof(AttachFileCompression));
-            OnPropertyUpdate(nameof(AttachDetailFileVisibility));
-            OnPropertyUpdate(nameof(AttachDetailFolderVisibility));
-            OnPropertyUpdate(nameof(AttachAddFolderVisibility));
+            get => _attachEnableAdvancedView;
+            set => SetProperty(ref _attachEnableAdvancedView, value);
+        }
+
+        private bool _attachIncludeInterfaceEncoded = false;
+        public bool AttachIncludeInterfaceEncoded
+        {
+            get => _attachIncludeInterfaceEncoded;
+            set => SetProperty(ref _attachIncludeInterfaceEncoded, value);
+        }
+
+        private bool _attachIncludeAuthorEncoded = false;
+        public bool AttachIncludeAuthorEncoded
+        {
+            get => _attachIncludeAuthorEncoded;
+            set => SetProperty(ref _attachIncludeAuthorEncoded, value);
         }
         #endregion
 
         #region InvokeUIControlEvent
         public bool UIControlModifiedEventToggle = false;
-        public void InvokeUIControlEvent(bool direct)
+        public void InvokeUIControlEvent(bool infoNotUpdated)
         {
             if (UIControlModifiedEventToggle)
                 return;
 
             InterfaceNotSaved = true;
             InterfaceUpdated = true;
-            UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, direct));
+            switch (SelectMode)
+            {
+                case ControlSelectMode.SingleSelect:
+                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
+                    break;
+                case ControlSelectMode.MultiSelect:
+                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrls, true));
+                    break;
+            }
         }
         #endregion
 
@@ -1687,11 +1837,23 @@ namespace PEBakery.WPF
                     return;
 
                 string srcFile = dialog.FileName;
+                long fileSize = new FileInfo(srcFile).Length;
+                if (EncodedFile.DecodeInMemorySizeLimit <= fileSize)
+                {
+                    string sizeLimitStr = NumberHelper.NaturalByteSizeToSIUnit(EncodedFile.DecodeInMemorySizeLimit);
+                    MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
+                        "Warning",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.No)
+                        return;
+                }
+
                 try
                 {
                     string srcFileName = Path.GetFileName(srcFile);
                     EncodedFile.AttachLogo(Script, srcFileName, srcFile);
-                    MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(_window, "Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     ScriptLogoUpdated = true;
                     ReadScriptGeneral();
@@ -1699,7 +1861,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Logo attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Unable to attach logo.\r\n- {Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -1716,17 +1878,17 @@ namespace PEBakery.WPF
             {
                 if (!EncodedFile.ContainsLogo(Script))
                 {
-                    MessageBox.Show($"Script [{Script.Title}] does not have a logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Script [{Script.Title}] does not have a logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type, out string filename))
                 {
                     SaveFileDialog dialog = new SaveFileDialog
                     {
-                        InitialDirectory = Global.BaseDir,
                         OverwritePrompt = true,
-                        Filter = $"{type.ToString().ToUpper().Replace(".", String.Empty)} Image|*.{type}",
+                        FileName = filename,
+                        Filter = $"{type.ToString().ToUpper().Replace(".", string.Empty)} Image|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
                     };
@@ -1742,12 +1904,12 @@ namespace PEBakery.WPF
                             ms.CopyTo(fs);
                         }
 
-                        MessageBox.Show("Logo successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(_window, "Logo successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Logo extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(_window, $"Logo extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -1765,23 +1927,24 @@ namespace PEBakery.WPF
             {
                 if (!EncodedFile.ContainsLogo(Script))
                 {
-                    MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                string errMsg;
-                (Script, errMsg) = EncodedFile.DeleteLogo(Script);
-                if (errMsg == null)
+                ResultReport<Script> report = EncodedFile.DeleteLogo(Script);
+                if (report.Success)
                 {
-                    MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Script = report.Result;
+                    MessageBox.Show(_window, "Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     ScriptLogoUpdated = true;
                     ReadScriptGeneral();
                 }
                 else
                 {
+                    string errMsg = report.Message;
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"There was an issue with deleting the logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"There was an issue with deleting the logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -1793,10 +1956,186 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Interface Editor
-        #region For Add, Delete, Reload
-        public ICommand UICtrlAddCommand => new RelayCommand(UICtrlAddCommand_Execute, UICtrlAddCommand_CanExecute);
-        public ICommand UICtrlDeleteCommand => new RelayCommand(UICtrlDeleteCommand_Execute, UICtrlDeleteCommand_CanExecute);
-        public ICommand UICtrlReloadCommand => new RelayCommand(UICtrlReloadCommand_Execute, UICtrlReloadCommand_CanExecute);
+        #region For Add, Delete of Interface Section
+        private ICommand _interfaceSectionAddCommand;
+        private ICommand _interfaceSectionDeleteCommand;
+        public ICommand InterfaceSectionAddCommand => GetRelayCommand(ref _interfaceSectionAddCommand, "Add interface section", InterfaceSectionAddCommand_Execute, InterfaceSectionAddCommand_CanExecute);
+        public ICommand InterfaceSectionDeleteCommand => GetRelayCommand(ref _interfaceSectionDeleteCommand, "Delete interface section", InterfaceSectionDeleteCommand_Execute, InterfaceSectionDeleteCommand_CanExecute);
+
+        private bool InterfaceSectionAddCommand_CanExecute(object sender)
+        {
+            return CanExecuteCommand;
+        }
+
+        private async void InterfaceSectionAddCommand_Execute(object sender)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                // Must save current edits to switch active interface section
+                if (InterfaceNotSaved)
+                {
+                    MessageBoxResult result = MessageBox.Show(_window, "The script must be saved before adding a new interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.Yes)
+                        await WriteScriptInterfaceAsync(null, false);
+                    else
+                        return;
+                }
+
+                string newInterfaceSectionName = StringEscaper.GetUniqueKey(ScriptSection.Names.Interface + "_", Script.Sections.Select(x => x.Key), 2);
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                    "New Interface Section",
+                    "Please enter a name for the new Interface section",
+                    newInterfaceSectionName,
+                    PackIconMaterialKind.PlaylistPlus);
+                if (dialog.ShowDialog() == true)
+                {
+                    newInterfaceSectionName = dialog.InputText;
+                    if (Script.Sections.ContainsKey(newInterfaceSectionName))
+                    { // Section name conflict
+                        MessageBox.Show(_window, $"Section [{newInterfaceSectionName}] already exists", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    await Task.Run(() =>
+                    {
+                        // Tried to implement auto-generation of multi-interface button, but doing this the right way is very hard.
+                        // Current implementation would cause a lot of duplicated sections, because PEBakery cannot sense whether a button for
+                        // switching info another section is already present. Let's leave this to script developer.
+
+                        // [Main] -> Interface, InterfaceList
+                        List<IniKey> switchButtons = new List<IniKey>();
+                        InterfaceSectionNames.Add(newInterfaceSectionName);
+                        switchButtons.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface, newInterfaceSectionName));
+                        string newInterfaceList = string.Join(",", InterfaceSectionNames.Select(StringEscaper.DoubleQuote));
+                        switchButtons.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, newInterfaceList));
+
+                        // Write section info to file
+                        IniReadWriter.WriteKeys(Script.RealPath, switchButtons);
+                        IniReadWriter.AddSection(Script.RealPath, newInterfaceSectionName);
+
+                        // Read from script
+                        Script = Script.Project.RefreshScript(Script);
+                    });
+
+                    ReadScriptInterface(true);
+                    InterfaceUpdated = true;
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private bool InterfaceSectionDeleteCommand_CanExecute(object sender)
+        {
+            return CanExecuteCommand &&
+                   InterfaceSectionNames != null && SelectedInterfaceSectionName != null &&
+                   1 < InterfaceSectionNames.Count && !SelectedInterfaceSectionName.Equals(ScriptSection.Names.Interface);
+        }
+
+        private async void InterfaceSectionDeleteCommand_Execute(object sender)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                Debug.Assert(1 < InterfaceSectionNames.Count);
+                Debug.Assert(!SelectedInterfaceSectionName.Equals(ScriptSection.Names.Interface));
+                Debug.Assert(InterfaceSectionNames.Contains(SelectedInterfaceSectionName, StringComparer.OrdinalIgnoreCase));
+
+                if (InterfaceSectionNames.Count == 1)
+                { // Cannot delete default interface section
+                    MessageBox.Show(_window, $"You cannot delete the default interface section [{SelectedInterfaceSectionName}].", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                if (SelectedInterfaceSectionName.Equals(ScriptSection.Names.Interface))
+                { // Cannot delete default interface section
+                    MessageBox.Show(_window, "Cannot delete [Interface] section.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Must save current edits to switch active interface section
+                MessageBoxResult result = MessageBox.Show(_window,
+                    "The script must be saved before deleting an interface.\r\n\r\nWarning: Deleted interface sections cannot be recovered!\r\n\r\nAre you sure you want to delete?",
+                    "Delete Confirmation",
+                    MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                    await WriteScriptInterfaceAsync(null, false);
+                else
+                    return;
+
+                await Task.Run(() =>
+                {
+                    // Set InterfaceSectionNames and SelectedInterfaceSectionName
+                    string sectionToDelete = SelectedInterfaceSectionName;
+                    Debug.Assert(InterfaceSectionNames.Contains(sectionToDelete, StringComparer.OrdinalIgnoreCase));
+                    Debug.Assert(1 < InterfaceSectionNames.Count);
+                    InterfaceSectionNames.Remove(sectionToDelete);
+                    string defaultInterface = InterfaceSectionNames[0];
+                    Debug.Assert(0 < defaultInterface.Length, "New default interface is empty");
+
+                    // Prepare to delete [sectionToDelete]
+                    // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                    foreach (UIControl uiCtrl in Renderer.UICtrls)
+                    {
+                        DeleteInterfaceEncodedFile(uiCtrl);
+                    }
+                    SelectedUICtrl = null;
+
+                    // [Main] -> Interface, InterfaceList
+                    List<IniKey> setKeys = new List<IniKey>();
+                    List<IniKey> delKeys = new List<IniKey>();
+
+                    // If only one interface is left, delete InterfaceList.
+                    // If don't, overwrite InterfaceList with new section names.
+                    if (InterfaceSectionNames.Count == 1)
+                    {
+                        delKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList));
+                    }
+                    else
+                    {
+                        string newInterfaceList = string.Join(",", InterfaceSectionNames.Select(StringEscaper.DoubleQuote));
+                        setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, newInterfaceList));
+                    }
+
+                    if (defaultInterface.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase))
+                        delKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface));
+                    else
+                        setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface, defaultInterface));
+
+                    // Write to script
+                    if (0 < setKeys.Count)
+                        IniReadWriter.WriteKeys(Script.RealPath, setKeys);
+                    if (0 < delKeys.Count)
+                        IniReadWriter.DeleteKeys(Script.RealPath, delKeys);
+                    IniReadWriter.DeleteSection(Script.RealPath, sectionToDelete);
+
+                    // Read from script
+                    Script = Script.Project.RefreshScript(Script);
+                });
+
+                // Rendering must be done in ui thread.
+                ReadScriptInterface(true);
+                InterfaceUpdated = true;
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region For Add, Delete, Reload of UIControl
+        private ICommand _uiCtrlAddCommand;
+        private ICommand _uiCtrlDeleteCommand;
+        private ICommand _uiCtrlReloadCommand;
+        public ICommand UICtrlAddCommand => GetRelayCommand(ref _uiCtrlAddCommand, "Add UIControl", UICtrlAddCommand_Execute, UICtrlAddCommand_CanExecute);
+        public ICommand UICtrlDeleteCommand => GetRelayCommand(ref _uiCtrlDeleteCommand, "Delete UIControl", UICtrlDeleteCommand_Execute, UICtrlDeleteCommand_CanExecute);
+        public ICommand UICtrlReloadCommand => GetRelayCommand(ref _uiCtrlReloadCommand, "Reload UIControl", UICtrlReloadCommand_Execute, UICtrlReloadCommand_CanExecute);
 
         private bool UICtrlAddCommand_CanExecute(object sender)
         {
@@ -1811,18 +2150,29 @@ namespace PEBakery.WPF
                 UIControlType type = UIControl.UIControlZeroBasedDict[UICtrlAddTypeIndex];
                 if (type == UIControlType.None)
                 {
-                    MessageBox.Show("You must specify a control type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "You must specify a control type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                if (string.IsNullOrWhiteSpace(UICtrlAddName))
+
+                string newControlKey = StringEscaper.GetUniqueKey(type.ToString(), Renderer.UICtrls.Select(x => x.Key));
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                    "New Interface Control",
+                    "Please enter a name for the new control",
+                    newControlKey,
+                    PackIconMaterialKind.PlaylistPlus);
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                newControlKey = dialog.InputText;
+                if (string.IsNullOrWhiteSpace(newControlKey))
                 {
-                    MessageBox.Show("The control's name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "The control's name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                string key = UICtrlAddName.Trim();
+                string key = newControlKey.Trim();
                 if (Renderer.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"The control [{key}] already exists", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"The control [{key}] already exists", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -1843,10 +2193,10 @@ namespace PEBakery.WPF
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
-                InterfaceCanvas.ResetSelectedBorder();
+                InterfaceCanvas.ClearSelectedElements(true);
                 Renderer.Render();
                 SelectedUICtrl = uiCtrl;
-                InterfaceCanvas.DrawSelectedBorder(uiCtrl);
+                InterfaceCanvas.DrawSelectedElement(uiCtrl);
 
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
@@ -1874,6 +2224,9 @@ namespace PEBakery.WPF
                 UIControl uiCtrl = SelectedUICtrl;
                 UICtrlToBeDeleted.Add(uiCtrl);
 
+                // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                DeleteInterfaceEncodedFile(uiCtrl);
+
                 Renderer.UICtrls.Remove(uiCtrl);
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
@@ -1881,6 +2234,7 @@ namespace PEBakery.WPF
                 Renderer.Render();
                 SelectedUICtrl = null;
 
+                WriteScriptInterface(null, true);
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
             }
@@ -1902,7 +2256,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                ReadScriptInterface();
+                ReadScriptInterface(true);
             }
             finally
             {
@@ -1912,7 +2266,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For Image
-        public ICommand UICtrlImageAutoResizeCommand => new RelayCommand(UICtrlImageAutoResizeCommand_Execute, CanExecuteFunc);
+        private ICommand _uiCtrlImageAutoResizeCommand;
+        public ICommand UICtrlImageAutoResizeCommand => GetRelayCommand(ref _uiCtrlImageAutoResizeCommand, "Auto resize Image control", UICtrlImageAutoResizeCommand_Execute, CanExecuteFunc);
 
         private async void UICtrlImageAutoResizeCommand_Execute(object parameter)
         {
@@ -1933,23 +2288,26 @@ namespace PEBakery.WPF
 
                 if (InterfaceNotSaved)
                 {
-                    MessageBoxResult result = MessageBox.Show("The interface should be saved before editing an image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show(_window,
+                        "The interface must be saved before editing an image.\r\nSave changes?",
+                        "Save Confirmation",
+                        MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
 
-                if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
+                if (!ImageHelper.GetImageFormat(fileName, out ImageHelper.ImageFormat type))
                 {
-                    MessageBox.Show($"[{fileName}] is an unsupported image format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"[{fileName}] is an unsupported image format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 using (MemoryStream ms = await EncodedFile.ExtractFileInMemAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName))
                 {
                     int width, height;
-                    if (type == ImageHelper.ImageType.Svg)
+                    if (type == ImageHelper.ImageFormat.Svg)
                         (width, height) = ImageHelper.GetSvgSizeInt(ms);
                     else
                         (width, height) = ImageHelper.GetImageSize(ms);
@@ -1957,7 +2315,7 @@ namespace PEBakery.WPF
                     uiCtrl.Width = width;
                     uiCtrl.Height = height;
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(false);
+                    WriteScriptInterface(null, false);
                 }
             }
             finally
@@ -1968,7 +2326,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For RadioButton
-        public ICommand UICtrlRadioButtonSelectCommand => new RelayCommand(UICtrlRadioButtonSelectCommand_Execute, UICtrlRadioButtonSelectCommand_CanExecute);
+        private ICommand _uiCtrlRadioButtonSelectCommand;
+        public ICommand UICtrlRadioButtonSelectCommand => GetRelayCommand(ref _uiCtrlRadioButtonSelectCommand, "Select RadioButton", UICtrlRadioButtonSelectCommand_Execute, UICtrlRadioButtonSelectCommand_CanExecute);
 
         private bool UICtrlRadioButtonSelectCommand_CanExecute(object parameter)
         {
@@ -2006,18 +2365,23 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) ListItemBox
-        public ICommand UICtrlListItemBoxUpCommand => new RelayCommand(UICtrlListItemBoxUpCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDownCommand => new RelayCommand(UICtrlListItemBoxDownCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxSelectCommand => new RelayCommand(UICtrlListItemBoxSelectCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDeleteCommand => new RelayCommand(UICtrlListItemBoxDeleteCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxAddCommand => new RelayCommand(UICtrlListItemBoxAddCommand_Execute, CanExecuteFunc);
+        private ICommand _uiCtrlListItemBoxUpCommand;
+        private ICommand _uiCtrlListItemBoxDownCommand;
+        private ICommand _uiCtrlListItemBoxSelectCommand;
+        private ICommand _uiCtrlListItemBoxDeleteCommand;
+        private ICommand _uiCtrlListItemBoxAddCommand;
+        public ICommand UICtrlListItemBoxUpCommand => GetRelayCommand(ref _uiCtrlListItemBoxUpCommand, "Move item one step up", UICtrlListItemBoxUpCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDownCommand => GetRelayCommand(ref _uiCtrlListItemBoxDownCommand, "Move item one step down", UICtrlListItemBoxDownCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxSelectCommand => GetRelayCommand(ref _uiCtrlListItemBoxSelectCommand, "Select default item", UICtrlListItemBoxSelectCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDeleteCommand => GetRelayCommand(ref _uiCtrlListItemBoxDeleteCommand, "Delete item", UICtrlListItemBoxDeleteCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxAddCommand => GetRelayCommand(ref _uiCtrlListItemBoxAddCommand, "Add item", UICtrlListItemBoxAddCommand_Execute, CanExecuteFunc);
 
         private void UICtrlListItemBoxUpCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUpCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 List<string> items;
@@ -2138,7 +2502,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelect_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelectCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 switch (SelectedUICtrl.Type)
@@ -2166,7 +2530,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxDeleteCommand_Execute(object paramaeter)
+        private void UICtrlListItemBoxDeleteCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2224,7 +2588,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAdd_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAddCommand";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
 
@@ -2254,9 +2618,12 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) InterfaceEncoded 
-        public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlInterfaceExtractCommand => new RelayCommand(UICtrlInterfaceExtractCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlInterfaceResetCommand => new RelayCommand(UICtrlInterfaceResetCommand_Execute, CanExecuteFunc);
+        private ICommand _uiCtrlInterfaceAttachCommand;
+        private ICommand _uiCtrlInterfaceExtractCommand;
+        private ICommand _uiCtrlInterfaceResetCommand;
+        public ICommand UICtrlInterfaceAttachCommand => GetRelayCommand(ref _uiCtrlInterfaceAttachCommand, "Attach file", UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlInterfaceExtractCommand => GetRelayCommand(ref _uiCtrlInterfaceExtractCommand, "Extract attached file", UICtrlInterfaceExtractCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlInterfaceResetCommand => GetRelayCommand(ref _uiCtrlInterfaceResetCommand, "Delete attached file", UICtrlInterfaceResetCommand_Execute, CanExecuteFunc);
 
         private async void UICtrlInterfaceAttachCommand_Execute(object parameter)
         {
@@ -2274,19 +2641,19 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface should be saved before editing a text file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing a text file.\r\n\r\nSave changes?";
                     extFilter = "Text Files|*.txt;*.rtf|All Files|*.*";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else
@@ -2301,7 +2668,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
@@ -2324,9 +2691,9 @@ namespace PEBakery.WPF
                     !srcFileExt.Equals(".txt", StringComparison.OrdinalIgnoreCase) &&
                     !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!EncodingHelper.IsText(srcFilePath, 16 * 1024))
+                    if (!Global.FileTypeDetector.IsText(srcFilePath))
                     { // File is expected to be binary
-                        MessageBoxResult result = MessageBox.Show($"{srcFileName} appears to be a binary file.\r\n\r\nBinary files may not display correctly and can negatively impact rendering performance.\r\n\r\nDo you want to continue?",
+                        MessageBoxResult result = MessageBox.Show(_window, $"{srcFileName} appears to be a binary file.\r\n\r\nBinary files may not display correctly and can negatively impact rendering performance.\r\n\r\nDo you want to continue?",
                             "Warning",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Exclamation);
@@ -2338,19 +2705,19 @@ namespace PEBakery.WPF
 
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
-                    (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
-                    if (errMsg != null)
+                    ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
+                    if (!report.Success)
                     {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                        MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                        MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
-
+                    EncodedFileInfo[] infos = report.Result;
                     srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
                 }
 
                 // PEBakery can handle large encoded files.
-                // -> But large file in interface requires lots of memory to decompress and can cause unresponsive time.
+                // -> But large file in interface requires lots of memory to decompress and can cause long unresponsive time.
                 // -> Threshold is debatable.
                 // Surprised to see render performance of text in TextFile is quite low. Keep lower threshold for text files.
                 long fileLen = new FileInfo(srcFilePath).Length;
@@ -2359,11 +2726,11 @@ namespace PEBakery.WPF
                     !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase)) // rtf file can include image, so do not use lower limit
                     sizeLimit = EncodedFile.InterfaceTextSizeLimit;
                 else
-                    sizeLimit = EncodedFile.InterfaceImageSizeLimit;
+                    sizeLimit = EncodedFile.DecodeInMemorySizeLimit;
                 if (sizeLimit <= fileLen)
                 {
-                    string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
-                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?",
+                    string sizeLimitStr = NumberHelper.NaturalByteSizeToSIUnit(sizeLimit);
+                    MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
                         "Warning",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Exclamation);
@@ -2394,12 +2761,12 @@ namespace PEBakery.WPF
                     }
 
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(true);
+                    WriteScriptInterface(null, true);
                 }
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -2463,13 +2830,14 @@ namespace PEBakery.WPF
 
                 if (!EncodedFile.ContainsInterface(Script, fileName))
                 {
-                    MessageBox.Show($"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
+                    FileName = fileName,
                     Filter = extFilter,
                     DefaultExt = ext,
                     AddExtension = true,
@@ -2487,7 +2855,7 @@ namespace PEBakery.WPF
                     catch (Exception ex)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(_window, $"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -2497,7 +2865,10 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private async void UICtrlInterfaceResetCommand_Execute(object parameter)
+        /// <summary>
+        /// Only for Image, TextFile, Button
+        /// </summary>
+        private void UICtrlInterfaceResetCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2512,17 +2883,17 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                 }
                 else if (sender.Equals("TextFileReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface should be saved before editing text a file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing text a file.\r\n\r\nSave changes?";
                 }
                 else if (sender.Equals("ButtonPictureReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                 }
                 else
                 {
@@ -2532,83 +2903,98 @@ namespace PEBakery.WPF
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 Debug.Assert(SelectedUICtrl.Type == selectedType, internalErrorMsg);
 
-                UIControl uiCtrl = SelectedUICtrl;
-                string fileName = uiCtrl.Text;
-                if (selectedType == UIControlType.Button)
-                {
-                    Debug.Assert(UICtrlButtonInfo != null, internalErrorMsg);
-                    fileName = UICtrlButtonInfo.Picture;
-                }
-                Debug.Assert(fileName != null, internalErrorMsg);
-
+                // If interface was not saved, save it with confirmation
                 if (InterfaceNotSaved)
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
 
-                if (!EncodedFile.ContainsInterface(Script, fileName))
-                { // Unable to find encoded image, so just remove image entry from uiCtrl
-                    switch (selectedType)
-                    {
-                        case UIControlType.Image:
-                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                            UICtrlImageSet = false;
-                            break;
-                        case UIControlType.TextFile:
-                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                            UICtrlTextFileSet = false;
-                            break;
-                        case UIControlType.Button:
-                            UICtrlButtonInfo.Picture = null;
-                            UICtrlButtonPictureSet = false;
-                            break;
-                    }
-                    InvokeUIControlEvent(false);
+                // Delete interface encoded file to prevent orphaned Interface-Encoded attachments
+                string fileName = DeleteInterfaceEncodedFile(SelectedUICtrl);
+                Debug.Assert(fileName != null, internalErrorMsg);
 
-                    MessageBox.Show("An incorrect file entry was deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                string errMsg;
-                (Script, errMsg) = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName);
-                if (errMsg == null)
+                // Clear encoded file information from uiCtrl
+                switch (selectedType)
                 {
-                    UIControl.ReplaceAddress(Renderer.UICtrls, Script);
-
-                    switch (selectedType)
-                    {
-                        case UIControlType.Image:
-                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                            UICtrlImageSet = false;
-                            break;
-                        case UIControlType.TextFile:
-                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                            UICtrlTextFileSet = false;
-                            break;
-                        case UIControlType.Button:
-                            UICtrlButtonInfo.Picture = null;
-                            UICtrlButtonPictureSet = false;
-                            break;
-                    }
-
-                    InvokeUIControlEvent(false);
-                    WriteScriptInterface(true);
+                    case UIControlType.Image:
+                        SelectedUICtrl.Text = UIInfo_Image.NoResource;
+                        UICtrlImageSet = false;
+                        break;
+                    case UIControlType.TextFile:
+                        SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
+                        UICtrlTextFileSet = false;
+                        break;
+                    case UIControlType.Button:
+                        UICtrlButtonInfo.Picture = null;
+                        UICtrlButtonPictureSet = false;
+                        break;
                 }
-                else
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                InvokeUIControlEvent(false);
+                WriteScriptInterface(null, true);
             }
             finally
             {
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
+        }
+        private string DeleteInterfaceEncodedFile(UIControl uiCtrl)
+        {
+            async void InternalDeleteInterfaceEncodedFile(string delFileName)
+            {
+                ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                if (report.Success)
+                    Script = report.Result;
+                else
+                    MessageBox.Show(_window, $"Unable to delete encoded file [{delFileName}].", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            // If two or more controls are referencing encoded file, do not delete it.
+            Dictionary<string, int> fileRefCountDict = EncodedFile.GetInterfaceFileRefCount(Script);
+
+            string fileName = null;
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.Image:
+                    {
+                        fileName = uiCtrl.Text;
+                        if (fileName.Equals(UIInfo_Image.NoResource) || fileRefCountDict.ContainsKey(fileName))
+                        {
+                            if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                                InternalDeleteInterfaceEncodedFile(fileName);
+                        }
+                    }
+                    break;
+                case UIControlType.TextFile:
+                    {
+                        fileName = uiCtrl.Text;
+                        if (fileName.Equals(UIInfo_TextFile.NoResource) || fileRefCountDict.ContainsKey(fileName))
+                        {
+                            if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                                InternalDeleteInterfaceEncodedFile(fileName);
+                        }
+                    }
+                    break;
+                case UIControlType.Button:
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                        if (info.Picture != null)
+                        {
+                            fileName = info.Picture;
+                            if (fileRefCountDict.ContainsKey(fileName))
+                            {
+                                if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                                    InternalDeleteInterfaceEncodedFile(fileName);
+                            }
+                        }
+                    }
+                    break;
+            }
+            return fileName;
         }
         #endregion 
         #endregion
@@ -2622,51 +3008,64 @@ namespace PEBakery.WPF
 
         #region Command - Attachment (Folder)
         private ICommand _addFolderCommand;
+        private ICommand _renameFolderCommand;
         private ICommand _extractFolderCommand;
         private ICommand _deleteFolderCommand;
-        private ICommand _attachNewFileChooseCommand;
         private ICommand _attachFileCommand;
         public ICommand AddFolderCommand => GetRelayCommand(ref _addFolderCommand, "Add folder", AddFolderCommand_Execute, CanExecuteFunc);
-        public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, CanExecuteFunc);
-        public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, CanExecuteFunc);
-        public ICommand AttachNewFileChooseCommand => GetRelayCommand(ref _attachNewFileChooseCommand, "Choose file to attach", AttachNewFileChooseCommand_Execute, CanExecuteFunc);
-        public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, CanExecuteFunc);
+        public ICommand RenameFolderCommand => GetRelayCommand(ref _renameFolderCommand, "Rename folder", RenameFolderCommand_Execute, FolderSelected_CanExecute);
+        public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, FolderSelected_CanExecute);
+        public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, FolderSelected_CanExecute);
+        public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, FolderSelected_CanExecute);
 
-        private void AddFolderCommand_Execute(object parameter)
+        private bool FolderSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null;
+        }
+
+        private async void AddFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                string folderName = AddFolderName.Trim();
-                AddFolderName = string.Empty;
+                TextBoxDialog dialog = new TextBoxDialog(_window, "Add Folder", "Please enter a name for the new folder.", PackIconMaterialKind.FolderPlus);
+                if (dialog.ShowDialog() != true)
+                    return;
 
+                string folderName = dialog.InputText;
                 if (folderName.Length == 0)
                 {
-                    MessageBox.Show("The folder name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "The folder name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
+                AttachProgressIndeterminate = true;
                 try
                 {
                     if (EncodedFile.ContainsFolder(Script, folderName))
                     {
-                        MessageBox.Show($"The folder [{folderName}] already exists!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(_window, $"The folder [{folderName}] already exists!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
-                    Script = EncodedFile.AddFolder(Script, folderName, false);
+                    Script = await EncodedFile.AddFolderAsync(Script, folderName, false);
                 }
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window,
+                        $"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    AttachProgressIndeterminate = false;
                 }
 
                 ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
-                AttachSelected = null;
-                UpdateAttachFileDetail();
+                SelectScriptAttachedFolder(folderName);
             }
             finally
             {
@@ -2675,33 +3074,79 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExtractFolderCommand_Execute(object parameter)
+        private async void RenameFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                        "Rename folder",
+                        "Please input new folder name.",
+                        PackIconMaterialKind.Pencil)
+                {
+                    InputText = folder.FolderName
+                };
+
+                if (dialog.ShowDialog() != true)
                     return;
 
-                Debug.Assert(item.Detail == null);
+                string newFolderName = dialog.InputText;
+                if (newFolderName.Length == 0)
+                {
+                    MessageBox.Show(_window, "New folder name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                AttachProgressIndeterminate = true;
+
+                string errMsg;
+                (Script, errMsg) = await EncodedFile.RenameFolderAsync(Script, folder.FolderName, newFolderName);
+                if (errMsg == null)
+                {
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(newFolderName);
+                }
+                else // Failure
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async void ExtractFolderCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+                EncodedFileInfo[] fileInfos = folder.Children.Select(x => x.Info).ToArray();
+                if (fileInfos.Length == 0)
+                {
+                    MessageBox.Show(_window, $"Unable to extract files. The folder [{folder.FolderName}] is empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
                 if (dialog.ShowDialog(_window) == true)
                 {
                     string destDir = dialog.SelectedPath;
 
-                    (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(Script, item.Name, false);
-                    if (errMsg != null)
-                    {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
                     StringBuilder b = new StringBuilder();
                     bool fileOverwrote = false;
-                    for (int i = 0; i < fileInfos.Count; i++)
+                    for (int i = 0; i < fileInfos.Length; i++)
                     {
                         EncodedFileInfo info = fileInfos[i];
 
@@ -2711,7 +3156,7 @@ namespace PEBakery.WPF
                             fileOverwrote = true;
 
                             b.Append(destFile);
-                            if (i + 1 < fileInfos.Count)
+                            if (i + 1 < fileInfos.Length)
                                 b.Append(", ");
                         }
                     }
@@ -2719,8 +3164,8 @@ namespace PEBakery.WPF
                     bool proceedExtract = false;
                     if (fileOverwrote)
                     {
-                        MessageBoxResult owResult = MessageBox.Show($"The file [{b}] will be overwritten.\r\nWould you like to proceed?",
-                                                                    "Overwrite?",
+                        MessageBoxResult owResult = MessageBox.Show(_window, $"The file [{b}] will be overwritten.\r\n\r\nWould you like to proceed?",
+                                                                    "Confirm Overwrite",
                                                                     MessageBoxButton.YesNo,
                                                                     MessageBoxImage.Information);
 
@@ -2737,24 +3182,73 @@ namespace PEBakery.WPF
                     if (!proceedExtract)
                         return;
 
-                    foreach (EncodedFileInfo info in fileInfos)
+                    List<string> successFiles = new List<string>();
+                    List<(string, Exception)> failureFiles = new List<(string, Exception)>();
+                    AttachProgressValue = 0;
+                    try
                     {
-                        try
+                        int idx = 0;
+                        IProgress<double> progress = new Progress<double>(x =>
                         {
-                            string destFile = Path.Combine(destDir, info.FileName);
-                            using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                            // ReSharper disable once AccessToModifiedClosure
+                            AttachProgressValue = (x + idx) / fileInfos.Length;
+                        });
+
+                        foreach (EncodedFileInfo fi in fileInfos)
+                        {
+                            try
                             {
-                                EncodedFile.ExtractFile(Script, info.FolderName, info.FileName, fs, null);
+                                string destFile = Path.Combine(destDir, fi.FileName);
+                                using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                                {
+                                    await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                                }
+
+                                successFiles.Add(fi.FileName);
+                            }
+                            catch (Exception ex)
+                            {
+                                failureFiles.Add((fi.FileName, ex));
                             }
 
-                            MessageBox.Show("File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        catch (Exception ex)
-                        {
-                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            idx += 1;
                         }
                     }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                    }
+
+                    // Success Report
+                    PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
+                    b.Clear();
+                    if (1 < successFiles.Count)
+                    {
+                        b.AppendLine($"{successFiles.Count} files were successfully extracted.");
+                        foreach (string fileName in successFiles)
+                            b.AppendLine($"- {fileName}");
+                    }
+                    else if (successFiles.Count == 1)
+                    {
+                        b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
+                    }
+
+                    // Failure Report
+                    if (1 <= failureFiles.Count)
+                    {
+                        msgBoxIcon = PackIconMaterialKind.Alert;
+                        b.AppendLine();
+                        b.AppendLine($"Unable to extract {successFiles.Count} files.");
+                        foreach ((string fileName, Exception ex) in failureFiles)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                            b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
+                        }
+                    }
+
+                    const string msgTitle = "Extraction Report";
+                    TextViewDialog reportDialog = new TextViewDialog(_window, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                    reportDialog.ShowDialog();
                 }
             }
             finally
@@ -2769,68 +3263,36 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail == null);
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
 
                 MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure you want to delete [{item.Name}]?",
+                    $"Are you sure you want to delete [{folder.FolderName}]?",
                     "Confirm Delete",
                     MessageBoxButton.YesNo,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Question);
                 if (result == MessageBoxResult.No)
                     return;
 
-                string errMsg;
-                (Script, errMsg) = await EncodedFile.DeleteFolderAsync(Script, item.Name);
-                if (errMsg == null)
+                AttachProgressIndeterminate = true;
+
+                ResultReport<Script> report = await EncodedFile.DeleteFolderAsync(Script, folder.FolderName);
+                if (report.Success)
                 {
+                    Script = report.Result;
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
-
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
                 }
                 else // Failure
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
             {
                 CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void AttachNewFileChooseCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail == null);
-
-                OpenFileDialog dialog = new OpenFileDialog
-                {
-                    Filter = "All Files|*.*",
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    AttachNewFilePath = dialog.FileName;
-                    AttachNewFileName = Path.GetFileName(dialog.FileName);
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -2840,56 +3302,72 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+
+                ScriptAttachFileDialog dialog = new ScriptAttachFileDialog { Owner = _window };
+                if (dialog.ShowDialog() != true)
                     return;
 
-                Debug.Assert(item.Detail == null);
-
-                string srcFile = AttachNewFilePath;
-
-                if (srcFile.Length == 0)
+                (string Name, string Path)[] srcFiles;
+                if (dialog.MultiSelect)
                 {
-                    MessageBox.Show("You must choose a file to attach", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    srcFiles = dialog.FilePaths.Select(path => (Path.GetFileName(path), path)).ToArray();
                 }
-
-                if (!File.Exists(srcFile))
+                else
                 {
-                    MessageBox.Show($"Invalid path:\r\n[{srcFile}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    srcFiles = new (string, string)[] { (dialog.FileName, dialog.FilePath) };
                 }
+                EncodedFile.EncodeMode mode = dialog.EncodeMode;
 
-                if (string.IsNullOrWhiteSpace(AttachNewFileName))
+                // Check validity of srcFile
+                foreach ((string srcFileName, string srcFilePath) in srcFiles)
                 {
-                    MessageBox.Show("The file name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                EncodedFile.EncodeMode mode;
-                switch (AttachNewCompressionIndex)
-                {
-                    case 0:
-                        mode = EncodedFile.EncodeMode.Raw;
-                        break;
-                    case 1:
-                        mode = EncodedFile.EncodeMode.ZLib;
-                        break;
-                    case 2:
-                        mode = EncodedFile.EncodeMode.XZ;
-                        break;
-                    default:
-                        MessageBox.Show("Internal Logic Error at ScriptEditWindow.AttachFileButton_Click", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (srcFilePath.Length == 0)
+                    {
+                        MessageBox.Show(_window, "You must choose a file to attach!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
+                    }
+
+                    if (!File.Exists(srcFilePath))
+                    {
+                        MessageBox.Show(_window, $"Invalid path:\r\n[{srcFilePath}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(srcFileName))
+                    {
+                        MessageBox.Show(_window, "File name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
                 }
 
+                // EncodedFile exception guard
                 try
                 {
-                    if (EncodedFile.ContainsFile(Script, item.Name, AttachNewFileName))
+                    // Confirm overwrite
+                    string[] overwriteFileNames = srcFiles
+                        .Where(tup => EncodedFile.ContainsFile(Script, folder.FolderName, tup.Name))
+                        .Select(tup => tup.Name).ToArray();
+                    if (1 <= overwriteFileNames.Length)
                     {
+                        StringBuilder b = new StringBuilder(overwriteFileNames.Length + 3);
+                        if (overwriteFileNames.Length == 1)
+                        {
+                            b.AppendLine($"Attached file [{overwriteFileNames[0]}] will be overwritten.");
+                        }
+                        else
+                        {
+                            b.AppendLine($"[{overwriteFileNames.Length}] attached file will be overwritten.");
+                            foreach (string overwriteFileName in overwriteFileNames)
+                                b.AppendLine($"- {overwriteFileName}");
+                        }
+                        b.AppendLine();
+                        b.Append("Would you like to proceed?");
+
                         MessageBoxResult result = MessageBox.Show(
-                            $"The attached file [{AttachNewFileName}] will be overwritten.\r\nWould you like to proceed?",
-                            "Confirm",
+                            b.ToString(),
+                            "Confirm Overwrite",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Error);
                         if (result == MessageBoxResult.No)
@@ -2901,29 +3379,71 @@ namespace PEBakery.WPF
                         CanExecuteCommand = false;
                         AttachProgressValue = 0;
                         IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                        await EncodedFile.AttachFileAsync(Script, item.Name, AttachNewFileName, srcFile, mode, progress);
+                        await EncodedFile.AttachFilesAsync(Script, folder.FolderName, srcFiles, mode, progress);
                     }
                     finally
                     {
                         AttachProgressValue = -1;
                         CanExecuteCommand = true;
                     }
-                    MessageBox.Show("File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(_window, "File(s) successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    AttachNewFilePath = string.Empty;
-                    AttachNewFileName = string.Empty;
-
+                    // Finalize and update interface
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
 
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
+                    SelectScriptAttachedFolder(folder.FolderName);
+                    SelectScriptAttachedFile(srcFiles[0].Name);
                 }
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"File attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+                /*
+                string srcFilePath = dialog.FilePath;
+                string srcFileName = dialog.FileName;
+
+
+                try
+                {
+                    if (EncodedFile.ContainsFile(Script, folder.FolderName, srcFileName))
+                    {
+                        MessageBoxResult result = MessageBox.Show(
+                            $"The attached file [{srcFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
+                            "Confirm Overwrite",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Error);
+                        if (result == MessageBoxResult.No)
+                            return;
+                    }
+
+                    try
+                    {
+                        CanExecuteCommand = false;
+                        AttachProgressValue = 0;
+                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+                        await EncodedFile.AttachFileAsync(Script, folder.FolderName, srcFileName, srcFilePath, mode, progress);
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+                    MessageBox.Show(_window, "File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(folder.FolderName);
+                    SelectScriptAttachedFile(srcFileName);
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                */
             }
             finally
             {
@@ -2934,58 +3454,234 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (File)
-        public ICommand ExtractFileCommand => new RelayCommand(ExtractFileCommand_Execute, CanExecuteFunc);
-        public ICommand DeleteFileCommand => new RelayCommand(DeleteFileCommand_Execute, CanExecuteFunc);
-        public ICommand InspectFileCommand => new RelayCommand(InspectFileCommand_Execute, CanExecuteFunc);
+        private ICommand _renameFileCommand;
+        private ICommand _extractFileCommand;
+        private ICommand _deleteFileCommand;
+        private ICommand _openFileCommand;
+        private ICommand _inspectFileCommand;
+        public ICommand RenameFileCommand => GetRelayCommand(ref _renameFileCommand, "Rename file", RenameFileCommand_Execute, FileSingleSelected_CanExecute);
+        public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract file", ExtractFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete file", DeleteFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSingleSelected_CanExecute);
+        public ICommand InspectFileCommand => GetRelayCommand(ref _inspectFileCommand, "Inspect file", InspectFileCommand_Execute, FileSelected_CanExecute);
+
+        private bool FileSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null && 0 < SelectedAttachedFiles.Length;
+        }
+
+        private bool FileSingleSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFiles.Length == 1;
+        }
+
+        private async void RenameFileCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                AttachFileItem file = SelectedAttachedFiles[0];
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
+
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                    "Rename file",
+                    "Please input new file name.",
+                    PackIconMaterialKind.Pencil)
+                {
+                    InputText = fi.FileName
+                };
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string newFileName = dialog.InputText;
+                if (newFileName.Length == 0)
+                {
+                    MessageBox.Show(_window, "New file name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Debug.Assert(fi.FileName != null);
+                Debug.Assert(newFileName != null);
+                string oldExt = Path.GetExtension(fi.FileName);
+                string newExt = Path.GetExtension(newFileName);
+                if (!oldExt.Equals(newExt, StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBoxResult result = MessageBox.Show(_window,
+                        $"The file's extension is being changed from [{oldExt}] to [{newExt}].\r\nAre you sure you want to continue?",
+                        "File Extension Changed",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Information);
+                    if (result != MessageBoxResult.Yes)
+                        return;
+                }
+
+                CanExecuteCommand = false;
+                AttachProgressIndeterminate = true;
+
+                string errorMsg;
+                (Script, errorMsg) = await EncodedFile.RenameFileAsync(Script, fi.FolderName, fi.FileName, newFileName);
+                if (errorMsg == null)
+                {
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(fi.FolderName);
+                    SelectScriptAttachedFile(newFileName);
+                }
+                else
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
+                    MessageBox.Show(_window,
+                        $"Unable to rename [{fi.FileName}] to [{newFileName}].\r\n- {errorMsg}",
+                        "Rename Failure",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         private async void ExtractFileCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
-
-                Debug.Assert(info.FileName != null);
-                string ext = Path.GetExtension(info.FileName);
-                SaveFileDialog dialog = new SaveFileDialog
+                if (SelectedAttachedFiles.Length == 1)
                 {
-                    OverwritePrompt = true,
-                    Filter = $"{ext.ToUpper().Replace(".", string.Empty)} File|*{ext}"
-                };
+                    AttachFileItem file = SelectedAttachedFiles[0];
+                    Debug.Assert(file != null);
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
 
-                if (dialog.ShowDialog() == true)
-                {
-                    string destPath = dialog.FileName;
+                    Debug.Assert(fi.FileName != null);
+                    string ext = Path.GetExtension(fi.FileName);
+                    SaveFileDialog dialog = new SaveFileDialog
+                    {
+                        OverwritePrompt = true,
+                        Title = "Extract file",
+                        FileName = fi.FileName,
+                        Filter = $"{ext.ToUpper().TrimStart('.')} file|*{ext}"
+                    };
+
+                    if (dialog.ShowDialog() != true)
+                        return;
+
+                    string destFile = dialog.FileName;
                     try
                     {
-                        try
+                        CanExecuteCommand = false;
+                        AttachProgressValue = 0;
+                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+                        using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
-                            CanExecuteCommand = false;
-                            AttachProgressValue = 0;
-                            IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-                            {
-                                await EncodedFile.ExtractFileAsync(Script, info.FolderName, info.FileName, fs, progress);
-                            }
-                        }
-                        finally
-                        {
-                            AttachProgressValue = -1;
-                            CanExecuteCommand = true;
+                            await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                         }
 
-                        MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(_window, $"File [{fi.FileName}] successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(_window, $"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+                }
+                else if (1 < SelectedAttachedFiles.Length)
+                {
+                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
+                    {
+                        UseDescriptionForTitle = true,
+                        Description = "Extract files",
+                    };
+
+                    if (dialog.ShowDialog() != true)
+                        return;
+
+                    string destDir = dialog.SelectedPath;
+
+                    List<string> successFiles = new List<string>();
+                    List<(string, Exception)> failureFiles = new List<(string, Exception)>();
+                    AttachProgressValue = 0;
+                    CanExecuteCommand = false;
+                    try
+                    {
+                        int idx = 0;
+                        IProgress<double> progress = new Progress<double>(x =>
+                        {
+                            // ReSharper disable once AccessToModifiedClosure
+                            AttachProgressValue = (x + idx) / SelectedAttachedFiles.Length;
+                        });
+
+                        foreach (AttachFileItem file in SelectedAttachedFiles)
+                        {
+                            EncodedFileInfo fi = file.Info;
+                            Debug.Assert(fi != null);
+
+                            try
+                            {
+                                string destFile = Path.Combine(destDir, fi.FileName);
+                                using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                                {
+                                    await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                                }
+
+                                successFiles.Add(fi.FileName);
+                            }
+                            catch (Exception ex)
+                            {
+                                failureFiles.Add((fi.FileName, ex));
+                            }
+
+                            idx += 1;
+                        }
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+
+                    // Success Report
+                    PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
+                    StringBuilder b = new StringBuilder();
+                    if (1 < successFiles.Count)
+                    {
+                        b.AppendLine($"{successFiles.Count} files were successfully extracted.");
+                        foreach (string fileName in successFiles)
+                            b.AppendLine($"- {fileName}");
+                    }
+                    else if (successFiles.Count == 1)
+                    {
+                        b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
+                    }
+
+                    // Failure Report
+                    if (1 <= failureFiles.Count)
+                    {
+                        msgBoxIcon = PackIconMaterialKind.Alert;
+                        b.AppendLine();
+                        b.AppendLine($"Unable to extract {successFiles.Count} files.");
+                        foreach ((string fileName, Exception ex) in failureFiles)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                            b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
+                        }
+                    }
+
+                    const string msgTitle = "Extraction Report";
+                    TextViewDialog reportDialog = new TextViewDialog(_window, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                    reportDialog.ShowDialog();
                 }
             }
             finally
@@ -2995,44 +3691,131 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DeleteFileCommand_Execute(object parameter)
+        private async void DeleteFileCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
-
-                MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure you want to delete [{info.FileName}]?",
-                    "Confirm Delete",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.No)
-                    return;
-
-                string errMsg;
-                (Script, errMsg) = EncodedFile.DeleteFile(Script, info.FolderName, info.FileName);
-                if (errMsg == null)
+                if (SelectedAttachedFiles.Length == 1)
                 {
-                    ScriptAttachUpdated = true;
-                    ReadScriptAttachment();
+                    AttachFileItem file = SelectedAttachedFiles[0];
+                    Debug.Assert(file != null);
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
 
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
+                    MessageBoxResult result = MessageBox.Show(
+                        $"Are you sure you want to delete [{fi.FileName}]?",
+                        "Confirm Delete",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.No)
+                        return;
+
+                    AttachProgressIndeterminate = true;
+
+                    ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, fi.FolderName, fi.FileName);
+                    if (report.Success)
+                    {
+                        Script = report.Result;
+                        ScriptAttachUpdated = true;
+                        ReadScriptAttachment();
+
+                        SelectScriptAttachedFolder(fi.FolderName);
+                    }
+                    else // Failure
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                        MessageBox.Show(_window, $"Unable to delete file [{fi.FileName}]\r\n- {report.Message}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-                else // Failure
+                else if (1 < SelectedAttachedFiles.Length)
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBoxResult result = MessageBox.Show(
+                        $"Are you sure you want to delete {SelectedAttachedFiles.Length} files?",
+                        "Confirm Delete",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.No)
+                        return;
+
+                    AttachProgressIndeterminate = true;
+                    string folderName = SelectedAttachedFolder.FolderName;
+                    string[] fileNames = SelectedAttachedFiles.Select(fi => fi.FileName).ToArray();
+
+
+                    ResultReport<Script, string[]> report = await EncodedFile.DeleteFilesAsync(Script, folderName, fileNames);
+                    if (report.Success)
+                    {
+                        Script = report.Result1;
+                        ScriptAttachUpdated = true;
+                        ReadScriptAttachment();
+
+                        SelectScriptAttachedFolder(folderName);
+                    }
+                    else
+                    {
+                        string[] errorMessages = report.Result2;
+
+                        // Failure Report
+                        StringBuilder b = new StringBuilder();
+                        b.AppendLine($"Unable to delete {errorMessages.Length} files.");
+                        foreach (string errMsg in errorMessages)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                            b.AppendLine($"- {errMsg}");
+                        }
+                        TextViewDialog reportDialog = new TextViewDialog(_window, "Delete Report", "Delete Failure", b.ToString(), PackIconMaterialKind.Alert);
+                        reportDialog.ShowDialog();
+                    }
                 }
             }
             finally
             {
                 CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async void OpenFileCommand_Execute(object parameter)
+        {
+            Debug.Assert(SelectedAttachedFiles.Length == 1);
+            CanExecuteCommand = false;
+            AttachProgressValue = 0;
+            try
+            {
+                AttachFileItem file = SelectedAttachedFiles[0];
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
+
+                IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+
+                // Do not clear tempDir right after calling OpenPath(). Doing this will trick the opened process.
+                // Instead, leave it to Global.Cleanup() when program is exited.
+                string tempDir = FileHelper.GetTempDir();
+                try
+                {
+                    string tempFile = Path.Combine(tempDir, fi.FileName);
+                    using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
+                    {
+                        await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                    }
+
+#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
+                    FileHelper.OpenPath(tempFile);
+#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show(_window,
+                        $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressValue = -1;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -3043,34 +3826,128 @@ namespace PEBakery.WPF
             AttachProgressIndeterminate = true;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
+                List<string> failures = new List<string>();
 
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
-                string dirName = info.FolderName;
-                string fileName = info.FileName;
-
-                if (info.EncodeMode != null)
-                    return;
-
-                string errMsg;
-                (info, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
-                if (errMsg == null)
+                foreach (AttachFileItem file in SelectedAttachedFiles)
                 {
-                    item.Detail = info;
-                    UpdateAttachFileDetail();
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
+
+                    string dirName = fi.FolderName;
+                    string fileName = fi.FileName;
+
+                    if (fi.EncodeMode != null)
+                        return;
+
+                    ResultReport<EncodedFileInfo> report = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                    if (report.Success)
+                    { // Success
+                        EncodedFileInfo newInfo = report.Result;
+                        file.Info = newInfo;
+                        file.PropertyUpdate();
+                    }
+                    else
+                    { // Failure
+                        failures.Add(fi.FileName);
+                    }
                 }
-                else // Failure
+
+                if (0 < failures.Count)
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    StringBuilder b = new StringBuilder();
+                    if (failures.Count == 1)
+                        b.AppendLine("Unable to inspect 1 file.");
+                    else
+                        b.AppendLine($"Unable to inspect {failures.Count} files.");
+                    foreach (string failure in failures)
+                    {
+                        b.AppendLine($"- {failure}");
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to inspect [{failure}]"));
+                    }
+                    TextViewDialog reportDialog = new TextViewDialog(_window, "Inspection Report", "Inspection Failure", b.ToString(), PackIconMaterialKind.Alert);
+                    reportDialog.ShowDialog();
                 }
             }
             finally
             {
                 AttachProgressIndeterminate = false;
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Command - Attachment (Advanced)
+        private ICommand _enableAdvancedViewCommand;
+        private ICommand _enableAuthorEncodedCommand;
+        private ICommand _enableInterfaceEncodedCommand;
+        public ICommand EnableAdvancedViewCommand => GetRelayCommand(ref _enableAdvancedViewCommand, "Enable advanced view", EnableAdvancedViewCommand_Execute, CanExecuteFunc);
+        public ICommand EnableAuthorEncodedCommand => GetRelayCommand(ref _enableAuthorEncodedCommand, "Enable [AuthorEncoded]", EnableAuthorEncodedCommand_Execute, AdvancedView_CanExecute);
+        public ICommand EnableInterfaceEncodedCommand => GetRelayCommand(ref _enableInterfaceEncodedCommand, "Enable [InterfaceEncoded]", EnableInterfaceEncodedCommand_Execute, AdvancedView_CanExecute);
+
+        private bool AdvancedView_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && AttachEnableAdvancedView;
+        }
+
+        private void EnableAdvancedViewCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                if (AttachEnableAdvancedView)
+                {
+                    MessageBoxResult result = MessageBox.Show(_window,
+                        "Advanced view allows access resources embedded in the script's interface and is intended for expert users only!\r\nIf you do not understand the inner workings of PEBakery's interface and attachment handling you can easily corrupt your script!\r\n\r\nAre you sure you want to enable advanced view?",
+                        "Warning",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.No)
+                        AttachEnableAdvancedView = false;
+                }
+                else
+                { // Turn off all advanced view
+                    AttachIncludeAuthorEncoded = false;
+                    AttachIncludeInterfaceEncoded = false;
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void EnableAuthorEncodedCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                ReadScriptAttachment();
+
+                if (AttachIncludeAuthorEncoded)
+                    SelectScriptAttachedFolder(ScriptSection.Names.AuthorEncoded);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void EnableInterfaceEncodedCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                ReadScriptAttachment();
+
+                if (AttachIncludeInterfaceEncoded)
+                    SelectScriptAttachedFolder(ScriptSection.Names.InterfaceEncoded);
+            }
+            finally
+            {
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -3086,19 +3963,19 @@ namespace PEBakery.WPF
             // General
             if (EncodedFile.ContainsLogo(Script))
             {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(Script, true);
-                if (errMsg != null)
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(Script, true);
+                if (!report.Success)
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                    MessageBox.Show(_window, $"Unable to read script logo\r\n\r\n[Message]\r\n\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type, out _))
                 {
                     switch (type)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
                             Rect svgSize = svgDrawing.Bounds;
                             (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
@@ -3111,7 +3988,7 @@ namespace PEBakery.WPF
                             break;
                     }
                 }
-                ScriptLogoInfo = info;
+                ScriptLogoInfo = report.Result;
             }
             else
             { // No script logo
@@ -3121,7 +3998,7 @@ namespace PEBakery.WPF
 
             ScriptTitle = Script.Title;
             ScriptAuthor = Script.Author;
-            ScriptVersion = Script.Version;
+            ScriptVersion = Script.RawVersion;
             ScriptDate = GetStringValue("Date");
             ScriptLevel = Script.Level;
             ScriptDescription = StringEscaper.Unescape(Script.Description);
@@ -3130,14 +4007,31 @@ namespace PEBakery.WPF
 
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
+
         }
 
-        public void ReadScriptInterface()
+        /// <summary>
+        /// Read script interface from a script instance.
+        /// </summary>
+        /// <param name="refreshSectionNames">
+        /// Refresh section list and auto detect active section if true. Do not update section list and keep current active section if false.
+        /// </param>
+        public void ReadScriptInterface(bool refreshSectionNames)
         {
-            InterfaceSectionName = UIRenderer.GetInterfaceSectionName(Script);
+            // Refresh interface section names
+            if (refreshSectionNames)
+            {
+                InterfaceSectionNames = new ObservableCollection<string>(Script.GetInterfaceSectionNames(true));
+                SelectedInterfaceSectionName = InterfaceSectionName = Script.InterfaceSectionName;
+            }
+            else
+            {
+                InterfaceSectionName = SelectedInterfaceSectionName;
+            }
 
-            // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script);
+            // Change made to interface should not affect script file immediately.
+            // Make a copy of uiCtrls to prevent this.
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script, InterfaceSectionName);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)
@@ -3154,7 +4048,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            Renderer = new UIRenderer(InterfaceCanvas, _window, Script, uiCtrls.ToList(), 1, false, Script.Project.Compat.IgnoreWidthOfWebLabel);
+            Renderer = new UIRenderer(InterfaceCanvas, _window, Script, uiCtrls.ToList(), false, Script.Project.Compat.IgnoreWidthOfWebLabel);
 
             InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             InterfaceUICtrlIndex = -1;
@@ -3169,27 +4063,70 @@ namespace PEBakery.WPF
         public void ReadScriptAttachment()
         {
             // Attachment
+            AttachedFolders.Clear();
             AttachedFiles.Clear();
 
-            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, false);
-            if (errMsg != null)
+            EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                IncludeAuthorEncoded = AttachIncludeAuthorEncoded,
+                IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
+                InspectEncodeMode = false,
+            };
+
+            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(Script, opts);
+            if (!report.Success)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                MessageBox.Show(_window, $"Unable to read script attachments\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            foreach (var kv in fileDict)
+            Dictionary<string, List<EncodedFileInfo>> fileDict = report.Result;
+            List<EncodedFileInfo> files = new List<EncodedFileInfo>();
+            foreach (var kv in fileDict.OrderBy(kv => kv.Key, StringComparer.InvariantCulture))
             {
-                string dirName = kv.Key;
+                AttachedFolders.Add(new AttachFolderItem(kv.Key, kv.Value));
+                files.AddRange(kv.Value);
+            }
 
-                AttachedFileItem item = new AttachedFileItem(true, dirName);
-                foreach (EncodedFileInfo fi in kv.Value)
+            Parallel.ForEach(files, fi =>
+            {
+                if (fi.EncodedSize <= EncodedFile.DecodeInMemorySizeLimit)
+                    fi.EncodeMode = EncodedFile.GetEncodeMode(Script, fi.FolderName, fi.FileName, true);
+            });
+
+            // Attachment
+            ScriptFileSize = new FileInfo(Script.RealPath).Length;
+        }
+
+        public void SelectScriptAttachedFolder(string folderName)
+        {
+            foreach (AttachFolderItem fi in AttachedFolders)
+            {
+                if (fi.FolderName.Equals(folderName, StringComparison.Ordinal))
                 {
-                    AttachedFileItem child = new AttachedFileItem(false, fi.FileName, fi);
-                    item.Children.Add(child);
+                    SelectedAttachedFolder = fi;
+                    foreach (AttachFileItem item in AttachedFiles)
+                        item.IsSelected = false;
+                    break;
                 }
-                AttachedFiles.Add(item);
+
+            }
+        }
+
+        public void SelectScriptAttachedFile(string fileName)
+        {
+            foreach (AttachFileItem fi in AttachedFiles)
+            {
+                if (fi.FileName.Equals(fileName, StringComparison.Ordinal))
+                {
+                    fi.IsSelected = true;
+                    break;
+                }
+                else
+                {
+                    fi.IsSelected = false;
+                }
             }
         }
 
@@ -3327,14 +4264,14 @@ namespace PEBakery.WPF
 
             IniKey[] keys =
             {
-                new IniKey("Main", "Title", ScriptTitle),
-                new IniKey("Main", "Author", ScriptAuthor),
-                new IniKey("Main", "Version", ScriptVersion),
-                new IniKey("Main", "Date", ScriptDate),
-                new IniKey("Main", "Level", ((int)ScriptLevel).ToString()),
-                new IniKey("Main", "Description", StringEscaper.Escape(ScriptDescription)),
-                new IniKey("Main", "Selected", ScriptSelectedState.ToString()),
-                new IniKey("Main", "Mandatory", ScriptMandatory.ToString()),
+                new IniKey(ScriptSection.Names.Main, "Title", ScriptTitle),
+                new IniKey(ScriptSection.Names.Main, "Author", ScriptAuthor),
+                new IniKey(ScriptSection.Names.Main, "Version", ScriptVersion),
+                new IniKey(ScriptSection.Names.Main, "Date", ScriptDate),
+                new IniKey(ScriptSection.Names.Main, "Level", ((int)ScriptLevel).ToString()),
+                new IniKey(ScriptSection.Names.Main, "Description", StringEscaper.Escape(ScriptDescription)),
+                new IniKey(ScriptSection.Names.Main, "Selected", ScriptSelectedState.ToString()),
+                new IniKey(ScriptSection.Names.Main, "Mandatory", ScriptMandatory.ToString()),
             };
 
             IniReadWriter.WriteKeys(Script.RealPath, keys);
@@ -3347,7 +4284,12 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public bool WriteScriptInterface(bool refresh = true)
+        public Task<bool> WriteScriptInterfaceAsync(string activeInterfaceSection = null, bool refreshMainWindow = true)
+        {
+            return Task.Run(() => WriteScriptInterface(activeInterfaceSection, refreshMainWindow));
+        }
+
+        public bool WriteScriptInterface(string activeInterfaceSection = null, bool refreshMainWindow = true)
         {
             if (Renderer == null)
                 return false;
@@ -3363,14 +4305,19 @@ namespace PEBakery.WPF
                 IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
 
+                if (activeInterfaceSection != null)
+                {
+                    IniReadWriter.WriteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.Interface, activeInterfaceSection);
+                }
+
                 Script = Script.Project.RefreshScript(Script);
 
-                if (refresh)
+                if (refreshMainWindow)
                     RefreshMainWindow();
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Unable to save the script interface.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(_window, $"Unable to save the script interface.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -3380,7 +4327,7 @@ namespace PEBakery.WPF
 
         public void RefreshMainWindow()
         {
-            Global.MainViewModel.DisplayScript(Script);
+            MainViewModel.DisplayScript(Script);
         }
 
         public void WriteUIControlInfo(UIControl uiCtrl)
@@ -3472,77 +4419,97 @@ namespace PEBakery.WPF
         public void ResetSelectedUICtrl()
         {
             SelectedUICtrl = null;
-            InterfaceCanvas.ResetSelectedBorder();
+            SelectedUICtrls = null;
+            InterfaceCanvas.ClearSelectedElements(true);
         }
         #endregion
     }
     #endregion
 
-    #region AttachedFilesItem
-    public class AttachedFileItem : INotifyPropertyChanged
+    #region AttachFolderItem, AttachFileItem
+    public class AttachFolderItem : ViewModelBase
     {
         #region Constructor
-        public AttachedFileItem(bool isFolder, string name, EncodedFileInfo detail = null)
+        public AttachFolderItem(string folderName, IReadOnlyList<EncodedFileInfo> infos)
         {
-            if (!isFolder && detail == null) // If file, info must not be null
-                throw new ArgumentException($"File's [{nameof(detail)}] must not be null");
-            if (isFolder && detail != null) // If folder, info must be null
-                throw new ArgumentException($"Folder's [{nameof(detail)}] must be null");
+            FolderName = folderName;
+            Children = new ObservableCollection<AttachFileItem>(infos.Select(x => new AttachFileItem(x)));
+        }
 
-            IsFolder = isFolder;
-            Name = name;
-            Detail = detail;
-            Icon = isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File;
-
-            Children = new ObservableCollection<AttachedFileItem>();
+        public AttachFolderItem(string folderName, IReadOnlyList<AttachFileItem> files)
+        {
+            FolderName = folderName;
+            Children = new ObservableCollection<AttachFileItem>(files);
         }
         #endregion
 
-        #region Property - TreeView
-        private bool _isFolder;
-        public bool IsFolder
+        #region Property
+        private string _folderName;
+        public string FolderName
         {
-            get => _isFolder;
-            set
-            {
-                _isFolder = value;
-                OnPropertyUpdate(nameof(IsFolder));
-            }
+            get => _folderName;
+            set => SetProperty(ref _folderName, value);
         }
 
-        private string _name;
-        public string Name
+        private readonly object _childrenLock = new object();
+        private ObservableCollection<AttachFileItem> _children;
+        public ObservableCollection<AttachFileItem> Children
         {
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyUpdate(nameof(Name));
-            }
+            get => _children;
+            set => SetCollectionProperty(ref _children, _childrenLock, value);
         }
 
-        // null if folder
-        public EncodedFileInfo Detail;
+        public int FileCount => Children.Count;
+        #endregion
+    }
 
-        public ObservableCollection<AttachedFileItem> Children { get; private set; }
-
-        private PackIconMaterialKind _icon;
-        public PackIconMaterialKind Icon
+    public class AttachFileItem : ViewModelBase
+    {
+        #region Constructor
+        public AttachFileItem(EncodedFileInfo info)
         {
-            get => _icon;
-            set
-            {
-                _icon = value;
-                OnPropertyUpdate(nameof(Icon));
-            }
+            Info = info ?? throw new ArgumentNullException(nameof(info));
         }
         #endregion
 
-        #region OnPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
+        #region Property
+        public EncodedFileInfo Info;
+        public string FileName => Info.FileName;
+        public string RawSize => NumberHelper.NaturalByteSizeToSIUnit(Info.RawSize);
+        public string EncodedSize => NumberHelper.NaturalByteSizeToSIUnit(Info.EncodedSize);
+        public string Compression
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get
+            {
+                switch (Info.EncodeMode)
+                {
+                    case EncodedFile.EncodeMode.Raw:
+                        return "None";
+                    case EncodedFile.EncodeMode.ZLib:
+                        return "Deflate";
+                    case EncodedFile.EncodeMode.XZ:
+                        return "LZMA2";
+                    case null:
+                        return "Not Inspected";
+                    default:
+                        return "Unknown";
+                }
+            }
+        }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        public void PropertyUpdate()
+        {
+            OnPropertyUpdate(nameof(FileName));
+            OnPropertyUpdate(nameof(RawSize));
+            OnPropertyUpdate(nameof(EncodedSize));
+            OnPropertyUpdate(nameof(Compression));
         }
         #endregion
     }

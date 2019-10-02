@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -53,7 +53,6 @@ namespace PEBakery.Core
             public bool AllowLegacyRegWrite;
             public bool AllowLegacyInterfaceCommand;
             public bool AllowLegacySectionParamCommand;
-            public bool AllowExtendedSectionParams;
 
             public static Options CreateOptions(Setting setting, CompatOption compat)
             {
@@ -64,7 +63,6 @@ namespace PEBakery.Core
                     AllowLegacyRegWrite = compat.LegacyRegWrite,
                     AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
                     AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
-                    AllowExtendedSectionParams = !compat.DisableExtendedSectionParams,
                 };
             }
         }
@@ -82,10 +80,6 @@ namespace PEBakery.Core
             _section = section;
             _opts = Options.CreateOptions(setting, compat);
         }
-        #endregion
-
-        #region ExportCodeParserOptions
-        
         #endregion
 
         #region ParseStatement, ParseStatements
@@ -106,7 +100,7 @@ namespace PEBakery.Core
 
         public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync()
         {
-            return Task.Run(() => ParseStatements());
+            return Task.Run(ParseStatements);
         }
 
         public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IList<string> lines)
@@ -168,7 +162,7 @@ namespace PEBakery.Core
 
             int dqIdx = str.IndexOf("\"", StringComparison.Ordinal);
 
-            if (dqIdx == 0) // With Doublequote, dqIdx should be 0
+            if (dqIdx == 0) // With DoubleQuote, dqIdx should be 0
             { // Ex) "   Return SetError(@error,0,0)",Append
                 // [   Return SetError(@error,0,0)], [Append]
                 int nextIdx = str.IndexOf('\"', 1);
@@ -198,7 +192,7 @@ namespace PEBakery.Core
                 if (pIdx == -1) // Last one
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
-                    if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
@@ -208,7 +202,7 @@ namespace PEBakery.Core
                 else // [   Return SetError(@error,0,0)], [Append]
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
-                    if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
@@ -259,7 +253,7 @@ namespace PEBakery.Core
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be even", rawCode);
+                throw new InvalidCommandException("Double-quote's number should be even", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();
@@ -296,7 +290,7 @@ namespace PEBakery.Core
                     do
                     {
                         string nextArg;
-                        (nextArg, remainder) = CodeParser.GetNextArgument(remainder);
+                        (nextArg, remainder) = GetNextArgument(remainder);
                         args.Add(nextArg);
                     }
                     while (remainder != null);
@@ -323,7 +317,7 @@ namespace PEBakery.Core
         {
             CodeType type;
 
-            // Parse opcode
+            // Parse type
             string macroType;
             try
             {
@@ -360,7 +354,7 @@ namespace PEBakery.Core
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
                            !_opts.AllowLegacyInterfaceCommand && type == CodeType.Visible ||
-                           !_opts.AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
+                           !_opts.AllowLegacySectionParamCommand && type == CodeType.PackParam ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 
@@ -639,13 +633,17 @@ namespace PEBakery.Core
                         return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
                     }
                 case CodeType.RegWrite:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>,[NOWARN]
+                case CodeType.RegWriteEx:
+                    {
+                        // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDataList>,[NOWARN]
+                        // RegWriteEx,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDataList>,[NOWARN]
+
                         const int minArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // Compatbility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
-                        // It will be done in RegWriteLegacy
+                        // Compatibility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // It will be parsed in RegWriteLegacy
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
                         {
@@ -661,22 +659,66 @@ namespace PEBakery.Core
                             cnt -= 1;
                         }
 
-                        string valTypeStr = args[1];
-                        RegistryValueKind valType;
-                        try { valType = CodeParser.ParseRegistryValueKind(valTypeStr); }
-                        catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
-
-                        switch (valType)
+                        // Parse RegistryValueKind
+                        RegistryValueKind valueType;
+                        if (!NumberHelper.ParseUInt32(args[1], out uint valueTypeInt))
+                            throw new InvalidCommandException($"[{args[1]}] is not a valid number");
+                        switch (valueTypeInt)
                         {
+                            case 0:
+                                valueType = RegistryValueKind.None;
+                                break;
+                            case 1:
+                                valueType = RegistryValueKind.String;
+                                break;
+                            case 2:
+                                valueType = RegistryValueKind.ExpandString;
+                                break;
+                            case 3:
+                                valueType = RegistryValueKind.Binary;
+                                break;
+                            case 4:
+                                valueType = RegistryValueKind.DWord;
+                                break;
+                            case 7:
+                                valueType = RegistryValueKind.MultiString;
+                                break;
+                            case 11:
+                                valueType = RegistryValueKind.QWord;
+                                break;
+                            default:
+                                if (type == CodeType.RegWriteEx)
+                                    valueType = RegistryValueKind.Unknown;
+                                else
+                                    throw new InvalidCommandException($"Invalid registry value type [0x{valueTypeInt:X}]");
+                                break;
+                        }
+
+                        // Create CodeInfo_RegWrite instance
+                        switch (valueType)
+                        {
+                            case RegistryValueKind.Unknown:
+                                // RegWriteEx only, it bypass RegistryValueKind checking
+                                // Data would be treated as binary
+                                if (cnt == 4)
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
+                                else if (5 == cnt)
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                else if (6 <= cnt)
+                                {
+                                    string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
+                                }
+                                break;
                             case RegistryValueKind.None:
                                 // RegWrite,HKCU,0x0,Software\PEBakery
                                 // RegWrite,HKCU,0x0,Software\PEBakery,Hello
                                 switch (cnt)
                                 {
                                     case 3:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, null, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], null, null, null, noWarn);
                                     case 4:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, null, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.String:
@@ -684,57 +726,62 @@ namespace PEBakery.Core
                                 switch (cnt)
                                 {
                                     case 3:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, null, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], null, null, null, noWarn);
                                     case 4:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
                                     case 5:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
                                 if (4 == cnt)
-                                { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\PEBakery","Download Directories" 
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, new string[0], noWarn);
                                 }
                                 else if (5 <= cnt)
-                                { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
-                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                    if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim"
+                                    string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                    if (valueDataList.Length == 1 && valueDataList[0].Equals(string.Empty, StringComparison.Ordinal))
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, new string[0], noWarn);
                                     else
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
                                 if (cnt == 4)
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
                                 else if (5 == cnt)
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 else if (6 <= cnt)
                                 {
-                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                    string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.DWord:
                             case RegistryValueKind.QWord:
                                 if (cnt == 5)
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 break;
                             default:
-                                throw new InvalidCommandException($"Invalid ValueType [{valType}]", rawCode);
+                                throw new InvalidCommandException($"Invalid ValueType [{valueTypeInt}]", rawCode);
                         }
 
                         throw new InvalidCommandException("Invalid RegWrite Syntax", rawCode);
                     }
                 case CodeType.RegWriteLegacy:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDataList>
+                        // Compatibility shim for Macro Library of Win10PESE
+                        // Ex) RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        //     ValueType cannot be parsed as normal RegWrite in CodeParser.
+
+                        // Check for compat option
+                        if (!_opts.AllowLegacyRegWrite)
+                            throw new InvalidCommandException("<HKey> must be constant string", rawCode);
+
                         const int minArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
-
-                        // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
-                        // Because of this code, valType cannot be parsed in CodeParser
 
                         int cnt = args.Count;
                         bool noWarn = false;
@@ -748,11 +795,11 @@ namespace PEBakery.Core
                         if (4 <= cnt)
                             valueName = args[3];
 
-                        string[] valueDatas = null;
+                        string[] valueDataList = null;
                         if (5 <= cnt)
-                            valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
+                            valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
 
-                        return new CodeInfo_RegWriteLegacy(args[0], args[1], args[2], valueName, valueDatas, noWarn);
+                        return new CodeInfo_RegWriteLegacy(args[0], args[1], args[2], valueName, valueDataList, noWarn);
                     }
                 case CodeType.RegDelete:
                     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
@@ -782,7 +829,7 @@ namespace PEBakery.Core
 
                         string valTypeStr = args[3];
                         RegMultiType valType;
-                        try { valType = CodeParser.ParseRegMultiType(valTypeStr); }
+                        try { valType = ParseRegMultiType(valTypeStr); }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         string arg1 = args[4];
@@ -1590,7 +1637,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 06 Archive
                 case CodeType.Compress:
-                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>[,CompressLevel]
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1642,12 +1689,27 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel);
                     }
                 case CodeType.Decompress:
-                    { // Decompress,<SrcArchive>,<DestDir>
-                        const int argCount = 2;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-                        
-                        return new CodeInfo_Decompress(args[0], args[1]);
+                    { // Decompress,<SrcArchive>,<DestDir>[,Password=<Str>]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string password = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string passwordKey = "Password=";
+                            if (arg.StartsWith(passwordKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (password != null)
+                                    throw new InvalidCommandException("Argument <Password> cannot be duplicated", rawCode);
+                                password = arg.Substring(passwordKey.Length);
+                            }
+                        }
+
+                        return new CodeInfo_Decompress(args[0], args[1], password);
                     }
                 case CodeType.Expand:
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
@@ -1723,7 +1785,7 @@ namespace PEBakery.Core
                 #region 07 Network
                 case CodeType.WebGet:
                 case CodeType.WebGetIfNotExist: // Will be deprecated
-                    { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
+                    { // WebGet,<URL>,<DestPath>[,<HashType>=<HashDigest>][,TimeOut=<Int>][,NOERR]
                         const int minArgCount = 2;
                         const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1731,6 +1793,7 @@ namespace PEBakery.Core
 
                         HashHelper.HashType hashType = HashHelper.HashType.None;
                         string hashDigest = null;
+                        string timeOut = null;
                         bool noErr = false;
 
                         const string md5Key = "MD5=";
@@ -1738,6 +1801,7 @@ namespace PEBakery.Core
                         const string sha256Key = "SHA256=";
                         const string sha384Key = "SHA384=";
                         const string sha512Key = "SHA512=";
+                        const string timeOutKey = "TimeOut=";
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1776,6 +1840,12 @@ namespace PEBakery.Core
                                 hashType = HashHelper.HashType.SHA512;
                                 hashDigest = arg.Substring(sha512Key.Length);
                             }
+                            else if (arg.StartsWith(timeOutKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (timeOut != null)
+                                    throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
+                                timeOut = arg.Substring(timeOutKey.Length);
+                            }
                             else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noErr)
@@ -1788,7 +1858,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, noErr);
+                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, timeOut, noErr);
                     }
                 #endregion
                 #region 08 Hash
@@ -1850,7 +1920,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 10 Interface
                 case CodeType.Visible:
-                    { // Visible,<%InterfaceKey%>,<Visiblity>
+                    { // Visible,<%InterfaceKey%>,<Visibility>
                         // [,PERMANENT] - for compability of WB082
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
@@ -1867,7 +1937,7 @@ namespace PEBakery.Core
                             Variables.DetectType(args[1]) != Variables.VarKeyType.None)
                             visibility = args[1];
                         else
-                            throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
+                            throw new InvalidCommandException("Visibility must be one of True, False, or variable key.", rawCode);
 
                         if (2 < args.Count)
                         {
@@ -2033,8 +2103,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
-
-                        if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.Dir -> UserInput.DirPath
                             type = CodeType.UserInput;
                             args[0] = "DirPath";
@@ -2128,11 +2197,11 @@ namespace PEBakery.Core
                             {
                                 string varKey = arg.Substring(outKey.Length);
                                 if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
-                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
                                 outParams.Add(varKey);
                             }
                             else
-                                throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                                throw new InvalidCommandException($"Parameter of [{type}] must start with [In=] or [Out=]", rawCode);
                         }
 
                         return new CodeInfo_RunExec(scriptFile, sectionName, inParams, outParams);
@@ -2147,24 +2216,23 @@ namespace PEBakery.Core
 
                             throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
                         }
-                        else
-                        { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
-                            const int minArgCount = 4;
-                            if (CheckInfoArgumentCount(args, minArgCount, -1))
-                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            // Get parameters 
-                            List<string> inParams = new List<string>();
-                            if (minArgCount < args.Count)
-                                inParams.AddRange(args.Skip(minArgCount));
+                        // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                        const int minArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, null);
-                        }
+                        // Get parameters 
+                        List<string> inParams = new List<string>();
+                        if (minArgCount < args.Count)
+                            inParams.AddRange(args.Skip(minArgCount));
+
+                        return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, null);
                     }
                 case CodeType.LoopEx:
                 case CodeType.LoopLetterEx:
                     {
-                        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+                        // LoopEx,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
                         // LoopEx,BREAK
                         // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
                         // LoopLetterEx,BREAK
@@ -2176,35 +2244,34 @@ namespace PEBakery.Core
 
                             throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
                         }
-                        else
-                        { // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
-                            const int minArgCount = 4;
-                            if (CheckInfoArgumentCount(args, minArgCount, -1))
-                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            // Get parameters
-                            const string inKey = "In=";
-                            const string outKey = "Out=";
-                            List<string> inParams = new List<string>();
-                            List<string> outParams = new List<string>();
-                            for (int i = minArgCount; i < args.Count; i++)
+                        // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                        const int minArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        // Get parameters
+                        const string inKey = "In=";
+                        const string outKey = "Out=";
+                        List<string> inParams = new List<string>();
+                        List<string> outParams = new List<string>();
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
+                                inParams.Add(arg.Substring(inKey.Length));
+                            else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                string arg = args[i];
-                                if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
-                                    inParams.Add(arg.Substring(inKey.Length));
-                                else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string varKey = arg.Substring(outKey.Length);
-                                    if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
-                                        throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
-                                    outParams.Add(varKey);
-                                }
-                                else
-                                    throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                                string varKey = arg.Substring(outKey.Length);
+                                if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
+                                outParams.Add(varKey);
                             }
-
-                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
+                            else
+                                throw new InvalidCommandException($"Parameter of [{type}] must start with [In=] or [Out=]", rawCode);
                         }
+
+                        return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
                     }
                 case CodeType.If:
                     return ParseCodeInfoIf(rawCode, args, lineIdx);
@@ -2457,6 +2524,10 @@ namespace PEBakery.Core
                         return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
+                #region 98 Debug
+                case CodeType.Debug:
+                    return ParseCodeInfoDebug(rawCode, args);
+                #endregion
                 #region 99 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
@@ -2481,36 +2552,32 @@ namespace PEBakery.Core
         {
             if (max == -1) // Unlimited argument count
                 return op.Count < min;
-            else
-                return op.Count < min || max < op.Count;
+            return op.Count < min || max < op.Count;
         }
         #endregion
 
         #region ParseRegValueType, ParseRegMultiType
-        public static RegistryValueKind ParseRegistryValueKind(string typeStr)
+        public static uint ParseRegistryValueKind(string typeStr, bool unsafeMode)
         {
             // typeStr must be valid number
-            if (NumberHelper.ParseInt32(typeStr, out int typeInt) == false)
+            if (!NumberHelper.ParseUInt32(typeStr, out uint valueType))
                 throw new InvalidCommandException($"[{typeStr}] is not a valid number");
 
-            switch (typeInt)
+            switch (valueType)
             {
                 case 0:
-                    return RegistryValueKind.None;
                 case 1:
-                    return RegistryValueKind.String;
                 case 2:
-                    return RegistryValueKind.ExpandString;
                 case 3:
-                    return RegistryValueKind.Binary;
                 case 4:
-                    return RegistryValueKind.DWord;
                 case 7:
-                    return RegistryValueKind.MultiString;
                 case 11:
-                    return RegistryValueKind.QWord;
+                    return valueType;
                 default:
-                    throw new InvalidCommandException($"Invalid registry value type [0x{typeInt:X}]");
+                    if (unsafeMode)
+                        return valueType;
+                    else
+                        throw new InvalidCommandException($"Invalid registry value type [0x{valueType:X}]");
             }
         }
 
@@ -2518,7 +2585,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as RegMultiType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) ||
                            !Enum.IsDefined(typeof(RegMultiType), type);
@@ -2534,7 +2601,7 @@ namespace PEBakery.Core
         public static InterfaceElement ParseInterfaceElement(string str)
         {
             if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong InterfaceElement [{str}], Only alphabet and underscore can be used");
 
             bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) ||
                            !Enum.IsDefined(typeof(InterfaceElement), e);
@@ -2572,8 +2639,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
-                        else
-                            info = new UserInputInfo_DirFile(args[0], args[1]);
+                        info = new UserInputInfo_DirFile(args[0], args[1]);
                     }
                     break;
                 default: // Error
@@ -2587,7 +2653,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as UserInputType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) ||
                            !Enum.IsDefined(typeof(UserInputType), type);
@@ -2641,8 +2707,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_BytesToInt(args[0], args[1]);
+                        info = new StrFormatInfo_BytesToInt(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Hex:
@@ -2671,8 +2736,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_CeilFloorRound(args[0], args[1]);
+                        info = new StrFormatInfo_CeilFloorRound(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Date:
@@ -2878,7 +2942,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Split:
-                    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVar>
+                    { // StrFormat,Split,<SrcString>,<Delimiter>,<Index>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -2917,7 +2981,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as StrFormatType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out StrFormatType type) ||
                            !Enum.IsDefined(typeof(StrFormatType), type);
@@ -2964,11 +3028,11 @@ namespace PEBakery.Core
             [@"t"] = @"h:mm tt",
             // Gregorian Era (B.C./A.D.)
             [@"gg"] = @"gg",
-            [@"g"] = @"gg",
+            [@"g"] = @"gg"
         };
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
-        private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
+        private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g' };
 
         private static string StrFormat_Date_FormatString(string str)
         {
@@ -3162,7 +3226,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        info = new MathInfo_BoolLogicOper(args[0], args[1], args[2]);
+                        info = new MathInfo_BoolLogicOperation(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.BoolNot:
@@ -3194,7 +3258,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        info = new MathInfo_BitLogicOper(args[0], args[1], args[2]);
+                        info = new MathInfo_BitLogicOperation(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.BitNot:
@@ -3274,8 +3338,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
+                        info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.Abs:
@@ -3286,8 +3349,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_Abs(args[0], args[1]);
+                        info = new MathInfo_Abs(args[0], args[1]);
                     }
                     break;
                 case MathType.Pow:
@@ -3298,13 +3360,12 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_Pow(args[0], args[1], args[2]);
+                        info = new MathInfo_Pow(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.Hex:
                 case MathType.Dec:
-                    { 
+                    {
                         // Math,Hex,<DestVar>,<Integer>,[BitSize]
                         // Math,Dec,<DestVar>,<Integer>,[BitSize]
                         const int minArgCount = 2;
@@ -3368,7 +3429,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as MathType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out MathType type) ||
                            !Enum.IsDefined(typeof(MathType), type);
@@ -3718,7 +3779,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as ListType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out ListType type) ||
                            !Enum.IsDefined(typeof(ListType), type);
@@ -3981,7 +4042,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as SystemType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) ||
                            !Enum.IsDefined(typeof(SystemType), type);
@@ -3990,6 +4051,305 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Invalid SystemType [{typeStr}]");
 
             return type;
+        }
+        #endregion
+
+        #region ParseCodeInfoDebug, ParseDebugType
+        public CodeInfo_Debug ParseCodeInfoDebug(string rawCode, List<string> args)
+        {
+            DebugType type = ParseDebugType(args[0]);
+            DebugInfo info;
+
+            // Remove DebugType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case DebugType.Breakpoint:
+                    { // Debug,Breakpoint,[BranchCondition]
+                        BranchCondition cond = null;
+
+                        // BranchCondition was written
+                        if (0 < args.Count)
+                        {
+                            int skipArgs;
+                            (cond, skipArgs) = ParseBranchCondition(rawCode, args);
+                            if (args.Count != skipArgs)
+                                throw new InvalidCommandException("Command [Debug,Breakpoint] cannot have additional arguments after [BranchCondition]", rawCode);
+                        }
+
+                        info = new DebugInfo_Breakpoint(cond);
+                    }
+                    break;
+                // Error
+                default:
+                    throw new InternalParserException($"Wrong DebugType [{type}]");
+            }
+
+            return new CodeInfo_Debug(type, info);
+        }
+
+        public static DebugType ParseDebugType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as DebugType");
+
+            bool invalid = !Enum.TryParse(typeStr, true, out DebugType type) ||
+                           !Enum.IsDefined(typeof(DebugType), type);
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid DebugType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
+        #region ParseBranchCondition
+        public (BranchCondition Cond, int SkipArgs) ParseBranchCondition(string rawCode, List<string> args)
+        {
+            if (args.Count < 1)
+                throw new InvalidCommandException("Unable to parse BranchCondition from empty arguments", rawCode);
+
+            int cIdx = 0;
+            bool notFlag = false;
+            if (args[0].Equals("Not", StringComparison.OrdinalIgnoreCase))
+            {
+                notFlag = true;
+                cIdx++;
+            }
+
+            void CheckArgumentCount(BranchConditionType condType, int minArgCount)
+            {
+                if (args.Count < minArgCount)
+                    throw new InvalidCommandException($"BranchCondition [{condType}] must have at least [{minArgCount}] arguments", rawCode);
+            }
+
+            // BranchCondition - Non-Compare series
+            {
+                int embIdx = -1;
+                string condStr = args[cIdx];
+                BranchCondition cond = null;
+                if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistFile, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
+                }
+                else if (condStr.Equals("ExistDir", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistDir, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistDir, notFlag, args[cIdx + 1]);
+                }
+                else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistSection, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
+                }
+                else if (condStr.Equals("ExistRegSection", StringComparison.OrdinalIgnoreCase))
+                { // Will-be-deprecated
+                    embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistRegSection, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
+                }
+                else if (condStr.Equals("ExistRegSubKey", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistRegSubKey, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegSubKey, notFlag, args[cIdx + 1], args[cIdx + 2]);
+                }
+                else if (condStr.Equals("ExistRegKey", StringComparison.OrdinalIgnoreCase))
+                { // Will-be-deprecated
+                    embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.ExistRegKey, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                }
+                else if (condStr.Equals("ExistRegValue", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.ExistRegValue, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegValue, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                }
+                else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 5;
+                    CheckArgumentCount(BranchConditionType.ExistRegMulti, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
+                }
+                else if (condStr.Equals("ExistVar", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistVar, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
+                }
+                else if (condStr.Equals("ExistMacro", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistMacro, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
+                }
+                else if (condStr.Equals("WimExistIndex", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.WimExistIndex, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistIndex, notFlag, args[cIdx + 1], args[cIdx + 2]);
+                }
+                else if (condStr.Equals("WimExistFile", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistFile, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistFile, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                }
+                else if (condStr.Equals("WimExistDir", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistDir, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistDir, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                }
+                else if (condStr.Equals("WimExistImageInfo", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistImageInfo, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistImageInfo, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+
+                }
+                else if (condStr.Equals("Ping", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.Ping, embIdx);
+                    cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
+                }
+                else if (condStr.Equals("Online", StringComparison.OrdinalIgnoreCase))
+                {
+                    embIdx = cIdx + 1;
+                    CheckArgumentCount(BranchConditionType.Online, embIdx);
+                    cond = new BranchCondition(BranchConditionType.Online, notFlag);
+                }
+                else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
+                {
+                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                    if (m.Success)
+                    {
+                        embIdx = cIdx + 4;
+                        CheckArgumentCount(BranchConditionType.Question, embIdx);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                    }
+                    else
+                    {
+                        embIdx = cIdx + 2;
+                        CheckArgumentCount(BranchConditionType.Question, embIdx);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1]);
+                    }
+                }
+                else
+                {
+                    if (_opts.AllowLegacyBranchCondition)
+                    { // Deprecated BranchConditions
+                        if (condStr.Equals("NotExistFile", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistFile, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistFile, true, args[cIdx + 1]);
+
+                        }
+                        else if (condStr.Equals("NotExistDir", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistDir, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistDir, true, args[cIdx + 1]);
+                        }
+                        else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 3;
+                            CheckArgumentCount(BranchConditionType.ExistSection, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
+                        }
+                        else if (condStr.Equals("NotExistRegSection", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 3;
+                            CheckArgumentCount(BranchConditionType.ExistRegSection, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistRegSection, true, args[cIdx + 1], args[cIdx + 2]);
+                        }
+                        else if (condStr.Equals("NotExistRegKey", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 4;
+                            CheckArgumentCount(BranchConditionType.ExistRegKey, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistRegKey, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                        }
+                        else if (condStr.Equals("NotExistVar", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (notFlag)
+                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                            embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistVar, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
+                        }
+                    }
+                }
+
+                if (embIdx != -1 && cond != null)
+                {
+                    return (cond, embIdx);
+                }
+            }
+
+            // BranchCondition - Compare series
+            // <a1>,<Compare>,<a2>,<EmbCmd...> - at least 4 args is required
+            if (cIdx + 3 < args.Count)
+            {
+                string condStr = args[cIdx + 1];
+                BranchConditionType condType;
+
+                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Equal;
+                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.EqualX;
+                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Smaller;
+                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
+                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Bigger;
+                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.SmallerEqual;
+                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.BiggerEqual;
+                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
+                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase)) // Keep != 
+                {
+                    if (notFlag)
+                        throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                    notFlag = true;
+                    condType = BranchConditionType.Equal;
+                }
+                else
+                {
+                    throw new InvalidCommandException($"Incorrect branch condition [{condStr}]", rawCode);
+                }
+
+                string compArg1 = args[cIdx];
+                string compArg2 = args[cIdx + 2];
+                BranchCondition cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
+                return (cond, cIdx + 3);
+            }
+
+            throw new InvalidCommandException("Incorrect branch condition", rawCode);
         }
         #endregion
 
@@ -4016,213 +4376,8 @@ namespace PEBakery.Core
             if (args.Count < 2)
                 throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
 
-            int cIdx = 0;
-            bool notFlag = false;
-            if (args[0].Equals("Not", StringComparison.OrdinalIgnoreCase))
-            {
-                notFlag = true;
-                cIdx++;
-            }
-
-            BranchCondition cond;
-            CodeCommand embCmd;
-            if (StringContainsVariable(args[cIdx])) // BranchCondition - Compare series
-            {
-                string condStr = args[cIdx + 1];
-                BranchConditionType condType;
-
-                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Equal;
-                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.EqualX;
-                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Smaller;
-                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
-                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Bigger;
-                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.SmallerEqual;
-                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.BiggerEqual;
-                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
-                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (notFlag)
-                        throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                    notFlag = true;
-                    condType = BranchConditionType.Equal;
-                }
-                else
-                    throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-
-                string compArg1 = args[cIdx];
-                string compArg2 = args[cIdx + 2];
-                cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
-            }
-            else // IfSubOpcode - Non-Compare series
-            {
-                int embIdx;
-                string condStr = args[cIdx];
-                if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
-                    embIdx = cIdx + 2;
-                }
-                else if (condStr.Equals("ExistDir", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistDir, notFlag, args[cIdx + 1]);
-                    embIdx = cIdx + 2;
-                }
-                else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
-                    embIdx = cIdx + 3;
-                }
-                else if (condStr.Equals("ExistRegSection", StringComparison.OrdinalIgnoreCase))
-                { // Will-be-deprecated
-                    cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
-                    embIdx = cIdx + 3;
-                }
-                else if (condStr.Equals("ExistRegSubKey", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistRegSubKey, notFlag, args[cIdx + 1], args[cIdx + 2]);
-                    embIdx = cIdx + 3;
-                }
-                else if (condStr.Equals("ExistRegKey", StringComparison.OrdinalIgnoreCase))
-                { // Will-be-deprecated
-                    cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                    embIdx = cIdx + 4;
-                }
-                else if (condStr.Equals("ExistRegValue", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistRegValue, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                    embIdx = cIdx + 4;
-                }
-                else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
-                    embIdx = cIdx + 5;
-                }
-                else if (condStr.Equals("ExistVar", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
-                    embIdx = cIdx + 2;
-                }
-                else if (condStr.Equals("ExistMacro", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
-                    embIdx = cIdx + 2;
-                }
-                else if (condStr.Equals("WimExistIndex", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.WimExistIndex, notFlag, args[cIdx + 1], args[cIdx + 2]);
-                    embIdx = cIdx + 3;
-                }
-                else if (condStr.Equals("WimExistFile", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.WimExistFile, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                    embIdx = cIdx + 4;
-                }
-                else if (condStr.Equals("WimExistDir", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.WimExistDir, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                    embIdx = cIdx + 4;
-                }
-                else if (condStr.Equals("WimExistImageInfo", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.WimExistImageInfo, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                    embIdx = cIdx + 4;
-                }
-                else if (condStr.Equals("Ping", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
-                    embIdx = cIdx + 2;
-                }
-                else if (condStr.Equals("Online", StringComparison.OrdinalIgnoreCase))
-                {
-                    cond = new BranchCondition(BranchConditionType.Online, notFlag);
-                    embIdx = cIdx + 1;
-                }
-                else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
-                {
-                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-                    if (m.Success)
-                    {
-                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                        embIdx = cIdx + 4;
-                    }
-                    else
-                    {
-                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1]);
-                        embIdx = cIdx + 2;
-                    }
-                }
-                else
-                {
-                    if (_opts.AllowLegacyBranchCondition)
-                    { // Deprecated BranchConditions
-                        if (condStr.Equals("NotExistFile", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistFile, true, args[cIdx + 1]);
-                            embIdx = cIdx + 2;
-                        }
-                        else if (condStr.Equals("NotExistDir", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistDir, true, args[cIdx + 1]);
-                            embIdx = cIdx + 2;
-                        }
-                        else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
-                            embIdx = cIdx + 3;
-                        }
-                        else if (condStr.Equals("NotExistRegSection", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistRegSection, true, args[cIdx + 1], args[cIdx + 2]);
-                            embIdx = cIdx + 3;
-                        }
-                        else if (condStr.Equals("NotExistRegKey", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistRegKey, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
-                            embIdx = cIdx + 4;
-                        }
-                        else if (condStr.Equals("NotExistVar", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (notFlag)
-                                throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
-                            embIdx = cIdx + 2;
-                        }
-                        else
-                        {
-                            throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-                        }
-                    }
-                    else
-                    {
-                        throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-                    }
-                }
-
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), lineIdx);
-            }
-
+            (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
+            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
             return new CodeInfo_If(cond, embCmd);
         }
 
@@ -4341,7 +4496,7 @@ namespace PEBakery.Core
                 {
                     throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                 }
-                else // Singleline If
+                else // Single-line If
                 {
                     info.Link.Add(info.Embed);
                     info.LinkParsed = true;
@@ -4402,7 +4557,7 @@ namespace PEBakery.Core
                         ifInfo.Link.Add(ifInfo.Embed);
                         throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                     }
-                    else // Singleline If
+                    else // Single-line If
                     {
                         ifInfo.Link.Add(ifInfo.Embed);
                         ifInfo.LinkParsed = true;
@@ -4479,10 +4634,9 @@ namespace PEBakery.Core
                     CodeCommand ifCmd = info.Embed;
                     if (ifCmd.Type == CodeType.If) // Nested If
                     {
-                        CodeInfo_If embedInfo = ifCmd.Info as CodeInfo_If;
                         while (true)
                         {
-                            if (embedInfo == null)
+                            if (!(ifCmd.Info is CodeInfo_If embedInfo))
                                 throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                             if (embedInfo.Embed.Type == CodeType.If) // Nested If
@@ -4496,7 +4650,9 @@ namespace PEBakery.Core
                                 break;
                             }
                             else
+                            {
                                 break;
+                            }
                         }
                     }
                     else if (ifCmd.Type == CodeType.Begin)

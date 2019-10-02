@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Ookii.Dialogs.Wpf.Interop;
+using System;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
-using Ookii.Dialogs.Wpf.Interop;
 
 namespace Ookii.Dialogs.Wpf
 {

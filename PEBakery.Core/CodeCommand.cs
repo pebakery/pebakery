@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ namespace PEBakery.Core
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         PathMove = 160,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport, RegCopy,
+        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegWriteEx, RegDelete, RegMulti, RegImport, RegExport, RegCopy,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
@@ -83,10 +83,12 @@ namespace PEBakery.Core
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
         // 81 Control
-        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
-        GetParam = 8198, PackParam = 8199, // Will be deprecated
+        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam,
+        PackParam = 8199, // Will be deprecated
         // 82 System
         System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        // 98 Debug
+        Debug = 9800,
         // 99 External Macro
         Macro = 9900,
     }
@@ -127,7 +129,6 @@ namespace PEBakery.Core
         public static readonly CodeType[] DeprecatedCodeType =
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
-            CodeType.GetParam,
             CodeType.PackParam,
         };
 
@@ -162,7 +163,6 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : CodeInfo
         {
-            Debug.Assert(GetType() == typeof(T), "Invalid CodeInfo");
             T cast = this as T;
             Debug.Assert(cast != null, "Invalid CodeInfo");
             return cast;
@@ -181,7 +181,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Optimize
+#pragma warning disable IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
         public bool OptimizeCompare(CodeInfo info) => false;
+#pragma warning restore IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
         #endregion
     }
     #endregion
@@ -324,8 +326,6 @@ namespace PEBakery.Core
                     b.Append(",UTF16BE");
                 else if (Encoding.Equals(EncodingHelper.DefaultAnsi))
                     b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_FileCreateBlank");
             }
             return b.ToString();
         }
@@ -528,24 +528,29 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
+    {
+        // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
+        // RegWriteEx,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
+
         [NonSerialized]
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
+        public uint ValueTypeInt;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
-        public string[] ValueDatas;
+        public string[] ValueDataList;
         public bool NoWarn;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas, bool noWarn)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, uint valueTypeInt, string keyPath, string valueName, string valueData, string[] valueDataList, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
+            ValueTypeInt = valueTypeInt;
             KeyPath = keyPath;
             ValueName = valueName;
             ValueData = valueData;
-            ValueDatas = valueDatas;
+            ValueDataList = valueDataList;
             NoWarn = noWarn;
         }
 
@@ -554,21 +559,21 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(RegistryHelper.RegKeyToString(HKey));
             b.Append(",0x");
-            b.Append(((byte)ValueType).ToString("X"));
+            b.Append(ValueTypeInt.ToString("X"));
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");
-            if (ValueDatas == null)
+            if (ValueDataList == null)
             {
                 b.Append(ValueName);
                 b.Append(",");
             }
             else
             {
-                for (int i = 0; i < ValueDatas.Length; i++)
+                for (int i = 0; i < ValueDataList.Length; i++)
                 {
-                    b.Append(ValueDatas[i]);
-                    if (i + 1 < ValueDatas.Length)
+                    b.Append(ValueDataList[i]);
+                    if (i + 1 < ValueDataList.Length)
                         b.Append(",");
                 }
             }
@@ -580,21 +585,21 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWriteLegacy : CodeInfo // Compatibility Shim for Win10PESE
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>
         public string HKey;
         public string ValueType;
         public string KeyPath;
         public string ValueName;
-        public string[] ValueDatas;
+        public string[] ValueDataList;
         public bool NoWarn;
 
-        public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string valueName, string[] valueDatas, bool noWarn)
+        public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string valueName, string[] valueDataList, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
             KeyPath = keyPath;
             ValueName = valueName;
-            ValueDatas = valueDatas;
+            ValueDataList = valueDataList;
             NoWarn = noWarn;
         }
 
@@ -606,7 +611,7 @@ namespace PEBakery.Core
             b.Append(ValueType);
             b.Append(",");
             b.Append(KeyPath);
-            foreach (string valueData in ValueDatas)
+            foreach (string valueData in ValueDataList)
             {
                 b.Append(",");
                 b.Append(valueData);
@@ -738,6 +743,7 @@ namespace PEBakery.Core
         [NonSerialized]
         public RegistryKey HSrcKey;
         public string SrcKeyPath;
+        [NonSerialized]
         public RegistryKey HDestKey;
         public string DestKeyPath;
         public bool WildcardFlag;
@@ -1088,10 +1094,6 @@ namespace PEBakery.Core
         }
     }
 
-    /// <summary>
-    /// PEBakery script language does not support array, so this command is provided only for logging
-    /// TODO: Rework this command so it can be used in practical manner?
-    /// </summary>
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
     { // IniReadSection,<FileName>,<Section>,<%DestVar%>,[Delim=<Str>]
@@ -1426,7 +1428,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WimExtract : CodeInfo
     { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB]
-        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractBulk
+        // For extracting multiple path at once, rely on WimExtractOp or WimExtractBulk
         public string SrcWim;
         public string ImageIndex;
         public string ExtractPath;
@@ -2106,7 +2108,7 @@ namespace PEBakery.Core
     #region CodeInfo 06 - Archive
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
+    { // Compress,<Format>,<SrcPath>,<DestArchive>[,Password=<Str>][,CompressLevel]
         public ArchiveFile.ArchiveCompressFormat Format;
         public string SrcPath;
         public string DestArchive;
@@ -2132,8 +2134,6 @@ namespace PEBakery.Core
                 case ArchiveFile.ArchiveCompressFormat.SevenZip:
                     b.Append("SevenZip");
                     break;
-                default:
-                    throw new InternalException($"Wrong ArchiveFormat [{Format}]");
             }
             b.Append(",");
             b.Append(SrcPath);
@@ -2144,21 +2144,22 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(CompressLevel.ToString().ToUpper());
             }
-
             return b.ToString();
         }
     }
 
     [Serializable]
     public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<SrcArchive>,<DestDir>
+    { // Decompress,<SrcArchive>,<DestDir>[,Password=<Str>]
         public string SrcArchive;
         public string DestDir;
+        public string Password;
 
-        public CodeInfo_Decompress(string srcArchive, string destArchive)
+        public CodeInfo_Decompress(string srcArchive, string destArchive, string password)
         {
             SrcArchive = srcArchive;
             DestDir = destArchive;
+            Password = password;
         }
 
         public override string ToString()
@@ -2167,6 +2168,11 @@ namespace PEBakery.Core
             b.Append(SrcArchive);
             b.Append(",");
             b.Append(DestDir);
+            if (Password != null)
+            {
+                b.Append(",");
+                b.Append(Password);
+            }
             return b.ToString();
         }
     }
@@ -2242,20 +2248,22 @@ namespace PEBakery.Core
     #region CodeInfo 07 - Network
     [Serializable]
     public class CodeInfo_WebGet : CodeInfo
-    { // WebGet,<URL>,<DestPath>,[Hash=HashType,HashDigest],[NOERR]
-        // This command was rebuilt, and scraped WB082 spec.
+    { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,NOERR]
+        // This command was rebuilt in PEBakery, not following WB082 spec.
         public string URL;
         public string DestPath;
         public HashHelper.HashType HashType; // Optional Argument
         public string HashDigest; // Optional Argument
+        public string TimeOut; // Optional Argument
         public bool NoErrFlag; // Optional Flag
 
-        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, bool noErr)
+        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, string timeOut, bool noErr)
         {
             URL = url;
             DestPath = destPath;
             HashType = hashType;
             HashDigest = hashDigest;
+            TimeOut = timeOut;
             NoErrFlag = noErr;
         }
 
@@ -2271,6 +2279,11 @@ namespace PEBakery.Core
                 b.Append(HashType);
                 b.Append(",");
                 b.Append(HashDigest);
+            }
+            if (TimeOut != null)
+            {
+                b.Append(",");
+                b.Append(TimeOut);
             }
             if (NoErrFlag)
                 b.Append(",NOERR");
@@ -2859,7 +2872,7 @@ namespace PEBakery.Core
             b.Append(DestVar);
             b.Append(",");
             // This does not show original format string, but in .Net format string!
-            b.Append(StringEscaper.Doublequote(FormatString));
+            b.Append(StringEscaper.DoubleQuote(FormatString));
             return b.ToString();
         }
     }
@@ -2882,7 +2895,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(FilePath));
+            b.Append(StringEscaper.DoubleQuote(FilePath));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2906,9 +2919,9 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(DirPath));
+            b.Append(StringEscaper.DoubleQuote(DirPath));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(FileName));
+            b.Append(StringEscaper.DoubleQuote(FileName));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2937,7 +2950,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Integer));
+            b.Append(StringEscaper.DoubleQuote(Integer));
             return b.ToString();
         }
     }
@@ -2963,7 +2976,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Count));
+            b.Append(StringEscaper.DoubleQuote(Count));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2991,9 +3004,9 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(StartPos));
+            b.Append(StringEscaper.DoubleQuote(StartPos));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Length));
+            b.Append(StringEscaper.DoubleQuote(Length));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -3045,7 +3058,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(ToTrim));
+            b.Append(StringEscaper.DoubleQuote(ToTrim));
             b.Append(",");
             b.Append(DestVarName);
             return b.ToString();
@@ -3239,9 +3252,9 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(TotalWidth));
+            b.Append(StringEscaper.DoubleQuote(TotalWidth));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(PadChar));
+            b.Append(StringEscaper.DoubleQuote(PadChar));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -3384,7 +3397,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo_BoolLogicOper : MathInfo
+    public class MathInfo_BoolLogicOperation : MathInfo
     {
         // Math,BoolAnd,<%DestVar%>,<Src1>,<Src2>
         // Math,BoolOr,<%DestVar%>,<Src1>,<Src2>
@@ -3394,7 +3407,7 @@ namespace PEBakery.Core
         public string Src1;
         public string Src2;
 
-        public MathInfo_BoolLogicOper(string destVar, string src1, string src2)
+        public MathInfo_BoolLogicOperation(string destVar, string src1, string src2)
         {
             DestVar = destVar;
             Src1 = src1;
@@ -3426,7 +3439,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo_BitLogicOper : MathInfo
+    public class MathInfo_BitLogicOperation : MathInfo
     {
         // Math,BitAnd,<%DestVar%>,<Src1>,<Src2>
         // Math,BitOr,<%DestVar%>,<Src1>,<Src2>
@@ -3436,7 +3449,7 @@ namespace PEBakery.Core
         public string Src1; // Should be unsigned
         public string Src2; // Should be unsigned
 
-        public MathInfo_BitLogicOper(string destVar, string src1, string src2)
+        public MathInfo_BitLogicOperation(string destVar, string src1, string src2)
         {
             DestVar = destVar;
             Src1 = src1;
@@ -3479,13 +3492,13 @@ namespace PEBakery.Core
         public uint BitSize; // Optional, [8|16|32|64]
         public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint botSoze, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint bitSize, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
             Direction = direction;
             Shift = shift;
-            BitSize = botSoze;
+            BitSize = bitSize;
             Unsigned = _unsigned;
         }
 
@@ -3966,12 +3979,12 @@ namespace PEBakery.Core
     {
         None = 0,
         // Comparison
-        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
-        // Existance
-        // Note : Wrong terminoloy with ExistRegSection/ExistRegKey!
+        Equal = 100, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
+        // Existence
+        // Note : Wrong terminology with ExistRegSection/ExistRegKey!
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
-        ExistFile, // <FilePath>
+        ExistFile = 200, // <FilePath>
         ExistDir, // <DirPath>
         ExistSection, // <IniFile>,<Section>
         ExistRegSection, ExistRegSubKey, // <RootKey>,<SubKey> 
@@ -3980,16 +3993,16 @@ namespace PEBakery.Core
         ExistVar, // <%Var%>
         ExistMacro, // <MacroName>
         // Wim
-        WimExistIndex, // <WimFile>,<ImageIndex>
+        WimExistIndex = 300, // <WimFile>,<ImageIndex>
         WimExistFile, // <WimFile>,<ImageIndex>,<FilePath>
         WimExistDir, // <WimFile>,<ImageIndex>,<DirPath>
         WimExistImageInfo, // <WimFile>,<ImageIndex>,<Key>
         // ETC
-        Ping, // <Host>
+        Ping = 400, // <Host>
         Online, // No Argument 
         Question, // <Message> or <Message>,<Timeout>,<DefaultChoice>
         // Deprecated
-        License
+        License = 900
     }
 
     [Serializable]
@@ -4232,7 +4245,7 @@ namespace PEBakery.Core
         // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InParams]
         // LoopLetter,BREAK
 
-        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+        // LoopEx,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
         // LoopEx,BREAK
         // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
         // LoopLetterEx,BREAK
@@ -4309,14 +4322,6 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
-        public CodeInfo_If(BranchCondition cond, List<CodeCommand> link)
-        {
-            Condition = cond;
-            Embed = null;
-
-            LinkParsed = true;
-            Link = link;
-        }
 
         public override string ToString()
         {
@@ -4344,13 +4349,6 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
-        public CodeInfo_Else(List<CodeCommand> link)
-        {
-            Embed = null;
-
-            LinkParsed = true;
-            Link = link;
-        }
 
         public override string ToString()
         {
@@ -4861,6 +4859,53 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(ExitOutVar);
             }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region DebugType, DebugInfo
+    public enum DebugType
+    {
+        Breakpoint = 0,
+    }
+
+    [Serializable]
+    public class DebugInfo : CodeInfo { }
+
+    [Serializable]
+    public class DebugInfo_Breakpoint : DebugInfo
+    { // Debug,Breakpoint,[BranchCondition]
+        public BranchCondition Cond; // Optional
+
+        public DebugInfo_Breakpoint(BranchCondition cond)
+        {
+            Cond = cond;
+        }
+
+        public override string ToString() => Cond == null ? string.Empty : Cond.ToString();
+    }
+    #endregion
+
+    #region CodeInfo 98 - Debug
+    [Serializable]
+    public class CodeInfo_Debug : CodeInfo
+    {
+        public DebugType Type;
+        public DebugInfo SubInfo;
+
+        public CodeInfo_Debug(DebugType type, DebugInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
             return b.ToString();
         }
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -54,7 +54,7 @@ namespace PEBakery.Core.Tests.Command
 
             string pbDirPath = Path.Combine("%TestBench%", "CommandFile");
             string pbSrcDir = Path.Combine(pbDirPath, SrcDirFile);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void SingleTemplate(string rawCode, string srcFileName, string destFileName,
                 ErrorCheck check = ErrorCheck.Success, bool preserve = false, bool ignoreCompare = false)
@@ -167,7 +167,7 @@ namespace PEBakery.Core.Tests.Command
         public void FileDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void SingleTemplate(string rawCode, string fileName, ErrorCheck check = ErrorCheck.Success)
             {
@@ -251,7 +251,7 @@ namespace PEBakery.Core.Tests.Command
         public void FileRename()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
             {
@@ -300,7 +300,7 @@ namespace PEBakery.Core.Tests.Command
         public void FileCreateBlank()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string fileName, Encoding encoding, bool createDummy, ErrorCheck check = ErrorCheck.Success)
             {
@@ -405,7 +405,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbDirPath = Path.Combine("%TestBench%", "CommandFile");
             string pbSrcDir = Path.Combine(pbDirPath, SrcDirDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string dirName, ErrorCheck check = ErrorCheck.Success, bool wbBug = false)
             {
@@ -491,7 +491,7 @@ namespace PEBakery.Core.Tests.Command
         public void DirDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string dirName, ErrorCheck check = ErrorCheck.Success, bool copyDir = true)
             {
@@ -552,7 +552,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string varSrcDir = Path.Combine("%TestBench%", "CommandFile", SrcDirDir);
             string srcDir = StringEscaper.Preprocess(s, varSrcDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string srcDirName, string destDirName, ErrorCheck check = ErrorCheck.Success)
             {
@@ -595,7 +595,7 @@ namespace PEBakery.Core.Tests.Command
         public void DirMake()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void Template(string rawCode, string dirName, ErrorCheck check = ErrorCheck.Success, bool createDir = false, bool createFile = false)
             {
@@ -670,7 +670,7 @@ namespace PEBakery.Core.Tests.Command
         public void PathMove()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
 
             void FileTemplate(string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
             {

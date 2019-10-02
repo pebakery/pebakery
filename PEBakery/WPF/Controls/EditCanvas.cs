@@ -1,7 +1,7 @@
 ﻿/*
     MIT License (MIT)
 
-    Copyright (c) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
 	
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -93,12 +93,11 @@ namespace PEBakery.WPF.Controls
             {
                 if (!(child.Tag is UIControl ctrl))
                     continue;
+                if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    continue;
 
-                if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
-                {
-                    element = child;
-                    break;
-                }
+                element = child;
+                break;
             }
 
             DrawSelectedBorder(element);
@@ -167,7 +166,7 @@ namespace PEBakery.WPF.Controls
             if (e.Source is DependencyObject dObj)
                 element = FindRootFrameworkElement(dObj);
 
-            if (element == null)
+            if (!(element?.Tag is UIControl))
                 return;
 
             DrawSelectedBorder(element);

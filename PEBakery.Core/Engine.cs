@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -33,10 +33,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace PEBakery.Core
 {
@@ -44,15 +45,19 @@ namespace PEBakery.Core
     public class Engine
     {
         #region Variables and Constructor
+        private static bool _isRunning;
+        public static bool IsRunning => _isRunning;
+
         public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
-        public static int WorkingLock = 0;
-        public static bool StopBuildOnError = true;
+        private static readonly object WorkingLock = new object();
+        private static readonly object EnterLock = new object();
 
         // ReSharper disable once InconsistentNaming
-        public EngineState s;
+        private readonly EngineState s;
+        public EngineState State => s;
         private Task<int> _task;
 
-        public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.StringVersion}";
+        public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.ProgramVersionStr}";
 
         public Engine(EngineState state)
         {
@@ -71,8 +76,7 @@ namespace PEBakery.Core
             // Turn off temporary log suspend
             s.Logger.SuspendBuildLog = false;
 
-            // Assert s.CurDepth == 1
-            Debug.Assert(s.CurDepth == 1);
+            Debug.Assert(s.PeekDepth == 0, "Incorrect DepthInfoStack handling");
 
             // Set CurrentScript
             // Note: s.CurrentScriptIdx is not touched here
@@ -82,12 +86,10 @@ namespace PEBakery.Core
                 s.CurrentScript = sc;
 
             // Init Per-Script Log
-            bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
-            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
-            s.RefScriptId = s.ScriptId;
+            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1);
 
             // Determine EntrySection
-            string entrySection = Engine.GetEntrySection(s);
+            string entrySection = GetEntrySection(s);
 
             // Log Script Build Start Message
             string msg;
@@ -111,7 +113,7 @@ namespace PEBakery.Core
             s.CurSectionOutParams = null;
 
             // Clear Processed Section Hashes
-            s.ProcessedSectionHashes.Clear();
+            s.ProcessedSectionSet.Clear();
 
             // Set Interface using MainWindow, MainViewModel
             long allLineCount = 0;
@@ -121,30 +123,31 @@ namespace PEBakery.Core
                 allLineCount += section.Lines.Length;
             }
 
-            s.MainViewModel.BuildScriptProgressBarMax = allLineCount;
-            s.MainViewModel.BuildScriptProgressBarValue = 0;
-            s.MainViewModel.BuildFullProgressBarValue = s.CurrentScriptIdx;
+            s.MainViewModel.BuildScriptProgressMax = allLineCount;
+            s.MainViewModel.BuildScriptProgressValue = 0;
+            s.MainViewModel.BuildFullProgressValue = s.CurrentScriptIdx;
 
-            if (!prepareBuild || s.RunMode == EngineMode.RunAll)
+            // Skip displaying script information when running single scripts
+            if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
+                return;
+
+            // Display script information
+            s.MainViewModel.DisplayScriptTexts(sc, s);
+            s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
+            Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
             {
-                s.MainViewModel.DisplayScriptTexts(sc, s);
+                s.MainViewModel.DisplayScriptLogo(sc);
 
-                s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
+                // BuildTree is empty -> return
+                if (s.MainViewModel.BuildTreeItems.Count == 0)
+                    return;
 
-                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-                {
-                    s.MainViewModel.DisplayScriptLogo(sc);
-
-                    if (0 < s.MainViewModel.BuildTreeItems.Count)
-                    {
-                        if (s.MainViewModel.CurBuildTree != null)
-                            s.MainViewModel.CurBuildTree.BuildFocus = false;
-                        s.MainViewModel.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
-                        if (s.MainViewModel.CurBuildTree != null)
-                            s.MainViewModel.CurBuildTree.BuildFocus = true;
-                    }
-                }));
-            }
+                if (s.MainViewModel.CurBuildTree != null)
+                    s.MainViewModel.CurBuildTree.BuildFocus = false;
+                s.MainViewModel.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
+                if (s.MainViewModel.CurBuildTree != null)
+                    s.MainViewModel.CurBuildTree.BuildFocus = true;
+            }));
         }
 
         private static void FinishRunScript(EngineState s)
@@ -164,7 +167,10 @@ namespace PEBakery.Core
                 s.StartTime = DateTime.UtcNow;
                 s.BuildId = s.Logger.BuildInit(s, runName);
 
-                s.MainViewModel.BuildFullProgressBarMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
+                if (s.Macro.MacroEnabled)
+                    s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
+
+                s.MainViewModel.BuildFullProgressMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
 
                 // Update project variables
                 s.Project.UpdateProjectVariables();
@@ -174,12 +180,12 @@ namespace PEBakery.Core
                     ReadyRunScript(s);
 
                     // Run Main Section
-                    string entrySection = Engine.GetEntrySection(s);
+                    string entrySection = GetEntrySection(s);
                     if (s.CurrentScript.Sections.ContainsKey(entrySection))
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), 1);
+                        RunSection(s, mainSection, new List<string>(0), new List<string>(0), new EngineLocalState());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -187,16 +193,17 @@ namespace PEBakery.Core
                     FinishRunScript(s);
 
                     if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
-                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+                        s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
 
                     // OnScriptExit event callback
                     {
+                        // Backup halt flags
                         bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
                         bool bakErrorHalt = s.ErrorHaltFlag;
                         bool bakUserHalt = s.UserHaltFlag;
                         bool bakCmdHalt = s.CmdHaltFlag;
 
-                        string eventParam = FinishEventParam();
+                        string eventParam = FinishEventParam(s);
 
                         // Reset Halt Flags before running OnScriptExit
                         // Otherwise only first command is executed
@@ -204,6 +211,7 @@ namespace PEBakery.Core
 
                         CheckAndRunCallback(s, ref s.OnScriptExit, eventParam, "OnScriptExit");
 
+                        // Restore halt flags
                         s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
                         s.ErrorHaltFlag = bakErrorHalt;
                         s.UserHaltFlag = bakUserHalt;
@@ -222,10 +230,11 @@ namespace PEBakery.Core
                     if (s.Scripts.Count - 1 <= s.CurrentScriptIdx ||
                         runOneScriptExit || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     { // End of Build
-                        bool alertPassCurrentScriptFlag = s.PassCurrentScriptFlag;
-                        bool alertErrorHalt = s.ErrorHaltFlag;
-                        bool alertUserHalt = s.UserHaltFlag;
-                        bool alertCmdHalt = s.CmdHaltFlag;
+                        // Backup halt flags
+                        bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
+                        bool bakErrorHalt = s.ErrorHaltFlag;
+                        bool bakUserHalt = s.UserHaltFlag;
+                        bool bakCmdHalt = s.CmdHaltFlag;
 
                         if (s.UserHaltFlag)
                         {
@@ -234,7 +243,7 @@ namespace PEBakery.Core
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Build stop requested by user"));
                         }
 
-                        string eventParam = FinishEventParam();
+                        string eventParam = FinishEventParam(s);
 
                         // Reset Halt Flags before running OnBuildExit
                         // Otherwise only first command is executed
@@ -243,33 +252,36 @@ namespace PEBakery.Core
                         // OnBuildExit event callback
                         if (s.RunMode == EngineMode.RunAll || s.TestMode)
                         {
-                            // OnBuildExit is not called on script interface control, or codebox
-                            // (which uses EngineMode.RunMainAndOne or EngineMode.RunOne)
-                            // But it should be called in full script unit test
+                            // - OnBuildExit is called in full project build or in unit test.
+                            // - OnBuildExit is not called on script interface control or CodeBox.
+                            //   - They use EngineMode.RunMainAndOne or EngineMode.RunOne
                             CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
                         // Recover mouse cursor icon
                         if (s.CursorWait)
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
                             s.CursorWait = false;
                         }
 
-                        if (!s.TestMode)
-                        { // Disable MessageBox in TestMode for automated CI test
-                            if (alertUserHalt)
-                                MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertErrorHalt)
-                                MessageBox.Show("Build stopped by error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertCmdHalt)
-                                MessageBox.Show("Build stopped by Halt command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertPassCurrentScriptFlag)
-                                MessageBox.Show("Build stopped by Exit command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
+                        // Restore halt flags
+                        s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
+                        s.ErrorHaltFlag = bakErrorHalt;
+                        s.UserHaltFlag = bakUserHalt;
+                        s.CmdHaltFlag = bakCmdHalt;
+
+                        if (s.UserHaltFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by user"));
+                        else if (s.ErrorHaltFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by error"));
+                        else if (s.CmdHaltFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Halt] command"));
+                        else if (s.PassCurrentScriptFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Exit] command"));
 
                         break;
                     }
@@ -280,8 +292,12 @@ namespace PEBakery.Core
                     s.PassCurrentScriptFlag = false;
                 }
 
+                // Log Finished Time
                 s.EndTime = DateTime.UtcNow;
                 s.Logger.BuildFinish(s);
+
+                // Cleanup MainViewModel
+                s.MainViewModel.WaitingSubProcFinish = false;
 
                 return s.BuildId;
             });
@@ -290,59 +306,56 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ForceStop
-        public void ForceStop()
+        #region ForceStop, KillSubProcess
+        public void ForceStop(bool forceKillSubProc)
         {
-            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
-            if (s.RunningSubProcess != null)
+            lock (s.ForceStopLock)
             {
-                try { s.RunningSubProcess.Kill(); }
+                s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
+                if (forceKillSubProc)
+                    KillSubProcess();
+
+                s.CancelWebGet?.Cancel();
+                s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
+                if (s.RunningSubProcess != null)
+                    s.MainViewModel.WaitingSubProcFinish = true;
+
+                s.UserHaltFlag = true;
+            }
+        }
+
+        public Task ForceStopWait(bool forceKillSubProc)
+        {
+            ForceStop(forceKillSubProc);
+            return Task.Run(() => _task.Wait());
+        }
+
+        public void KillSubProcess()
+        {
+            lock (s.KillSubProcLock)
+            {
+                if (s.RunningSubProcess == null)
+                    return;
+
+                try
+                {
+                    s.RunningSubProcess.Kill();
+                    s.RunningSubProcess.Dispose();
+                }
                 catch { /* Ignore error */ }
                 s.RunningSubProcess = null;
             }
-            s.RunningWebClient?.CancelAsync();
-            s.UserHaltFlag = true;
-            s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
-        }
-
-        public Task ForceStopWait()
-        {
-            ForceStop();
-            return Task.Run(() => _task.Wait());
         }
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, int depth)
+        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalState ls)
         {
+            // Push ExecutionDepth
+            int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
+
             if (section.Lines == null)
-                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
-
-            CodeParser parser = new CodeParser(section, new CodeParser.Options());
-            (CodeCommand[] cmds, _) = parser.ParseStatements();
-
-            // Set CurrentSection
-            s.CurrentSection = section;
-
-            // Set SectionReturnValue to empty string
-            s.SectionReturnValue = string.Empty;
-
-            Dictionary<int, string> inParamDict = new Dictionary<int, string>();
-            for (int i = 0; i < inParams.Count; i++)
-                inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
-
-            // Must copy ParamDict by value, not reference
-            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), depth);
-
-            // Increase only if cmd resides in CurrentScript
-            if (s.CurrentScript.Equals(section.Script))
-                s.ProcessedSectionHashes.Add(section.GetHashCode());
-        }
-
-        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, int depth)
-        {
-            if (section.Lines == null)
-                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
 
             CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
             (CodeCommand[] cmds, _) = parser.ParseStatements();
@@ -351,51 +364,97 @@ namespace PEBakery.Core
             s.CurrentSection = section;
 
             // Set SectionReturnValue to empty string
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
+
+            Dictionary<int, string> inParamDict = new Dictionary<int, string>();
+            for (int i = 0; i < inParams.Count; i++)
+                inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
 
             // Must copy ParamDict by value, not reference
-            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
-            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, depth);
+            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), false);
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(section.Script))
-                s.ProcessedSectionHashes.Add(section.GetHashCode());
+                s.ProcessedSectionSet.Add(section.Name);
+
+            // Pop ExecutionDepth
+            s.PopLocalState();
+        }
+
+        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
+        {
+            // Push ExecutionDepth
+            int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
+
+            if (section.Lines == null)
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
+
+            CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
+            (CodeCommand[] cmds, _) = parser.ParseStatements();
+
+            // Set CurrentSection
+            s.CurrentSection = section;
+
+            // Set SectionReturnValue to empty string
+            s.ReturnValue = string.Empty;
+
+            // Must copy ParamDict by value, not reference
+            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
+            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, false);
+
+            // Increase only if cmd resides in CurrentScript
+            if (s.CurrentScript.Equals(section.Script))
+                s.ProcessedSectionSet.Add(section.Name);
+
+            // Pop ExecutionDepth
+            s.PopLocalState();
         }
         #endregion
 
         #region RunCommands
-        // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, bool pushDepth)
         {
             if (cmds.Count == 0)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.CurDepth + 1));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.PeekDepth + 1));
                 return null;
+            }
+
+            if (pushDepth)
+            {
+                EngineLocalState ls = s.PeekLocalState();
+                s.PushLocalState(ls.IsMacro, ls.RefScriptId);
             }
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
             {
-                s.CurDepth = depth;
                 s.CurSectionInParams = inParams;
                 s.CurSectionOutParams = outParams;
 
                 List<LogInfo> logs = ExecuteCommand(s, cmd);
                 if (s.TestMode)
+                {
+                    // ReSharper disable once PossibleNullReferenceException
                     allLogs.AddRange(logs);
+                }
 
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
             }
 
-            if (Engine.DisableSetLocal(s, section))
+            if (DisableSetLocal(s))
             {
-                int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.CurDepth));
+                int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
             }
 
-            DisableErrorOff(s, section, depth, ErrorOffState.ForceDisable);
+            DisableErrorOff(s, ErrorOffState.ForceDisable);
+
+            if (pushDepth)
+                s.PopLocalState();
+
             return s.TestMode ? allLogs : null;
         }
         #endregion
@@ -404,7 +463,7 @@ namespace PEBakery.Core
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            int curDepth = s.CurDepth;
+            EngineLocalState ls = s.PeekLocalState();
 
             if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
@@ -482,6 +541,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandRegistry.RegRead(s, cmd));
                         break;
                     case CodeType.RegWrite:
+                    case CodeType.RegWriteEx:
                         logs.AddRange(CommandRegistry.RegWrite(s, cmd));
                         break;
                     case CodeType.RegWriteLegacy: // WB082 Compatibility Shim
@@ -719,7 +779,7 @@ namespace PEBakery.Core
                     case CodeType.Run:
                     case CodeType.Exec:
                     case CodeType.RunEx:
-                        CommandBranch.RunExec(s, cmd);
+                        CommandBranch.RunExec(s, cmd, new CommandBranch.RunExecOptions());
                         break;
                     case CodeType.Loop:
                     case CodeType.LoopLetter:
@@ -777,13 +837,18 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
+                    #region 98 Debug
+                    case CodeType.Debug:
+                        logs.AddRange(CommandDebug.DebugCmd(s, cmd));
+                        break;
+                    #endregion
                     #region 99 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;
                     #endregion
                     #region Error
-                    case CodeType.Retrieve: // Must be translated by CodeParser to different commands
+                    case CodeType.Retrieve: // Must be translated prior to different commands by CodeParser.
                         logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at Engine.ExecuteCommand"));
                         break;
                     default:
@@ -794,34 +859,40 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Critical Error, stop build
-                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, curDepth));
+                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, ls.Depth));
                 s.ErrorHaltFlag = true;
+            }
+            catch (ExecuteException e)
+            {
+                // ExecuteException is for commands not returning List<LogInfo>.
+                // Do not use LogInfo's default exception message generator here.
+                logs.Add(new LogInfo(LogState.Error, e.Message, cmd, ls.Depth));
             }
             catch (InvalidCodeCommandException e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, curDepth));
+                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, ls.Depth));
             }
             catch (Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
+                logs.Add(new LogInfo(LogState.Error, e, cmd, ls.Depth));
             }
 
             // Mute LogState.{Error|Warning} if ErrorOff is enabled, and disable ErrorOff when necessary
-            ProcessErrorOff(s, cmd.Section, curDepth, cmd.LineIdx, logs);
+            ProcessErrorOff(s, cmd.LineIdx, logs);
 
             // Stop build on error
-            if (StopBuildOnError)
+            if (s.StopBuildOnError)
             {
-                if (0 < logs.Count(x => x.State == LogState.Error))
+                if (logs.Any(x => x.State == LogState.Error))
                     s.ErrorHaltFlag = true;
             }
 
-            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
+            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, ls.Depth));
 
             // Increase only if cmd resides in CurrentScript.
-            // So if a section is from Macro, it will not be count.
-            if (!s.ProcessedSectionHashes.Contains(cmd.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Section.Script))
-                s.MainViewModel.BuildScriptProgressBarValue += 1;
+            // If the current section is from Macro, it won't be counted in progress bar.
+            if (s.ProcessedSectionSet.Contains(cmd.Section.Name) && s.CurrentScript.Equals(cmd.Section.Script))
+                s.MainViewModel.BuildScriptProgressValue += 1;
 
             // Return logs, used in unit test
             return logs;
@@ -839,7 +910,7 @@ namespace PEBakery.Core
             if (changeCurrentScript)
                 s.CurrentScript = cbCmd.Section.Script;
 
-            s.CurDepth = 0;
+            s.InitLocalStateStack();
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
                 CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
@@ -849,19 +920,19 @@ namespace PEBakery.Core
                 else
                     info.InParams.Add(eventParam);
 
-                CommandBranch.RunExec(s, cbCmd);
+                CommandBranch.RunExec(s, cbCmd, new CommandBranch.RunExecOptions());
             }
             else
             {
                 ExecuteCommand(s, cbCmd);
             }
 
-            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.PeekDepth));
             s.Logger.BuildWrite(s, Logger.LogSeparator);
             cbCmd = null;
         }
 
-        public string FinishEventParam()
+        public static string FinishEventParam(EngineState s)
         {
             if (s.UserHaltFlag)
                 return "STOP";
@@ -874,25 +945,36 @@ namespace PEBakery.Core
         #endregion
 
         #region SetLocal
-        public static void EnableSetLocal(EngineState s, ScriptSection section)
+        public static void EnableSetLocal(EngineState s)
         {
-            s.SetLocalStack.Push(new SetLocalState
+            s.LocalVarsStateStack.Push(new LocalVarsState
             {
-                Section = section,
-                SectionDepth = s.CurDepth,
+                LocalState = s.PeekLocalState(),
                 LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local),
             });
         }
 
-        public static bool DisableSetLocal(EngineState s, ScriptSection section)
+        public static bool DisableSetLocal(EngineState s)
         {
-            if (0 < s.SetLocalStack.Count)
+            if (0 < s.LocalVarsStateStack.Count)
             {
-                SetLocalState last = s.SetLocalStack.Peek();
-                if (last.Section.Equals(section) && last.SectionDepth == s.CurDepth)
+                LocalVarsState last = s.LocalVarsStateStack.Peek();
+                EngineLocalState ls = s.PeekLocalState();
+                if (ls.Equals(last.LocalState))
                 {
-                    s.SetLocalStack.Pop();
-                    s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
+                    s.LocalVarsStateStack.Pop();
+
+                    // Restore local variables
+                    if (s.CurSectionOutParams == null)
+                    {
+                        s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
+                    }
+                    else
+                    {
+                        var keysToPreserve = s.CurSectionOutParams.Select(key => Variables.GetVariableName(s, key));
+                        s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup, keysToPreserve);
+                    }
+
                     return true;
                 }
             }
@@ -902,32 +984,32 @@ namespace PEBakery.Core
         #endregion
 
         #region ErrorOff
-        public static bool ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
+        public static void ProcessErrorOff(EngineState s, int lineIdx, List<LogInfo> logs)
         {
             if (s.ErrorOff == null)
-                return false;
+                return;
 
             // When muting error, never check lineIdx.
             // If lineIdx is involved, ErrorOff will not work properly in RunExec.
             MuteLogError(logs);
 
-            return DisableErrorOff(s, section, depth, lineIdx);
+            // 
+            DisableErrorOff(s, lineIdx);
         }
 
-        public static bool DisableErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx)
+        public static void DisableErrorOff(EngineState s, int lineIdx)
         {
             if (s.ErrorOff is ErrorOffState es)
             {
-                if (es.Section.Equals(section) && es.SectionDepth == depth &&
+                EngineLocalState ls = s.PeekLocalState();
+                if (ls.Equals(es.LocalState) &&
                     (lineIdx == ErrorOffState.ForceDisable || es.StartLineIdx + es.LineCount <= lineIdx))
                 {
                     s.ErrorOff = null;
                     s.ErrorOffWaitingRegister = null;
                     s.ErrorOffDepthMinusOne = false;
-                    return true;
                 }
             }
-            return false;
         }
 
         private static void MuteLogError(List<LogInfo> logs)
@@ -947,7 +1029,7 @@ namespace PEBakery.Core
         #region Utility Methods
         public static string GetEntrySection(EngineState s)
         {
-            string entrySection = "Process";
+            string entrySection = ScriptSection.Names.Process;
             switch (s.RunMode)
             {
                 case EngineMode.RunMainAndOne when s.CurrentScriptIdx != 0:
@@ -1013,6 +1095,44 @@ namespace PEBakery.Core
             return true;
         }
         #endregion
+
+        #region Lock Methods
+        /// <summary>
+        /// Try to acquire global Engine lock 
+        /// </summary>
+        /// <returns>Return true if successfully acquired lock</returns>
+        public static bool TryEnterLock()
+        {
+            lock (EnterLock)
+            {
+                if (_isRunning)
+                    return false;
+
+                if (Monitor.TryEnter(WorkingLock))
+                {
+                    _isRunning = true;
+                    return true;
+                }
+                else
+                {
+                    _isRunning = false;
+                    return false;
+                }
+            }
+        }
+
+        public static void ExitLock()
+        {
+            lock (EnterLock)
+            {
+                if (!_isRunning)
+                    return;
+
+                Monitor.Exit(WorkingLock);
+                _isRunning = false;
+            }
+        }
+        #endregion
     }
     #endregion
 
@@ -1022,13 +1142,6 @@ namespace PEBakery.Core
         RunAll,
         RunMainAndOne,
         RunOne,
-    }
-
-    public enum LoopState
-    {
-        Off,
-        OnIndex,
-        OnDriveLetter,
     }
 
     public enum LogMode
@@ -1059,14 +1172,15 @@ namespace PEBakery.Core
     [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
     public class EngineState
     {
-        #region Field and Properties
+        #region Fields and Properties
+        // Fields
         public Project Project;
         public List<Script> Scripts;
         public Variables Variables => Project.Variables;
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
-        public LogMode LogMode = LogMode.NoDefer; // For performance (deferred logging)
+        public LogMode LogMode = LogMode.NoDefer; // Deferred logging is used for performance
         public MainViewModel MainViewModel;
         public Random Random;
 
@@ -1080,24 +1194,34 @@ namespace PEBakery.Core
         public Script CurrentScript;
         public int CurrentScriptIdx;
         public ScriptSection CurrentSection;
-        public Dictionary<int, string> CurSectionInParams;
+        public Dictionary<int, string> CurSectionInParams; // 1-based index
         public List<string> CurSectionOutParams = null;
-        public string SectionReturnValue = string.Empty;
-        public List<int> ProcessedSectionHashes = new List<int>();
-        public int CurDepth = 1;
+        public string ReturnValue = string.Empty;
+        public HashSet<string> ProcessedSectionSet = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
         public bool ElseFlag = false;
-        public LoopState LoopState = LoopState.Off;
-        public long LoopCounter = 0;
-        public char LoopLetter = ' '; // Use capital alphabet
-        public bool InMacro = false;
         public bool PassCurrentScriptFlag = false; // Exit Command
-        public bool ErrorHaltFlag = false;
+        public bool ErrorHaltFlag = false; // Did error occur?
         public bool CmdHaltFlag = false; // Halt Command
-        public bool UserHaltFlag = false;
+        public bool UserHaltFlag = false; // Did user clicked stop button?
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
-        public int RefScriptId = 0; // Used in logging
+
+        // Loop State Stack
+        /// <summary>
+        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
+        /// </summary>
+        public readonly Stack<EngineLoopState> LoopStateStack = new Stack<EngineLoopState>(4);
+
+        // Local State Stack
+        /// <summary>
+        /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
+        /// </summary>
+        /// <remarks>
+        /// At least one EngineLocalState (depth of 0) is guaranteed in the stack.
+        /// </remarks>
+        private readonly Stack<EngineLocalState> _localStateStack = new Stack<EngineLocalState>(16);
+        public int PeekDepth => _localStateStack.Count == 0 ? 0 : _localStateStack.Peek().Depth;
 
         // Elapsed Time
         public DateTime StartTime = DateTime.MinValue;
@@ -1112,16 +1236,19 @@ namespace PEBakery.Core
             }
         }
 
-        // Options
-        public bool CompatDirCopyBug = false; // Compatibility
-        public bool CompatFileRenameCanMoveDir = false; // Compatibility
-        public bool CompatAllowLetterInLoop = false; // Compatibility
-        public bool CompatAllowSetModifyInterface = false; // Compatibility
-        public bool CompatDisableExtendedSectionParams = false; // Compatibility
-        public bool CompatOverridableLoopCounter; // Compatibility
+        // Normal Options
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
+        public bool StopBuildOnError = true;
+
+        // Compat Options
+        public bool CompatDirCopyBug = false;
+        public bool CompatFileRenameCanMoveDir = false;
+        public bool CompatAllowLetterInLoop = false;
+        public bool CompatAllowSetModifyInterface = false;
+        public bool CompatDisableExtendedSectionParams = false;
+        public bool CompatOverridableLoopCounter;
 
         // Command State
         // |- Callback
@@ -1132,11 +1259,16 @@ namespace PEBakery.Core
         public bool ErrorOffDepthMinusOne = false;
         public ErrorOffState? ErrorOff = null;
         // |- System,SetLocal
-        public Stack<SetLocalState> SetLocalStack = new Stack<SetLocalState>(16);
+        public Stack<LocalVarsState> LocalVarsStateStack = new Stack<LocalVarsState>(16);
         // |- ShellExecute
         public Process RunningSubProcess = null;
         // |- WebGet
-        public WebClient RunningWebClient = null;
+        public CancellationTokenSource CancelWebGet = null;
+
+        // Lock
+        public readonly object ForceStopLock = new object();
+        public readonly object KillSubProcLock = new object();
+        public readonly object RunningSubProcLock = new object();
 
         // Readonly Fields
         public readonly string RunOneEntrySection;
@@ -1149,7 +1281,7 @@ namespace PEBakery.Core
             Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            logger.BuildWrite(BuildId, macroLogs);
+            logger.SystemWrite(macroLogs);
 
             RunMode = mode;
             switch (RunMode)
@@ -1168,7 +1300,7 @@ namespace PEBakery.Core
                     { // Run one script, executing MainScript before it.
                         if (runSingle == null)
                             throw new ArgumentNullException(nameof(runSingle));
-                        if (runSingle.Equals(project.MainScript) && entrySection.Equals("Process", StringComparison.Ordinal))
+                        if (runSingle.Equals(project.MainScript) && entrySection.Equals(ScriptSection.Names.Process, StringComparison.Ordinal))
                             goto case EngineMode.RunOne;
 
                         Scripts = new List<Script>(2) { project.MainScript, runSingle };
@@ -1191,26 +1323,38 @@ namespace PEBakery.Core
                     break;
             }
 
+            // Init DepthInfoStack
+            InitLocalStateStack();
+
+            // Current Section
             CurrentSection = null;
             CurSectionInParams = new Dictionary<int, string>();
+
+            // MainViewModel
             MainViewModel = mainModel;
 
             // Use secure random number generator to feed seed to pseudo random number generator.
             byte[] seedArray = new byte[4];
-            RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider();
-            secureRandom.GetBytes(seedArray);
+            using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
+            {
+                secureRandom.GetBytes(seedArray);
+            }
             int seed = BitConverter.ToInt32(seedArray, 0);
             Random = new Random(seed);
         }
         #endregion
 
-        #region SetOptions
-        public void SetOptions(Setting setting, CompatOption compat)
+        #region SetOptions, SetCompat
+        public void SetOptions(Setting setting)
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
+            StopBuildOnError = setting.General.StopBuildOnError;
 
             LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDefer;
+        }
 
+        public void SetCompat(CompatOption compat)
+        {
             CompatDirCopyBug = compat.AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;
             CompatAllowLetterInLoop = compat.AllowLetterInLoop;
@@ -1227,13 +1371,10 @@ namespace PEBakery.Core
             ResetHaltFlags();
 
             // Engine State
-            SectionReturnValue = string.Empty;
-            CurDepth = 1;
+            ReturnValue = string.Empty;
+            InitLocalStateStack();
             ElseFlag = false;
-            LoopState = LoopState.Off;
-            LoopCounter = 0;
-            LoopLetter = ' ';
-            InMacro = false;
+            LoopStateStack.Clear();
 
             // Command State
             OnBuildExit = null;
@@ -1241,9 +1382,8 @@ namespace PEBakery.Core
             ErrorOff = null;
             ErrorOffDepthMinusOne = false;
             ErrorOffWaitingRegister = null;
-            SetLocalStack = new Stack<SetLocalState>(16);
+            LocalVarsStateStack.Clear();
             RunningSubProcess = null;
-            RunningWebClient = null;
         }
 
         public void ResetHaltFlags()
@@ -1255,14 +1395,182 @@ namespace PEBakery.Core
             CmdHaltFlag = false;
         }
         #endregion
+
+        #region RunResultReport
+        public string RunResultReport()
+        {
+            string reason = null;
+            if (CmdHaltFlag || UserHaltFlag || ErrorHaltFlag || PassCurrentScriptFlag)
+            {
+                if (CmdHaltFlag)
+                    reason = "[Halt] command";
+                else if (UserHaltFlag)
+                    reason = "user";
+                else if (ErrorHaltFlag)
+                    reason = "error";
+                else if (PassCurrentScriptFlag) // Keep this check at last line, must have lowest priority
+                    reason = "[Exit] command";
+                Debug.Assert(reason != null, "Invalid reason string");
+
+                MainViewModel.BuildEndedWithIssue = true;
+                MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
+                MainViewModel.BuildFullProgressValue = MainViewModel.BuildFullProgressMax;
+            }
+            else
+            {
+                MainViewModel.BuildEndedWithIssue = false;
+            }
+
+            return reason;
+        }
+        #endregion
+
+        #region Local State
+        public void InitLocalStateStack()
+        {
+            _localStateStack.Clear();
+            _localStateStack.Push(new EngineLocalState
+            {
+                Depth = 0,
+            });
+        }
+
+        /// <summary>
+        /// Push new local state.
+        /// </summary>
+        /// <returns>New execution depth.</returns>
+        public int PushLocalState(bool isMacro, int refScriptId)
+        {
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
+
+            EngineLocalState ls = new EngineLocalState
+            {
+                Depth = _localStateStack.Peek().Depth + 1,
+                IsMacro = isMacro,
+                RefScriptId = refScriptId,
+            };
+
+            Debug.Assert(ls.Depth != -1, "Incorrect EngineLocalState.Depth handling");
+
+            _localStateStack.Push(ls);
+            return ls.Depth;
+        }
+
+        /// <summary>
+        /// Remove current local state
+        /// </summary>
+        /// <returns></returns>
+        public void PopLocalState()
+        {
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
+            _localStateStack.Pop();
+        }
+
+        /// <summary>
+        /// Peek current local state
+        /// </summary>
+        /// <returns></returns>
+        public EngineLocalState PeekLocalState()
+        {
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
+            return _localStateStack.Peek();
+        }
+        #endregion
     }
     #endregion
 
-    #region struct SetLocalState
-    public struct SetLocalState
+    #region struct EngineLoopState
+    public struct EngineLoopState
     {
-        public ScriptSection Section;
-        public int SectionDepth;
+        public enum LoopState
+        {
+            OnIndex,
+            OnDriveLetter,
+        }
+
+        public LoopState State;
+        public long CounterIndex;
+        public char CounterLetter;
+
+        public EngineLoopState(long ctrIdx)
+        {
+            State = LoopState.OnIndex;
+            CounterIndex = ctrIdx;
+            CounterLetter = '\0';
+        }
+
+        public EngineLoopState(char ctrLetter)
+        {
+            State = LoopState.OnDriveLetter;
+            CounterIndex = 0;
+            if ('A' <= ctrLetter && ctrLetter <= 'Z' || ctrLetter == '\0')
+                CounterLetter = ctrLetter;
+            else if ('a' <= ctrLetter && ctrLetter <= 'z')
+                CounterLetter = char.ToUpper(ctrLetter); // Use capital alphabet
+            else
+                throw new CriticalErrorException("Invalid LoopLetter Handling");
+        }
+    }
+    #endregion
+
+    #region struct EngineLocalState
+    public struct EngineLocalState : IEquatable<EngineLocalState>
+    {
+        #region Fields and Properties
+        /// <summary>
+        /// Current Depth.
+        /// [Process] starts from 1.
+        /// If no section is running, it must be 0.
+        /// </summary>
+        public int Depth;
+
+        /// <summary>
+        /// Is running from Macro command?
+        /// </summary>
+        public bool IsMacro;
+
+        /// <summary>
+        /// Is running from Referenced Script? Set to 0 if not referenced
+        /// </summary>
+        public int RefScriptId;
+        public bool IsRefScript => RefScriptId != 0;
+        #endregion
+
+        #region Default, UpdateDepth
+        public void Default()
+        {
+            Depth = -1;
+            IsMacro = false;
+            RefScriptId = 0;
+        }
+
+        [SuppressMessage("ReSharper", "ArrangeThisQualifier")]
+        public EngineLocalState UpdateDepth(int newDepth)
+        {
+            return new EngineLocalState
+            {
+                Depth = newDepth,
+                IsMacro = this.IsMacro,
+                RefScriptId = this.RefScriptId,
+            };
+        }
+        #endregion
+
+        #region Interface Methods
+        public bool Equals(EngineLocalState ls)
+        {
+            return Depth == ls.Depth &&
+                   IsMacro == ls.IsMacro &&
+                   RefScriptId == ls.RefScriptId;
+        }
+        #endregion
+    }
+    #endregion
+
+    #region struct LocalVarsState
+    public struct LocalVarsState
+    {
+        public EngineLocalState LocalState;
         public Dictionary<string, string> LocalVarsBackup;
     }
     #endregion
@@ -1270,8 +1578,7 @@ namespace PEBakery.Core
     #region struct ErrorOffState
     public struct ErrorOffState
     {
-        public ScriptSection Section;
-        public int SectionDepth;
+        public EngineLocalState LocalState;
         public int StartLineIdx;
         public int LineCount;
 

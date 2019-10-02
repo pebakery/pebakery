@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -38,7 +38,6 @@ namespace PEBakery.Core.Tests.Command
     {
         #region Compress
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Compress()
         {
@@ -73,7 +72,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, "*", SearchOption.AllDirectories);
@@ -131,7 +130,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -184,7 +183,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(appendFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, appendFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -232,7 +231,7 @@ namespace PEBakery.Core.Tests.Command
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
                     string exeDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-                    EngineTests.ExtractWith7z(exeDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(exeDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcDir, wildcard, SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, wildcard, SearchOption.AllDirectories);
@@ -276,7 +275,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region Decompress
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Decompress()
         {
@@ -289,7 +287,7 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(dirPath, archiveName);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
 
                 try
                 {
@@ -318,23 +316,24 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void FileTemplate(string archiveFile, string compFile)
+            void FileTemplate(string archiveFile, string originDir, string originFile, string password = null)
             {
                 Debug.Assert(archiveFile != null);
-                string archiveType = Path.GetExtension(archiveFile).Substring(1);
-                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-                string srcPath = Path.Combine(dirPath, archiveName, compFile);
-                string destDir = FileHelper.GetTempFileNameEx();
-                string destPath = Path.Combine(destDir, compFile);
+                string srcPath = Path.Combine(dirPath, originDir, originFile);
+                string destDir = FileHelper.GetTempDir();
+                string destPath = Path.Combine(destDir, originFile);
 
                 try
                 {
-                    Directory.CreateDirectory(destDir);
+                    string rawCode;
+                    if (password == null)
+                        rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
+                    else
+                        rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\",Password={password}";
 
-                    string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
                     EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
 
                     using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -357,20 +356,25 @@ namespace PEBakery.Core.Tests.Command
             DirTemplate("France.zip");
             DirTemplate("France.7z");
             DirTemplate("France.rar"); // RAR5
-            FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo.jpg");
-            FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo.jpg");
-            FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo.jpg"); // RAR2.9
+            FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo", "Korean_IME_Logo.jpg"); // RAR2.9
+            // Decompress password-protected archives
+            // ReSharper disable StringLiteralTypo
+            FileTemplate("Password_ZipCrypto.zip", "Password", "Password.txt", "abcxyz");
+            FileTemplate("Password_AES256.zip", "Password", "Password.txt", "abcxyz");
+            FileTemplate("Password_AES256.7z", "Password", "Password.txt", "abcxyz");
+            // ReSharper restore StringLiteralTypo
         }
         #endregion
 
         #region Expand
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Expand()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
 
             void FileTemplate(string compFile, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
             {
@@ -482,7 +486,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region CopyOrExpand
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void CopyOrExpand()
         {
@@ -497,15 +500,11 @@ namespace PEBakery.Core.Tests.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
             string destFile = Path.Combine(destDir, "ex3.jpg");
 
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
             try
             {
-                Directory.CreateDirectory(destDir);
-
                 string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 
@@ -531,16 +530,11 @@ namespace PEBakery.Core.Tests.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
             string destFile = Path.Combine(destDir, "change.jpg");
-
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
 
             try
             {
-                Directory.CreateDirectory(destDir);
-
                 string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\\change.jpg\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 
@@ -564,9 +558,17 @@ namespace PEBakery.Core.Tests.Command
 
         public void CopyOrExpand_3(EngineState s)
         {
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
-            EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
+            string destDir = FileHelper.GetTempDir();
+            try
+            {
+                string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
+                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
         }
         #endregion
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -39,6 +39,24 @@ using System.Windows;
 
 namespace PEBakery.Core
 {
+    #region (Docs) Principle about handling string in UIControl
+    /*
+    [Principle about handling string in UIControl]
+    - UIControl instance must store escaped (==raw) string.
+        - Do not call `StringEscaper.Unescape()` to un-escape string at parse time.
+        - Do not call `StringEscaper.Unescape()` to un-escape string at interface editor.
+          Expose escaped string directly into interface editor.
+    - When reading string value from control, call `StringEscaper.Unescape()`.
+        - EXCEPTION: Do not un-escape section names.
+        - Escape string with `StringEscaper.Unescape()` in UIRenderer.
+            - WinBuilder does this in limited control (TextLabel), be aware of difference.
+    - When writing string value to control, put escaped string.
+        - Again, UIControl instance must store escaped string.
+    - When saving control line to file, call `StringEscaper.DoubleQuote()` for string value.
+        - UIControl instance stores escaped string, but not double-quoted.
+    */
+    #endregion
+
     #region Enum UIControlType
     public enum UIControlType
     {
@@ -61,8 +79,10 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Interface Representation Format
+    #region (Docs) Interface Representation Format
     /*
+    [Interface Representation Format]
+
     <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[ToolTip]
     Visibility : 1 or 0
     Type : UIControlType 0 ~ 14 (Except 7, 9)
@@ -114,7 +134,7 @@ namespace PEBakery.Core
     HideProgress : (Bool)   
 
     [ToolTip]
-    <StringValue> : ToolTip to show at mousehover event, always start with __
+    <StringValue> : ToolTip to show at mouse-hover event, always start with __
     */
     #endregion
 
@@ -178,12 +198,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ToString, ForgeRawLine
-        public override string ToString()
-        {
-            return ForgeRawLine(true);
-        }
+        #region ToString
+        public override string ToString() => RawLine;
+        #endregion
 
+        #region ForgeRawLine
         public string ForgeRawLine(bool includeKey)
         {
             StringBuilder b = new StringBuilder();
@@ -192,7 +211,7 @@ namespace PEBakery.Core
                 b.Append(Key);
                 b.Append("=");
             }
-            b.Append(StringEscaper.QuoteEscape(Text));
+            b.Append(StringEscaper.DoubleQuote(Text));
             b.Append(",");
             b.Append(Visibility ? "1," : "0,");
             b.Append((int)Type);
@@ -219,7 +238,7 @@ namespace PEBakery.Core
             return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
-        public static bool Update(List<UIControl> uiCtrls)
+        public static bool Update(IReadOnlyList<UIControl> uiCtrls)
         {
             if (uiCtrls.Count == 0)
                 return true;
@@ -273,41 +292,44 @@ namespace PEBakery.Core
             switch (Type)
             {
                 case UIControlType.TextLabel:
+                    // Text
                     if (strict)
-                        value = Text;
+                        value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.TextBox:
-                    {
+                    { // Value
                         UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
-                        value = info.Value;
+                        value = StringEscaper.Unescape(info.Value);
                     }
                     break;
                 case UIControlType.NumberBox:
-                    {
+                    { // Value
                         UIInfo_NumberBox info = Info.Cast<UIInfo_NumberBox>();
                         value = info.Value.ToString();
                     }
                     break;
                 case UIControlType.CheckBox:
-                    {
+                    { // Value
                         UIInfo_CheckBox info = Info.Cast<UIInfo_CheckBox>();
                         value = info.Value ? "True" : "False";
                     }
                     break;
                 case UIControlType.ComboBox:
-                    value = Text;
+                    // Text
+                    value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.RadioButton:
-                    {
+                    { // Selected
                         UIInfo_RadioButton info = Info.Cast<UIInfo_RadioButton>();
                         value = info.Selected ? "True" : "False";
                     }
                     break;
                 case UIControlType.FileBox:
-                    value = Text;
+                    // Text
+                    value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.RadioGroup:
-                    {
+                    { // Selected
                         UIInfo_RadioGroup info = Info.Cast<UIInfo_RadioGroup>();
                         value = info.Selected.ToString();
                     }
@@ -324,22 +346,23 @@ namespace PEBakery.Core
             switch (Type)
             {
                 case UIControlType.TextLabel:
-                    Text = newValue;
+                    // Text
+                    Text = StringEscaper.Escape(newValue);
 
                     logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                     success = true;
                     break;
                 case UIControlType.TextBox:
-                    {
+                    { // Value
                         UIInfo_TextBox uiInfo = Info.Cast<UIInfo_TextBox>();
-                        uiInfo.Value = newValue;
+                        uiInfo.Value = StringEscaper.Escape(newValue);
 
                         logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                         success = true;
                     }
                     break;
                 case UIControlType.NumberBox:
-                    {
+                    { // Value
                         UIInfo_NumberBox uiInfo = Info.Cast<UIInfo_NumberBox>();
 
                         // WB082 just write string value in case of error, but PEBakery will throw error
@@ -364,7 +387,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.CheckBox:
-                    {
+                    { // Value
                         UIInfo_CheckBox uiInfo = Info.Cast<UIInfo_CheckBox>();
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
@@ -389,12 +412,12 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.ComboBox:
-                    {
+                    { // Text
                         UIInfo_ComboBox uiInfo = Info.Cast<UIInfo_ComboBox>();
 
-                        int idx = uiInfo.Items.FindIndex(x => x.Equals(newValue, StringComparison.OrdinalIgnoreCase));
+                        int idx = uiInfo.Items.FindIndex(x => newValue.Equals(StringEscaper.Unescape(x), StringComparison.OrdinalIgnoreCase));
                         if (idx == -1)
-                        { // Invalid Index
+                        { // Invalid index
                             logs.Add(new LogInfo(LogState.Error, $"[{newValue}] was not found in the item list"));
                             return false;
                         }
@@ -432,7 +455,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.FileBox:
-                    Text = newValue;
+                    Text = StringEscaper.Escape(newValue);
 
                     logs.Add(new LogInfo(LogState.Success, $"Interface Control [{Key}] set to [{newValue}]"));
                     success = true;
@@ -596,7 +619,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
+                return "," + StringEscaper.DoubleQuote($"__{ToolTip}");
             return string.Empty;
         }
 
@@ -604,7 +627,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Template
+#pragma warning disable IDE0060
         public static string Template(string key) => string.Empty;
+#pragma warning restore IDE0060
         #endregion
     }
 
@@ -633,7 +658,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(Value));
+            b.Append(StringEscaper.DoubleQuote(Value));
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
@@ -742,7 +767,7 @@ namespace PEBakery.Core
             if (SectionName != null)
             {
                 b.Append(",_");
-                b.Append(SectionName);
+                b.Append(StringEscaper.DoubleQuote(SectionName));
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
@@ -775,17 +800,15 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < Items.Count - 1; i++)
+            foreach (string item in Items)
             {
                 b.Append(",");
-                b.Append(StringEscaper.QuoteEscape(Items[i]));
+                b.Append(StringEscaper.DoubleQuote(item));
             }
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(Items.Last()));
             if (SectionName != null)
             {
                 b.Append(",_");
-                b.Append(SectionName);
+                b.Append(StringEscaper.DoubleQuote(SectionName));
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
@@ -801,7 +824,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Image : UIInfo
     {
-        public string Url; // optional
+        public string Url; // Optional
 
         public UIInfo_Image(string toolTip, string url)
             : base(toolTip)
@@ -812,10 +835,10 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (Url != null)
+            if (!string.IsNullOrWhiteSpace(Url))
             {
                 b.Append(",");
-                b.Append(Url);
+                b.Append(StringEscaper.DoubleQuote(Url));
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -867,9 +890,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(StringEscaper.DoubleQuote(SectionName));
             b.Append(",");
-            b.Append(Picture ?? "0");
+            b.Append(Picture == null ? "0" : StringEscaper.DoubleQuote(Picture));
             b.Append(HideProgress ? ",True" : ",False");
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -878,7 +901,6 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
-
         #region Const 0
         public const string NoPicture = "0";
         #endregion
@@ -899,7 +921,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(StringEscaper.Escape(Url));
+            b.Append(StringEscaper.DoubleQuote(Url));
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
@@ -932,7 +954,7 @@ namespace PEBakery.Core
             if (SectionName != null)
             {
                 b.Append(",_");
-                b.Append(SectionName);
+                b.Append(StringEscaper.DoubleQuote(SectionName));
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
@@ -1055,14 +1077,14 @@ namespace PEBakery.Core
             foreach (string item in Items)
             {
                 b.Append(",");
-                b.Append(StringEscaper.QuoteEscape(item));
+                b.Append(StringEscaper.DoubleQuote(item));
             }
             b.Append(",");
             b.Append(Selected);
             if (SectionName != null)
             {
                 b.Append(",_");
-                b.Append(SectionName);
+                b.Append(StringEscaper.DoubleQuote(SectionName));
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
@@ -1074,6 +1096,5 @@ namespace PEBakery.Core
 
         public new static string Template(string key) => $"{key}={key},1,14,10,10,150,60,A,B,C,1";
     }
-
     #endregion
 }

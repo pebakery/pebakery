@@ -1,0 +1,181 @@
+﻿<!--
+    Copyright (C) 2018-2019 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+-->
+
+<Window x:Class="PEBakery.WPF.LogExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        mc:Ignorable="d"
+        FontSize="13"
+        Width="500" Height="320"
+        FontFamily="Segoe UI"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Title="Export Logs" 
+        d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
+    <Window.CommandBindings>
+        <CommandBinding x:Name="ExportCommand"
+                        Command="local:LogExportCommands.Export"
+                        CanExecute="ExportCommand_CanExecute"
+                        Executed="ExportCommand_Executed"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+        <local:InvertBoolConverter x:Key="InvertBoolConverter"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Orientation="Vertical"
+                    Margin="5, 5, 5, 0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+
+                <GroupBox Grid.Column="0"
+                          Height="65"
+                          Margin="0, 0, 3, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="Log Type"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsChecked="{Binding ExportSystemLog}"
+                                     Content="System Log"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsEnabled="{Binding BuildLogRadioEnabled}"
+                                     IsChecked="{Binding ExportBuildLog}"
+                                     Content="Build Log"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Grid.Column="1"
+                          Height="65"
+                          Margin="3, 0, 0, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="File Format"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatText}"
+                                     Content="Text (.txt)"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatHtml}"
+                                     Content="HTML (.html)"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            <GroupBox Height="140"
+                      Margin="0, 0, 0, 5"
+                      BorderBrush="Gray" >
+                <GroupBox.Header>
+                    <TextBlock Text="Build Log Export Options"
+                               FontWeight="Bold"/>
+                </GroupBox.Header>
+                <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
+                    <TextBlock Height="20"
+                               Margin="5, 0, 0, 0"
+                               VerticalAlignment="Top"
+                               Text="Select Build"/>
+                    <ComboBox Height="25"
+                              FontSize="11"
+                              Margin="3, 0, 3, 10"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              ItemsSource="{Binding BuildEntries}"
+                              SelectedIndex="{Binding SelectedBuildEntryIndex}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Text}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogIncludeComments}"
+                              Content="Include Comments"/>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogIncludeMacros}"
+                              Content="Include Macro Commands"/>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogShowLogFlags}"
+                              Content="Show Log Flags"/>
+                </StackPanel>
+            </GroupBox>
+            <ProgressBar Height="20"
+                         IsIndeterminate="{Binding InProgress}"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1"
+                    Margin="0, 5, 5, 5"
+                    Height="25"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Width="80"
+                    Margin="0, 0, 5, 0"
+                    IsDefault="True"
+                    x:Name="ExportButton"
+                    Command="local:LogExportCommands.Export"
+                    Content="Export"/>
+            <Button Width="80"
+                    IsCancel="True"
+                    IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}"
+                    Content="Cancel"/>
+        </StackPanel>
+    </Grid>
+</Window>

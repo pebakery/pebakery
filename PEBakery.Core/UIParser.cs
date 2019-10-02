@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -158,7 +158,7 @@ namespace PEBakery.Core
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawValue, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be even", rawLine);
+                throw new InvalidCommandException("Double-quote's number should be even", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
@@ -187,7 +187,7 @@ namespace PEBakery.Core
             args.RemoveAt(2);
 
             // Forge UIControl
-            string text = StringEscaper.Unescape(args[0]);
+            string text = args[0];
             string visibilityStr = args[1];
             bool visibility;
             if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -242,7 +242,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount), args[0]);
                     }
                 #endregion
                 #region TextLabel
@@ -319,13 +319,15 @@ namespace PEBakery.Core
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[1].StartsWith("_", StringComparison.Ordinal) &&
                             args[1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
 
-                            sectionName = args[1].Substring(1, args[1].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[1];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                         }
 
                         return new UIInfo_CheckBox(tooltip, _checked, sectionName, hideProgress);
@@ -350,13 +352,15 @@ namespace PEBakery.Core
                             (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[cnt - 2].StartsWith("_", StringComparison.Ordinal) &&
                             args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
 
-                            sectionName = args[cnt - 2].Substring(1, args[cnt - 2].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[cnt - 2];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                             cnt -= 2;
                         }
 
@@ -378,11 +382,19 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))  // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
+                        int cnt = args.Count;
+                        string tooltip = null;
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
+
                         string url = null;
-                        if (1 <= args.Count)
+                        if (1 <= cnt)
                             url = args[0];
 
-                        return new UIInfo_Image(GetInfoTooltip(args, maxOpCount), url);
+                        return new UIInfo_Image(tooltip, url);
                     }
                 #endregion
                 #region TextFile
@@ -451,7 +463,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount), args[0]);
                     }
                 #endregion
                 #region RadioButton
@@ -465,7 +477,7 @@ namespace PEBakery.Core
                         bool selected = false;
                         if (args[0].Equals("True", StringComparison.OrdinalIgnoreCase))
                             selected = true;
-                        else if (args[0].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                        else if (!args[0].Equals("False", StringComparison.OrdinalIgnoreCase))
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
                         string tooltip = null;
@@ -478,13 +490,15 @@ namespace PEBakery.Core
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[1].StartsWith("_", StringComparison.Ordinal) &&
                             args[1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
 
-                            sectionName = args[1].Substring(1, args[1].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[1];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                         }
 
                         return new UIInfo_RadioButton(tooltip, selected, sectionName, hideProgress);
@@ -569,7 +583,7 @@ namespace PEBakery.Core
                         if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[cnt - 1].StartsWith("_", StringComparison.Ordinal) &&
                             args[cnt - 1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 showProgress = true;
                             else if (!args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase))

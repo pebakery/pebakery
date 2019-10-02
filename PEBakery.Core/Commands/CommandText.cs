@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,13 +25,12 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Text;
-using PEBakery.Helper;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands
@@ -59,16 +58,15 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            // Detect encoding of text
-            // If text does not exists, create blank file
+            // Detect encoding of text. If text does not exists, create blank file (ANSI)
             Encoding encoding = File.Exists(fileName)
                 ? EncodingHelper.DetectBom(fileName)
                 : EncodingHelper.DefaultAnsi;
 
             if (mode == TXTAddLineMode.Prepend)
             {
-                string tempPath = Path.GetTempFileName();
-                using (StreamReader r = new StreamReader(fileName, encoding))
+                string tempPath = FileHelper.GetTempFile();
+                using (StreamReader r = new StreamReader(fileName, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     w.WriteLine(line);
@@ -78,7 +76,7 @@ namespace PEBakery.Core.Commands
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Prepened [{line}] to [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Prepended [{line}] to [{fileName}]", cmd));
             }
             else if (mode == TXTAddLineMode.Append)
             {
@@ -142,8 +140,8 @@ namespace PEBakery.Core.Commands
             string linesToWrite;
             if (mode == TXTAddLineMode.Prepend)
             {
-                string tempPath = Path.GetTempFileName();
-                using (StreamReader r = new StreamReader(fileName, encoding))
+                string tempPath = FileHelper.GetTempFile();
+                using (StreamReader r = new StreamReader(fileName, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     StringBuilder b = new StringBuilder();
@@ -158,7 +156,7 @@ namespace PEBakery.Core.Commands
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : \r\n{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines prepended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
             else if (mode == TXTAddLineMode.Append)
             {
@@ -221,9 +219,9 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
-            string tempPath = Path.GetTempFileName();
+            string tempPath = FileHelper.GetTempFile();
             string txtStr;
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             {
                 txtStr = r.ReadToEnd();
             }
@@ -269,9 +267,9 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
-            string tempPath = Path.GetTempFileName();
+            string tempPath = FileHelper.GetTempFile();
             string txtStr;
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             {
                 txtStr = r.ReadToEnd();
             }
@@ -311,8 +309,8 @@ namespace PEBakery.Core.Commands
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int count = 0;
-            string tempPath = Path.GetTempFileName();
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            string tempPath = FileHelper.GetTempFile();
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
@@ -361,8 +359,8 @@ namespace PEBakery.Core.Commands
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int count = 0;
-            string tempPath = Path.GetTempFileName();
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            string tempPath = FileHelper.GetTempFile();
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
@@ -411,8 +409,8 @@ namespace PEBakery.Core.Commands
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int i = 0;
-            string tempPath = Path.GetTempFileName();
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            string tempPath = FileHelper.GetTempFile();
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
@@ -452,8 +450,8 @@ namespace PEBakery.Core.Commands
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int i = 0;
-            string tempPath = Path.GetTempFileName();
-            using (StreamReader r = new StreamReader(fileName, encoding))
+            string tempPath = FileHelper.GetTempFile();
+            using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string lineFromSrc;

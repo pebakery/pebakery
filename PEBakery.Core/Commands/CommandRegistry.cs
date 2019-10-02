@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -121,33 +121,42 @@ namespace PEBakery.Core.Commands
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
-                object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                if (valueData == null)
-                    return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
-
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
-                switch (kind)
+                if (kind == RegistryValueKind.Unknown)
                 {
-                    case RegistryValueKind.None:
-                        return LogInfo.LogErrorMessage(logs, $"Cannot read empty value [{fullKeyPath}\\{valueName}]");
-                    case RegistryValueKind.String:
-                    case RegistryValueKind.ExpandString:
-                        valueDataStr = (string)valueData;
-                        break;
-                    case RegistryValueKind.Binary:
-                        valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
-                        break;
-                    case RegistryValueKind.DWord:
-                        valueDataStr = ((uint)(int)valueData).ToString();
-                        break;
-                    case RegistryValueKind.MultiString:
-                        valueDataStr = StringEscaper.PackRegMultiString((string[])valueData);
-                        break;
-                    case RegistryValueKind.QWord:
-                        valueDataStr = ((ulong)(long)valueData).ToString();
-                        break;
-                    default:
-                        return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
+                    object valueData = RegistryHelper.RegGetValue(info.HKey, keyPath, valueName, RegistryValueKind.Unknown);
+                    valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
+                }
+                else
+                {
+                    object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (valueData == null)
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
+
+                    switch (kind)
+                    {
+                        case RegistryValueKind.None:
+                            valueDataStr = string.Empty;
+                            break;
+                        case RegistryValueKind.String:
+                        case RegistryValueKind.ExpandString:
+                            valueDataStr = (string)valueData;
+                            break;
+                        case RegistryValueKind.Binary:
+                            valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
+                            break;
+                        case RegistryValueKind.DWord:
+                            valueDataStr = ((uint)(int)valueData).ToString();
+                            break;
+                        case RegistryValueKind.MultiString:
+                            valueDataStr = StringEscaper.PackRegMultiString((string[])valueData);
+                            break;
+                        case RegistryValueKind.QWord:
+                            valueDataStr = ((ulong)(long)valueData).ToString();
+                            break;
+                        default:
+                            return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
+                    }
                 }
             }
 
@@ -176,6 +185,28 @@ namespace PEBakery.Core.Commands
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
             string fullValuePath = $"{hKeyStr}\\{keyPath}\\{valueName}";
 
+            (byte[] BinData, string ValueData) ParseByteArrayFromString()
+            {
+                if (info.ValueData == null)
+                { // Use info.ValueDataList
+                    string[] binStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
+                    string valueData = StringEscaper.PackRegBinary(binStrs);
+                    if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
+                        return (null, valueData);
+                    return (binData, valueData);
+                }
+
+                if (info.ValueDataList == null)
+                { // Use info.ValueData
+                    string valueData = StringEscaper.Preprocess(s, info.ValueData);
+                    if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
+                        return (null, valueData);
+                    return (binData, valueData);
+                }
+
+                throw new InternalException("Internal Parser Error");
+            }
+
             using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
             {
                 if (valueName == null)
@@ -184,14 +215,27 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                object checkData = subKey.GetValue(valueName);
-                if (checkData != null)
+                bool existValue = RegistryHelper.RegExistValue(info.HKey, keyPath, valueName);
+                if (existValue)
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Registry value [{fullValuePath}] already exists"));
 
                 switch (info.ValueType)
                 {
+                    case RegistryValueKind.Unknown:
+                        { // RegWriteEx only
+                            if (cmd.Type != CodeType.RegWriteEx)
+                                throw new InternalException("[RegistryValueKind.Unknown] must be handled by [RegWriteEx], not [RegWrite]");
+
+                            (byte[] binData, string valueData) = ParseByteArrayFromString();
+                            if (binData == null)
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
+                            RegistryHelper.RegSetValue(info.HKey, keyPath, valueName, binData, info.ValueTypeInt);
+                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to [ValueType 0x{info.ValueTypeInt:X}] [{valueData}]"));
+                        }
+                        break;
                     case RegistryValueKind.None:
                         {
+                            // Do not put null to value! use empty byte array.
                             subKey.SetValue(valueName, new byte[0], RegistryValueKind.None);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_NONE"));
                         }
@@ -212,7 +256,7 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.MultiString:
                         {
-                            string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
+                            string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
                             subKey.SetValue(valueName, multiStrs, RegistryValueKind.MultiString);
                             string valueData = StringEscaper.PackRegMultiBinary(multiStrs);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_MULTI_SZ [{valueData}]"));
@@ -220,27 +264,12 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.Binary:
                         {
-                            if (info.ValueData == null)
-                            { // Use info.ValueDatas
-                                string[] binStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
-                                string valueData = StringEscaper.PackRegBinary(binStrs);
-                                if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
-                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                                subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
-                                logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
-                            }
-                            else if (info.ValueDatas == null)
-                            { // Use info.ValueData
-                                string valueData = StringEscaper.Preprocess(s, info.ValueData);
-                                if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
-                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                                subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
-                                logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Parser Error");
-                            }
+                            (byte[] binData, string valueData) = ParseByteArrayFromString();
+                            if (binData == null)
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
+
+                            subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
+                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                         }
                         break;
                     case RegistryValueKind.DWord:
@@ -289,7 +318,7 @@ namespace PEBakery.Core.Commands
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
             List<string> args = new List<string> { hKeyStr, valTypeStr, info.KeyPath, info.ValueName };
-            args.AddRange(info.ValueDatas);
+            args.AddRange(info.ValueDataList);
             if (info.NoWarn)
                 args.Add("NOWARN");
 
@@ -297,7 +326,7 @@ namespace PEBakery.Core.Commands
             CodeParser parser = new CodeParser(cmd.Section, Global.Setting, s.Project.Compat);
             CodeInfo newInfo = parser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.LineIdx);
             CodeCommand newCmd = new CodeCommand(cmd.RawCode, CodeType.RegWrite, newInfo, cmd.LineIdx);
-            return CommandRegistry.RegWrite(s, newCmd);
+            return RegWrite(s, newCmd);
         }
 
         public static List<LogInfo> RegDelete(EngineState s, CodeCommand cmd)
@@ -424,7 +453,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -451,7 +480,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -476,7 +505,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -517,7 +546,7 @@ namespace PEBakery.Core.Commands
                         {
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -548,6 +577,9 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegImport info = cmd.Info.Cast<CodeInfo_RegImport>();
 
+            // Consider using RegRestoreKeyW
+            // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regrestorekeyw
+
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
             using (Process proc = new Process())
@@ -574,13 +606,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport), "Invalid CodeInfo");
-            CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegExport info = cmd.Info.Cast<CodeInfo_RegExport>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
+            // RegSaveKeyW saves key in the HIVE format, not .REG format
+            // .REG file format is baked in to reg.exe/regedit.exe, so no way to access it with APIl
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
                 throw new InternalException("Internal Logic Error at RegExport");

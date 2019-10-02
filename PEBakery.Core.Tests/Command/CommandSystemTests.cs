@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -164,28 +164,28 @@ namespace PEBakery.Core.Tests.Command
 
             void SingleTemplate(List<string> rawCodes, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.Delete(VarsType.Local, "Dest");
-                s.SectionReturnValue = string.Empty;
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
+                s.ReturnValue = string.Empty;
 
                 EngineTests.EvalLines(s, rawCodes, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string dest = s.Variables["Dest"];
-                    string ret = s.SectionReturnValue;
+                    string ret = s.ReturnValue;
                     Assert.IsTrue(dest.Equals(destComp, StringComparison.Ordinal));
                     Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
                 }
             }
             void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.Delete(VarsType.Local, "Dest");
-                s.SectionReturnValue = string.Empty;
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
+                s.ReturnValue = string.Empty;
 
                 (EngineState st, _) = EngineTests.EvalScript(treePath, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string dest = st.Variables["Dest"];
-                    string ret = st.SectionReturnValue;
+                    string ret = st.ReturnValue;
                     Assert.IsTrue(dest.Equals(destComp, StringComparison.Ordinal));
                     Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
                 }
@@ -232,25 +232,42 @@ namespace PEBakery.Core.Tests.Command
                 string srcBatch = StringEscaper.Preprocess(s, pbBatch);
                 string destBatch = Path.Combine(destDir, "TestBatch.cmd");
 
-                void BaseTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
+                void BaseTemplate(string rawCode, string exitKey, string compStr, bool enableCompat = false, ErrorCheck check = ErrorCheck.Success)
                 {
-                    s.Variables.Delete(VarsType.Local, exitKey);
-                    s.SectionReturnValue = string.Empty;
+                    s.Variables.DeleteKey(VarsType.Local, exitKey);
+                    s.ReturnValue = string.Empty;
 
-                    EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check);
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables[exitKey] = string.Empty;
+
+                    if (enableCompat)
+                        EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check, new CompatOption { DisableExtendedSectionParams = true });
+                    else
+                        EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check);
+
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
                         string dest = s.Variables[exitKey];
                         Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+
+                        if (!enableCompat)
+                            Assert.IsTrue(s.ReturnValue.Equals(compStr, StringComparison.Ordinal));
                     }
+
+                    s.Variables.DeleteKey(VarsType.Local, "ExitCode");
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables.DeleteKey(VarsType.Local, exitKey);
                 }
 
                 void DeleteTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
                 {
                     File.Copy(srcBatch, destBatch, true);
 
-                    s.Variables.Delete(VarsType.Local, exitKey);
-                    s.SectionReturnValue = string.Empty;
+                    s.Variables.DeleteKey(VarsType.Local, exitKey);
+                    s.ReturnValue = string.Empty;
+
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables[exitKey] = string.Empty;
 
                     EngineTests.Eval(s, rawCode, CodeType.ShellExecuteDelete, check);
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
@@ -259,12 +276,19 @@ namespace PEBakery.Core.Tests.Command
                         Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                         Assert.IsFalse(File.Exists(destBatch));
                     }
+
+                    s.Variables.DeleteKey(VarsType.Local, "ExitCode");
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables.DeleteKey(VarsType.Local, exitKey);
                 }
 
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78");
+                BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78", true);
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},3,,%Dest%", "Dest", "3");
+                BaseTemplate($@"ShellExecute,Open,{pbBatch},3,,%Dest%", "ExitCode", "3", false, ErrorCheck.Warning);
                 DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},78", "ExitCode", "78");
                 DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},3,,%Dest%", "Dest", "3");
+                DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},3,,%Dest%", "ExitCode", "3", ErrorCheck.Warning);
             }
             finally
             {

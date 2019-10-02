@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@ using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -56,7 +57,7 @@ namespace PEBakery.Core.Commands
             string value = IniReadWriter.ReadKey(fileName, sectionName, key);
             if (value != null)
             {
-                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and it's value [{value}] read from [{fileName}]"));
 
                 string escapedValue = StringEscaper.Escape(value, false, true);
                 List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false);
@@ -111,7 +112,7 @@ namespace PEBakery.Core.Commands
 
                 if (kv.Value != null)
                 {
-                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
+                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and it's value [{kv.Value}] successfully read", subCmd));
 
                     string escapedValue = StringEscaper.Escape(kv.Value, false, true);
                     List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, escapedValue, false, false, false);
@@ -165,9 +166,9 @@ namespace PEBakery.Core.Commands
 
             bool result = IniReadWriter.WriteKey(fileName, sectionName, key, value);
             if (result)
-                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] written to [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and it's value [{value}] written to [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not write key [{key}] and its value [{value}] to [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Error, $"Could not write key [{key}] and it's value [{value}] to [{fileName}]", cmd));
 
             return logs;
         }
@@ -214,7 +215,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] written", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and it's value [{kv.Value}] written", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Success, $"Wrote [{keys.Length}] values to [{fileName}]", cmd));
             }
@@ -223,7 +224,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Error, $"Could not write key [{kv.Key}] and its value [{kv.Value}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not write key [{kv.Key}] and it's value [{kv.Value}]", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] values to [{fileName}]", cmd));
             }
@@ -564,20 +565,21 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            bool result = IniReadWriter.DeleteSections(fileName, sections);
-
-            if (result)
+            bool[] results = IniReadWriter.DeleteSections(fileName, sections);
+            int success = results.Count(x => x);
+            int failure = results.Count(x => !x);
+            for (int i = 0; i < sections.Length; i++)
             {
-                for (int i = 0; i < sections.Length; i++)
+                if (results[i])
                     logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] deleted", infoOp.Cmds[i]));
-                logs.Add(new LogInfo(LogState.Success, $"Deleted [{sections.Length}] sections from [{fileName}]", cmd));
-            }
-            else
-            {
-                for (int i = 0; i < sections.Length; i++)
+                else
                     logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sections[i]}]", infoOp.Cmds[i]));
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete [{sections.Length}] sections from [{fileName}]", cmd));
             }
+
+            if (0 < success)
+                logs.Add(new LogInfo(LogState.Success, $"Deleted [{success}] sections from [{fileName}]", cmd));
+            if (0 < failure)
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete [{failure}] sections from [{fileName}]", cmd));
 
             return logs;
         }
@@ -634,10 +636,8 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             List<IniKey> keyList = new List<IniKey>(infoOp.Infos.Count);
-            for (int i = 0; i < infoOp.Infos.Count; i++)
+            foreach (CodeInfo_IniWriteTextLine info in infoOp.Infos)
             {
-                CodeInfo_IniWriteTextLine info = infoOp.Infos[i];
-
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string line = StringEscaper.Preprocess(s, info.Line);
 

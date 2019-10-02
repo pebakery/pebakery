@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -169,6 +169,7 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Local Macro
         public List<LogInfo> LoadLocalMacroDict(Script sc, bool append, string sectionName = ScriptSection.Names.Variables)
         {
             if (sc.Sections.ContainsKey(sectionName))
@@ -233,11 +234,17 @@ namespace PEBakery.Core
             LocalDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Local Macro from [Variables]
+        /// </summary>
+        /// <param name="newDict"></param>
         public void SetLocalMacros(Dictionary<string, CodeCommand> newDict)
-        { // Local Macro from [Variables]
+        {
             LocalDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
         }
+        #endregion
 
+        #region SetMacro
         public LogInfo SetMacro(string macroName, string macroCommand, ScriptSection section, bool global, bool permanent)
         {
             // Macro Name Validation
@@ -311,5 +318,6 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Error, $"Local Macro [{macroName}] not found");
             }
         }
+        #endregion
     }
 }

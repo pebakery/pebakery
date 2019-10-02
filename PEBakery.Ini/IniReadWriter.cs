@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
  
     MIT License
 
@@ -22,6 +22,7 @@
     SOFTWARE.
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,6 +33,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+// ReSharper disable UnusedMember.Global
 
 namespace PEBakery.Ini
 {
@@ -77,6 +79,24 @@ namespace PEBakery.Ini
         {
             LockDict.Clear();
         }
+
+        private static ReaderWriterLockSlim GetFileLock(string filePath)
+        {
+            filePath = Path.GetFullPath(filePath);
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(filePath))
+            {
+                rwLock = LockDict[filePath];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[filePath] = rwLock;
+            }
+
+            return rwLock;
+        }
         #endregion
 
         #region ReadKey
@@ -121,23 +141,23 @@ namespace PEBakery.Ini
             {
                 List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = EncodingHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
-                    string line;
+                    string rawLine;
                     bool inTargetSection = false;
                     string currentSection = null;
 
-                    while ((line = reader.ReadLine()) != null)
+                    while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
                         if (processedKeyIdxs.Count == iniKeys.Length) // Work Done
                             break;
 
-                        line = line.Trim(); // Remove whitespace
-                        if (line.StartsWith("#", StringComparison.Ordinal) ||
-                            line.StartsWith(";", StringComparison.Ordinal) ||
-                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim(); // Remove whitespace
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal)) // Ignore comment
                             continue;
 
                         if (inTargetSection)
@@ -145,7 +165,7 @@ namespace PEBakery.Ini
                             int idx = line.IndexOf('=');
                             if (idx != -1 && idx != 0) // there is key, and key name is not empty
                             {
-                                string keyName = line.Substring(0, idx).Trim();
+                                ReadOnlySpan<char> keyName = line.Slice(0, idx).Trim();
                                 for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processedKeyIdxs.Contains(i))
@@ -154,9 +174,9 @@ namespace PEBakery.Ini
                                     // Only if <section, key> is same, copy value;
                                     IniKey iniKey = iniKeys[i];
                                     if (currentSection.Equals(iniKey.Section, StringComparison.OrdinalIgnoreCase) &&
-                                        keyName.Equals(iniKey.Key, StringComparison.OrdinalIgnoreCase))
+                                        keyName.Equals(iniKey.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
-                                        iniKey.Value = line.Substring(idx + 1).Trim();
+                                        iniKey.Value = line.Slice(idx + 1).Trim().ToString();
                                         iniKeys[i] = iniKey;
                                         processedKeyIdxs.Add(i);
                                     }
@@ -165,22 +185,22 @@ namespace PEBakery.Ini
                             else
                             {
                                 // search if current section reached its end
-                                if (line.StartsWith("[", StringComparison.Ordinal) &&
-                                    line.EndsWith("]", StringComparison.Ordinal))
+                                if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                    line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                                 {
                                     // Only sections contained in iniKeys will be targeted
                                     inTargetSection = false;
                                     currentSection = null;
-                                    string foundSection = line.Substring(1, line.Length - 2);
+                                    ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
                                     for (int i = 0; i < iniKeys.Length; i++)
                                     {
                                         if (processedKeyIdxs.Contains(i))
                                             continue;
 
-                                        if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                        if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         {
                                             inTargetSection = true;
-                                            currentSection = foundSection;
+                                            currentSection = foundSection.ToString();
                                             break; // for shorter O(n)
                                         }
                                     }
@@ -190,20 +210,20 @@ namespace PEBakery.Ini
                         else
                         { // not in section
                           // Check if encountered section head Ex) [Process]
-                            if (line.StartsWith("[", StringComparison.Ordinal) &&
-                                line.EndsWith("]", StringComparison.Ordinal))
+                            if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                             {
                                 // Only sections contained in iniKeys will be targeted
-                                string foundSection = line.Substring(1, line.Length - 2);
+                                ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
                                 for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processedKeyIdxs.Contains(i))
                                         continue;
 
-                                    if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                    if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         inTargetSection = true;
-                                        currentSection = foundSection;
+                                        currentSection = foundSection.ToString();
                                         break; // for shorter O(n)
                                     }
                                 }
@@ -251,7 +271,7 @@ namespace PEBakery.Ini
             }
 
             #region FinalizeFile
-            void FinalizeFile(StreamWriter w, string lastLine, bool firstEmptyLine)
+            void FinalizeFile(StreamWriter w, ReadOnlySpan<char> lastLine, bool firstEmptyLine)
             {
                 bool firstSection = true;
                 if (0 < inputKeys.Count)
@@ -299,14 +319,14 @@ namespace PEBakery.Ini
                 }
 
                 // Append IniKey into existing file
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     bool inTargetSection = false;
                     string currentSection = null;
-                    List<Tuple<string, string>> lineBuffer = new List<Tuple<string, string>>(32);
+                    List<(string Line, string RawLine)> lineBuffer = new List<(string, string)>(32);
 
                     #region FinalizeSection
                     void FinalizeSection()
@@ -320,7 +340,7 @@ namespace PEBakery.Ini
                         // Remove tailing empty lines 
                         for (int i = lineBuffer.Count - 1; 0 <= i; i--)
                         {
-                            string targetLine = lineBuffer[i].Item1;
+                            string targetLine = lineBuffer[i].Line;
                             if (targetLine.Length == 0)
                                 lineBuffer.RemoveAt(i);
                             else
@@ -328,11 +348,8 @@ namespace PEBakery.Ini
                         }
 
                         // lineBuffer 내에 있는 key들을 검사해서 덮어 쓸 것들을 확인한다.
-                        foreach (var tup in lineBuffer)
+                        foreach ((string targetLine, string targetRawLine) in lineBuffer)
                         {
-                            string targetLine = tup.Item1;
-                            string targetRawLine = tup.Item2;
-
                             int eIdx = targetLine.IndexOf('=');
                             if (eIdx == -1 || // No identifier '='
                                 eIdx == 0 || // Key length is 0
@@ -344,12 +361,12 @@ namespace PEBakery.Ini
                             {
                                 // Overwrite if key=line already exists
                                 bool processed = false;
-                                string targetKey = targetLine.Substring(0, eIdx).Trim();
+                                ReadOnlySpan<char> targetKey = targetLine.AsSpan(0, eIdx).Trim();
 
                                 // Call ToArray() to make copy of secKeys
                                 foreach (IniKey secKey in secKeys.ToArray())
                                 {
-                                    if (targetKey.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase))
+                                    if (targetKey.Equals(secKey.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         processed = true;
                                         w.WriteLine($"{secKey.Key}={secKey.Value}");
@@ -392,7 +409,7 @@ namespace PEBakery.Ini
                     #endregion
 
                     bool firstLine = true;
-                    string lastLine = null;
+                    ReadOnlySpan<char> lastLine = null;
                     while (true)
                     {
                         string rawLine = r.ReadLine();
@@ -406,11 +423,11 @@ namespace PEBakery.Ini
                             break;
                         }
 
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Section head like [Process] encountered
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
                             // Finalize section
                             if (inTargetSection)
@@ -425,8 +442,8 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                string foundSection = line.Substring(1, line.Length - 2);
-                                if (0 < inputKeys.Count(x => x.Section.Equals(foundSection, StringComparison.OrdinalIgnoreCase)))
+                                string foundSection = line.Slice(1, line.Length - 2).ToString();
+                                if (0 < inputKeys.Count(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -441,8 +458,8 @@ namespace PEBakery.Ini
                         {
                             // Parse section only if corresponding iniKeys exist
                             if (inTargetSection)
-                                lineBuffer.Add(new Tuple<string, string>(line, rawLine));
-                            else // Passthrough
+                                lineBuffer.Add((line.ToString(), rawLine));
+                            else // Pass-through
                                 w.WriteLine(rawLine);
                         }
 
@@ -453,7 +470,7 @@ namespace PEBakery.Ini
 
                 if (inputKeys.Count == 0)
                 { // Success
-                    Helper.FileReplaceEx(tempPath, file);
+                    FileHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -481,11 +498,13 @@ namespace PEBakery.Ini
 
         public static bool WriteRawLines(string file, IEnumerable<IniKey> iniKeys, bool append = true)
         {
-            return InternalWriteRawLine(file, iniKeys.ToList(), append);
+            return InternalWriteRawLine(file, iniKeys, append);
         }
 
-        private static bool InternalWriteRawLine(string file, List<IniKey> iniKeys, bool append = true)
+        private static bool InternalWriteRawLine(string file, IEnumerable<IniKey> iniKeys, bool append = true)
         {
+            List<IniKey> keys = iniKeys.ToList();
+
             ReaderWriterLockSlim rwLock;
             if (LockDict.ContainsKey(file))
             {
@@ -500,43 +519,41 @@ namespace PEBakery.Ini
             rwLock.EnterWriteLock();
             try
             {
-                bool fileExist = File.Exists(file);
-
                 // If file do not exists or blank, just create new file and insert keys.
-                if (fileExist == false)
+                if (!File.Exists(file))
                 {
                     using (StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8))
                     {
                         string beforeSection = string.Empty;
-                        for (int i = 0; i < iniKeys.Count; i++)
+                        for (int i = 0; i < keys.Count; i++)
                         {
-                            if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
+                            if (beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
                             {
                                 if (0 < i)
                                     writer.WriteLine();
-                                writer.WriteLine($"[{iniKeys[i].Section}]");
+                                writer.WriteLine($"[{keys[i].Section}]");
                             }
 
                             // File does not exists, so we don't have to consider "append"
-                            writer.WriteLine(iniKeys[i].Key);
+                            writer.WriteLine(keys[i].Key);
 
-                            beforeSection = iniKeys[i].Section;
+                            beforeSection = keys[i].Section;
                         }
                         writer.Close();
                     }
                     return true;
                 }
 
-                List<int> processedKeys = new List<int>(iniKeys.Count);
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                List<int> processedKeys = new List<int>(keys.Count);
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
                     bool inTargetSection = false;
-                    string currentSection = null;
-                    List<string> processedSections = new List<string>(iniKeys.Count);
+                    ReadOnlySpan<char> currentSection = null;
+                    List<string> processedSections = new List<string>(keys.Count);
 
                     // Is Original File Empty?
                     if (reader.Peek() == -1)
@@ -545,22 +562,22 @@ namespace PEBakery.Ini
 
                         // Write all and exit
                         string beforeSection = string.Empty;
-                        for (int i = 0; i < iniKeys.Count; i++)
+                        for (int i = 0; i < keys.Count; i++)
                         {
-                            if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
+                            if (beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
                             {
                                 if (0 < i)
                                     writer.WriteLine();
-                                writer.WriteLine($"[{iniKeys[i].Section}]");
+                                writer.WriteLine($"[{keys[i].Section}]");
                             }
 
                             // File is blank, so we don't have to consider "append"
-                            writer.WriteLine(iniKeys[i].Key);
+                            writer.WriteLine(keys[i].Key);
 
-                            beforeSection = iniKeys[i].Section;
+                            beforeSection = keys[i].Section;
                         }
                         writer.Close();
-                        Helper.FileReplaceEx(tempPath, file);
+                        FileHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -568,13 +585,13 @@ namespace PEBakery.Ini
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineWritten = false;
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Ignore comments. If you wrote all keys successfully, also skip.
-                        if (iniKeys.Count == 0 ||
-                            line.StartsWith("#", StringComparison.Ordinal) ||
-                            line.StartsWith(";", StringComparison.Ordinal) ||
-                            line.StartsWith("//", StringComparison.Ordinal))
+                        if (keys.Count == 0 ||
+                            line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
                         {
                             thisLineWritten = true;
                             writer.WriteLine(rawLine);
@@ -582,24 +599,24 @@ namespace PEBakery.Ini
                         else
                         {
                             // Check if encountered section head Ex) [Process]
-                            if (line.StartsWith("[", StringComparison.Ordinal) &&
-                                line.EndsWith("]", StringComparison.Ordinal))
+                            if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                             {
-                                string foundSection = line.Substring(1, line.Length - 2);
+                                ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
 
                                 // Append Mode : Add to last line of section
                                 if (append && inTargetSection)
-                                { // End of targetSeciton and start of foundSection
-                                    for (int i = 0; i < iniKeys.Count; i++)
+                                { // End of targetSection and start of foundSection
+                                    for (int i = 0; i < keys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
                                         // Add to last line of foundSection
-                                        if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         {
                                             processedKeys.Add(i);
-                                            writer.WriteLine(iniKeys[i].Key);
+                                            writer.WriteLine(keys[i].Key);
                                         }
                                     }
                                 }
@@ -607,16 +624,16 @@ namespace PEBakery.Ini
                                 // Start of the section
                                 inTargetSection = false;
                                 // Only sections contained in iniKeys will be targeted
-                                for (int i = 0; i < iniKeys.Count; i++)
+                                for (int i = 0; i < keys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
                                         continue;
 
-                                    if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                    if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         inTargetSection = true;
                                         currentSection = foundSection;
-                                        processedSections.Add(currentSection);
+                                        processedSections.Add(currentSection.ToString());
                                         break; // for shorter O(n)
                                     }
                                 }
@@ -624,20 +641,20 @@ namespace PEBakery.Ini
                                 // Non-Append Mode : Add to first line of section
                                 if (!append && inTargetSection)
                                 {
-                                    for (int i = 0; i < iniKeys.Count; i++)
+                                    for (int i = 0; i < keys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
                                         // Add to last line of foundSection
-                                        if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         {
                                             if (!thisLineWritten)
                                                 writer.WriteLine(rawLine);
                                             thisLineWritten = true;
 
                                             processedKeys.Add(i);
-                                            writer.WriteLine(iniKeys[i].Key);
+                                            writer.WriteLine(keys[i].Key);
                                         }
                                     }
 
@@ -650,15 +667,15 @@ namespace PEBakery.Ini
                             {
                                 if (append && inTargetSection)
                                 {
-                                    for (int i = 0; i < iniKeys.Count; i++)
+                                    for (int i = 0; i < keys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
-                                        if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         { // append key to section
                                             processedKeys.Add(i);
-                                            writer.WriteLine(iniKeys[i].Key);
+                                            writer.WriteLine(keys[i].Key);
                                         }
                                     }
                                 }
@@ -672,14 +689,14 @@ namespace PEBakery.Ini
                         {
                             // Append Mode : Add to last line of section
                             if (append && inTargetSection)
-                            { // End of targetSeciton and start of foundSection
-                                for (int i = 0; i < iniKeys.Count; i++)
+                            { // End of targetSection and start of foundSection
+                                for (int i = 0; i < keys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
                                         continue;
 
                                     // Add to last line of foundSection
-                                    if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         processedKeys.Add(i);
 
@@ -687,7 +704,7 @@ namespace PEBakery.Ini
                                             writer.WriteLine(rawLine);
                                         thisLineWritten = true;
 
-                                        writer.WriteLine(iniKeys[i].Key);
+                                        writer.WriteLine(keys[i].Key);
                                     }
                                 }
                             }
@@ -700,24 +717,24 @@ namespace PEBakery.Ini
                             }
 
                             // Not in section, so create new section
-                            for (int i = 0; i < iniKeys.Count; i++)
-                            { // At this time, only unfound section remains in iniKeys
+                            for (int i = 0; i < keys.Count; i++)
+                            { // At this time, only not found section remains in iniKeys
                                 if (processedKeys.Contains(i))
                                     continue;
 
-                                if (processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)) == false)
+                                if (!processedSections.Any(s => s.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     if (!thisLineWritten)
                                         writer.WriteLine(rawLine);
                                     thisLineWritten = true;
 
-                                    processedSections.Add(iniKeys[i].Section);
-                                    writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
+                                    processedSections.Add(keys[i].Section);
+                                    writer.WriteLine($"\r\n[{keys[i].Section}]");
                                 }
 
                                 processedKeys.Add(i);
 
-                                writer.WriteLine(iniKeys[i].Key);
+                                writer.WriteLine(keys[i].Key);
                             }
                         }
 
@@ -726,15 +743,156 @@ namespace PEBakery.Ini
                     }
                 }
 
-                if (processedKeys.Count == iniKeys.Count)
+                if (processedKeys.Count == keys.Count)
                 {
-                    Helper.FileReplaceEx(tempPath, file);
+                    FileHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
                 {
                     return false;
                 }
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
+        }
+        #endregion
+
+        #region RenameKey
+        public static bool RenameKey(string file, string section, string key, string value)
+        {
+            return InternalRenameKeys(file, new IniKey[] { new IniKey(section, key, value) })[0];
+        }
+
+        public static bool RenameKey(string file, IniKey iniKey)
+        {
+            return InternalRenameKeys(file, new IniKey[] { iniKey })[0];
+        }
+
+        public static bool[] RenameKeys(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalRenameKeys(file, iniKeys.ToArray());
+        }
+
+        /// <summary>
+        /// Internal method for RenameKeys
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="iniKeys">Use Value for new names of Key</param>
+        /// <returns></returns>
+        private static bool[] InternalRenameKeys(string file, IEnumerable<IniKey> iniKeys)
+        {
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                if (!File.Exists(file))
+                    return processed; // All False
+
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    if (r.Peek() == -1)
+                    {
+                        r.Close();
+                        return processed; // All False
+                    }
+
+                    string rawLine;
+                    bool inTargetSection = false;
+                    ReadOnlySpan<char> currentSection = null;
+
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineProcessed = false;
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comments. If you deleted all keys successfully, also skip.
+                        if (processed.Count(x => !x) == 0
+                            || line.StartsWith("#".AsSpan(), StringComparison.Ordinal)
+                            || line.StartsWith(";".AsSpan(), StringComparison.Ordinal)
+                            || line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                        {
+                            w.WriteLine(rawLine);
+                            continue;
+                        }
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        {
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                            // Start of the section
+                            inTargetSection = false;
+                            // Only sections contained in iniKeys will be targeted
+                            for (int i = 0; i < keys.Length; i++)
+                            {
+                                if (processed[i])
+                                    continue;
+
+                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                            thisLineProcessed = true;
+                            w.WriteLine(rawLine);
+                        }
+
+                        // key=value
+                        int idx = line.IndexOf('=');
+                        if (idx != -1 && idx != 0) // Key exists
+                        {
+                            if (inTargetSection) // process here only if we are in target section
+                            {
+                                ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
+                                ReadOnlySpan<char> lineValue = line.Slice(idx + 1).Trim();
+                                for (int i = 0; i < keys.Length; i++)
+                                {
+                                    if (processed[i])
+                                        continue;
+
+                                    IniKey key = keys[i];
+                                    if (currentSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
+                                        && lineKey.Equals(key.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                        w.WriteLine($"{key.Value}={lineValue.ToString()}");
+                                        thisLineProcessed = true;
+                                        processed[i] = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
+                    }
+                }
+
+                if (processed.Any(x => x))
+                    FileHelper.FileReplaceEx(tempPath, file);
+
+                return processed;
             }
             finally
             {
@@ -780,9 +938,9 @@ namespace PEBakery.Ini
                 if (!File.Exists(file))
                     return processed; // All False
 
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
@@ -793,27 +951,28 @@ namespace PEBakery.Ini
 
                     string rawLine;
                     bool inTargetSection = false;
-                    string currentSection = null;
+                    ReadOnlySpan<char> currentSection = null;
 
                     while ((rawLine = r.ReadLine()) != null)
-                    { // Read text line by linev
+                    { // Read text line by line
                         bool thisLineProcessed = false;
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Ignore comments. If you deleted all keys successfully, also skip.
-                        if (processed.Count(x => !x) == 0
-                            || line.StartsWith("#", StringComparison.Ordinal)
-                            || line.StartsWith(";", StringComparison.Ordinal)
-                            || line.StartsWith("//", StringComparison.Ordinal))
+                        if (processed.Count(x => !x) == 0 ||
+                            line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
                         {
                             w.WriteLine(rawLine);
                             continue;
                         }
 
                         // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            string foundSection = line.Substring(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
 
                             // Start of the section
                             inTargetSection = false;
@@ -823,7 +982,7 @@ namespace PEBakery.Ini
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -840,14 +999,14 @@ namespace PEBakery.Ini
                         {
                             if (inTargetSection) // process here only if we are in target section
                             {
-                                string keyOfLine = line.Substring(0, idx).Trim();
+                                ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
                                 for (int i = 0; i < keys.Length; i++)
                                 {
                                     if (processed[i])
                                         continue;
 
-                                    if (currentSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)
-                                        && keyOfLine.Equals(keys[i].Key, StringComparison.OrdinalIgnoreCase))
+                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
+                                        && lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     { // key exists, so do not write this line, which lead to 'deletion'
                                         thisLineProcessed = true;
                                         processed[i] = true;
@@ -862,7 +1021,7 @@ namespace PEBakery.Ini
                 }
 
                 if (0 < processed.Count(x => x))
-                    Helper.FileReplaceEx(tempPath, file);
+                    FileHelper.FileReplaceEx(tempPath, file);
 
                 return processed;
             }
@@ -911,21 +1070,20 @@ namespace PEBakery.Ini
             rwLock.EnterReadLock();
             try
             {
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = EncodingHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
-                    // int len = iniKeys.Count;
-                    string line;
+                    string rawLine;
                     bool inTargetSection = false;
                     string currentSection = null;
                     List<IniKey> currentIniKeys = null;
 
-                    while ((line = reader.ReadLine()) != null)
+                    while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
-                        line = line.Trim(); // Remove whitespace
-                        if (line.StartsWith("#", StringComparison.Ordinal) ||
-                            line.StartsWith(";", StringComparison.Ordinal) ||
-                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim(); // Remove whitespace
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal)) // Ignore comment
                             continue;
 
                         if (inTargetSection)
@@ -935,21 +1093,21 @@ namespace PEBakery.Ini
                             int idx = line.IndexOf('=');
                             if (idx != -1 && idx != 0) // there is key, and key name is not empty
                             {
-                                string key = line.Substring(0, idx).Trim();
-                                string value = line.Substring(idx + 1).Trim();
+                                string key = line.Slice(0, idx).Trim().ToString();
+                                string value = line.Slice(idx + 1).Trim().ToString();
                                 currentIniKeys.Add(new IniKey(currentSection, key, value));
                             }
                             else
                             {
                                 // Search if current section ended
-                                if (line.StartsWith("[", StringComparison.Ordinal) &&
-                                    line.EndsWith("]", StringComparison.Ordinal))
+                                if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                    line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                                 {
                                     // Only sections contained in sectionNames will be targeted
                                     inTargetSection = false;
                                     currentSection = null;
 
-                                    string foundSection = line.Substring(1, line.Length - 2);
+                                    string foundSection = line.Slice(1, line.Length - 2).ToString();
                                     int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                                     if (sIdx != -1)
                                     {
@@ -965,11 +1123,11 @@ namespace PEBakery.Ini
                         else
                         { // not in section
                           // Check if encountered section head Ex) [Process]
-                            if (line.StartsWith("[", StringComparison.Ordinal) &&
-                                line.EndsWith("]", StringComparison.Ordinal))
+                            if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                             {
                                 // Only sections contained in iniKeys will be targeted
-                                string foundSection = line.Substring(1, line.Length - 2);
+                                string foundSection = line.Slice(1, line.Length - 2).ToString();
                                 int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                                 if (sIdx != -1)
                                 {
@@ -1031,7 +1189,7 @@ namespace PEBakery.Ini
             try
             {
                 // Not exist -> Create and exit
-                if (File.Exists(file) == false)
+                if (!File.Exists(file))
                 {
                     using (StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8))
                     {
@@ -1047,9 +1205,9 @@ namespace PEBakery.Ini
                     return true;
                 }
 
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     // Is Original File Empty?
@@ -1067,7 +1225,7 @@ namespace PEBakery.Ini
 
                         w.Close();
 
-                        Helper.FileReplaceEx(tempPath, file);
+                        FileHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -1077,21 +1235,21 @@ namespace PEBakery.Ini
                     while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineProcessed = false;
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            string foundSection = line.Substring(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < sectionList.Count; i++)
                             {
-                                if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(sectionList[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
-                                    processedSections.Add(foundSection);
+                                    processedSections.Add(foundSection.ToString());
                                     sectionList.RemoveAt(i);
                                     break; // for shorter O(n)
                                 }
@@ -1100,7 +1258,7 @@ namespace PEBakery.Ini
                             w.WriteLine(rawLine);
                         }
 
-                        if (thisLineProcessed == false)
+                        if (!thisLineProcessed)
                             w.WriteLine(rawLine);
 
                         // End of file
@@ -1108,7 +1266,7 @@ namespace PEBakery.Ini
                         { // If sections were not added, add it now
                             List<int> processedIdxs = new List<int>(sectionList.Count);
                             for (int i = 0; i < sectionList.Count; i++)
-                            { // At this time, only unfound section remains in iniKeys
+                            { // At this time, only not found section remains in iniKeys
                                 if (processedSections.Any(s => s.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(sectionList[i]);
@@ -1124,7 +1282,7 @@ namespace PEBakery.Ini
 
                 if (sectionList.Count == 0)
                 {
-                    Helper.FileReplaceEx(tempPath, file);
+                    FileHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1181,6 +1339,10 @@ namespace PEBakery.Ini
                         foreach (string str in strs)
                             w.WriteLine(str);
                         break;
+                    case IReadOnlyList<string> strs:
+                        foreach (string str in strs)
+                            w.WriteLine(str);
+                        break;
                     case TextReader tr:
                         string readLine;
                         while ((readLine = tr.ReadLine()) != null)
@@ -1217,9 +1379,9 @@ namespace PEBakery.Ini
                 }
 
                 bool finished = false;
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
@@ -1228,16 +1390,16 @@ namespace PEBakery.Ini
                     // Main Logic
                     while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
                             passThisSection = false;
 
-                            string foundSection = line.Substring(1, line.Length - 2);
-                            if (foundSection.Equals(section, StringComparison.OrdinalIgnoreCase))
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
                                 WriteContent(w);
 
@@ -1257,7 +1419,7 @@ namespace PEBakery.Ini
                     }
                 }
 
-                Helper.FileReplaceEx(tempPath, file);
+                FileHelper.FileReplaceEx(tempPath, file);
                 return true;
             }
             finally
@@ -1267,32 +1429,30 @@ namespace PEBakery.Ini
         }
         #endregion
 
-        #region DeleteSection
-        public static bool DeleteSection(string file, IniKey iniKey)
+        #region RenameSection
+        public static bool RenameSection(string file, IniKey iniKey)
         {
-            return InternalDeleteSection(file, new string[] { iniKey.Section });
+            return InternalRenameSection(file, new IniKey[] { iniKey })[0];
         }
-        public static bool DeleteSection(string file, string section)
+        public static bool RenameSection(string file, string srcSection, string destSection)
         {
-            return InternalDeleteSection(file, new string[] { section });
+            return InternalRenameSection(file, new IniKey[] { new IniKey(srcSection, destSection) })[0];
         }
-        public static bool DeleteSections(string file, IEnumerable<IniKey> iniKeys)
+        public static bool[] RenameSections(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteSection(file, iniKeys.Select(x => x.Section));
+            return InternalRenameSection(file, iniKeys);
         }
-        public static bool DeleteSections(string file, IEnumerable<string> sections)
-        {
-            return InternalDeleteSection(file, sections);
-        }
+
         /// <summary>
-        /// Return true if success
+        /// Internal method for RenameSection
         /// </summary>
         /// <param name="file"></param>
-        /// <param name="sections"></param>
+        /// <param name="iniKeys">Section is src section name, Key is dest section name</param>
         /// <returns></returns>
-        private static bool InternalDeleteSection(string file, IEnumerable<string> sections)
+        private static bool[] InternalRenameSection(string file, IEnumerable<IniKey> iniKeys)
         {
-            List<string> sectionList = sections.ToList();
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
 
             ReaderWriterLockSlim rwLock;
             if (LockDict.ContainsKey(file))
@@ -1309,17 +1469,122 @@ namespace PEBakery.Ini
             try
             {
                 if (!File.Exists(file))
-                    return false;
+                    return processed;
 
-                string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
                     {
                         r.Close();
-                        return false;
+                        return processed;
+                    }
+
+                    string rawLine;
+
+                    // Main Logic
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                        bool thisLineProcessed = false;
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        {
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                            // Start of the section;
+                            // Only sections contained in iniKeys will be targeted
+                            for (int i = 0; i < keys.Length; i++)
+                            {
+                                if (processed[i])
+                                    continue;
+
+                                IniKey key = keys[i];
+                                if (foundSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                { // Rename this section
+                                    w.WriteLine($"[{key.Key}]");
+                                    thisLineProcessed = true;
+                                    processed[i] = true;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                        }
+
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
+                    }
+                }
+
+                if (processed.Any(x => x))
+                    FileHelper.FileReplaceEx(tempPath, file);
+
+                return processed;
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
+        }
+        #endregion
+
+        #region DeleteSection
+        public static bool DeleteSection(string file, IniKey iniKey)
+        {
+            return InternalDeleteSection(file, new string[] { iniKey.Section })[0];
+        }
+        public static bool DeleteSection(string file, string section)
+        {
+            return InternalDeleteSection(file, new string[] { section })[0];
+        }
+        public static bool[] DeleteSections(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalDeleteSection(file, iniKeys.Select(x => x.Section));
+        }
+        public static bool[] DeleteSections(string file, IEnumerable<string> sections)
+        {
+            return InternalDeleteSection(file, sections);
+        }
+        /// <summary>
+        /// Return true if success
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="sections"></param>
+        /// <returns></returns>
+        private static bool[] InternalDeleteSection(string file, IEnumerable<string> sections)
+        {
+            List<string> sectionList = sections.ToList();
+            bool[] processed = new bool[sectionList.Count];
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                if (!File.Exists(file))
+                    return processed;
+
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    if (r.Peek() == -1)
+                    {
+                        r.Close();
+                        return processed;
                     }
 
                     string rawLine;
@@ -1328,23 +1593,26 @@ namespace PEBakery.Ini
                     // Main Logic
                     while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
-                        string line = rawLine.Trim();
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            string foundSection = line.Substring(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
                             ignoreCurrentSection = false;
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < sectionList.Count; i++)
                             {
-                                if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
+                                if (processed[i])
+                                    continue;
+
+                                if (foundSection.Equals(sectionList[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 { // Delete this section!
                                     ignoreCurrentSection = true;
-                                    sectionList.RemoveAt(i);
+                                    processed[i] = true;
                                     break; // for shorter O(n)
                                 }
                             }
@@ -1355,15 +1623,10 @@ namespace PEBakery.Ini
                     }
                 }
 
-                if (sectionList.Count == 0)
-                {
-                    Helper.FileReplaceEx(tempPath, file);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                if (processed.Any(x => x))
+                    FileHelper.FileReplaceEx(tempPath, file);
+
+                return processed;
             }
             finally
             {
@@ -1410,28 +1673,28 @@ namespace PEBakery.Ini
             rwLock.EnterReadLock();
             try
             {
-                Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 {
-                    string line;
+                    string rawLine;
                     bool inTargetSection = false;
                     string currentSection = null;
                     List<string> currentContents = null;
 
-                    while ((line = r.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
-                        line = line.Trim(); // Remove whitespace
-                        if (line.StartsWith("#", StringComparison.Ordinal) ||
-                            line.StartsWith(";", StringComparison.Ordinal) ||
-                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim(); // Remove whitespace
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal)) // Ignore comment
                             continue;
 
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
                             inTargetSection = false;
 
-                            string foundSection = line.Substring(1, line.Length - 2);
+                            string foundSection = line.Slice(1, line.Length - 2).ToString();
                             int sIdx = sectionNames.FindIndex(x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                             if (sIdx != -1)
                             {
@@ -1451,9 +1714,9 @@ namespace PEBakery.Ini
                             Debug.Assert(currentSection != null);
 
                             if (includeEmptyLine)
-                                currentContents.Add(line);
+                                currentContents.Add(line.ToString());
                             else if (0 < line.Length)
-                                currentContents.Add(line);
+                                currentContents.Add(line.ToString());
                         }
                     }
                 }
@@ -1482,7 +1745,7 @@ namespace PEBakery.Ini
                 foreach (var kvKey in kvSec.Value)
                     keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                result = result & InternalWriteKeys(destFile, keys);
+                result &= InternalWriteKeys(destFile, keys);
             }
 
             return result;
@@ -1508,7 +1771,7 @@ namespace PEBakery.Ini
                     foreach (var kvKey in kvSec.Value)
                         keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                    result = result & InternalWriteKeys(destFile, keys);
+                    result &= InternalWriteKeys(destFile, keys);
                 }
             }
 
@@ -1529,24 +1792,24 @@ namespace PEBakery.Ini
                 throw new ArgumentNullException(nameof(section));
 
             // Read base64 block directly from file
-            string line;
-            while ((line = tr.ReadLine()) != null)
+            string rawLine;
+            while ((rawLine = tr.ReadLine()) != null)
             { // Read text line by line
-                line = line.Trim();
+                ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                 // Ignore comment
-                if (line.StartsWith("#", StringComparison.Ordinal) ||
-                    line.StartsWith(";", StringComparison.Ordinal) ||
-                    line.StartsWith("//", StringComparison.Ordinal))
+                if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                    line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                    line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
                     continue;
 
-                if (line.StartsWith("[", StringComparison.Ordinal) &&
-                    line.EndsWith("]", StringComparison.Ordinal))
+                if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                    line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                 { // Start of section
-                    string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
+                    ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2); // Remove [ and ]
 
                     // Found target section, so return
-                    if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                    if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         return;
                 }
             }
@@ -1572,9 +1835,9 @@ namespace PEBakery.Ini
 
                 if (section == null && !enableCopy)
                 {
-                    string line = rawLine.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
+                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         tw.WriteLine(rawLine);
                         enableCopy = true;
@@ -1582,19 +1845,17 @@ namespace PEBakery.Ini
                 }
                 else if (section != null)
                 {
-                    string line = rawLine.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
+                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         if (!enableCopy)
                             tw.WriteLine(rawLine);
                         enableCopy = true;
 
-                        // TODO: Try using Span<byte> to reduce memory allocation
-                        string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
-
                         // Found target section, so return
-                        if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2); // Remove [ and ]
+                        if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             return;
                     }
                 }
@@ -1619,7 +1880,7 @@ namespace PEBakery.Ini
 
         public static List<string> FilterCommentLines(IEnumerable<string> lines)
         {
-            return lines.Where(x => 0 < x.Length && !IniReadWriter.IsLineComment(x)).ToList();
+            return lines.Where(x => 0 < x.Length && !IsLineComment(x)).ToList();
         }
 
         public static List<string> FilterInvalidIniLines(IEnumerable<string> lines)
@@ -1686,92 +1947,131 @@ namespace PEBakery.Ini
 
         public static List<string> ParseIniSection(string file, string section)
         {
-            List<string> lines = new List<string>();
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
             {
-                string line;
-                bool appendState = false;
-                while ((line = r.ReadLine()) != null)
-                { // Read text line by line
-                    line = line.Trim();
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
 
-                    // Ignore comment
-                    if (line.StartsWith("#", StringComparison.Ordinal) ||
-                        line.StartsWith(";", StringComparison.Ordinal) ||
-                        line.StartsWith("//", StringComparison.Ordinal))
-                        continue;
+            rwLock.EnterReadLock();
+            try
+            {
+                List<string> lines = new List<string>();
 
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
-                    { // Start of section
-                        if (appendState)
-                            break;
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                {
+                    string rawLine;
+                    bool appendState = false;
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
-                        // Remove [ and ]
-                        string foundSection = line.Substring(1, line.Length - 2);
-                        if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
-                            appendState = true;
-                    }
-                    else
-                    {
-                        int idx;
-                        if ((idx = line.IndexOf('=')) != -1 && idx != 0)
-                        { // valid ini key, and not empty
+                        // Ignore comment
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                            continue;
+
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        { // Start of section
                             if (appendState)
-                                lines.Add(line);
+                                break;
+
+                            // Remove [ and ]
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                appendState = true;
+                        }
+                        else
+                        {
+                            int idx;
+                            if ((idx = line.IndexOf('=')) != -1 && idx != 0)
+                            { // valid ini key, and not empty
+                                if (appendState)
+                                    lines.Add(line.ToString());
+                            }
                         }
                     }
-                }
 
-                if (!appendState) // Section not found
-                    return null;
+                    if (!appendState) // Section not found
+                        return null;
+                }
+                return lines;
             }
-            return lines;
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
         }
 
         public static List<string> ParseRawSection(string file, string section)
         {
-            List<string> lines = new List<string>();
-
-            Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
             {
-                string line;
-                bool appendState = false;
-                while ((line = r.ReadLine()) != null)
-                { // Read text line by line
-                    line = line.Trim();
-
-                    // Ignore comment
-                    if (line.StartsWith("#", StringComparison.Ordinal) ||
-                        line.StartsWith(";", StringComparison.Ordinal) ||
-                        line.StartsWith("//", StringComparison.Ordinal))
-                        continue;
-
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
-                    { // Start of section
-                        if (appendState)
-                            break;
-
-                        // Remove [ and ]
-                        string foundSection = line.Substring(1, line.Length - 2);
-                        if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
-                            appendState = true;
-                    }
-                    else if (appendState)
-                    {
-                        if (line.Length != 0)
-                            lines.Add(line);
-                    }
-                }
-
-                if (!appendState) // Section not found
-                    return null;
+                rwLock = LockDict[file];
             }
-            return lines;
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterReadLock();
+            try
+            {
+                List<string> lines = new List<string>();
+
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                {
+                    string rawLine;
+                    bool appendState = false;
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comment
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                            continue;
+
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        { // Start of section
+                            if (appendState)
+                                break;
+
+                            // Remove [ and ]
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                appendState = true;
+                        }
+                        else if (appendState)
+                        {
+                            if (line.Length != 0)
+                                lines.Add(line.ToString());
+                        }
+                    }
+
+                    if (!appendState) // Section not found
+                        return null;
+                }
+                return lines;
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -1780,10 +2080,10 @@ namespace PEBakery.Ini
         public static Dictionary<string, string>[] ParseSectionsToDicts(string file, string[] sections)
         {
             List<string>[] lines = ParseIniSections(file, sections);
-            Dictionary<string, string>[] dicts = new Dictionary<string, string>[lines.Length];
+            Dictionary<string, string>[] dict = new Dictionary<string, string>[lines.Length];
             for (int i = 0; i < lines.Length; i++)
-                dicts[i] = ParseIniLinesIniStyle(lines[i]);
-            return dicts;
+                dict[i] = ParseIniLinesIniStyle(lines[i]);
+            return dict;
         }
         /// <summary>
         /// Parse sections to string 2D array.
@@ -1792,68 +2092,83 @@ namespace PEBakery.Ini
         {
             string[] sections = sectionList.Distinct().ToArray(); // Remove duplicate
 
-            List<string>[] lines = new List<string>[sections.Length];
-            for (int i = 0; i < sections.Length; i++)
-                lines[i] = new List<string>();
-
-            Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader reader = new StreamReader(file, encoding, true))
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
             {
-                string line;
-                int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
-                List<int> processedSectionIdxs = new List<int>();
-
-                while ((line = reader.ReadLine()) != null)
-                { // Read text line by line
-                    if (sections.Length < processedSectionIdxs.Count)
-                        break;
-
-                    line = line.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
-                    { // Start of section
-                        bool isSectionFound = false;
-                        string foundSection = line.Substring(1, line.Length - 2);
-                        for (int i = 0; i < sections.Length; i++)
-                        {
-                            if (processedSectionIdxs.Contains(i))
-                                continue;
-
-                            if (foundSection.Equals(sections[i], StringComparison.Ordinal))
-                            {
-                                isSectionFound = true;
-                                processedSectionIdxs.Add(i);
-                                currentSection = i;
-                                break;
-                            }
-                        }
-                        if (!isSectionFound)
-                            currentSection = -1;
-                    }
-                    else
-                    {
-                        int idx;
-                        if ((idx = line.IndexOf('=')) != -1 && idx != 0)
-                        { // valid ini key
-                            if (currentSection != -1) // current section is target, and key is empty
-                                lines[currentSection].Add(line);
-                        }
-                    }
-                }
-
-                //if (sections.Length != processedSectionIdxs.Count) // Section not found
-                //    return null;
-
-                reader.Close();
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
             }
 
-            return lines;
+            rwLock.EnterReadLock();
+            try
+            {
+                List<string>[] lines = new List<string>[sections.Length];
+                for (int i = 0; i < sections.Length; i++)
+                    lines[i] = new List<string>();
+
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                {
+                    string rawLine;
+                    int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
+                    List<int> processedSectionIdxs = new List<int>();
+
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        if (sections.Length < processedSectionIdxs.Count)
+                            break;
+
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        { // Start of section
+                            bool isSectionFound = false;
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            for (int i = 0; i < sections.Length; i++)
+                            {
+                                if (processedSectionIdxs.Contains(i))
+                                    continue;
+
+                                if (foundSection.Equals(sections[i].AsSpan(), StringComparison.Ordinal))
+                                {
+                                    isSectionFound = true;
+                                    processedSectionIdxs.Add(i);
+                                    currentSection = i;
+                                    break;
+                                }
+                            }
+                            if (!isSectionFound)
+                                currentSection = -1;
+                        }
+                        else
+                        {
+                            int idx;
+                            if ((idx = line.IndexOf('=')) != -1 && idx != 0)
+                            { // valid ini key
+                                if (currentSection != -1) // current section is target, and key is empty
+                                    lines[currentSection].Add(line.ToString());
+                            }
+                        }
+                    }
+
+                    r.Close();
+                }
+
+                return lines;
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
         }
 
         public static Dictionary<string, Dictionary<string, string>> ParseToDict(string srcFile)
         {
             ReaderWriterLockSlim rwLock;
-
             if (LockDict.ContainsKey(srcFile))
             {
                 rwLock = LockDict[srcFile];
@@ -1864,42 +2179,42 @@ namespace PEBakery.Ini
                 LockDict[srcFile] = rwLock;
             }
 
-            Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
-
             rwLock.EnterReadLock();
             try
             {
+                Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
                 if (!File.Exists(srcFile))
                     return dict; // Return Empty dict if srcFile does not exist
 
-                Encoding encoding = Helper.DetectTextEncoding(srcFile);
-                using (StreamReader reader = new StreamReader(srcFile, encoding))
+                Encoding encoding = EncodingHelper.DetectBom(srcFile);
+                using (StreamReader r = new StreamReader(srcFile, encoding))
                 {
                     // Is Original File Empty?
-                    if (reader.Peek() == -1)
+                    if (r.Peek() == -1)
                     {
-                        reader.Close();
+                        r.Close();
 
                         // Return Empty Dict
                         return dict;
                     }
 
-                    string line;
+                    string rawLine;
                     string section = null;
 
-                    while ((line = reader.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
-                        line = line.Trim(); // Remove whitespace
-                        if (line.StartsWith("#", StringComparison.Ordinal) ||
-                            line.StartsWith(";", StringComparison.Ordinal) ||
-                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim(); // Remove whitespace
+                        if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                            line.StartsWith("//".AsSpan(), StringComparison.Ordinal)) // Ignore comment
                             continue;
 
                         // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[", StringComparison.Ordinal) &&
-                            line.EndsWith("]", StringComparison.Ordinal))
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            section = line.Substring(1, line.Length - 2);
+                            section = line.Slice(1, line.Length - 2).ToString();
                             dict[section] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                             continue;
                         }
@@ -1910,21 +2225,21 @@ namespace PEBakery.Ini
                             int idx = line.IndexOf('=');
                             if (idx != -1 && idx != 0) // there is key, and key name is not empty
                             {
-                                string key = line.Substring(0, idx);
-                                string value = line.Substring(idx + 1);
+                                string key = line.Slice(0, idx).ToString();
+                                string value = line.Slice(idx + 1).ToString();
 
                                 dict[section][key] = value;
                             }
                         }
                     }
                 }
+
+                return dict;
             }
             finally
             {
                 rwLock.ExitReadLock();
             }
-
-            return dict;
         }
 
         /// <summary>
@@ -1934,24 +2249,41 @@ namespace PEBakery.Ini
         /// <returns></returns>
         public static List<string> GetSectionNames(string file)
         {
-            List<string> sections = new List<string>();
-
-            Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader reader = new StreamReader(file, encoding, true))
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                { // Read text line by line
-                    line = line.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal)) // Count sections
-                        sections.Add(line.Substring(1, line.Length - 2));
-                }
-
-                reader.Close();
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
             }
 
-            return sections;
+            rwLock.EnterReadLock();
+            try
+            {
+                List<string> sections = new List<string>();
+
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                {
+                    string rawLine;
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal)) // Count sections
+                            sections.Add(line.Slice(1, line.Length - 2).ToString());
+                    }
+                }
+
+                return sections;
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -1962,30 +2294,48 @@ namespace PEBakery.Ini
         /// <returns></returns>
         public static bool ContainsSection(string file, string section)
         {
-            bool result = false;
-
-            Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
             {
-                string line;
-                while ((line = r.ReadLine()) != null)
-                { // Read text line by line
-                    line = line.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
-                    {
-                        if (section.Equals(line.Substring(1, line.Length - 2), StringComparison.OrdinalIgnoreCase))
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterReadLock();
+            try
+            {
+                bool result = false;
+
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                {
+                    string rawLine;
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            result = true;
-                            break;
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                result = true;
+                                break;
+                            }
                         }
                     }
                 }
 
-                r.Close();
+                return result;
             }
-
-            return result;
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
         }
 
         /// <summary>

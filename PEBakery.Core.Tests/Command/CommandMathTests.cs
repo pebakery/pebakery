@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -182,18 +182,30 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,BoolAnd,%Dest%,True,False", "False");
             SuccessTemplate(s, "Math,BoolAnd,%Dest%,False,True", "False");
             SuccessTemplate(s, "Math,BoolAnd,%Dest%,False,False", "False");
+            SuccessTemplate(s, "Math,BoolAnd,%Dest%,1,1", "True");
+            SuccessTemplate(s, "Math,BoolAnd,%Dest%,1,0", "False");
+            SuccessTemplate(s, "Math,BoolAnd,%Dest%,0,1", "False");
+            SuccessTemplate(s, "Math,BoolAnd,%Dest%,0,0", "False");
 
             // BoolOr
             SuccessTemplate(s, "Math,BoolOr,%Dest%,True,True", "True");
             SuccessTemplate(s, "Math,BoolOr,%Dest%,True,False", "True");
             SuccessTemplate(s, "Math,BoolOr,%Dest%,False,True", "True");
             SuccessTemplate(s, "Math,BoolOr,%Dest%,False,False", "False");
+            SuccessTemplate(s, "Math,BoolOr,%Dest%,2,1", "True");
+            SuccessTemplate(s, "Math,BoolOr,%Dest%,2,0", "True");
+            SuccessTemplate(s, "Math,BoolOr,%Dest%,0,1", "True");
+            SuccessTemplate(s, "Math,BoolOr,%Dest%,0,0", "False");
 
             // BoolXor
             SuccessTemplate(s, "Math,BoolXor,%Dest%,True,True", "False");
             SuccessTemplate(s, "Math,BoolXor,%Dest%,True,False", "True");
             SuccessTemplate(s, "Math,BoolXor,%Dest%,False,True", "True");
             SuccessTemplate(s, "Math,BoolXor,%Dest%,False,False", "False");
+            SuccessTemplate(s, "Math,BoolXor,%Dest%,-1,-2", "False");
+            SuccessTemplate(s, "Math,BoolXor,%Dest%,-234,0", "True");
+            SuccessTemplate(s, "Math,BoolXor,%Dest%,0,2341345", "True");
+            SuccessTemplate(s, "Math,BoolXor,%Dest%,0,0", "False");
 
             // Test Error
             ErrorTemplate(s, "Math,BoolAnd,Dest,4", ErrorCheck.ParserError);
@@ -214,11 +226,12 @@ namespace PEBakery.Core.Tests.Command
             // BoolNot
             SuccessTemplate(s, "Math,BoolNot,%Dest%,True", "False");
             SuccessTemplate(s, "Math,BoolNot,%Dest%,False", "True");
+            SuccessTemplate(s, "Math,BoolNot,%Dest%,0x132", "False");
+            SuccessTemplate(s, "Math,BoolNot,%Dest%,0", "True");
 
             // Test Error
             ErrorTemplate(s, "Math,BoolNot,Dest,True,2", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BoolNot,%Dest%,True,2", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BoolNot,%Dest%,3", ErrorCheck.Error);
             ErrorTemplate(s, "Math,BoolNot,%Dest%,ABC", ErrorCheck.Error);
         }
         #endregion
@@ -487,6 +500,7 @@ namespace PEBakery.Core.Tests.Command
         #region Templates
         public void SuccessTemplate(EngineState s, string rawCode, string destCheck)
         {
+            s.Variables.DeleteKey(VarsType.Local, "Dest");
             EngineTests.Eval(s, rawCode, CodeType.Math, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];

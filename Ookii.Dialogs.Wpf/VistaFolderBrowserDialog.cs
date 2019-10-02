@@ -1,12 +1,12 @@
 ﻿// Copyright ?Sven Groot (Ookii.org) 2009
 // BSD license; see license.txt for details.
 
+using Ookii.Dialogs.Wpf.Interop;
 using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Ookii.Dialogs.Wpf.Interop;
 
 namespace Ookii.Dialogs.Wpf
 {

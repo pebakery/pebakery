@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2018 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,10 +29,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
@@ -53,16 +50,18 @@ namespace PEBakery.Core.Tests
         public static Project Project;
         public static Logger Logger;
         public static string BaseDir;
+        public static string MagicFile;
+        public static bool IsOnline;
         #endregion
 
-        #region CreateEngineState, DummySectionAddress
-        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = "Process")
+        #region CreateEngineState, DummySection
+        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = ScriptSection.Names.Process)
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             EngineState s;
             if (doCopy)
             {
-                Project project = EngineTests.Project.PartialDeepCopy();
+                Project project = Project.PartialDeepCopy();
                 MainViewModel model = new MainViewModel();
                 if (sc == null)
                     s = new EngineState(project, Logger, model, EngineMode.RunAll);
@@ -85,31 +84,52 @@ namespace PEBakery.Core.Tests
             return s;
         }
 
+        public static void PushDepthInfo(EngineState s, int targetDepth)
+        {
+            while (s.PeekDepth < targetDepth)
+            {
+                EngineLocalState ls = s.PeekLocalState();
+                s.PushLocalState(ls.IsMacro, ls.RefScriptId);
+            }
+        }
+
         public static ScriptSection DummySection() => Project.MainScript.Sections["Process"];
         #endregion
 
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out cmd);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption compat)
+        {
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, compat);
+            return Eval(s, parser, rawCode, type, check, compat, out _);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption compat, out CodeCommand cmd)
+        {
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, compat);
+            return Eval(s, parser, rawCode, type, check, compat, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
@@ -141,6 +161,32 @@ namespace PEBakery.Core.Tests
             // Return logs
             return logs;
         }
+
+        public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, CompatOption compat, out CodeCommand cmd)
+        {
+            // Create CodeCommand
+            cmd = parser.ParseStatement(rawCode);
+            if (cmd.Type == CodeType.Error)
+            {
+                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                Console.WriteLine(info.ErrorMessage);
+
+                Assert.AreEqual(ErrorCheck.ParserError, check);
+                return new List<LogInfo>();
+            }
+            Assert.AreEqual(type, cmd.Type);
+
+            // Run CodeCommand
+            s.SetCompat(compat);
+            List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
+            s.SetCompat(Project.Compat); // Reset to default
+
+            // Assert
+            CheckErrorLogs(logs, check);
+
+            // Return logs
+            return logs;
+        }
         #endregion
 
         #region EvalLines
@@ -154,7 +200,7 @@ namespace PEBakery.Core.Tests
             // Create CodeCommand
             List<LogInfo> errorLogs;
             ScriptSection dummySection = DummySection();
-            CodeParser parser = new CodeParser(dummySection, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(dummySection, Global.Setting, Project.Compat);
             (cmds, errorLogs) = parser.ParseStatements(rawCodes);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
@@ -166,7 +212,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
         }
         #endregion
 
@@ -175,14 +221,14 @@ namespace PEBakery.Core.Tests
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
             ScriptSection section = DummySection();
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
@@ -190,14 +236,15 @@ namespace PEBakery.Core.Tests
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
+        /// <param name="cmds"></param>
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
             ScriptSection section = DummySection();
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
         }
 
@@ -212,7 +259,7 @@ namespace PEBakery.Core.Tests
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
@@ -228,7 +275,7 @@ namespace PEBakery.Core.Tests
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
         }
 
@@ -237,6 +284,7 @@ namespace PEBakery.Core.Tests
         /// </summary>
         /// <param name="s"></param>
         /// <param name="parser"></param>
+        /// <param name="section"></param>
         /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
@@ -251,6 +299,7 @@ namespace PEBakery.Core.Tests
         /// </summary>
         /// <param name="s"></param>
         /// <param name="parser"></param>
+        /// <param name="section"></param>
         /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
@@ -282,17 +331,17 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
         }
         #endregion
 
         #region EvalScript
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = "Process")
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = ScriptSection.Names.Process)
         {
             return EvalScript(treePath, check, null, entrySection);
         }
 
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> applySetting, string entrySection = "Process")
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> setState, string entrySection = ScriptSection.Names.Process)
         {
             Script sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
@@ -300,7 +349,7 @@ namespace PEBakery.Core.Tests
             EngineState s = CreateEngineState(true, sc, entrySection);
 
             Engine engine = new Engine(s);
-            applySetting?.Invoke(s);
+            setState?.Invoke(s);
 
             Task<int> t = engine.Run($"Test [{sc.Title}]");
             t.Wait();
@@ -372,32 +421,6 @@ namespace PEBakery.Core.Tests
                     Assert.Fail();
                     break;
             }
-        }
-        #endregion
-
-        #region ExtractWith7z
-        public static int ExtractWith7z(string sampleDir, string srcArchive, string destDir)
-        {
-            string binary;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                binary = Path.Combine(sampleDir, "7z.exe");
-            else
-                throw new PlatformNotSupportedException();
-
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = binary,
-                    Arguments = $"x {srcArchive} -o{destDir}",
-                }
-            };
-            proc.Start();
-            proc.WaitForExit();
-            return proc.ExitCode;
         }
         #endregion
     }

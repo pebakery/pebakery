@@ -1,7 +1,17 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.ViewModels;
+using PEBakery.Helper;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
 {
@@ -33,6 +43,7 @@ namespace PEBakery.Core.Tests
 
             // Init NativeAssembly
             Global.NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
+            EngineTests.MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
 
             // Use InMemory Database for Tests
             Logger.DebugLevel = LogDebugLevel.PrintExceptionStackTrace;
@@ -42,15 +53,142 @@ namespace PEBakery.Core.Tests
             // Set Global 
             Global.Logger = EngineTests.Logger;
             Global.BaseDir = EngineTests.BaseDir;
+            Global.MagicFile = EngineTests.MagicFile;
             Global.BuildDate = BuildTimestamp.ReadDateTime();
+
+            // IsOnline?
+            EngineTests.IsOnline = NetworkHelper.IsOnline();
         }
 
         [AssemblyCleanup]
         public static void AssemblyCleanup()
         {
-            EngineTests.Logger?.Dispose();
+            StopWebFileServer();
 
-            Global.NativeGlobalCleanup();
+            Global.Cleanup();
+            EngineTests.Logger = null;
+        }
+        #endregion
+
+        #region ExtractWith7z
+        public static int ExtractWith7Z(string sampleDir, string srcArchive, string destDir)
+        {
+            string binary;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                binary = Path.Combine(sampleDir, "7z.exe");
+            else
+                throw new PlatformNotSupportedException();
+
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = binary,
+                    Arguments = $"x {srcArchive} -o{destDir}",
+                }
+            };
+            proc.Start();
+            proc.WaitForExit();
+            return proc.ExitCode;
+        }
+        #endregion
+
+        #region FileEqual
+        public static bool FileEqual(string x, string y)
+        {
+            byte[] h1;
+            using (FileStream fs = new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                h1 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+            }
+
+            byte[] h2;
+            using (FileStream fs = new FileStream(y, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                h2 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+            }
+
+            return h1.SequenceEqual(h2);
+        }
+        #endregion
+
+        #region Web File Server
+        public const int ServerPort = 8380;
+
+        private static readonly object FileServerLock = new object();
+        private static Task _fileServerTask;
+        private static CancellationTokenSource _fileServerCancel;
+
+        public static string WebRoot { get; private set; }
+        public static string UrlRoot { get; private set; }
+        public static bool IsServerRunning
+        {
+            get
+            {
+                lock (FileServerLock)
+                    return _fileServerTask != null;
+            }
+        }
+
+        public static void StartWebFileServer()
+        {
+            lock (FileServerLock)
+            {
+                if (_fileServerTask != null)
+                    return;
+
+                WebRoot = Path.Combine(EngineTests.BaseDir, "WebServer");
+
+                IWebHost host = new WebHostBuilder()
+                    .UseKestrel()
+                    .UseWebRoot(WebRoot)
+                    .Configure(app =>
+                    {
+                        // Set up custom content types - associating file extension to MIME type
+                        FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
+                        {
+                            Mappings =
+                            {
+                                [".script"] = "text/plain",
+                                [".deleted"] = "text/plain",
+                            }
+                        };
+
+                        app.UseStaticFiles(new StaticFileOptions
+                        {
+                            // ServeUnknownFileTypes = true,
+                            // DefaultContentType = "text/plain",
+                            ContentTypeProvider = provider,
+                        });
+                        app.UseDefaultFiles();
+                        app.UseDirectoryBrowser();
+                    })
+                    .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
+                    .Build();
+
+                UrlRoot = $"http://localhost:{ServerPort}";
+                _fileServerCancel = new CancellationTokenSource();
+                _fileServerTask = host.RunAsync(_fileServerCancel.Token);
+            }
+        }
+
+        public static void StopWebFileServer()
+        {
+            lock (FileServerLock)
+            {
+                if (_fileServerTask == null)
+                    return;
+
+                _fileServerCancel.Cancel();
+                _fileServerTask.Wait();
+
+                _fileServerCancel = null;
+                _fileServerTask = null;
+                UrlRoot = null;
+            }
         }
         #endregion
     }

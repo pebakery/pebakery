@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
 
     MIT License
@@ -34,7 +34,7 @@ using System.Windows;
 
 namespace PEBakeryLauncher
 {
-    public class Launcher
+    public static class Launcher
     {
 #if ENABLE_DOTNETFX_472
         public const string DotNetFxVerStr = "4.7.2";
@@ -48,31 +48,31 @@ namespace PEBakeryLauncher
 
         public static void Main(string[] args)
         {
+            // Check if PEBakery.exe exists
+            string absPath = GetProgramAbsolutePath();
+            string pebakeryPath = Path.Combine(absPath, "Binary", "PEBakery.exe");
+            if (!File.Exists(pebakeryPath))
+            {
+                MessageBox.Show("Unable to find PEBakery.",
+                                "Unable to find PEBakery",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                Environment.Exit(1);
+            }
+
             // Alert user to install .Net Framework to 4.7.x if not installed.
             // The launcher itself runs in .Net Framework 4 Client Profile.
             if (!CheckNetFrameworkVersion())
             {
-                MessageBox.Show($"PEBakery requires .Net Framework {DotNetFxVerStr} or newer.", 
-                                $"Install .Net Framework {DotNetFxVerStr}", 
-                                MessageBoxButton.OK, 
+                MessageBox.Show($"PEBakery requires .Net Framework {DotNetFxVerStr} or newer.",
+                                $"Install .Net Framework {DotNetFxVerStr}",
+                                MessageBoxButton.OK,
                                 MessageBoxImage.Error);
                 Process.Start(DotNetFxInstallerUrl);
                 Environment.Exit(1);
             }
 
             // Launch PEBakery.exe using ShellExecute
-            string absPath = GetProgramAbsolutePath();
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    UseShellExecute = true,
-                    Verb = "Open",
-                    FileName = Path.Combine(absPath, "Binary", "PEBakery.exe"),
-                    WorkingDirectory = absPath
-                }
-            };
-
             StringBuilder b = new StringBuilder();
             foreach (string arg in args)
             {
@@ -80,8 +80,22 @@ namespace PEBakeryLauncher
                 b.Append(arg);
                 b.Append("\" ");
             }
-            proc.StartInfo.Arguments = b.ToString();
-            proc.Start();
+            string argStr = b.ToString();
+            Console.WriteLine(argStr);
+
+            using (Process proc = new Process())
+            {
+                proc.StartInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    Verb = "Open",
+                    FileName = pebakeryPath,
+                    WorkingDirectory = absPath,
+                    Arguments = argStr,
+                };
+                proc.Start();
+            }
+
         }
 
         public static string GetProgramAbsolutePath()
@@ -100,7 +114,7 @@ namespace PEBakeryLauncher
                 if (ndpKey == null)
                     return false;
 
-                uint revision = (uint)ndpKey.GetValue("Release", 0);
+                uint revision = (uint)(int)ndpKey.GetValue("Release", 0);
 
                 // PEBakery requires .Net Framework 4.7.x or later
                 return DotNetFxReleaseValue <= revision;

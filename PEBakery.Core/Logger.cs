@@ -1,5 +1,5 @@
 ﻿/*
-   Copyright (C) 2016-2018 Hajin Jang
+   Copyright (C) 2016-2019 Hajin Jang
    Licensed under GPL 3.0
 
    PEBakery is free software: you can redistribute it and/or modify
@@ -40,242 +40,6 @@ using System.Text;
 
 namespace PEBakery.Core
 {
-    #region enum LogState
-    public enum LogState
-    {
-        None = 0,
-        Success = 100,
-        Warning = 200,
-        Overwrite = 201,
-        Error = 300,
-        CriticalError = 301,
-        Info = 400,
-        Ignore = 401,
-        Muted = 402,
-    }
-    #endregion
-
-    #region struct LogInfo
-    [Serializable]
-    public struct LogInfo
-    {
-        #region Fields
-        public LogState State;
-        public string Message;
-        public CodeCommand Command;
-        public UIControl UIControl;
-        public int Depth;
-        #endregion
-
-        #region Constructor - LogState, Message
-        public LogInfo(LogState state, string message)
-        {
-            State = state;
-            Message = message;
-            Command = null;
-            UIControl = null;
-            Depth = 0;
-        }
-
-        public LogInfo(LogState state, string message, CodeCommand command)
-        {
-            State = state;
-            Message = message;
-            Command = command;
-            UIControl = null;
-            Depth = 0;
-        }
-
-        public LogInfo(LogState state, string message, int depth)
-        {
-            State = state;
-            Message = message;
-            Command = null;
-            UIControl = null;
-            Depth = depth;
-        }
-
-        public LogInfo(LogState state, string message, CodeCommand command, int depth)
-        {
-            State = state;
-            Message = message;
-            Command = command;
-            UIControl = null;
-            Depth = depth;
-        }
-        #endregion
-
-        #region Constructor - LogState, Exception
-        public LogInfo(LogState state, Exception e)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-            Command = null;
-            UIControl = null;
-            Depth = 0;
-        }
-
-        public LogInfo(LogState state, Exception e, CodeCommand command)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-            Command = command;
-            UIControl = null;
-            Depth = 0;
-        }
-
-        public LogInfo(LogState state, Exception e, int depth)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-            Command = null;
-            UIControl = null;
-            Depth = depth;
-        }
-
-        public LogInfo(LogState state, Exception e, CodeCommand command, int depth)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-            Command = command;
-            UIControl = null;
-            Depth = depth;
-        }
-        #endregion
-
-        #region Constructor - LogState, UIControl
-        public LogInfo(LogState state, string message, UIControl uiCtrl)
-        {
-            State = state;
-            Message = message;
-            Command = null;
-            UIControl = uiCtrl;
-            Depth = 0;
-        }
-
-        public LogInfo(LogState state, Exception e, UIControl uiCtrl)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-            Command = null;
-            UIControl = uiCtrl;
-            Depth = 0;
-        }
-        #endregion
-
-        #region Constructor - LogModel.BuildLog
-        public LogInfo(LogModel.BuildLog buildLog)
-        {
-            State = buildLog.State;
-            Message = buildLog.Message;
-            Command = null;
-            UIControl = null;
-            Depth = buildLog.Depth;
-        }
-        #endregion
-
-        #region AddCommand, AddDepth
-        public static LogInfo AddCommand(LogInfo log, CodeCommand command)
-        {
-            if (log.Command == null)
-                log.Command = command;
-            return log;
-        }
-
-        public static List<LogInfo> AddCommand(List<LogInfo> logs, CodeCommand command)
-        {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                if (log.Command == null)
-                    log.Command = command;
-                logs[i] = log;
-            }
-
-            return logs;
-        }
-
-        public static LogInfo AddDepth(LogInfo log, int depth)
-        {
-            log.Depth = depth;
-            return log;
-        }
-
-        public static List<LogInfo> AddDepth(List<LogInfo> logs, int depth)
-        {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                log.Depth = depth;
-                logs[i] = log;
-            }
-
-            return logs;
-        }
-
-        public static LogInfo AddCommandDepth(LogInfo log, CodeCommand command, int depth)
-        {
-            if (log.Command == null)
-                log.Command = command;
-            log.Depth = depth;
-            return log;
-        }
-
-        public static List<LogInfo> AddCommandDepth(List<LogInfo> logs, CodeCommand command, int depth)
-        {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                if (log.Command == null)
-                    log.Command = command;
-                log.Depth = depth;
-                logs[i] = log;
-            }
-
-            return logs;
-        }
-        #endregion
-
-        #region LogErrorMessage
-        /// <summary>
-        /// Wrapper for one-line error terminate
-        /// </summary>
-        /// <param name="logs"></param>
-        /// <param name="msg"></param>
-        /// <returns></returns>
-        public static List<LogInfo> LogErrorMessage(List<LogInfo> logs, string msg)
-        {
-            logs.Add(new LogInfo(LogState.Error, msg));
-            return logs;
-        }
-        #endregion
-
-        #region ToString
-        public override string ToString()
-        {
-            if (Command != null)
-            {
-                if (0 < Command.LineIdx)
-                    return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
-                else
-                    return $"[{State}] {Message} ({Command.RawCode})";
-            }
-            else if (UIControl != null)
-            {
-                if (0 < UIControl.LineIdx)
-                    return $"[{State}] {Message} ({UIControl.RawLine}) (Line {UIControl.LineIdx})";
-                else
-                    return $"[{State}] {Message} ({UIControl.RawLine})";
-            }
-            else
-            {
-                return $"[{State}] {Message}";
-            }
-        }
-        #endregion
-    }
-    #endregion
-
     #region EventHandlers
     public class SystemLogUpdateEventArgs : EventArgs
     {
@@ -342,7 +106,7 @@ namespace PEBakery.Core
     }
 
     /// <summary>
-    /// How much information will be logged if an Exception is catched in ExecuteCommand?
+    /// How much information will be logged if an Exception is caught in ExecuteCommand?
     /// </summary>
     public enum LogDebugLevel
     {
@@ -452,36 +216,27 @@ namespace PEBakery.Core
     public class Logger : IDisposable
     {
         #region Fields and Properties
+        public const string LogSeparator = "--------------------------------------------------------------------------------";
+
         public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
         public static LogDebugLevel DebugLevel;
         public static bool MinifyHtmlExport;
 
+        // Deferred logging and LogModel pool
+        private DeferredLogging _deferred;
         private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
-        private readonly ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>>();
-        private readonly ConcurrentDictionary<string, int> _scriptRefIdDict = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<int, LogModel.Script> _scriptDict = new ConcurrentDictionary<int, LogModel.Script>();
+        private readonly ConcurrentDictionary<string, LogModel.Script> _scriptRefIdDict = new ConcurrentDictionary<string, LogModel.Script>(StringComparer.Ordinal);
 
+        // Event
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
         public event BuildInfoUpdateEventHandler BuildInfoUpdated;
         public event ScriptUpdateEventHandler ScriptUpdated;
         public event VariableUpdateEventHandler VariableUpdated;
         public event FullRefreshEventHandler FullRefresh;
-
-        public const string LogSeparator = "--------------------------------------------------------------------------------";
-
-        // DelayedLogging
-        private DeferredLogging _deferred;
-        public DeferredLogging Deferred
-        {
-            get
-            {
-                DeferredLogging ret = _deferred;
-                _deferred = null;
-                return ret;
-            }
-        }
         #endregion
 
         #region Constructor, Destructor
@@ -493,7 +248,6 @@ namespace PEBakery.Core
         ~Logger()
         {
             Dispose(false);
-            GC.SuppressFinalize(this);
         }
 
         public void Dispose()
@@ -533,6 +287,15 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ClearDeferredLogging
+        public DeferredLogging ReadAndClearDeferredLogs()
+        {
+            DeferredLogging deferred = _deferred;
+            _deferred = null;
+            return deferred;
+        }
+        #endregion
+
         #region Build Init/Finish
         public int BuildInit(EngineState s, string name)
         {
@@ -542,6 +305,7 @@ namespace PEBakery.Core
             // Build Id
             LogModel.BuildInfo dbBuild = new LogModel.BuildInfo
             {
+                PEBakeryVersion = Global.Const.ProgramVersionStrFull,
                 StartTime = s.StartTime,
                 Name = name,
             };
@@ -607,11 +371,16 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
-            if (dbBuild == null)
-                throw new KeyNotFoundException($"Unable to find LogModel.BuildInfo instance, id = {s.BuildId}");
+            bool ret = _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
+            if (!ret)
+            {
+                string errMsg = $"Build {s.BuildId} was not logged properly";
+                SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Debug.Assert(false, errMsg);
+                return;
+            }
 
-            dbBuild.EndTime = s.EndTime;
+            dbBuild.FinishTime = s.EndTime;
             switch (s.LogMode)
             {
                 case LogMode.PartDefer:
@@ -631,7 +400,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Script Init/Finish
-        public int BuildScriptInit(EngineState s, Script sc, int order, bool prepareBuild)
+        public int BuildScriptInit(EngineState s, Script sc, int order)
         {
             if (s.DisableLogger)
                 return 0;
@@ -645,13 +414,9 @@ namespace PEBakery.Core
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
                 Version = sc.TidyVersion,
+                StartTime = DateTime.UtcNow,
+                FinishTime = DateTime.MinValue,
             };
-
-            if (prepareBuild)
-            {
-                dbScript.Name = "Prepare Build";
-                dbScript.Version = "0";
-            }
 
             if (s.LogMode == LogMode.FullDefer)
             {
@@ -664,7 +429,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptWatchDict[dbScript.Id] = new Tuple<LogModel.Script, Stopwatch>(dbScript, Stopwatch.StartNew());
+            _scriptDict[dbScript.Id] = dbScript;
 
             // Fire Event
             if (s.LogMode == LogMode.NoDefer)
@@ -687,16 +452,17 @@ namespace PEBakery.Core
             int buildId = s.BuildId;
             int scriptId = s.ScriptId;
 
-            // Scripts 
-            _scriptWatchDict.TryRemove(scriptId, out Tuple<LogModel.Script, Stopwatch> tuple);
-            if (tuple == null)
-                throw new KeyNotFoundException($"Unable to find LogModel.Script Instance, id = {scriptId}");
+            // Log elapsed time
+            bool ret = _scriptDict.TryRemove(scriptId, out LogModel.Script dbScript);
+            if (!ret)
+            {
+                string errMsg = $"Script {s.ScriptId} was not logged properly";
+                SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Debug.Assert(false, errMsg);
+                return;
+            }
+            dbScript.FinishTime = DateTime.UtcNow;
 
-            LogModel.Script dbScript = tuple.Item1;
-            Stopwatch watch = tuple.Item2;
-            watch.Stop();
-
-            dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
             if (localVars != null)
             {
                 List<LogModel.Variable> varLogs = new List<LogModel.Variable>(localVars.Count);
@@ -731,25 +497,37 @@ namespace PEBakery.Core
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
-        public int BuildRefScriptWrite(EngineState s, Script sc)
+        /// <summary>
+        /// Log referenced script.
+        /// </summary>
+        /// <param name="s">EngineSection</param>
+        /// <param name="sc">Script</param>
+        /// <param name="isMacro">MacroScript?</param>
+        /// <returns></returns>
+        public int BuildRefScriptWrite(EngineState s, Script sc, bool isMacro)
         {
-            // If logger is disabled or suspended, skip
-            if (SuspendBuildLog || s.DisableLogger)
+            // If logger is disabled, skip
+            if (s.DisableLogger)
                 return 0;
 
+            // If this script is already logged to database, just return cached id.
             if (_scriptRefIdDict.ContainsKey(sc.FullIdentifier))
-                return _scriptRefIdDict[sc.FullIdentifier];
+            {
+                LogModel.Script storedScript = _scriptRefIdDict[sc.FullIdentifier];
+                return storedScript.Id;
+            }
 
             LogModel.Script dbScript = new LogModel.Script
             {
                 BuildId = s.BuildId,
                 Level = sc.Level,
-                Order = 0, // Reference script log must set this to 0 
+                Order = isMacro ? -1 : 0, // Referenced script log must set this to 0 
                 Name = sc.Title,
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
-                Version = sc.Version,
-                ElapsedMilliSec = 0,
+                Version = sc.TidyVersion,
+                StartTime = DateTime.UtcNow,
+                FinishTime = DateTime.UtcNow, // Not valid on referenced script
             };
 
             if (s.LogMode == LogMode.FullDefer)
@@ -763,7 +541,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptRefIdDict[sc.FullIdentifier] = dbScript.Id;
+            _scriptRefIdDict[sc.FullIdentifier] = dbScript;
             return dbScript.Id;
         }
         #endregion
@@ -801,14 +579,27 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
+            EngineLocalState ls = s.PeekLocalState();
+
+            LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
+            if (ls.IsMacro)
+            {
+                flags |= LogModel.BuildLogFlag.Macro;
+            }
+            else
+            {
+                if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
+                    flags |= LogModel.BuildLogFlag.RefScript;
+            }
+
             LogModel.BuildLog dbCode = new LogModel.BuildLog
             {
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = s.RefScriptId,
+                RefScriptId = ls.RefScriptId,
                 Message = message,
-                Flags = s.InMacro ? LogModel.BuildLogFlag.Macro : LogModel.BuildLogFlag.None,
+                Flags = flags,
             };
 
             InternalBuildWrite(s, dbCode);
@@ -820,9 +611,11 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            // Normally this should be already done in Engine.ExecuteCommand.
-            // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
-            // => Need to double-check 'muting logs' at Logger.BuildWrite.
+            EngineLocalState ls = s.PeekLocalState();
+
+            // Normally this should be already done in Engine.ExecuteCommand().
+            // But some commands like RunExec bypass Engine.ExecuteCommand() and call Logger.BuildWrite() directly when logging.
+            // => Need to double-check 'muting logs' at Logger.BuildWrite().
             LogState state;
             if (s.ErrorOff != null &&
                 (log.State == LogState.Error || log.State == LogState.Warning || log.State == LogState.Overwrite))
@@ -835,12 +628,19 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = s.RefScriptId,
+                RefScriptId = ls.RefScriptId,
                 Depth = log.Depth,
                 State = state,
             };
 
-            LogModel.BuildLogFlag flags = s.InMacro ? LogModel.BuildLogFlag.Macro : LogModel.BuildLogFlag.None;
+            LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
+            if (log.IsException)
+                flags |= LogModel.BuildLogFlag.Exception;
+            if (ls.IsMacro)
+                flags |= LogModel.BuildLogFlag.Macro;
+            else if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
+                flags |= LogModel.BuildLogFlag.RefScript;
+
             if (log.Command == null)
             {
                 dbCode.Flags = flags;
@@ -894,7 +694,12 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    dbCode.Flags = log.Command.Type == CodeType.Comment ? LogModel.BuildLogFlag.Comment : LogModel.BuildLogFlag.None;
+                    LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
+                    if (log.Command.Type == CodeType.Comment)
+                        flags |= LogModel.BuildLogFlag.Comment;
+                    if (log.IsException)
+                        flags |= LogModel.BuildLogFlag.Exception;
+                    dbCode.Flags = flags;
 
                     if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
@@ -967,7 +772,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -1009,7 +814,7 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -1286,7 +1091,6 @@ namespace PEBakery.Core
             // Used in LogWindow
             [Ignore]
             public string StateStr => State == LogState.None ? string.Empty : State.ToString();
-
             [Ignore]
             public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
 
@@ -1300,8 +1104,11 @@ namespace PEBakery.Core
         {
             [PrimaryKey, AutoIncrement]
             public int Id { get; set; }
+            // ReSharper disable once InconsistentNaming
+            [MaxLength(32)]
+            public string PEBakeryVersion { get; set; }
             public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
+            public DateTime FinishTime { get; set; }
             [MaxLength(256)]
             public string Name { get; set; }
 
@@ -1322,22 +1129,21 @@ namespace PEBakery.Core
             public int Id { get; set; }
             [Indexed]
             public int BuildId { get; set; }
-            // Referenced scripts   : Set to 0 (Usually macro script)
-            // Active build scripts : Starts from 1
+            /// <summary>
+            /// Macro script         : Set to -1
+            /// Referenced scripts   : Set to 0
+            /// Active build scripts : Starts from 1
+            /// </summary>
             public int Order { get; set; }
             public int Level { get; set; }
-            [MaxLength(256)]
             public string Name { get; set; }
-            [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
             public string RealPath { get; set; }
             public string TreePath { get; set; }
             public string Version { get; set; }
-            public long ElapsedMilliSec { get; set; }
+            public DateTime StartTime { get; set; }
+            public DateTime FinishTime { get; set; }
 
-            public override string ToString()
-            {
-                return $"{BuildId},{Id} = {Level} {Name} {Version}";
-            }
+            public override string ToString() => $"({BuildId}, {Id}) = {Level} {Name} {Version}";
 
             /// <summary>
             /// 
@@ -1375,8 +1181,57 @@ namespace PEBakery.Core
         public enum BuildLogFlag
         {
             None = 0x00,
+            /// <summary>
+            /// This log represents a comment.
+            /// </summary>
             Comment = 0x01,
-            Macro = 0x02
+            /// <summary>
+            /// This log was generated by macro command.
+            /// </summary>
+            Macro = 0x02,
+            /// <summary>
+            /// This log was generated from referenced script.
+            /// </summary>
+            RefScript = 0x04,
+            /// <summary>
+            /// This log was generated by unforeseen exception.
+            /// </summary>
+            Exception = 0x08,
+        }
+
+        public static string BuildLogFlagToString(BuildLogFlag flags)
+        {
+            string str = string.Empty;
+
+            // Comment
+            if ((flags & BuildLogFlag.Comment) == BuildLogFlag.Comment)
+                str += 'C';
+
+            // Macro and RefScript cannot be set to true at the same time
+            if ((flags & BuildLogFlag.Macro) == BuildLogFlag.Macro)
+                str += 'M';
+            else if ((flags & BuildLogFlag.RefScript) == BuildLogFlag.RefScript)
+                str += 'R';
+
+            // Exception
+            if ((flags & BuildLogFlag.Exception) == BuildLogFlag.Exception)
+                str += 'E';
+
+            return str;
+        }
+
+        public static BuildLogFlag ParseBuildLogFlag(string str)
+        {
+            BuildLogFlag flags = BuildLogFlag.None;
+            if (str.Contains('C'))
+                flags |= BuildLogFlag.Comment;
+            if (str.Contains('M'))
+                flags |= BuildLogFlag.Macro;
+            if (str.Contains('R'))
+                flags |= BuildLogFlag.RefScript;
+            if (str.Contains('E'))
+                flags |= BuildLogFlag.Exception;
+            return flags;
         }
 
         public class BuildLog
@@ -1386,21 +1241,29 @@ namespace PEBakery.Core
             public DateTime Time { get; set; }
             [Indexed]
             public int BuildId { get; set; }
+            /// <summary>
+            /// Where the command was called
+            /// </summary>
             [Indexed]
-            public int ScriptId { get; set; } // Where the command was called
-            public int RefScriptId { get; set; } // Where the command resides in (Run/Exec). 0 if invalid.
+            public int ScriptId { get; set; }
+            /// <summary>
+            /// Where the command resides in (Run/Exec).
+            /// Put same value with ScriptId if a command did not reference script.
+            /// 0 is also treated as 'not referenced script'.
+            /// </summary>
+            public int RefScriptId { get; set; }
             public int Depth { get; set; }
             public LogState State { get; set; }
-            [MaxLength(65535)]
+            [MaxLength(4096)]
             public string Message { get; set; }
             public int LineIdx { get; set; }
-            [MaxLength(65535)]
+            [MaxLength(4096)]
             public string RawCode { get; set; }
-            public LogModel.BuildLogFlag Flags { get; set; }
+            public BuildLogFlag Flags { get; set; }
 
             [Ignore]
-            public string Text => Export(LogExportType.Text, true);
-            public string Export(LogExportType type, bool logDepth)
+            public string Text => Export(LogExportType.Text, true, false);
+            public string Export(LogExportType type, bool logDepth, bool logFlags)
             {
                 string str = string.Empty;
                 switch (type)
@@ -1419,16 +1282,37 @@ namespace PEBakery.Core
                             if (State == LogState.None)
                             { // No State
                                 if (RawCode == null)
-                                    b.Append(Message);
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append(Message);
+                                    else
+                                        b.Append($"[{BuildLogFlagToString(Flags)}] {Message}");
+                                }
                                 else
-                                    b.Append($"{Message} ({RawCode})");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"{Message} ({RawCode})");
+                                    else
+                                        b.Append($"[{BuildLogFlagToString(Flags)}] {Message} ({RawCode})");
+                                }
                             }
                             else
                             { // Has State
                                 if (RawCode == null)
-                                    b.Append($"[{State}] {Message}");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"[{State}] {Message}");
+                                    else
+                                        b.Append($"[{State}] [{BuildLogFlagToString(Flags)}] {Message}");
+                                }
                                 else
-                                    b.Append($"[{State}] {Message} ({RawCode})");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"[{State}] {Message} ({RawCode})");
+                                    else
+                                        b.Append($"[{State}] [{BuildLogFlagToString(Flags)}] {Message} ({RawCode})");
+
+                                }
                             }
 
                             if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
@@ -1487,7 +1371,7 @@ namespace PEBakery.Core
             CreateTable<LogModel.BuildLog>();
         }
 
-        #region ClearTable
+        #region ClearTable, ClearBuildLog
         public struct ClearTableOptions
         {
             public bool SystemLog;
@@ -1499,16 +1383,31 @@ namespace PEBakery.Core
 
         public void ClearTable(ClearTableOptions opts)
         {
-            if (opts.SystemLog)
-                DeleteAll<LogModel.SystemLog>();
-            if (opts.BuildInfo)
-                DeleteAll<LogModel.BuildInfo>();
-            if (opts.Script)
-                DeleteAll<LogModel.Script>();
-            if (opts.BuildLog)
-                DeleteAll<LogModel.BuildLog>();
-            if (opts.Variable)
-                DeleteAll<LogModel.Variable>();
+            RunInTransaction(() =>
+            {
+                if (opts.SystemLog)
+                    DeleteAll<LogModel.SystemLog>();
+                if (opts.BuildInfo)
+                    DeleteAll<LogModel.BuildInfo>();
+                if (opts.Script)
+                    DeleteAll<LogModel.Script>();
+                if (opts.BuildLog)
+                    DeleteAll<LogModel.BuildLog>();
+                if (opts.Variable)
+                    DeleteAll<LogModel.Variable>();
+            });
+            Execute("VACUUM");
+        }
+
+        public void ClearBuildLog(int buildId)
+        {
+            RunInTransaction(() =>
+            {
+                Table<LogModel.Variable>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.BuildLog>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.Script>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.BuildInfo>().Delete(x => x.Id == buildId);
+            });
             Execute("VACUUM");
         }
         #endregion

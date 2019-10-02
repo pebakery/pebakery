@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -38,14 +38,22 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace PEBakery.Core.Commands
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurrentParams = false, bool forceLog = false)
+        public struct RunExecOptions
+        {
+            public bool PreserveCurrentParams { get; set; }
+            public bool IsMacro { get; set; }
+        }
+
+        public static void RunExec(EngineState s, CodeCommand cmd, RunExecOptions opts)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+            EngineLocalState ls = s.PeekLocalState();
 
             Debug.Assert((cmd.Type == CodeType.Run || cmd.Type == CodeType.Exec) && info.OutParams == null ||
                          cmd.Type == CodeType.RunEx && info.OutParams != null);
@@ -62,7 +70,7 @@ namespace PEBakery.Core.Commands
 
             // Section Parameter
             Dictionary<int, string> newInParams = new Dictionary<int, string>();
-            if (preserveCurrentParams)
+            if (opts.PreserveCurrentParams)
             {
                 newInParams = s.CurSectionInParams;
             }
@@ -74,7 +82,7 @@ namespace PEBakery.Core.Commands
 
             // Prepare to branch to a new section
             ScriptSection targetSection = sc.Sections[sectionName];
-            s.Logger.LogStartOfSection(s, targetSection, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, targetSection, s.PeekDepth, inCurrentScript, newInParams, info.OutParams, cmd);
 
             // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
@@ -90,26 +98,20 @@ namespace PEBakery.Core.Commands
                 // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
                 List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(sc);
-                s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, ls.Depth + 1));
 
                 // Load Per-Script Macro
                 s.Macro.ResetLocalMacros();
                 List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(sc, false);
-                s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, ls.Depth + 1));
             }
 
-            // Backup EngineState values
-            int depthBackup = s.CurDepth;
-            int realScriptIdBackup = s.RefScriptId;
-            if (!inCurrentScript)
-                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
-
             // Run Section
-            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
-
-            // Restore EngineState values
-            s.CurDepth = depthBackup;
-            s.RefScriptId = realScriptIdBackup;
+            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
+            {
+                IsMacro = opts.IsMacro | ls.IsMacro,
+                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
+            });
 
             // Restore Variables and Macros for Exec
             if (cmd.Type == CodeType.Exec)
@@ -122,33 +124,25 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.Logger.LogEndOfSection(s, targetSection, s.CurDepth, inCurrentScript, cmd, forceLog);
+            s.Logger.LogEndOfSection(s, targetSection, ls.Depth, inCurrentScript, cmd);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
-            CodeType type = cmd.Type;
+            EngineLocalState ls = s.PeekLocalState();
 
             if (info.Break)
             {
-                if (s.LoopState == LoopState.Off)
+                if (s.LoopStateStack.Count == 0)
                 {
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Loop is not running", cmd, ls.Depth));
                 }
                 else
                 {
-                    s.LoopState = LoopState.Off;
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking loop", cmd, s.CurDepth));
-
-                    // Reset LoopCounter, to be sure
-                    s.LoopLetter = ' ';
-                    s.LoopCounter = 0;
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking loop", cmd, ls.Depth));
+                    s.LoopStateStack.Pop();
                 }
-            }
-            else if (s.LoopState != LoopState.Off)
-            { // If loop is already turned on, throw error
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, s.CurDepth));
             }
             else
             {
@@ -173,7 +167,9 @@ namespace PEBakery.Core.Commands
 
                 long loopCount;
                 long startIdx = 0, endIdx = 0;
-                char startLetter = ' ', endLetter = ' ';
+                char startLetter = ' ';
+                char endLetter = ' ';
+                CodeType type = cmd.Type;
                 switch (type)
                 {
                     case CodeType.Loop:
@@ -229,7 +225,7 @@ namespace PEBakery.Core.Commands
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times ({startStr} ~ {endStr})";
                 else
                     logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, ls.Depth));
 
                 // Loop it
                 ScriptSection targetSection = sc.Sections[sectionName];
@@ -238,112 +234,108 @@ namespace PEBakery.Core.Commands
                 {
                     case CodeType.Loop:
                     case CodeType.LoopEx:
-                        // for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                         for (long i = startIdx; i <= endIdx; i++)
                         { // Counter Variable is [#c]
-                            s.LoopCounter = i;
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{i}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
+                            s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
-                            s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
-
-                            // Backup EngineState values
-                            int depthBackup = s.CurDepth;
-                            int realScriptIdBackup = s.RefScriptId;
-                            if (!inCurrentScript)
-                                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
-
-                            // Set s.LoopState
-                            s.LoopState = LoopState.OnIndex;
+                            // Push EngineLoopState
+                            EngineLoopState loop = new EngineLoopState(i);
+                            s.LoopStateStack.Push(loop);
+                            int stackCount = s.LoopStateStack.Count;
 
                             // Run Loop Section
-                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
+                            {
+                                IsMacro = ls.IsMacro,
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
+                            });
 
-                            // Reset s.LoopState
-                            if (s.LoopState == LoopState.Off) // Loop,Break
+                            // Loop,Break can pop loop state stack.
+                            // Check stackCount to know if Loop,Break was called.
+                            if (stackCount != s.LoopStateStack.Count)
                                 break;
-                            s.LoopState = LoopState.Off;
 
-                            // Restore EngineState values
-                            s.CurDepth = depthBackup;
-                            s.RefScriptId = realScriptIdBackup;
+                            // Pop EngineLoopState
+                            EngineLoopState popLoop = s.LoopStateStack.Pop();
 
-                            string msg;
-                            if (s.LoopCounter == i)
-                                msg = $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})";
-                            else
-                                msg = $"End of Loop with [{s.LoopCounter}] (Overridden) ({loopIdx}/{loopCount})";
+                            // Log message
+                            string msg = $"End of Loop with [{i}] ({loopIdx}/{loopCount})";
+                            if (s.CompatOverridableLoopCounter)
+                            {
+                                if (popLoop.CounterIndex != i)
+                                    msg = $"End of Loop with [{popLoop.CounterIndex}] (Overridden) ({loopIdx}/{loopCount})";
+                            }
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, ls.Depth));
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, s.CurDepth));
+                            // Increase loop index
                             loopIdx += 1;
                         }
                         break;
                     case CodeType.LoopLetter:
                     case CodeType.LoopLetterEx:
-                        // for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
                         for (char ch = startLetter; ch <= endLetter; ch++)
                         { // Counter Variable is [#c]
-                            s.LoopLetter = ch;
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{ch}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
+                            s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
-                            s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
+                            // Push EngineLoopState
+                            EngineLoopState loop = new EngineLoopState(ch);
+                            s.LoopStateStack.Push(loop);
+                            int stackCount = s.LoopStateStack.Count;
 
-                            // Backup EngineState values
-                            int depthBackup = s.CurDepth;
-                            int realScriptIdBackup = s.RefScriptId;
-                            if (!inCurrentScript)
-                                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
+                            // Run Loop Section
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
+                            {
+                                IsMacro = ls.IsMacro,
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
+                            });
 
-                            // Set s.LoopState
-                            s.LoopState = LoopState.OnDriveLetter;
-
-                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
-
-                            // Reset s.LoopState
-                            if (s.LoopState == LoopState.Off) // Loop,Break
+                            // Loop,Break can pop loop state stack.
+                            // Check stackCount to know if Loop,Break was called.
+                            if (stackCount != s.LoopStateStack.Count)
                                 break;
-                            s.LoopState = LoopState.Off;
 
-                            // Restore EngineState values
-                            s.CurDepth = depthBackup;
-                            s.RefScriptId = realScriptIdBackup;
+                            // Pop EngineLoopState
+                            EngineLoopState popLoop = s.LoopStateStack.Pop();
 
-                            string msg;
-                            if (s.LoopLetter == ch)
-                                msg = $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})";
-                            else
-                                msg = $"End of Loop with [{s.LoopLetter}] (Overridden) ({loopIdx}/{loopCount})";
+                            // Log message
+                            string msg = $"End of Loop with [{ch}] ({loopIdx}/{loopCount})";
+                            if (s.CompatOverridableLoopCounter)
+                            {
+                                if (popLoop.CounterLetter != ch)
+                                    msg = $"End of Loop with [{popLoop.CounterLetter}] (Overridden) ({loopIdx}/{loopCount})";
+                            }
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, ls.Depth));
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, s.CurDepth));
+                            // Increase loop index
                             loopIdx += 1;
                         }
                         break;
                     default:
                         throw new InternalException("Internal Logic Error at CommandBranch.Loop");
                 }
-
-                // Reset LoopCounter, to be sure
-                s.LoopLetter = ' ';
-                s.LoopCounter = 0;
             }
         }
 
         public static void If(EngineState s, CodeCommand cmd)
         {
             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+            EngineLocalState ls = s.PeekLocalState();
 
-            if (CheckBranchCondition(s, info.Condition, out string msg))
+            if (EvalBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
 
                 RunBranchLink(s, cmd.Section, info.Link);
 
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
 
                 s.ElseFlag = false;
             }
             else
             { // Do not run
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, ls.Depth));
 
                 s.ElseFlag = true;
             }
@@ -352,26 +344,30 @@ namespace PEBakery.Core.Commands
         public static void Else(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+            EngineLocalState ls = s.PeekLocalState();
 
             if (s.ElseFlag)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, ls.Depth));
 
                 RunBranchLink(s, cmd.Section, info.Link);
 
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
 
-                s.ElseFlag = false;
+                // Do not turn of ElseFlag for If command, to allow If-Else chain.
+                // https://github.com/pebakery/pebakery/issues/114
+                CodeCommand[] filtered = info.Link.Where(x => x.Type != CodeType.Comment).ToArray();
+                if (!(filtered.Length == 1 && filtered[0].Type == CodeType.If))
+                    s.ElseFlag = false;
             }
             else
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, ls.Depth));
             }
         }
 
         private static void RunBranchLink(EngineState s, ScriptSection section, List<CodeCommand> link)
         {
-            int depthBackup = s.CurDepth;
             if (link.Count == 1)
             { // Check if link[0] is System,ErrorOff
                 CodeCommand subCmd = link[0];
@@ -384,13 +380,12 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            Engine.RunCommands(s, section, link, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth + 1);
-            s.CurDepth = depthBackup;
+            Engine.RunCommands(s, section, link, s.CurSectionInParams, s.CurSectionOutParams, true);
         }
 
-        #region BranchConditionCheck
+        #region EvalBranchCondition
         [SuppressMessage("ReSharper", "RedundantAssignment")]
-        public static bool CheckBranchCondition(EngineState s, BranchCondition c, out string logMessage)
+        public static bool EvalBranchCondition(EngineState s, BranchCondition c, out string logMessage)
         {
             bool match = false;
             switch (c.Type)
@@ -737,7 +732,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -810,7 +805,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -883,7 +878,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -928,7 +923,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -942,9 +937,9 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            using (Ping pinger = new Ping())
+                            using (Ping ping = new Ping())
                             {
-                                PingReply reply = pinger.Send(host);
+                                PingReply reply = ping.Send(host);
                                 Debug.Assert(reply != null, nameof(reply) + " != null");
                                 if (reply.Status == IPStatus.Success)
                                     match = true;
@@ -1011,13 +1006,13 @@ namespace PEBakery.Core.Commands
                                 defaultChoice = false;
                         }
 
-                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
-                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                        TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+                        s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
 
                         if (autoTimeout)
                         {
                             MessageBoxResult result = MessageBoxResult.None;
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 result = CustomMessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
                             });
@@ -1064,7 +1059,7 @@ namespace PEBakery.Core.Commands
                         if (c.NotFlag)
                             match = !match;
 
-                        s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
+                        s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;
                     }
                     break;
                 default:

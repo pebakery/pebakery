@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
@@ -65,7 +65,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
@@ -74,7 +74,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"Wrong mouse cursor icon [{iconStr}]"));
+                            logs.Add(new LogInfo(LogState.Error, $"[{iconStr}] is not a valid mouse cursor icon"));
                         }
                     }
                     break;
@@ -92,16 +92,16 @@ namespace PEBakery.Core.Commands
                         {
                             // Enable s.ErrorOff
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
+                            EngineLocalState ls = s.PeekLocalState();
+                            if (s.ErrorOffDepthMinusOne)
+                                ls = ls.UpdateDepth(ls.Depth - 1);
+
                             ErrorOffState newState = new ErrorOffState
                             {
-                                Section = cmd.Section,
-                                SectionDepth = s.CurDepth,
+                                LocalState = ls,
                                 StartLineIdx = cmd.LineIdx,
                                 LineCount = lines,
                             };
-
-                            if (s.ErrorOffDepthMinusOne)
-                                newState.SectionDepth -= 1;
 
                             s.ErrorOffWaitingRegister = newState;
                             s.ErrorOffDepthMinusOne = false;
@@ -135,13 +135,14 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetFreeDrive subInfo = info.SubInfo.Cast<SystemInfo_GetFreeDrive>();
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
+                        // ReSharper disable once StringLiteralTypo
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
 
                         if (lastFreeLetter != '\0') // Success
                         {
                             logs.Add(new LogInfo(LogState.Success, $"Last free drive letter is [{lastFreeLetter}]"));
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString());
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString(CultureInfo.InvariantCulture));
                             logs.AddRange(varLogs);
                         }
                         else // No Free Drives
@@ -161,11 +162,11 @@ namespace PEBakery.Core.Commands
 
                         FileInfo f = new FileInfo(path);
                         if (f.Directory == null)
-                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information of [{path}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information for [{path}]");
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
-                        long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
+                        long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMB.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString(CultureInfo.InvariantCulture));
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -185,7 +186,7 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is not running as Administrator"));
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString(CultureInfo.InvariantCulture));
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -222,7 +223,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        s.MainViewModel.StartLoadingProjects(true, true).Wait(); 
+                        s.MainViewModel.StartLoadingProjects(true, true).Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }
@@ -303,7 +304,7 @@ namespace PEBakery.Core.Commands
                         s.Project.SortAllScripts();
 
                         // Update MainWindow.MainTree and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false, false);
                         });
@@ -381,7 +382,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         // Update MainWindow and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false);
                         });
@@ -427,13 +428,14 @@ namespace PEBakery.Core.Commands
                             int realBuildId = s.Logger.Flush(s);
 
                             // This message should make it on exported log
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
 
                             // Do not use s.BuildId, for case of FullDeferredLogging
                             s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
                             {
                                 IncludeComments = true,
                                 IncludeMacros = true,
+                                ShowLogFlags = true,
                             });
                         }
                     }
@@ -442,9 +444,9 @@ namespace PEBakery.Core.Commands
                     { // SetLocal
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        Engine.EnableSetLocal(s, cmd.Section);
+                        Engine.EnableSetLocal(s);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count}) enabled"));
+                        logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count}) enabled"));
                     }
                     break;
                 case SystemType.EndLocal:
@@ -452,8 +454,8 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        if (Engine.DisableSetLocal(s, cmd.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
-                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count + 1}) disabled"));
+                        if (Engine.DisableSetLocal(s)) // If SetLocal is disabled, SetLocalStack is decremented.
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count + 1}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
                     }
@@ -484,16 +486,16 @@ namespace PEBakery.Core.Commands
 
                         // Load Global Variables
                         List<LogInfo> varLogs = s.Variables.LoadDefaultGlobalVariables();
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         // Load Per-Script Variables
                         varLogs = s.Variables.LoadDefaultScriptVariables(cmd.Section.Script);
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         // Load Per-Script Macro
                         s.Macro.ResetLocalMacros();
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Section.Script, false);
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, "Variables are reset to their default state"));
                     }
@@ -592,8 +594,10 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            // Console.OutputEncoding returns ANSI encoding, do not use it
-                            Encoding oemEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+                            // Console.OutputEncoding -> System default locale for non-Unicode apps
+                            // CultureInfo.CurrentCulture.TextInfo.OEMCodePage -> System's text encoding?
+                            Encoding oemEncoding = Console.OutputEncoding;
+                            // Encoding oemEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
 
                             proc.StartInfo.RedirectStandardOutput = true;
                             proc.StartInfo.StandardOutputEncoding = oemEncoding;
@@ -624,7 +628,10 @@ namespace PEBakery.Core.Commands
 
                     // Register process instance to EngineState
                     if (cmd.Type != CodeType.ShellExecuteEx)
-                        s.RunningSubProcess = proc;
+                    {
+                        lock (s.RunningSubProcLock)
+                            s.RunningSubProcess = proc;
+                    }
 
                     Stopwatch watch = Stopwatch.StartNew();
                     proc.Start();
@@ -645,8 +652,9 @@ namespace PEBakery.Core.Commands
                         // Wait until exit
                         proc.WaitForExit();
 
-                        // Unregister process instance from EngineState
-                        s.RunningSubProcess = null;
+                        // Un-register process instance from EngineState
+                        lock (s.RunningSubProcLock)
+                            s.RunningSubProcess = null;
 
                         watch.Stop();
                         long tookTime = (long)watch.Elapsed.TotalSeconds;
@@ -662,12 +670,39 @@ namespace PEBakery.Core.Commands
                         }
 
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
-                        string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
-                        LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+                        string exitCodeStr = proc.ExitCode.ToString(CultureInfo.InvariantCulture);
+                        LogInfo log = Variables.SetVariable(s, "%ExitCode%", exitCodeStr).First();
                         if (log.State == LogState.Success)
-                            logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [%ExitCode%]"));
                         else
                             logs.Add(log);
+
+                        // [Comments by @homes32]
+                        // %ExitCode% will always be filled, regardless of whether or not the developer has pre-defined it. 
+                        // %ExitOutVar% must be defined before it can be used.
+                        if (info.ExitOutVar != null)
+                        {
+                            string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
+                            if (exitOutVar != null && s.Variables.ContainsKey(exitOutVar))
+                            {
+                                log = Variables.SetVariable(s, info.ExitOutVar, exitCodeStr).First();
+                                if (log.State == LogState.Success)
+                                    logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{info.ExitOutVar}]"));
+                                else
+                                    logs.Add(log);
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Warning, $"Specified variable name [{info.ExitOutVar}] is not pre-defined"));
+                            }
+                        }
+
+                        // PEBakery extension -> Report exit code via #r
+                        if (!s.CompatDisableExtendedSectionParams)
+                        {
+                            s.ReturnValue = exitCodeStr;
+                            logs.Add(new LogInfo(LogState.Success, $"Returned exit code [{proc.ExitCode}] to [#r]"));
+                        }
 
                         if (redirectStandardStream)
                         {

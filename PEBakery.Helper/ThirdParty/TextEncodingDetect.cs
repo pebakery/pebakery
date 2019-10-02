@@ -48,7 +48,7 @@ namespace PEBakery.Helper.ThirdParty
         private double _utf16ExpectedNullPercent = 70;
         private double _utf16UnexpectedNullPercent = 10;
 
-        public enum Encoding
+        public enum DetectedEncoding
         {
             None, // Unknown or binary
             Ansi, // 0-255
@@ -92,17 +92,17 @@ namespace PEBakery.Helper.ThirdParty
         /// </summary>
         /// <param name="encoding"></param>
         /// <returns>The BOM length.</returns>
-        public static int GetBomLengthFromEncodingMode(Encoding encoding)
+        public static int GetBomLengthFromEncodingMode(DetectedEncoding encoding)
         {
             int length;
 
             switch (encoding)
             {
-                case Encoding.Utf16BeBom:
-                case Encoding.Utf16LeBom:
+                case DetectedEncoding.Utf16BeBom:
+                case DetectedEncoding.Utf16LeBom:
                     length = 2;
                     break;
-                case Encoding.Utf8Bom:
+                case DetectedEncoding.Utf8Bom:
                     length = 3;
                     break;
                 default:
@@ -119,25 +119,25 @@ namespace PEBakery.Helper.ThirdParty
         /// <param name="buffer"></param>
         /// <param name="size"></param>
         /// <returns>Encoding type or Encoding.None if no BOM.</returns>
-        public Encoding CheckBom(byte[] buffer, int size)
+        public DetectedEncoding CheckBom(byte[] buffer, int size)
         {
             // Check for BOM
             if (size >= 2 && buffer[0] == _utf16LeBom[0] && buffer[1] == _utf16LeBom[1])
             {
-                return Encoding.Utf16LeBom;
+                return DetectedEncoding.Utf16LeBom;
             }
 
             if (size >= 2 && buffer[0] == _utf16BeBom[0] && buffer[1] == _utf16BeBom[1])
             {
-                return Encoding.Utf16BeBom;
+                return DetectedEncoding.Utf16BeBom;
             }
 
             if (size >= 3 && buffer[0] == _utf8Bom[0] && buffer[1] == _utf8Bom[1] && buffer[2] == _utf8Bom[2])
             {
-                return Encoding.Utf8Bom;
+                return DetectedEncoding.Utf8Bom;
             }
 
-            return Encoding.None;
+            return DetectedEncoding.None;
         }
 
         /// <summary>
@@ -146,31 +146,31 @@ namespace PEBakery.Helper.ThirdParty
         /// <param name="buffer">The byte buffer.</param>
         /// <param name="size">The size of the byte buffer.</param>
         /// <returns>The Encoding type or Encoding.None if unknown.</returns>
-        public Encoding DetectEncoding(byte[] buffer, int size)
+        public DetectedEncoding DetectEncoding(byte[] buffer, int size)
         {
             // First check if we have a BOM and return that if so
-            Encoding encoding = CheckBom(buffer, size);
-            if (encoding != Encoding.None)
+            DetectedEncoding encoding = CheckBom(buffer, size);
+            if (encoding != DetectedEncoding.None)
             {
                 return encoding;
             }
 
             // Now check for valid UTF8
             encoding = CheckUtf8(buffer, size);
-            if (encoding != Encoding.None)
+            if (encoding != DetectedEncoding.None)
             {
                 return encoding;
             }
 
             // Now try UTF16 
             encoding = CheckUtf16NewlineChars(buffer, size);
-            if (encoding != Encoding.None)
+            if (encoding != DetectedEncoding.None)
             {
                 return encoding;
             }
 
             encoding = CheckUtf16Ascii(buffer, size);
-            if (encoding != Encoding.None)
+            if (encoding != DetectedEncoding.None)
             {
                 return encoding;
             }
@@ -178,11 +178,11 @@ namespace PEBakery.Helper.ThirdParty
             // ANSI or None (binary) then
             if (!DoesContainNulls(buffer, size))
             {
-                return Encoding.Ansi;
+                return DetectedEncoding.Ansi;
             }
 
             // Found a null, return based on the preference in null_suggests_binary_
-            return _nullSuggestsBinary ? Encoding.None : Encoding.Ansi;
+            return _nullSuggestsBinary ? DetectedEncoding.None : DetectedEncoding.Ansi;
         }
 
         /// <summary>
@@ -192,11 +192,11 @@ namespace PEBakery.Helper.ThirdParty
         /// <param name="buffer">The byte buffer.</param>
         /// <param name="size">The size of the byte buffer.</param>
         /// <returns>Encoding.none, Encoding.Utf16LeNoBom or Encoding.Utf16BeNoBom.</returns>
-        private static Encoding CheckUtf16NewlineChars(byte[] buffer, int size)
+        private static DetectedEncoding CheckUtf16NewlineChars(byte[] buffer, int size)
         {
             if (size < 2)
             {
-                return Encoding.None;
+                return DetectedEncoding.None;
             }
 
             // Reduce size by 1 so we don't need to worry about bounds checking for pairs of bytes
@@ -229,16 +229,16 @@ namespace PEBakery.Helper.ThirdParty
                 // If we are getting both LE and BE control chars then this file is not utf16
                 if (leControlChars > 0 && beControlChars > 0)
                 {
-                    return Encoding.None;
+                    return DetectedEncoding.None;
                 }
             }
 
             if (leControlChars > 0)
             {
-                return Encoding.Utf16LeNoBom;
+                return DetectedEncoding.Utf16LeNoBom;
             }
 
-            return beControlChars > 0 ? Encoding.Utf16BeNoBom : Encoding.None;
+            return beControlChars > 0 ? DetectedEncoding.Utf16BeNoBom : DetectedEncoding.None;
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace PEBakery.Helper.ThirdParty
         /// <param name="buffer">The byte buffer.</param>
         /// <param name="size">The size of the byte buffer.</param>
         /// <returns>Encoding.none, Encoding.Utf16LeNoBom or Encoding.Utf16BeNoBom.</returns>
-        private Encoding CheckUtf16Ascii(byte[] buffer, int size)
+        private DetectedEncoding CheckUtf16Ascii(byte[] buffer, int size)
         {
             int numOddNulls = 0;
             int numEvenNulls = 0;
@@ -304,17 +304,17 @@ namespace PEBakery.Helper.ThirdParty
             // Lots of odd nulls, low number of even nulls
             if (evenNullThreshold < unexpectedNullThreshold && oddNullThreshold > expectedNullThreshold)
             {
-                return Encoding.Utf16LeNoBom;
+                return DetectedEncoding.Utf16LeNoBom;
             }
 
             // Lots of even nulls, low number of odd nulls
             if (oddNullThreshold < unexpectedNullThreshold && evenNullThreshold > expectedNullThreshold)
             {
-                return Encoding.Utf16BeNoBom;
+                return DetectedEncoding.Utf16BeNoBom;
             }
 
             // Don't know
-            return Encoding.None;
+            return DetectedEncoding.None;
         }
 
         /// <summary>
@@ -327,7 +327,7 @@ namespace PEBakery.Helper.ThirdParty
         ///     Encoding.ASCII (data in 0.127 range).
         /// </returns>
         /// <returns>2</returns>
-        private Encoding CheckUtf8(byte[] buffer, int size)
+        private DetectedEncoding CheckUtf8(byte[] buffer, int size)
         {
             // UTF8 Valid sequences
             // 0xxxxxxx  ASCII
@@ -352,7 +352,7 @@ namespace PEBakery.Helper.ThirdParty
 
                 if (ch == 0 && _nullSuggestsBinary)
                 {
-                    return Encoding.None;
+                    return DetectedEncoding.None;
                 }
 
                 int moreChars;
@@ -378,7 +378,7 @@ namespace PEBakery.Helper.ThirdParty
                 }
                 else
                 {
-                    return Encoding.None; // Not utf8
+                    return DetectedEncoding.None; // Not utf8
                 }
 
                 // Check secondary chars are in range if we are expecting any
@@ -389,7 +389,7 @@ namespace PEBakery.Helper.ThirdParty
                     ch = buffer[pos++];
                     if (ch < 128 || ch > 191)
                     {
-                        return Encoding.None; // Not utf8
+                        return DetectedEncoding.None; // Not utf8
                     }
 
                     --moreChars;
@@ -399,7 +399,7 @@ namespace PEBakery.Helper.ThirdParty
             // If we get to here then only valid UTF-8 sequences have been processed
 
             // If we only saw chars in the range 0-127 then we can't assume UTF8 (the caller will need to decide)
-            return onlySawAsciiRange ? Encoding.Ascii : Encoding.Utf8NoBom;
+            return onlySawAsciiRange ? DetectedEncoding.Ascii : DetectedEncoding.Utf8NoBom;
         }
     }
 }

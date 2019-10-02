@@ -4,6 +4,14 @@
 * text=auto
 
 ###############################################################################
+# Joveler-specific
+# Treat specific text file as binary, to avoid CRLF-LF conversion
+###############################################################################
+PEBakery.Core.Tests/Samples/WebServer/**/*.script text eol=crlf
+PEBakery.Core.Tests/Samples/WorkBench/TestSuite/**/*.txt text eol=crlf
+PEBakery.Core.Tests/Samples/WorkBench/TestSuite/**/*.ini text eol=crlf
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by

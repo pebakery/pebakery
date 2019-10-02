@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -98,7 +98,7 @@ namespace PEBakery.Helper
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt16(string str, out Int16 value)
+        public static bool ParseInt16(string str, out short value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -107,16 +107,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return short.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return short.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt16(string str, out UInt16 value)
+        public static bool ParseUInt16(string str, out ushort value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -125,16 +125,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ushort.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return ushort.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt32(string str, out Int32 value)
+        public static bool ParseInt32(string str, out int value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -143,16 +143,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int32.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return int.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt32(string str, out UInt32 value)
+        public static bool ParseUInt32(string str, out uint value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -161,16 +161,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt32.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return uint.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return uint.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt64(string str, out Int64 value)
+        public static bool ParseInt64(string str, out long value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -179,16 +179,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int64.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
+                return long.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt64(string str, out UInt64 value)
+        public static bool ParseUInt64(string str, out ulong value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -197,9 +197,9 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt64.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return ulong.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
@@ -258,12 +258,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt8(string str, out byte value)
         {
-            if (NumberHelper.ParseUInt8(str, out byte uInt))
+            if (ParseUInt8(str, out byte uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt8(str, out sbyte sInt))
+            else if (ParseInt8(str, out sbyte sInt))
             {
                 value = (byte)sInt;
                 return true;
@@ -281,12 +281,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt16(string str, out ushort value)
         {
-            if (NumberHelper.ParseUInt16(str, out ushort uInt))
+            if (ParseUInt16(str, out ushort uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt16(str, out short sInt))
+            else if (ParseInt16(str, out short sInt))
             {
                 value = (ushort)sInt;
                 return true;
@@ -304,12 +304,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt32(string str, out uint value)
         {
-            if (NumberHelper.ParseUInt32(str, out uint uInt))
+            if (ParseUInt32(str, out uint uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt32(str, out int sInt))
+            else if (ParseInt32(str, out int sInt))
             {
                 value = (uint)sInt;
                 return true;
@@ -327,12 +327,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt64(string str, out ulong value)
         {
-            if (NumberHelper.ParseUInt64(str, out ulong uInt))
+            if (ParseUInt64(str, out ulong uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt64(str, out long sInt))
+            else if (ParseInt64(str, out long sInt))
             {
                 value = (ulong)sInt;
                 return true;
@@ -462,110 +462,6 @@ namespace PEBakery.Helper
             else
                 return CompareStringNumberResult.NotEqual;
         }
-
-        /// <summary>
-        /// Extended VersionEx to support single integer
-        /// Ex) 5 vs 5.1.2600.1234
-        /// </summary>
-        public class VersionEx
-        {
-            public int Major { get; }
-            public int Minor { get; }
-            public int Build { get; }
-            public int Revision { get; }
-
-            public VersionEx(int major, int minor, int build, int revision)
-            {
-                if (major < 0) throw new ArgumentOutOfRangeException(nameof(major));
-                if (minor < 0) throw new ArgumentOutOfRangeException(nameof(minor));
-                if (build < -1) throw new ArgumentOutOfRangeException(nameof(build));
-                if (revision < -1) throw new ArgumentOutOfRangeException(nameof(revision));
-
-                Major = major;
-                Minor = minor;
-                Build = build;
-                Revision = revision;
-            }
-
-            public static VersionEx Parse(string str)
-            {
-                if (str == null)
-                    return null;
-
-                int[] arr = { 0, 0, -1, -1 };
-
-                string[] parts = str.Split('.');
-                if (parts.Length < 1 || 4 < parts.Length)
-                    return null;
-
-                for (int i = 0; i < parts.Length; i++)
-                {
-                    if (!int.TryParse(parts[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out arr[i]))
-                        return null;
-                }
-
-                try { return new VersionEx(arr[0], arr[1], arr[2], arr[3]); }
-                catch { return null; }
-            }
-
-            public int CompareTo(VersionEx value)
-            {
-                if (value == null) throw new ArgumentNullException(nameof(value));
-
-                if (Major != value.Major)
-                {
-                    if (Major > value.Major)
-                        return 1;
-                    else
-                        return -1;
-                }
-
-                if (Minor != value.Minor)
-                {
-                    if (Minor > value.Minor)
-                        return 1;
-                    else
-                        return -1;
-                }
-
-                if (Build != value.Build)
-                {
-                    if (Build > value.Build)
-                        return 1;
-                    else
-                        return -1;
-                }
-
-                if (Revision != value.Revision)
-                {
-                    if (Revision > value.Revision)
-                        return 1;
-                    else
-                        return -1;
-                }
-
-                return 0;
-            }
-
-            public override string ToString()
-            {
-                StringBuilder b = new StringBuilder();
-                b.Append(Major);
-                b.Append('.');
-                b.Append(Minor);
-                if (Build != -1)
-                {
-                    b.Append('.');
-                    b.Append(Build);
-                    if (Revision != -1)
-                    {
-                        b.Append('.');
-                        b.Append(Revision);
-                    }
-                }
-                return b.ToString();
-            }
-        }
         #endregion
 
         #region Bytes Manipulation
@@ -589,11 +485,11 @@ namespace PEBakery.Helper
             return true;
         }
 
-        private const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;
-        private const long TB = 1024L * 1024L * 1024L * 1024L;
-        private const long GB = 1024L * 1024L * 1024L;
-        private const long MB = 1024L * 1024L;
-        private const long KB = 1024L;
+        public const long PetaByte = 1024L * 1024L * 1024L * 1024L * 1024L;
+        public const long TeraByte = 1024L * 1024L * 1024L * 1024L;
+        public const long GigaByte = 1024L * 1024L * 1024L;
+        public const long MegaByte = 1024L * 1024L;
+        public const long KiloByte = 1024L;
 
         public static string ByteSizeToSIUnit(long byteSize, int decPoint = 3)
         {
@@ -610,16 +506,48 @@ namespace PEBakery.Helper
             }
 
             string str;
-            if (PB <= byteSize)
-                str = $"{((decimal)byteSize / PB).ToString(formatString)}PB";
-            else if (TB <= byteSize)
-                str = $"{((decimal)byteSize / TB).ToString(formatString)}TB";
-            else if (GB <= byteSize)
-                str = $"{((decimal)byteSize / GB).ToString(formatString)}GB";
-            else if (MB <= byteSize)
-                str = $"{((decimal)byteSize / MB).ToString(formatString)}MB";
+            if (PetaByte <= byteSize)
+                str = $"{((decimal)byteSize / PetaByte).ToString(formatString)}PB";
+            else if (TeraByte <= byteSize)
+                str = $"{((decimal)byteSize / TeraByte).ToString(formatString)}TB";
+            else if (GigaByte <= byteSize)
+                str = $"{((decimal)byteSize / GigaByte).ToString(formatString)}GB";
+            else if (MegaByte <= byteSize)
+                str = $"{((decimal)byteSize / MegaByte).ToString(formatString)}MB";
             else
-                str = $"{((decimal)byteSize / KB).ToString(formatString)}KB";
+                str = $"{((decimal)byteSize / KiloByte).ToString(formatString)}KB";
+
+            return str;
+        }
+
+        public static string NaturalByteSizeToSIUnit(long byteSize)
+        {
+            string str;
+            if (PetaByte <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / PetaByte, 1);
+                str = $"{rounded}PB";
+            }
+            else if (TeraByte <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / TeraByte, 1);
+                str = $"{rounded}TB";
+            }
+            else if (GigaByte <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / GigaByte, 1);
+                str = $"{rounded}GB";
+            }
+            else if (MegaByte <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / MegaByte, 1);
+                str = $"{rounded}MB";
+            }
+            else
+            {
+                decimal rounded = Math.Ceiling((decimal)byteSize / KiloByte);
+                str = $"{rounded}KB";
+            }
 
             return str;
         }
@@ -631,53 +559,53 @@ namespace PEBakery.Helper
 
             if (str.EndsWith("PB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = PB;
+                multiplier = PetaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("TB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = TB;
+                multiplier = TeraByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("GB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = GB;
+                multiplier = GigaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = MB;
+                multiplier = MegaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("KB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = KB;
+                multiplier = KiloByte;
                 subStrEndIdx = 2;
             }
 
             if (str.EndsWith("P", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = PB;
+                multiplier = PetaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("T", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = TB;
+                multiplier = TeraByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("G", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = GB;
+                multiplier = GigaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("M", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = MB;
+                multiplier = MegaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("K", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = KB;
+                multiplier = KiloByte;
                 subStrEndIdx = 1;
             }
 
@@ -713,6 +641,20 @@ namespace PEBakery.Helper
                 return src - remainder + unit;
             else
                 return src - remainder;
+        }
+        #endregion
+
+        #region Compare of floating points
+        public const float FloatCompareEpsilon = 1E-7F;
+        public const double DoubleCompareEpsilon = 1E-14;
+
+        public static bool FloatEquals(float x, float y)
+        {
+            return Math.Abs(x - y) < FloatCompareEpsilon;
+        }
+        public static bool DoubleEquals(double x, double y)
+        {
+            return Math.Abs(x - y) < DoubleCompareEpsilon;
         }
         #endregion
     }

@@ -1,7 +1,7 @@
 ﻿<!--
     MIT License (MIT)
 
-    Copyright (c) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:cc="clr-namespace:PEBakery.Core.WpfControls"
              mc:Ignorable="d" 
              d:DesignHeight="20" d:DesignWidth="100"
              Focusable="True"
@@ -46,6 +47,7 @@
 
         <TextBox Grid.Row="0" Grid.RowSpan="2"
                  Grid.Column="0"
+                 cc:SelectTextOnFocus.Active="True"
                  TextAlignment="Right"
                  VerticalContentAlignment="Center"
                  PreviewTextInput="TextBox_PreviewTextInput"

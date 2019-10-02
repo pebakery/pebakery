@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -57,7 +57,7 @@ namespace PEBakery.WPF
         {
             MonospacedFont = monospacedFont;
 
-            InfoPEBakeryVersion = Global.Const.StringVersionFull;
+            InfoPEBakeryVersion = Global.Const.ProgramVersionStrFull;
             InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
 
             LicenseText = Properties.Resources.LicenseSimple;

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -78,10 +78,9 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string sampleStr = SampleStr();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -123,10 +122,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -247,10 +245,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -345,10 +342,9 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string sampleStr = SampleStr();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -388,10 +384,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -467,10 +462,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -560,10 +554,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -686,10 +679,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempSrcFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempDestFile = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -770,7 +762,7 @@ namespace PEBakery.Core.Tests.Command
                     w.Write(sampleStr);
                 }
 
-                s.Variables.Delete(VarsType.Local, "Dest");
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
                 EngineTests.Eval(s, rawCode, type, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
@@ -802,7 +794,7 @@ namespace PEBakery.Core.Tests.Command
                 }
 
                 for (int i = 0; i < compStrs.Length; i++)
-                    s.Variables.Delete(VarsType.Local, $"Dest{i}");
+                    s.Variables.DeleteKey(VarsType.Local, $"Dest{i}");
                 EngineTests.EvalOptLines(s, opType, rawCodes, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
