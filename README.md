@@ -16,7 +16,7 @@ PEBakery is backward compatible with WinBuilder 082 and makes significant improv
 ## Disclaimer
 
 - All implementation is only backed by documentation and black box testing, without violating WinBuilder 082's EULA.
-- I do not provide any warranty, use at your own risk. Backup is highly recommended.
+- The developers do not provide any warranty, use at your own risk. Backup is highly recommended.
 - Windows Preinstalled Environment is a registered trademark of Microsoft.
 
 ## Download
@@ -49,11 +49,10 @@ To compile PEBakery from source, Visual Studio and .Net Framework are required.
 
 ### Requirement
 
-- [Visual Studio 2017 15.7](https://visualstudio.microsoft.com/ko/thank-you-downloading-visual-studio/?sku=Community&rel=15#) or higher.
-   
-- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) or higher for C# projects.
+- [Visual Studio 2019 16.3](https://visualstudio.microsoft.com/en/thank-you-downloading-visual-studio/?sku=community&rel=16) or higher.
+- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) or higher for C# application projects.
 - [.Net Core 2.1 SDK](https://dotnet.microsoft.com/download) or higher for C# libraries.
-- [Windows 8.1 SDK](https://go.microsoft.com/fwlink/p/?LinkId=323507) for compiling [LauncherNative](./LauncherNative).
+- [Windows 10 SDK (10.0.18362.0)](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) for compiling [LauncherNative](./LauncherNative).
   - [LauncherNative](./LauncherNative) can be compiled with virtually any supported version of Windows SDK.
   - If you do not want to install Windows SDK, use [LauncherSharp](./LauncherSharp) instead.
 
@@ -69,9 +68,9 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 
-### PEBakery Nightly (20190404)
+### PEBakery Nightly (20191003)
 
-![Win10XPE with PEBakery 20190404](./Image/PEBakery-nightly-Win10XPE.png)
+![Win10XPE with PEBakery 20191003](./Image/PEBakery-nightly-Win10XPE.png)
 
 ### PEBakery Beta 5
 

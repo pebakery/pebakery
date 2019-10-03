@@ -109,7 +109,7 @@ namespace PEBakery.Core.Commands
                         compressor.CustomParameters["mt"] = "on"; // Multithread compression
                         break;
                     case OutArchiveFormat.SevenZip:
-                        // TODO: Find an 7zip API which allow us requery memory requirements. 
+                        // TODO: Find an 7zip API which allow us query memory requirements. 
                         // Threaded LZMA2 requries a lot of memory (720MB in 4T, 1376MB in 8T), and it may cause problem in low-memory environment.
                         // compressor.CustomParameters["mt"] = "on"; // Multithread compression
                         break;

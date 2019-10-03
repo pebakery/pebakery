@@ -256,7 +256,7 @@ namespace PEBakery.Core
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing && Db != null)
             {

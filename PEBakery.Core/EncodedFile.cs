@@ -1883,6 +1883,10 @@ namespace PEBakery.Core
         #endregion
 
         #region DecodeInMem
+        /// <summary>
+        /// Fast version of Decode(). Requires a lot more memory than Decode(), so avoid using this method with a big file.
+        /// </summary>
+        /// <returns>Decompressed file as a MemoryStream</returns>
         private static MemoryStream DecodeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
