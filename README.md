@@ -4,14 +4,14 @@
     <img src="./Image/Banner.svg" height="140">
 </div>
 
-PEBakery is a builder specialized in customizing Windows Preinstalled Environment.
+PEBakery is a script engine that specializes in customizing the Windows Preinstalled Environment (WinPE/WinRE).
 
 | Branch    | Build Status   |
 |-----------|----------------|
 | Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
 | Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
 
-PEBakery is backward compatible with WinBuilder 082 and improves upon it.
+PEBakery is backward compatible with WinBuilder 082 and makes significant improvements upon it.
 
 ## Disclaimer
 
@@ -21,31 +21,31 @@ PEBakery is backward compatible with WinBuilder 082 and improves upon it.
 
 ## Download
 
-The official release version is recommended for normal use.
+The official release version is recommended for general use.
 
 A nightly build is provided for the testing purpose.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
 
-**CAUTION**: Do not forget to set [proper compatibility options](./COMPAT.md) per projects.
+**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide so you know what script breaking changes to expect and when compatibilty options need to be enabled.
 
-## Prerequisite
+## Prerequisites
 
 If you are using Windows 10 v1803 or later, no action is necessary.  
 If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?LinkId=863262).
 
 ## License
 
-PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
+PEBakery is primarily licensed under GPLv3 or any later version with additional permission.
 
-Some parts of PEBakery is licensed under the MIT License and others.
+Some parts of PEBakery are licensed under the MIT License and other licenses.
 
 Please read [LICENSE](./LICENSE) for details.
 
 ## Build
 
-To compile PEBakery from source, Visual Studio and .Net Framework is required.
+To compile PEBakery from source, Visual Studio and .Net Framework are required.
 
 ### Requirement
 
@@ -59,11 +59,13 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Documentation
 
-Please read [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
+Please read the [Official PEBakery Manual](https://github.com/pebakery/pebakery-docs).
+
+Testers using nightly builds should refer to the developer branch [Official PEBakery Manual (develop)](https://github.com/pebakery/pebakery-docs/tree/develop).
 
 ## Progress and TODO
 
-See [here](https://github.com/pebakery/pebakery/projects/2).
+See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 

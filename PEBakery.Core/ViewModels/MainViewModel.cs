@@ -1368,10 +1368,7 @@ namespace PEBakery.Core.ViewModels
             else
             {
                 // Script Title
-                if (s != null && s.RunMode == EngineMode.RunAll)
-                    ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
-                else
-                    ScriptTitleText = StringEscaper.Unescape(sc.Title);
+                ScriptTitleText = StringEscaper.Unescape(sc.Title);
 
                 // Script Description
                 ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
@@ -1383,7 +1380,7 @@ namespace PEBakery.Core.ViewModels
                     if (s != null)
                     { // Normal mode -> Notify script developer to fix
                         ScriptVersionText = "Error";
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.RawVersion}]"));
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains an invalid version string [{sc.RawVersion}]"));
                     }
                     else
                     { // Build mode -> Suppress error log

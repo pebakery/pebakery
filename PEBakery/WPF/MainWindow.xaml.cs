@@ -532,7 +532,7 @@ namespace PEBakery.WPF
                     {
                         // Ask user for confirmation
                         MessageBox.Show(this,
-                            $"Directory [{targetScript.Title}] does not have updateable children scripts.",
+                            $"Directory [{targetScript.Title}] does not contain any scripts that are able to be updated.",
                             "No updateable scripts",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
@@ -553,7 +553,7 @@ namespace PEBakery.WPF
                 else
                     targetScriptCountStr = $"script [{targetScript.Title}]";
                 MessageBoxResult result = MessageBox.Show(this,
-                    $"Are you sure to update {targetScriptCountStr}?",
+                    $"Are you sure you want to update {targetScriptCountStr}?",
                     "Continue?",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -761,7 +761,7 @@ namespace PEBakery.WPF
                     {
                         // Ask user for confirmation
                         MessageBox.Show(this,
-                            $"Directory [{targetScript.Title}] does not have any child scripts.",
+                            $"Directory [{targetScript.Title}] does not contain any scripts.",
                             "No child scripts",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
@@ -794,7 +794,7 @@ namespace PEBakery.WPF
                     idx += 1;
                     Model.BuildFullProgressValue = idx;
                     Model.DisplayScriptTexts(sc, null);
-                    Model.ScriptTitleText = $"({idx}/{targetScripts.Length}) " + Model.ScriptTitleText;
+                    Model.ScriptTitleText = Model.ScriptTitleText;
                     Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
                     Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
                     {

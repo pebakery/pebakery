@@ -534,7 +534,7 @@
                                                 <iconPacks:PackIconMaterial Kind="Download"/>
                                             </cc:CorrectMenuItem.Icon>
                                         </cc:CorrectMenuItem>
-                                        <cc:CorrectMenuItem Header="Update Children Scripts" 
+                                        <cc:CorrectMenuItem Header="Update Child Scripts" 
                                                             Command="local:MainViewCommands.ScriptUpdateCommand"
                                                             Grid.IsSharedSizeScope="True" 
                                                             Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
