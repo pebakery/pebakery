@@ -123,11 +123,17 @@ namespace PEBakery.Core
                 allLineCount += section.Lines.Length;
             }
 
+            s.ProcessedSectionLines = 0;
+            s.ProcessedCodeCount = 0;
+            if (s.RunMode == EngineMode.RunMainAndOne) // Hide the fact that we are running the main script first
+                s.ProcessedScripts = 1;
+            else
+                s.ProcessedScripts = s.CurrentScriptIdx + 1;
             s.MainViewModel.BuildScriptProgressMax = allLineCount;
             s.MainViewModel.BuildScriptProgressValue = 0;
-            s.MainViewModel.BuildFullProgressValue = s.CurrentScriptIdx;
+            s.MainViewModel.BuildFullProgressValue = Math.Min(s.ProcessedScripts, s.ScriptsToProcessCount);
 
-            // Skip displaying script information when running single scripts
+            // Skip displaying script information when running a single script
             if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
                 return;
 
@@ -170,7 +176,7 @@ namespace PEBakery.Core
                 if (s.Macro.MacroEnabled)
                     s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
 
-                s.MainViewModel.BuildFullProgressMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
+                s.MainViewModel.BuildFullProgressMax = s.ScriptsToProcessCount = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
 
                 // Update project variables
                 s.Project.UpdateProjectVariables();
@@ -252,9 +258,9 @@ namespace PEBakery.Core
                         // OnBuildExit event callback
                         if (s.RunMode == EngineMode.RunAll || s.TestMode)
                         {
-                            // - OnBuildExit is called in full project build or in unit test.
-                            // - OnBuildExit is not called on script interface control or CodeBox.
-                            //   - They use EngineMode.RunMainAndOne or EngineMode.RunOne
+                            // OnBuildExit is called in full project build or in test mode.
+                            // OnBuildExit is not called on script interface control or CodeBox.
+                            // (Script interface and CodeBox use EngineMode.RunMainAndOne or EngineMode.RunOne)
                             CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
@@ -330,6 +336,7 @@ namespace PEBakery.Core
             return Task.Run(() => _task.Wait());
         }
 
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public void KillSubProcess()
         {
             lock (s.KillSubProcLock)
@@ -351,37 +358,25 @@ namespace PEBakery.Core
         #region RunSection
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalState ls)
         {
-            // Push ExecutionDepth
-            int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
-
-            if (section.Lines == null)
-                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
-
-            CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
-            (CodeCommand[] cmds, _) = parser.ParseStatements();
-
-            // Set CurrentSection
-            s.CurrentSection = section;
-
-            // Set SectionReturnValue to empty string
-            s.ReturnValue = string.Empty;
-
+            // Must copy inParams and outParams by value, not reference
             Dictionary<int, string> inParamDict = new Dictionary<int, string>();
             for (int i = 0; i < inParams.Count; i++)
                 inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
+            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
 
-            // Must copy ParamDict by value, not reference
-            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), false);
-
-            // Increase only if cmd resides in CurrentScript
-            if (s.CurrentScript.Equals(section.Script))
-                s.ProcessedSectionSet.Add(section.Name);
-
-            // Pop ExecutionDepth
-            s.PopLocalState();
+            InternalRunSection(s, section, inParamDict, outParams, ls);
         }
 
         public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
+        {
+            // Must copy inParams and outParams by value, not reference
+            Dictionary<int, string> inParamDict = new Dictionary<int, string>(inParams);
+            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
+
+            InternalRunSection(s, section, inParamDict, outParams, ls);
+        }
+
+        private static void InternalRunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
             int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
@@ -395,16 +390,37 @@ namespace PEBakery.Core
             // Set CurrentSection
             s.CurrentSection = section;
 
-            // Set SectionReturnValue to empty string
+            // Clear SectionReturnValue
             s.ReturnValue = string.Empty;
 
-            // Must copy ParamDict by value, not reference
-            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
-            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, false);
+            // Run parsed commands
+            RunCommands(s, section, cmds, inParams, outParams, false);
 
-            // Increase only if cmd resides in CurrentScript
+            // Increase only if cmd was running in CurrentScript
+            // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on RunCommands()?
+            // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
+            //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) when it runs first time.
+            //    (LINE COUNT and CODE COUNT is different, some of the LINES may not be actually runned due to If and Else branch commands).
+            //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
+            //    To mitigate it, RunCommands() increases CODE COUNT and show it to the user as a progress temporary.
+            //    After a section was successfully finished, PEBakery reset the script progress with correct LINE COUNT value.
             if (s.CurrentScript.Equals(section.Script))
+            {
+                // Q) Why we have to apply Math.Max(s.ProcessedSectionLines, s.ProcessedCodeLines)?
+                // A) Some branch commands (If, Else, Loop) call RunSection and RunCommands themselves.
+                //    Their recursive calling of RunSection disturb `section.Line.Length` checking.
+                //    Current progress impl does not take account of how much commands are actually executed, but how many lines were processed.
+                //    If a branch command ran in a middle of section, sometimes it results in decresasing the script progress %.
+                //    In order to prevent (hide, in fact) this issue, Math.Max is used.
+                //    The progress bar is eventually set to correct value after a section (which contains branch command) is finished.
+                s.ProcessedSectionLines += section.Lines.Length;
+                long newCodeLines = Math.Max(s.ProcessedSectionLines, s.ProcessedCodeCount);
+                s.ProcessedCodeCount = newCodeLines;
+                s.MainViewModel.BuildScriptProgressValue = newCodeLines;
+
+                // Only increase BuildScriptProgressValue once per section
                 s.ProcessedSectionSet.Add(section.Name);
+            }
 
             // Pop ExecutionDepth
             s.PopLocalState();
@@ -412,7 +428,7 @@ namespace PEBakery.Core
         #endregion
 
         #region RunCommands
-        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, bool pushDepth)
+        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IReadOnlyList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, bool pushDepth)
         {
             if (cmds.Count == 0)
             {
@@ -439,6 +455,14 @@ namespace PEBakery.Core
                     allLogs.AddRange(logs);
                 }
 
+                // Increase only if the current section came from CurrentScript to prevent Macro section being counted.
+                // s.ProcessedCodeLines is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
+                if (s.CurrentScript.Equals(section.Script) && !s.ProcessedSectionSet.Contains(section.Name))
+                {
+                    s.ProcessedCodeCount = Math.Min(s.ProcessedSectionLines + section.Lines.Length, s.ProcessedCodeCount + 1);
+                    s.MainViewModel.BuildScriptProgressValue = s.ProcessedCodeCount;
+                }
+
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
             }
@@ -460,6 +484,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ExecuteCommand
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -857,9 +882,9 @@ namespace PEBakery.Core
                         #endregion
                 }
             }
-            catch (CriticalErrorException)
+            catch (CriticalErrorException e)
             { // Critical Error, stop build
-                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, ls.Depth));
+                logs.Add(new LogInfo(LogState.CriticalError, e, cmd, ls.Depth));
                 s.ErrorHaltFlag = true;
             }
             catch (ExecuteException e)
@@ -888,11 +913,6 @@ namespace PEBakery.Core
             }
 
             s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, ls.Depth));
-
-            // Increase only if cmd resides in CurrentScript.
-            // If the current section is from Macro, it won't be counted in progress bar.
-            if (s.ProcessedSectionSet.Contains(cmd.Section.Name) && s.CurrentScript.Equals(cmd.Section.Script))
-                s.MainViewModel.BuildScriptProgressValue += 1;
 
             // Return logs, used in unit test
             return logs;
@@ -1139,8 +1159,17 @@ namespace PEBakery.Core
     #region EngineState Enums
     public enum EngineMode
     {
+        /// <summary>
+        /// Run all target scripts.
+        /// </summary>
         RunAll,
+        /// <summary>
+        /// Run one script, executing MainScript before it.
+        /// </summary>
         RunMainAndOne,
+        /// <summary>
+        /// Run only one script.
+        /// </summary>
         RunOne,
     }
 
@@ -1194,15 +1223,52 @@ namespace PEBakery.Core
         public Script CurrentScript;
         public int CurrentScriptIdx;
         public ScriptSection CurrentSection;
-        public Dictionary<int, string> CurSectionInParams; // 1-based index
+        /// <summary>
+        /// The 1-based index of in-params of current section.
+        /// </summary>
+        public Dictionary<int, string> CurSectionInParams;
         public List<string> CurSectionOutParams = null;
         public string ReturnValue = string.Empty;
+        /// <summary>
+        /// Which sections are already processed (so they should be not processed again in Processed* counters?)
+        /// </summary>
         public HashSet<string> ProcessedSectionSet = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Accurate counter of how many sections of the script was processed. 
+        /// </summary>
+        public long ProcessedSectionLines;
+        /// <summary>
+        /// Approximate counter of how many sections of the script was processed. It is occasionally reset to value of ProcessSectionLines.
+        /// </summary>
+        public long ProcessedCodeCount;
+        /// <summary>
+        /// Accurate counter of how many scripts were processed. 
+        /// </summary>
+        public long ProcessedScripts;
+        /// <summary>
+        /// How many scripts should be processed?
+        /// </summary>
+        public long ScriptsToProcessCount;
+        /// <summary>
+        /// The flag represents whether an Engine should enter `else` command or not.
+        /// </summary>
         public bool ElseFlag = false;
-        public bool PassCurrentScriptFlag = false; // Exit Command
-        public bool ErrorHaltFlag = false; // Did error occur?
-        public bool CmdHaltFlag = false; // Halt Command
-        public bool UserHaltFlag = false; // Did user clicked stop button?
+        /// <summary>
+        /// The flag represents early exit of curernt script by Exit command.
+        /// </summary>
+        public bool PassCurrentScriptFlag = false;
+        /// <summary>
+        /// The flag representes stopping by occurence of error.
+        /// </summary>
+        public bool ErrorHaltFlag = false;
+        /// <summary>
+        /// The flag representes stopping by Halt command.
+        /// </summary>
+        public bool CmdHaltFlag = false;
+        /// <summary>
+        /// The flag representes stopping by user request.
+        /// </summary>
+        public bool UserHaltFlag = false; 
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
@@ -1237,9 +1303,18 @@ namespace PEBakery.Core
         }
 
         // Normal Options
-        public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
-        public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
-        public string CustomUserAgent = null; // For WebGet
+        /// <summary>
+        /// Setting TestMode to true makes Engine.RunCommands return logs
+        /// </summary>
+        public bool TestMode = false;
+        /// <summary>
+        /// If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
+        /// </summary>
+        public bool DisableLogger = false;
+        /// <summary>
+        /// User agent for WebGet command
+        /// </summary>
+        public string CustomUserAgent = null;
         public bool StopBuildOnError = true;
 
         // Compat Options
@@ -1333,7 +1408,7 @@ namespace PEBakery.Core
             // MainViewModel
             MainViewModel = mainModel;
 
-            // Use secure random number generator to feed seed to pseudo random number generator.
+            // Use secure random number generator to feed seed of pseudo random number generator.
             byte[] seedArray = new byte[4];
             using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
             {
@@ -1562,6 +1637,28 @@ namespace PEBakery.Core
             return Depth == ls.Depth &&
                    IsMacro == ls.IsMacro &&
                    RefScriptId == ls.RefScriptId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is EngineLocalState ls)
+                return Equals(ls);
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return Depth ^ (RefScriptId >> 16) ^ (IsMacro ? 1 >> 31 : 0);
+        }
+
+        public static bool operator ==(EngineLocalState left, EngineLocalState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(EngineLocalState left, EngineLocalState right)
+        {
+            return !(left == right);
         }
         #endregion
     }

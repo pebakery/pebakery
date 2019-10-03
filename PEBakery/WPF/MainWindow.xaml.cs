@@ -270,12 +270,6 @@ namespace PEBakery.WPF
             {
                 e.CanExecute = false;
             }
-
-            /*
-            e.CanExecute = Model != null && !Model.WorkInProgress &&
-                           Global.Projects != null && Global.Projects.FullyLoaded;
-                           */
-
         }
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)

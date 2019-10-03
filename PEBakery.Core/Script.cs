@@ -406,7 +406,7 @@ namespace PEBakery.Core
                 type = SectionType.AttachEncodeNow;
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
-            else // Can be SectionType.Code or SectionType.AttachFileList
+            else // Can be SectionType.Code, SectionType.Interface or SectionType.AttachFileList
                 type = inspectCode ? DetectTypeOfNotInspectedSection(sectionName) : SectionType.NotInspected;
             return type;
         }
