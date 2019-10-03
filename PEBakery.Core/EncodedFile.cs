@@ -1403,7 +1403,7 @@ namespace PEBakery.Core
                                 // When using default compress level, using 8 threads will results in about 1.3GB of memory.
                                 // PEBakery will use 12 threads at maximum when the system has enough memory. 
                                 // Let's set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
-                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryXZCompressMemUsage, 2 * NumberHelper.GigaByte, 0.9);
+                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, 2 * NumberHelper.GigaByte, 0.9);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
@@ -2274,9 +2274,14 @@ namespace PEBakery.Core
             }
         }
 
-        private static ulong QueryXZCompressMemUsage(int threads)
+        public static ulong QueryLzma2CompressMemUsage(int threads)
         {
             return XZInit.EncoderMultiMemUsage(LzmaCompLevel.Default, false, threads);
+        }
+
+        public static ulong QueryLzma2CompressMemUsage(LzmaCompLevel level, int threads)
+        {
+            return XZInit.EncoderMultiMemUsage(level, false, threads);
         }
         #endregion
     }

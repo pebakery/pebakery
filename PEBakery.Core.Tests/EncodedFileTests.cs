@@ -27,11 +27,13 @@
 
 // #define DEBUG_MIDDLE_FILE
 
+using Joveler.Compression.XZ;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,6 +41,7 @@ using System.Text;
 namespace PEBakery.Core.Tests
 {
     [TestClass]
+    [TestCategory(nameof(EncodedFile))]
     public class EncodedFileTests
     {
         #region Const Strings, String Factory
@@ -50,7 +53,6 @@ namespace PEBakery.Core.Tests
 
         #region AttachFile
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void AttachFile()
         {
             void Template(string fileName, EncodedFile.EncodeMode encodeMode)
@@ -71,20 +73,20 @@ namespace PEBakery.Core.Tests
                     // Check whether file was successfully encoded
                     Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
                     string[] folders = sc.Sections["EncodedFolders"].Lines
-                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .Where(x => x.Length != 0)
                         .ToArray();
                     Assert.IsTrue(folders.Length == 2);
                     Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
 
                     Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
                     string[] fileInfos = sc.Sections["FolderExample"].Lines
-                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .Where(x => x.Length != 0)
                         .ToArray();
                     Assert.IsTrue(fileInfos[0].StartsWith($"{fileName}=", StringComparison.Ordinal));
 
                     Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{fileName}"));
                     string[] encodedFile = sc.Sections[$"EncodedFile-FolderExample-{fileName}"].Lines
-                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .Where(x => x.Length != 0)
                         .ToArray();
                     Assert.IsTrue(1 < encodedFile.Length);
                     Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
@@ -124,7 +126,6 @@ namespace PEBakery.Core.Tests
 
         #region ContainsFile
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ContainsFile()
         {
             void Template(string scriptPath, string folderName, string fileName, bool result)
@@ -147,7 +148,6 @@ namespace PEBakery.Core.Tests
 
         #region ContainsLogo
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ContainsLogo()
         {
             void Template(string fileName, bool result)
@@ -168,7 +168,7 @@ namespace PEBakery.Core.Tests
 
         #region AddFolder
         [TestMethod]
-        [TestCategory("EncodedFile")]
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public void AddFolder()
         {
             void Template(string folderName, bool overwrite, bool result)
@@ -237,7 +237,6 @@ namespace PEBakery.Core.Tests
 
         #region ContainsFolder
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ContainsFolder()
         {
             void Template(string folderName, bool result)
@@ -277,7 +276,6 @@ namespace PEBakery.Core.Tests
 
         #region ExtractFile
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ExtractFile()
         {
             void Template(string fileName)
@@ -315,7 +313,6 @@ namespace PEBakery.Core.Tests
 
         #region ExtractFileInMem
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ExtractFileInMem()
         {
             void Template(string fileName)
@@ -352,7 +349,6 @@ namespace PEBakery.Core.Tests
 
         #region ExtractFolder
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ExtractFolder()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -387,13 +383,7 @@ namespace PEBakery.Core.Tests
 
         #region ExtractLogo
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ExtractLogo()
-        {
-            ExtractLogo_1();
-        }
-
-        public void ExtractLogo_1()
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
@@ -422,13 +412,7 @@ namespace PEBakery.Core.Tests
 
         #region ExtractInterfaceEncoded
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void ExtractInterfaceEncoded()
-        {
-            ExtractInterfaceEncoded_1();
-        }
-
-        public void ExtractInterfaceEncoded_1()
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
@@ -456,7 +440,6 @@ namespace PEBakery.Core.Tests
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void GetFileInfo()
         {
             // ReSharper disable once InconsistentNaming
@@ -759,7 +742,6 @@ namespace PEBakery.Core.Tests
 
         #region RenameFile, RenameFolder
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void RenameFile()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -812,7 +794,6 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void RenameFolder()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -878,7 +859,6 @@ namespace PEBakery.Core.Tests
 
         #region DeleteFile, DeleteFolder, DeleteLogo
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void DeleteFile()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -928,7 +908,6 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void DeleteFolder()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -985,7 +964,6 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void DeleteLogo()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -1029,7 +1007,6 @@ namespace PEBakery.Core.Tests
 
         #region SplitBase64
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void Base64Encode()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -1069,7 +1046,6 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
         public void Base64Decode()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -1149,6 +1125,22 @@ namespace PEBakery.Core.Tests
             // https://github.com/pebakery/pebakery/issues/90
             Template("Type5.bin", "Type5Enc4090.txt", string.Empty, true);
             Template("Type5.bin", "Type5Enc4090.txt", string.Empty, false);
+        }
+        #endregion
+
+        #region 
+        [TestMethod]
+        public void PrintLzma2CompressMemUsage()
+        {
+            foreach (LzmaCompLevel level in Enum.GetValues(typeof(LzmaCompLevel)))
+            {
+                for (int th = 1; th <= Environment.ProcessorCount * 2; th++)
+                {
+                    ulong usage = EncodedFile.QueryLzma2CompressMemUsage(level, th);
+                    string usageStr = NumberHelper.ByteSizeToSIUnit((long)usage, 1);
+                    Console.WriteLine($"Memory usage of {level}, Threads {th} = {usageStr} ({usage})");
+                }
+            }    
         }
         #endregion
     }

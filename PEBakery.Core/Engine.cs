@@ -396,10 +396,10 @@ namespace PEBakery.Core
             // Run parsed commands
             RunCommands(s, section, cmds, inParams, outParams, false);
 
-            // Increase only if cmd was running in CurrentScript
+            // Increase only if cmd came from CurrentScript
             // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on RunCommands()?
             // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
-            //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) when it runs first time.
+            //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
             //    (LINE COUNT and CODE COUNT is different, some of the LINES may not be actually runned due to If and Else branch commands).
             //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
             //    To mitigate it, RunCommands() increases CODE COUNT and show it to the user as a progress temporary.
@@ -408,8 +408,8 @@ namespace PEBakery.Core
             {
                 // Q) Why we have to apply Math.Max(s.ProcessedSectionLines, s.ProcessedCodeLines)?
                 // A) Some branch commands (If, Else, Loop) call RunSection and RunCommands themselves.
-                //    Their recursive calling of RunSection disturb `section.Line.Length` checking.
-                //    Current progress impl does not take account of how much commands are actually executed, but how many lines were processed.
+                //    Their recursive calling of RunSection disturbs `section.Line.Length` checking.
+                //    Current progress tracking impl does not take account of how much commands are actually executed, but how many lines were processed.
                 //    If a branch command ran in a middle of section, sometimes it results in decresasing the script progress %.
                 //    In order to prevent (hide, in fact) this issue, Math.Max is used.
                 //    The progress bar is eventually set to correct value after a section (which contains branch command) is finished.
@@ -456,7 +456,7 @@ namespace PEBakery.Core
                 }
 
                 // Increase only if the current section came from CurrentScript to prevent Macro section being counted.
-                // s.ProcessedCodeLines is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
+                // s.ProcessedCodeCount is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
                 if (s.CurrentScript.Equals(section.Script) && !s.ProcessedSectionSet.Contains(section.Name))
                 {
                     s.ProcessedCodeCount = Math.Min(s.ProcessedSectionLines + section.Lines.Length, s.ProcessedCodeCount + 1);
@@ -1268,7 +1268,7 @@ namespace PEBakery.Core
         /// <summary>
         /// The flag representes stopping by user request.
         /// </summary>
-        public bool UserHaltFlag = false; 
+        public bool UserHaltFlag = false;
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
