@@ -33,6 +33,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,17 +124,9 @@ namespace PEBakery.Core
                 allLineCount += section.Lines.Length;
             }
 
-            // Reset 
-            s.ProcessedSectionLines = 0;
-            s.ProcessedCodeCount = 0;
-            s.TotalSectionLines = allLineCount;
-            if (s.RunMode == EngineMode.RunMainAndOne) // Hide the fact that we are running the main script first
-                s.ProcessedScripts = 0;
-            else
-                s.ProcessedScripts = s.CurrentScriptIdx;
-            s.MainViewModel.BuildScriptProgressMax = s.TotalSectionLines;
-            s.MainViewModel.BuildScriptProgressValue = 0;
-            s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts;
+            // Reset progress report
+            s.ResetScriptProgress();
+            s.ResetFullProgress();
 
             // Skip displaying script information when running a single script
             if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
@@ -160,7 +153,7 @@ namespace PEBakery.Core
 
         private static void FinishRunScript(EngineState s)
         {
-            // Finish Per-Script Log
+            // Finish Per-script Log
             s.Logger.BuildWrite(s, $"End of Script [{s.CurrentScript.TreePath}]");
             s.Logger.BuildWrite(s, Logger.LogSeparator);
             s.Logger.BuildScriptFinish(s, s.Variables.GetVarDict(VarsType.Local));
@@ -178,13 +171,13 @@ namespace PEBakery.Core
                 if (s.Macro.MacroEnabled)
                     s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
 
-                s.MainViewModel.BuildFullProgressMax = s.TotalScripts = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
-
                 // Update project variables
                 s.Project.UpdateProjectVariables();
 
+                // Script execution loop
                 while (true)
                 {
+                    // Prepare execution of a script
                     ReadyRunScript(s);
 
                     // Run Main Section
@@ -197,7 +190,7 @@ namespace PEBakery.Core
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
-                    // End of Script
+                    // End execution of a script
                     FinishRunScript(s);
 
                     if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
@@ -398,32 +391,8 @@ namespace PEBakery.Core
             // Run parsed commands
             RunCommands(s, section, cmds, inParams, outParams, false);
 
-            // Increase only if cmd came from CurrentScript
-            // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on RunCommands()?
-            // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
-            //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
-            //    (LINE COUNT and CODE COUNT is different, some of the LINES may not be actually runned due to If and Else branch commands).
-            //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
-            //    To mitigate it, RunCommands() increases CODE COUNT and show it to the user as a progress temporary.
-            //    After a section was successfully finished, PEBakery reset the script progress with correct LINE COUNT value.
-            if (s.CurrentScript.Equals(section.Script))
-            {
-                // Q) Why we have to apply Math.Max(s.ProcessedSectionLines, s.ProcessedCodeLines)?
-                // A) Some branch commands (If, Else, Loop) call RunSection and RunCommands themselves.
-                //    Their recursive calling of RunSection disturbs `section.Line.Length` checking.
-                //    Current progress tracking impl does not take account of how much commands are actually executed, but how many lines were processed.
-                //    If a branch command ran in a middle of section, sometimes it results in decresasing the script progress %.
-                //    In order to prevent (hide, in fact) this issue, Math.Max is used.
-                //    The progress bar is eventually set to correct value after a section (which contains branch command) is finished.
-                s.ProcessedSectionLines += section.Lines.Length;
-                long newCodeLines = Math.Max(s.ProcessedSectionLines, s.ProcessedCodeCount);
-                s.ProcessedCodeCount = newCodeLines;
-                s.MainViewModel.BuildScriptProgressValue = newCodeLines;
-                s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts + ((double)s.ProcessedCodeCount / s.TotalSectionLines);
-
-                // Only increase BuildScriptProgressValue once per section
-                s.ProcessedSectionSet.Add(section.Name);
-            }
+            // Update script progress (precise)
+            s.PreciseUpdateScriptProgress(section);
 
             // Pop ExecutionDepth
             s.PopLocalState();
@@ -458,14 +427,8 @@ namespace PEBakery.Core
                     allLogs.AddRange(logs);
                 }
 
-                // Increase only if the current section came from CurrentScript to prevent Macro section being counted.
-                // s.ProcessedCodeCount is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
-                if (s.CurrentScript.Equals(section.Script) && !s.ProcessedSectionSet.Contains(section.Name))
-                {
-                    s.ProcessedCodeCount = Math.Min(s.ProcessedSectionLines + section.Lines.Length, s.ProcessedCodeCount + 1);
-                    s.MainViewModel.BuildScriptProgressValue = s.ProcessedCodeCount;
-                    s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts + ((double)s.ProcessedCodeCount / s.TotalSectionLines);
-                }
+                // Update script progress (approximate)
+                s.IncrementalUpdateSriptProgress(section);
 
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
@@ -488,7 +451,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ExecuteCommand
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -1017,7 +980,6 @@ namespace PEBakery.Core
             // If lineIdx is involved, ErrorOff will not work properly in RunExec.
             MuteLogError(logs);
 
-            // 
             DisableErrorOff(s, lineIdx);
         }
 
@@ -1205,89 +1167,93 @@ namespace PEBakery.Core
     [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
     public class EngineState
     {
-        #region Fields and Properties
-        // Fields
-        public Project Project;
-        public List<Script> Scripts;
-        public Variables Variables => Project.Variables;
-        public Macro Macro;
-        public Logger Logger;
-        public EngineMode RunMode;
-        public LogMode LogMode = LogMode.NoDefer; // Deferred logging is used for performance
-        public MainViewModel MainViewModel;
-        public Random Random;
+        #region Base Properties
+        public Project Project { get; private set; }
+        public List<Script> Scripts { get; private set; }
+        public Macro Macro { get; private set; }
+        public Logger Logger { get; private set; }
+        public EngineMode RunMode { get; private set; }
+        public readonly string RunOneEntrySection;
+        public LogMode LogMode { get; set; } = LogMode.NoDefer; // Deferred logging is used for performance
+        public MainViewModel MainViewModel { get; private set; }
+        public Random Random { get; private set; }
+        #endregion
 
-        // Property
+        #region Derived Properties
         public string BaseDir => Project.BaseDir;
         public Script MainScript => Project.MainScript;
+        public Variables Variables => Project.Variables;
         public int CurSectionInParamsCount => 0 < CurSectionInParams.Count ? CurSectionInParams.Keys.Max() : 0;
         public int CurSectionOutParamsCount => CurSectionOutParams?.Count ?? 0;
+        #endregion
 
-        // State of the engine
-        public Script CurrentScript;
-        public int CurrentScriptIdx;
-        public ScriptSection CurrentSection;
+        #region State Properties
+        public Script CurrentScript { get; set; }
+        public int CurrentScriptIdx { get; set; }
+        public ScriptSection CurrentSection { get; set; }
         /// <summary>
         /// The 1-based index of in-params of current section.
         /// </summary>
-        public Dictionary<int, string> CurSectionInParams;
-        public List<string> CurSectionOutParams = null;
-        public string ReturnValue = string.Empty;
-        /// <summary>
-        /// Which sections are already processed (so they should be not processed again in Processed* counters?)
-        /// </summary>
-        public HashSet<string> ProcessedSectionSet = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
-        /// <summary>
-        /// Accurate counter of how many section lines of the script was processed. 
-        /// </summary>
-        public long ProcessedSectionLines;
-        /// <summary>
-        /// Approximate counter of how many sections of the script was processed. It is occasionally reset to value of ProcessSectionLines.
-        /// </summary>
-        public long ProcessedCodeCount;
-        /// <summary>
-        /// Total number of section lines of the script to be processed. 
-        /// </summary>
-        public long TotalSectionLines;
-        /// <summary>
-        /// Accurate counter of how many scripts were processed. 
-        /// </summary>
-        public long ProcessedScripts;
-        /// <summary>
-        /// Total number of scripts to be processed?
-        /// </summary>
-        public long TotalScripts;
+        public Dictionary<int, string> CurSectionInParams { get; set; }
+        public List<string> CurSectionOutParams { get; set; } = null;
+        public string ReturnValue { get; set; } = string.Empty;
         /// <summary>
         /// The flag represents whether an Engine should enter `else` command or not.
         /// </summary>
-        public bool ElseFlag = false;
+        public bool ElseFlag { get; set; } = false;
         /// <summary>
         /// The flag represents early exit of curernt script by Exit command.
         /// </summary>
-        public bool PassCurrentScriptFlag = false;
+        public bool PassCurrentScriptFlag { get; set; } = false;
         /// <summary>
         /// The flag representes stopping by occurence of error.
         /// </summary>
-        public bool ErrorHaltFlag = false;
+        public bool ErrorHaltFlag { get; set; } = false;
         /// <summary>
         /// The flag representes stopping by Halt command.
         /// </summary>
-        public bool CmdHaltFlag = false;
+        public bool CmdHaltFlag { get; set; } = false;
         /// <summary>
         /// The flag representes stopping by user request.
         /// </summary>
-        public bool UserHaltFlag = false;
-        public bool CursorWait = false;
-        public int BuildId = 0; // Used in logging
-        public int ScriptId = 0; // Used in logging
+        public bool UserHaltFlag { get; set; } = false;
+        public bool CursorWait { get; set; } = false;
+        public int BuildId { get; set; } = 0; // Used in logging
+        public int ScriptId { get; set; } = 0; // Used in logging
+        #endregion
 
-        // Loop State Stack
+        #region Progress Tracking Properties
+        /// <summary>
+        /// Which sections are already processed (so they should be not processed again in Processed* counters?)
+        /// </summary>
+        public HashSet<string> ProcessedSectionSet { get; private set; } = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Accurate counter of how many section lines of the script was processed. 
+        /// </summary>
+        public long ProcessedSectionLines { get; private set; }
+        /// <summary>
+        /// Approximate counter of how many sections of the script was processed. It is occasionally reset to value of ProcessSectionLines.
+        /// </summary>
+        public long ProcessedCodeCount { get; private set; }
+        /// <summary>
+        /// Total number of section lines of the script to be processed. 
+        /// </summary>
+        public long TotalSectionLines { get; private set; }
+        /// <summary>
+        /// Accurate counter of how many scripts were processed. 
+        /// </summary>
+        public long ProcessedScripts { get; private set; }
+        /// <summary>
+        /// Total number of scripts to be processed?
+        /// </summary>
+        public long TotalScripts { get; private set; }
+        #endregion
+
+        #region Loop State Stack Properties
         /// <summary>
         /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
         /// </summary>
-        public readonly Stack<EngineLoopState> LoopStateStack = new Stack<EngineLoopState>(4);
-
-        // Local State Stack
+        public Stack<EngineLoopState> LoopStateStack { get; set; } = new Stack<EngineLoopState>(4);
         /// <summary>
         /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
         /// </summary>
@@ -1296,10 +1262,11 @@ namespace PEBakery.Core
         /// </remarks>
         private readonly Stack<EngineLocalState> _localStateStack = new Stack<EngineLocalState>(16);
         public int PeekDepth => _localStateStack.Count == 0 ? 0 : _localStateStack.Peek().Depth;
+        #endregion
 
-        // Elapsed Time
-        public DateTime StartTime = DateTime.MinValue;
-        public DateTime EndTime = DateTime.MinValue;
+        #region Build Elapsed Time Properties
+        public DateTime StartTime { get; set; } = DateTime.MinValue;
+        public DateTime EndTime { get; set; } = DateTime.MinValue;
         public TimeSpan Elapsed
         {
             get
@@ -1309,52 +1276,72 @@ namespace PEBakery.Core
                 return DateTime.UtcNow - StartTime; // Engine is running
             }
         }
+        #endregion
 
-        // Normal Options
+        #region Normal Option Properties
         /// <summary>
         /// Setting TestMode to true makes Engine.RunCommands return logs
         /// </summary>
-        public bool TestMode = false;
+        public bool TestMode { get; set; } = false;
         /// <summary>
         /// If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         /// </summary>
-        public bool DisableLogger = false;
+        public bool DisableLogger { get; set; } = false;
         /// <summary>
         /// User agent for WebGet command
         /// </summary>
-        public string CustomUserAgent = null;
-        public bool StopBuildOnError = true;
+        public string CustomUserAgent { get; set; } = null;
+        public bool StopBuildOnError { get; set; } = true;
+        #endregion
 
-        // Compat Options
-        public bool CompatDirCopyBug = false;
-        public bool CompatFileRenameCanMoveDir = false;
-        public bool CompatAllowLetterInLoop = false;
-        public bool CompatAllowSetModifyInterface = false;
-        public bool CompatDisableExtendedSectionParams = false;
-        public bool CompatOverridableLoopCounter;
+        #region Compat Option Properties
+        public bool CompatDirCopyBug { get; set; } = false;
+        public bool CompatFileRenameCanMoveDir { get; set; } = false;
+        public bool CompatAllowLetterInLoop { get; set; } = false;
+        public bool CompatAllowSetModifyInterface { get; set; } = false;
+        public bool CompatDisableExtendedSectionParams { get; set; } = false;
+        public bool CompatOverridableLoopCounter { get; set; } = false;
+        #endregion
 
-        // Command State
-        // |- Callback
+        #region Command State Fields and Properties
+        /// <summary>
+        /// Project build callback
+        /// </summary>
         public CodeCommand OnBuildExit = null;
+        /// <summary>
+        /// Script build callback
+        /// </summary>
         public CodeCommand OnScriptExit = null;
-        // |- System,ErrorOff
-        public ErrorOffState? ErrorOffWaitingRegister = null;
-        public bool ErrorOffDepthMinusOne = false;
-        public ErrorOffState? ErrorOff = null;
-        // |- System,SetLocal
-        public Stack<LocalVarsState> LocalVarsStateStack = new Stack<LocalVarsState>(16);
-        // |- ShellExecute
-        public Process RunningSubProcess = null;
-        // |- WebGet
-        public CancellationTokenSource CancelWebGet = null;
+        /// <summary>
+        /// Command state of System,ErrorOff
+        /// </summary>
+        public ErrorOffState ErrorOffWaitingRegister { get; set; } = null;
+        /// <summary>
+        /// Command state of System,ErrorOff
+        /// </summary>
+        public bool ErrorOffDepthMinusOne { get; set; } = false;
+        /// <summary>
+        /// Command state of System,ErrorOff
+        /// </summary>
+        public ErrorOffState ErrorOff { get; set; } = null;
+        /// <summary>
+        /// Command state of System,SetLocal
+        /// </summary>
+        public Stack<LocalVarsState> LocalVarsStateStack { get; set; } = new Stack<LocalVarsState>(16);
+        /// <summary>
+        /// Command state of ShellExecute
+        /// </summary>
+        public Process RunningSubProcess { get; set; } = null;
+        /// <summary>
+        /// Command state of WebGet
+        /// </summary>
+        public CancellationTokenSource CancelWebGet { get; set; } = null;
+        #endregion
 
-        // Lock
+        #region Lock Fields
         public readonly object ForceStopLock = new object();
         public readonly object KillSubProcLock = new object();
         public readonly object RunningSubProcLock = new object();
-
-        // Readonly Fields
-        public readonly string RunOneEntrySection;
         #endregion
 
         #region Constructor
@@ -1372,6 +1359,7 @@ namespace PEBakery.Core
                 case EngineMode.RunAll:
                     { // Run All
                         Scripts = project.ActiveScripts;
+                        TotalScripts = Scripts.Count;
 
                         CurrentScript = Scripts[0]; // MainScript
                         CurrentScriptIdx = 0;
@@ -1387,6 +1375,7 @@ namespace PEBakery.Core
                             goto case EngineMode.RunOne;
 
                         Scripts = new List<Script>(2) { project.MainScript, runSingle };
+                        TotalScripts = 1;
 
                         CurrentScript = Scripts[0];
                         CurrentScriptIdx = 0;
@@ -1397,6 +1386,7 @@ namespace PEBakery.Core
                 case EngineMode.RunOne:
                     { // Run only one script
                         Scripts = new List<Script>(1) { runSingle };
+                        TotalScripts = 1;
 
                         CurrentScript = runSingle;
                         CurrentScriptIdx = Scripts.IndexOf(runSingle);
@@ -1415,6 +1405,7 @@ namespace PEBakery.Core
 
             // MainViewModel
             MainViewModel = mainModel;
+            SetFullProgressMax();
 
             // Use secure random number generator to feed seed of pseudo random number generator.
             byte[] seedArray = new byte[4];
@@ -1559,11 +1550,122 @@ namespace PEBakery.Core
             return _localStateStack.Peek();
         }
         #endregion
+
+        #region Progress Tracking
+        /// <summary>
+        /// Reset script progress before executing a script
+        /// </summary>
+        public void ResetScriptProgress()
+        {
+            ProcessedSectionLines = 0;
+            ProcessedCodeCount = 0;
+            TotalSectionLines = CurrentScript != null ? CurrentScript.Sections.Values.Where(x => x.Type == SectionType.Code).Sum(s => s.Lines.Length) : 0;
+
+            MainViewModel.BuildScriptProgressValue = 0;
+            MainViewModel.BuildScriptProgressMax = TotalSectionLines;
+            DisplayScriptProgress();
+        }
+
+        /// <summary>
+        /// Reset full progress before starting a build
+        /// </summary>
+        public void SetFullProgressMax()
+        {
+            MainViewModel.BuildFullProgressMax = TotalScripts;
+        }
+
+        /// <summary>
+        /// Set full progress base value before executing a script
+        /// </summary>
+        public void ResetFullProgress()
+        {
+            if (RunMode == EngineMode.RunMainAndOne) // Hide the fact that we are running the main script first
+                ProcessedScripts = 0;
+            else
+                ProcessedScripts = CurrentScriptIdx;
+
+            MainViewModel.BuildFullProgressValue = ProcessedScripts;
+        }
+
+
+        /// <summary>
+        /// Update script/full progress precisely (line count)
+        /// </summary>
+        /// <param name="section">Current ScriptSection being run</param>
+        public void PreciseUpdateScriptProgress(ScriptSection section)
+        {
+            if (CurrentScript == null)
+                return;
+
+            // Increase only if cmd came from CurrentScript
+            // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on `IncrementalUpdateSriptProgress()`?
+            // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
+            //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
+            //    (LINE COUNT and CODE COUNT is different, some of the LINES may not be actually runned due to If and Else branch commands).
+            //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
+            //    To mitigate it, `IncrementalUpdateSriptProgress()` increases CODE COUNT and show it to the user as a progress temporary.
+            //    After a section was successfully finished, PEBakery reset the script progress with correct LINE COUNT value.
+            if (CurrentScript.Equals(section.Script))
+            {
+                // Only increase BuildScriptProgressValue once per section
+                ProcessedSectionSet.Add(section.Name);
+
+                // Q) Why we have to apply Math.Max(s.ProcessedSectionLines, s.ProcessedCodeLines)?
+                // A) Some branch commands (If, Else, Loop) call RunSection and RunCommands themselves.
+                //    Their recursive calling of RunSection disturbs `section.Line.Length` checking.
+                //    Current progress tracking impl does not take account of how much commands are actually executed, but how many lines were processed.
+                //    If a branch command ran in a middle of section, sometimes it results in decresasing the script progress %.
+                //    In order to prevent (hide, in fact) this issue, Math.Max() is used.
+                //    The progress bar is eventually set to correct value after a section (which contains branch command) is finished.
+                ProcessedSectionLines += section.Lines.Length;
+                ProcessedCodeCount = Math.Max(ProcessedSectionLines, ProcessedCodeCount);
+                DisplayScriptProgress();
+                DisplayFullProgress();
+            }
+        }
+
+        /// <summary>
+        /// Update script/full progress approximately (code count)
+        /// </summary>
+        /// <param name="section">Current ScriptSection being run</param>
+        public void IncrementalUpdateSriptProgress(ScriptSection section)
+        {
+            if (CurrentScript == null)
+                return;
+
+            // Increase only if the current section came from CurrentScript to prevent Macro section being counted.
+            // s.ProcessedCodeCount is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
+            if (CurrentScript.Equals(section.Script) && !ProcessedSectionSet.Contains(section.Name))
+            {
+                ProcessedCodeCount = Math.Min(ProcessedSectionLines + section.Lines.Length, ProcessedCodeCount + 1);
+                DisplayScriptProgress();
+                DisplayFullProgress();
+            }
+        }
+
+        /// <summary>
+        /// Display script progress to the screen
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void DisplayScriptProgress()
+        {
+            MainViewModel.BuildScriptProgressValue = ProcessedCodeCount;
+        }
+
+        /// <summary>
+        /// Display full progress to the screen
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void DisplayFullProgress()
+        {
+            MainViewModel.BuildFullProgressValue = ProcessedScripts + ((double)ProcessedCodeCount / TotalSectionLines);
+        }
+        #endregion
     }
     #endregion
 
-    #region struct EngineLoopState
-    public struct EngineLoopState
+    #region EngineLoopState
+    public class EngineLoopState
     {
         public enum LoopState
         {
@@ -1571,7 +1673,7 @@ namespace PEBakery.Core
             OnDriveLetter,
         }
 
-        public LoopState State;
+        public LoopState State { get; set; }
         public long CounterIndex;
         public char CounterLetter;
 
@@ -1596,8 +1698,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct EngineLocalState
-    public struct EngineLocalState : IEquatable<EngineLocalState>
+    #region EngineLocalState
+    public class EngineLocalState : IEquatable<EngineLocalState>
     {
         #region Fields and Properties
         /// <summary>
@@ -1605,17 +1707,15 @@ namespace PEBakery.Core
         /// [Process] starts from 1.
         /// If no section is running, it must be 0.
         /// </summary>
-        public int Depth;
-
+        public int Depth { get; set; }
         /// <summary>
-        /// Is running from Macro command?
+        /// Set to true is running from an Macro command.
         /// </summary>
-        public bool IsMacro;
-
+        public bool IsMacro { get; set; }
         /// <summary>
-        /// Is running from Referenced Script? Set to 0 if not referenced
+        /// If the state is created inside referenced script, record its log script id. If not, set to 0.
         /// </summary>
-        public int RefScriptId;
+        public int RefScriptId { get; set; }
         public bool IsRefScript => RefScriptId != 0;
         #endregion
 
@@ -1672,20 +1772,20 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct LocalVarsState
-    public struct LocalVarsState
+    #region LocalVarsState
+    public class LocalVarsState
     {
-        public EngineLocalState LocalState;
-        public Dictionary<string, string> LocalVarsBackup;
+        public EngineLocalState LocalState { get; set; }
+        public Dictionary<string, string> LocalVarsBackup { get; set; }
     }
     #endregion
 
-    #region struct ErrorOffState
-    public struct ErrorOffState
+    #region ErrorOffState
+    public class ErrorOffState
     {
-        public EngineLocalState LocalState;
-        public int StartLineIdx;
-        public int LineCount;
+        public EngineLocalState LocalState { get; set; }
+        public int StartLineIdx { get; set; }
+        public int LineCount { get; set; }
 
         public const int ForceDisable = -1;
     }
