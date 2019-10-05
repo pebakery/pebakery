@@ -614,7 +614,7 @@ namespace PEBakery.Core.ViewModels
             get
             {
                 double percent = Math.Min(BuildScriptProgressValue / BuildScriptProgressMax, 1);
-                return $"{BuildScriptProgressValue}/{BuildScriptProgressMax} ({percent:P1})";
+                return $"{percent:P1}";
             }
         }
 
@@ -653,7 +653,7 @@ namespace PEBakery.Core.ViewModels
             get
             {
                 double percent = Math.Min(BuildFullProgressValue / BuildFullProgressMax, 1);
-                return $"{BuildFullProgressValue}/{BuildFullProgressMax} ({percent:P1})";
+                return $"{percent:P1}";
             }
         }
 

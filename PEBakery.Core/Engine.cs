@@ -123,15 +123,17 @@ namespace PEBakery.Core
                 allLineCount += section.Lines.Length;
             }
 
+            // Reset 
             s.ProcessedSectionLines = 0;
             s.ProcessedCodeCount = 0;
+            s.TotalSectionLines = allLineCount;
             if (s.RunMode == EngineMode.RunMainAndOne) // Hide the fact that we are running the main script first
-                s.ProcessedScripts = 1;
+                s.ProcessedScripts = 0;
             else
-                s.ProcessedScripts = s.CurrentScriptIdx + 1;
-            s.MainViewModel.BuildScriptProgressMax = allLineCount;
+                s.ProcessedScripts = s.CurrentScriptIdx;
+            s.MainViewModel.BuildScriptProgressMax = s.TotalSectionLines;
             s.MainViewModel.BuildScriptProgressValue = 0;
-            s.MainViewModel.BuildFullProgressValue = Math.Min(s.ProcessedScripts, s.ScriptsToProcessCount);
+            s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts;
 
             // Skip displaying script information when running a single script
             if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
@@ -176,7 +178,7 @@ namespace PEBakery.Core
                 if (s.Macro.MacroEnabled)
                     s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
 
-                s.MainViewModel.BuildFullProgressMax = s.ScriptsToProcessCount = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
+                s.MainViewModel.BuildFullProgressMax = s.TotalScripts = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
 
                 // Update project variables
                 s.Project.UpdateProjectVariables();
@@ -417,6 +419,7 @@ namespace PEBakery.Core
                 long newCodeLines = Math.Max(s.ProcessedSectionLines, s.ProcessedCodeCount);
                 s.ProcessedCodeCount = newCodeLines;
                 s.MainViewModel.BuildScriptProgressValue = newCodeLines;
+                s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts + ((double)s.ProcessedCodeCount / s.TotalSectionLines);
 
                 // Only increase BuildScriptProgressValue once per section
                 s.ProcessedSectionSet.Add(section.Name);
@@ -461,6 +464,7 @@ namespace PEBakery.Core
                 {
                     s.ProcessedCodeCount = Math.Min(s.ProcessedSectionLines + section.Lines.Length, s.ProcessedCodeCount + 1);
                     s.MainViewModel.BuildScriptProgressValue = s.ProcessedCodeCount;
+                    s.MainViewModel.BuildFullProgressValue = s.ProcessedScripts + ((double)s.ProcessedCodeCount / s.TotalSectionLines);
                 }
 
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
@@ -1234,7 +1238,7 @@ namespace PEBakery.Core
         /// </summary>
         public HashSet<string> ProcessedSectionSet = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
         /// <summary>
-        /// Accurate counter of how many sections of the script was processed. 
+        /// Accurate counter of how many section lines of the script was processed. 
         /// </summary>
         public long ProcessedSectionLines;
         /// <summary>
@@ -1242,13 +1246,17 @@ namespace PEBakery.Core
         /// </summary>
         public long ProcessedCodeCount;
         /// <summary>
+        /// Total number of section lines of the script to be processed. 
+        /// </summary>
+        public long TotalSectionLines;
+        /// <summary>
         /// Accurate counter of how many scripts were processed. 
         /// </summary>
         public long ProcessedScripts;
         /// <summary>
-        /// How many scripts should be processed?
+        /// Total number of scripts to be processed?
         /// </summary>
-        public long ScriptsToProcessCount;
+        public long TotalScripts;
         /// <summary>
         /// The flag represents whether an Engine should enter `else` command or not.
         /// </summary>
