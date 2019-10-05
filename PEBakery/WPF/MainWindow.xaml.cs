@@ -799,10 +799,10 @@ namespace PEBakery.WPF
                             return;
 
                         if (Model.CurBuildTree != null)
-                            Model.CurBuildTree.BuildFocus = false;
+                            Model.CurBuildTree.Focus = false;
                         Model.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(Model.BuildTreeItems[0], sc.RealPath);
                         if (Model.CurBuildTree != null)
-                            Model.CurBuildTree.BuildFocus = true;
+                            Model.CurBuildTree.Focus = true;
                     }));
 
                     // Do the real job
@@ -884,6 +884,7 @@ namespace PEBakery.WPF
                 focusedElement.DataContext is ProjectTreeItemModel node)
             {
                 node.Checked = !node.Checked;
+                // node.Focus = true;
                 e.Handled = true;
             }
         }
@@ -905,6 +906,8 @@ namespace PEBakery.WPF
                 double msec = watch.Elapsed.TotalMilliseconds;
                 Model.StatusBarText = $"{sc.Title} rendered ({msec:0}ms)";
             }));
+
+            MainTreeView.Focus();
         }
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)

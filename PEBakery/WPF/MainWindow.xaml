@@ -612,6 +612,7 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                            <Setter Property="IsSelected" Value="{Binding Build, Mode=TwoWay}" />
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreePanelForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
@@ -660,7 +661,7 @@
                             <Setter Property="Focusable" Value="False" />
                             <Setter Property="IsExpanded" Value="True" />
                             <Setter Property="cc:BringIntoViewBehavior.BringIntoView" Value="True"  />
-                            <Setter Property="IsSelected" Value="{Binding BuildFocus, Mode=OneWay}" />
+                            <Setter Property="IsSelected" Value="{Binding Focus, Mode=OneWay}" />
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreePanelForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">

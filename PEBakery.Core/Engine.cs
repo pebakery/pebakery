@@ -149,10 +149,10 @@ namespace PEBakery.Core
                     return;
 
                 if (s.MainViewModel.CurBuildTree != null)
-                    s.MainViewModel.CurBuildTree.BuildFocus = false;
+                    s.MainViewModel.CurBuildTree.Focus = false;
                 s.MainViewModel.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
                 if (s.MainViewModel.CurBuildTree != null)
-                    s.MainViewModel.CurBuildTree.BuildFocus = true;
+                    s.MainViewModel.CurBuildTree.Focus = true;
             }));
         }
 

@@ -1295,7 +1295,7 @@ namespace PEBakery.Core.ViewModels
             });
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void DisplayScriptLogo(Script sc)
         {
             if (sc.Type == ScriptType.Directory)
@@ -1591,10 +1591,11 @@ namespace PEBakery.Core.ViewModels
             {
                 while (true)
                 {
+                    // If the Engine was not started yet, do not print elapsed status
                     if (s.StartTime == DateTime.MinValue)
-                    { // Engine not started yet
+                    {
                         s.MainViewModel.StatusBarText = msg;
-                        return;
+                        continue;
                     }
 
                     TimeSpan t = DateTime.UtcNow - s.StartTime;
@@ -1612,7 +1613,7 @@ namespace PEBakery.Core.ViewModels
         /// <summary>
         /// Open text file using specified/default code editor, without Administrator privilege.
         /// </summary>
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))
