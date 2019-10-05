@@ -1595,11 +1595,12 @@ namespace PEBakery.Core.ViewModels
                     if (s.StartTime == DateTime.MinValue)
                     {
                         s.MainViewModel.StatusBarText = msg;
-                        continue;
                     }
-
-                    TimeSpan t = DateTime.UtcNow - s.StartTime;
-                    s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+                    else
+                    {
+                        TimeSpan t = DateTime.UtcNow - s.StartTime;
+                        s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+                    }
 
                     if (token.IsCancellationRequested)
                         return;
