@@ -193,30 +193,27 @@ namespace PEBakery.Core
                     // End execution of a script
                     FinishRunScript(s);
 
-                    if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                    if (s.HaltFlags.CheckBuildHalt())
                         s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
 
                     // OnScriptExit event callback
                     {
                         // Backup halt flags
-                        bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
-                        bool bakErrorHalt = s.ErrorHaltFlag;
-                        bool bakUserHalt = s.UserHaltFlag;
-                        bool bakCmdHalt = s.CmdHaltFlag;
+                        EngineHaltFlags bak = s.HaltFlags.Backup();
 
-                        string eventParam = FinishEventParam(s);
+                        // Create event param to pass it to callback
+                        string eventParam = s.HaltFlags.FinishCallbackEventParam();
 
                         // Reset Halt Flags before running OnScriptExit
                         // Otherwise only first command is executed
-                        s.ResetHaltFlags();
+                        s.HaltFlags.Reset();
 
-                        CheckAndRunCallback(s, ref s.OnScriptExit, eventParam, "OnScriptExit");
+                        // Run `OnScriptExit` callback
+                        CheckAndRunCallback(s, s.OnScriptExit, eventParam, "OnScriptExit");
+                        s.OnScriptExit = null;
 
                         // Restore halt flags
-                        s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
-                        s.ErrorHaltFlag = bakErrorHalt;
-                        s.UserHaltFlag = bakUserHalt;
-                        s.CmdHaltFlag = bakCmdHalt;
+                        s.HaltFlags.Restore(bak);
                     }
 
                     bool runOneScriptExit = false;
@@ -229,26 +226,24 @@ namespace PEBakery.Core
                     }
 
                     if (s.Scripts.Count - 1 <= s.CurrentScriptIdx ||
-                        runOneScriptExit || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                        runOneScriptExit || s.HaltFlags.CheckBuildHalt())
                     { // End of Build
                         // Backup halt flags
-                        bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
-                        bool bakErrorHalt = s.ErrorHaltFlag;
-                        bool bakUserHalt = s.UserHaltFlag;
-                        bool bakCmdHalt = s.CmdHaltFlag;
+                        EngineHaltFlags bak = s.HaltFlags.Backup();
 
-                        if (s.UserHaltFlag)
+                        if (s.HaltFlags.UserHalt)
                         {
                             s.MainViewModel.ScriptDescriptionText = "Build stop requested by user";
                             s.Logger.BuildWrite(s, Logger.LogSeparator);
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Build stop requested by user"));
                         }
 
-                        string eventParam = FinishEventParam(s);
+                        // Create event param to pass it to callback
+                        string eventParam = s.HaltFlags.FinishCallbackEventParam();
 
                         // Reset Halt Flags before running OnBuildExit
                         // Otherwise only first command is executed
-                        s.ResetHaltFlags();
+                        s.HaltFlags.Reset();
 
                         // OnBuildExit event callback
                         if (s.RunMode == EngineMode.RunAll || s.TestMode)
@@ -256,7 +251,8 @@ namespace PEBakery.Core
                             // OnBuildExit is called in full project build or in test mode.
                             // OnBuildExit is not called on script interface control or CodeBox.
                             // (Script interface and CodeBox use EngineMode.RunMainAndOne or EngineMode.RunOne)
-                            CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
+                            CheckAndRunCallback(s, s.OnBuildExit, eventParam, "OnBuildExit", true);
+                            s.OnBuildExit = null;
                         }
 
                         // Recover mouse cursor icon
@@ -270,19 +266,12 @@ namespace PEBakery.Core
                         }
 
                         // Restore halt flags
-                        s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
-                        s.ErrorHaltFlag = bakErrorHalt;
-                        s.UserHaltFlag = bakUserHalt;
-                        s.CmdHaltFlag = bakCmdHalt;
+                        s.HaltFlags.Restore(bak);
 
-                        if (s.UserHaltFlag)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by user"));
-                        else if (s.ErrorHaltFlag)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by error"));
-                        else if (s.CmdHaltFlag)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Halt] command"));
-                        else if (s.PassCurrentScriptFlag)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Exit] command"));
+                        // Log build halt reason if the build was aborted
+                        LogInfo logHaltReason = s.HaltFlags.LogHaltReason();
+                        if (logHaltReason != null)
+                            s.Logger.BuildWrite(s, logHaltReason);
 
                         break;
                     }
@@ -290,7 +279,7 @@ namespace PEBakery.Core
                     // Run Next Script
                     s.CurrentScriptIdx += 1;
                     s.CurrentScript = s.Scripts[s.CurrentScriptIdx];
-                    s.PassCurrentScriptFlag = false;
+                    s.HaltFlags.ScriptHalt = false;
                 }
 
                 // Log Finished Time
@@ -321,7 +310,7 @@ namespace PEBakery.Core
                 if (s.RunningSubProcess != null)
                     s.MainViewModel.WaitingSubProcFinish = true;
 
-                s.UserHaltFlag = true;
+                s.HaltFlags.UserHalt = true;
             }
         }
 
@@ -430,15 +419,20 @@ namespace PEBakery.Core
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(section);
 
-                if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                if (s.HaltFlags.CheckBuildHalt())
                     break;
             }
 
+            // Check if SetLocal should be implicitly disabled
             if (DisableSetLocal(s))
             {
-                int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
+                // If SetLocal is implicitly disabled due to the halt flags, do not log the warning.
+                if (!s.HaltFlags.CheckBuildHalt())
+                {
+                    int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
+                }
             }
 
             DisableErrorOff(s, ErrorOffState.ForceDisable);
@@ -852,7 +846,7 @@ namespace PEBakery.Core
             catch (CriticalErrorException e)
             { // Critical Error, stop build
                 logs.Add(new LogInfo(LogState.CriticalError, e, cmd, ls.Depth));
-                s.ErrorHaltFlag = true;
+                s.HaltFlags.ErrorHalt = true;
             }
             catch (ExecuteException e)
             {
@@ -876,7 +870,7 @@ namespace PEBakery.Core
             if (s.StopBuildOnError)
             {
                 if (logs.Any(x => x.State == LogState.Error))
-                    s.ErrorHaltFlag = true;
+                    s.HaltFlags.ErrorHalt = true;
             }
 
             s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, ls.Depth));
@@ -887,7 +881,7 @@ namespace PEBakery.Core
         #endregion
 
         #region CheckAndRunCallback
-        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentScript = false)
+        private static void CheckAndRunCallback(EngineState s, CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentScript = false)
         {
             if (cbCmd == null)
                 return;
@@ -916,18 +910,6 @@ namespace PEBakery.Core
 
             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.PeekDepth));
             s.Logger.BuildWrite(s, Logger.LogSeparator);
-            cbCmd = null;
-        }
-
-        public static string FinishEventParam(EngineState s)
-        {
-            if (s.UserHaltFlag)
-                return "STOP";
-            if (s.ErrorHaltFlag)
-                return "ERROR";
-            if (s.CmdHaltFlag || s.PassCurrentScriptFlag)
-                return "COMMAND";
-            return "DONE";
         }
         #endregion
 
@@ -1201,22 +1183,7 @@ namespace PEBakery.Core
         /// The flag represents whether an Engine should enter `else` command or not.
         /// </summary>
         public bool ElseFlag { get; set; } = false;
-        /// <summary>
-        /// The flag represents early exit of curernt script by Exit command.
-        /// </summary>
-        public bool PassCurrentScriptFlag { get; set; } = false;
-        /// <summary>
-        /// The flag representes stopping by occurence of error.
-        /// </summary>
-        public bool ErrorHaltFlag { get; set; } = false;
-        /// <summary>
-        /// The flag representes stopping by Halt command.
-        /// </summary>
-        public bool CmdHaltFlag { get; set; } = false;
-        /// <summary>
-        /// The flag representes stopping by user request.
-        /// </summary>
-        public bool UserHaltFlag { get; set; } = false;
+        public EngineHaltFlags HaltFlags { get; private set; }
         public bool CursorWait { get; set; } = false;
         public int BuildId { get; set; } = 0; // Used in logging
         public int ScriptId { get; set; } = 0; // Used in logging
@@ -1307,15 +1274,15 @@ namespace PEBakery.Core
         /// <summary>
         /// Project build callback
         /// </summary>
-        public CodeCommand OnBuildExit = null;
+        public CodeCommand OnBuildExit { get; set; }
         /// <summary>
         /// Script build callback
         /// </summary>
-        public CodeCommand OnScriptExit = null;
+        public CodeCommand OnScriptExit { get; set; }
         /// <summary>
         /// Command state of System,ErrorOff
         /// </summary>
-        public ErrorOffState ErrorOffWaitingRegister { get; set; } = null;
+        public ErrorOffState ErrorOffWaitingRegister { get; set; }
         /// <summary>
         /// Command state of System,ErrorOff
         /// </summary>
@@ -1323,7 +1290,7 @@ namespace PEBakery.Core
         /// <summary>
         /// Command state of System,ErrorOff
         /// </summary>
-        public ErrorOffState ErrorOff { get; set; } = null;
+        public ErrorOffState ErrorOff { get; set; }
         /// <summary>
         /// Command state of System,SetLocal
         /// </summary>
@@ -1331,7 +1298,7 @@ namespace PEBakery.Core
         /// <summary>
         /// Command state of ShellExecute
         /// </summary>
-        public Process RunningSubProcess { get; set; } = null;
+        public Process RunningSubProcess { get; set; }
         /// <summary>
         /// Command state of WebGet
         /// </summary>
@@ -1345,7 +1312,8 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public EngineState(Project project, Logger logger, MainViewModel mainModel, EngineMode mode = EngineMode.RunAll, Script runSingle = null, string entrySection = "Process")
+        public EngineState(Project project, Logger logger, MainViewModel mainModel,
+            EngineMode mode = EngineMode.RunAll, Script runSingle = null, string entrySection = ScriptSection.Names.Process)
         {
             Project = project;
             Logger = logger;
@@ -1399,6 +1367,9 @@ namespace PEBakery.Core
             // Init DepthInfoStack
             InitLocalStateStack();
 
+            // Init HaltFlags
+            HaltFlags = new EngineHaltFlags();
+
             // Current Section
             CurrentSection = null;
             CurSectionInParams = new Dictionary<int, string>();
@@ -1418,7 +1389,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region SetOptions, SetCompat
+        #region SetOptions, SetCompat Methods
         public void SetOptions(Setting setting)
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
@@ -1438,11 +1409,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Reset
+        #region Reset Methods
         public void ResetFull()
         {
             // Halt Flags
-            ResetHaltFlags();
+            HaltFlags.Reset();
 
             // Engine State
             ReturnValue = string.Empty;
@@ -1459,47 +1430,9 @@ namespace PEBakery.Core
             LocalVarsStateStack.Clear();
             RunningSubProcess = null;
         }
-
-        public void ResetHaltFlags()
-        {
-            // Halt Flags
-            PassCurrentScriptFlag = false;
-            ErrorHaltFlag = false;
-            UserHaltFlag = false;
-            CmdHaltFlag = false;
-        }
         #endregion
 
-        #region RunResultReport
-        public string RunResultReport()
-        {
-            string reason = null;
-            if (CmdHaltFlag || UserHaltFlag || ErrorHaltFlag || PassCurrentScriptFlag)
-            {
-                if (CmdHaltFlag)
-                    reason = "[Halt] command";
-                else if (UserHaltFlag)
-                    reason = "user";
-                else if (ErrorHaltFlag)
-                    reason = "error";
-                else if (PassCurrentScriptFlag) // Keep this check at last line, must have lowest priority
-                    reason = "[Exit] command";
-                Debug.Assert(reason != null, "Invalid reason string");
-
-                MainViewModel.BuildEndedWithIssue = true;
-                MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-                MainViewModel.BuildFullProgressValue = MainViewModel.BuildFullProgressMax;
-            }
-            else
-            {
-                MainViewModel.BuildEndedWithIssue = false;
-            }
-
-            return reason;
-        }
-        #endregion
-
-        #region Local State
+        #region Local State Methods
         public void InitLocalStateStack()
         {
             _localStateStack.Clear();
@@ -1551,7 +1484,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Progress Tracking
+        #region Progress Tracking Methods
         /// <summary>
         /// Reset script progress before executing a script
         /// </summary>
@@ -1659,6 +1592,28 @@ namespace PEBakery.Core
         private void DisplayFullProgress()
         {
             MainViewModel.BuildFullProgressValue = ProcessedScripts + ((double)ProcessedCodeCount / TotalSectionLines);
+        }
+        #endregion
+
+        #region RunResultReport Methods
+        public string RunResultReport()
+        {
+            string reason = null;
+            if (HaltFlags.CheckBuildHalt())
+            {
+                reason = HaltFlags.ReportHaltReason();
+                Debug.Assert(reason != null, "Invalid reason string");
+
+                MainViewModel.BuildEndedWithIssue = true;
+                MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
+                MainViewModel.BuildFullProgressValue = MainViewModel.BuildFullProgressMax;
+            }
+            else
+            {
+                MainViewModel.BuildEndedWithIssue = false;
+            }
+
+            return reason;
         }
         #endregion
     }
@@ -1788,6 +1743,119 @@ namespace PEBakery.Core
         public int LineCount { get; set; }
 
         public const int ForceDisable = -1;
+    }
+    #endregion
+
+    #region EngineHaltState
+    public class EngineHaltFlags
+    {
+        #region Properties
+        /// <summary>
+        /// The flag representes stopping by user request.
+        /// </summary>
+        /// <remarks>
+        /// Logged with 1st priority.
+        /// </remarks>
+        public bool UserHalt { get; set; } = false;
+        /// <summary>
+        /// The flag representes stopping by occurence of error.
+        /// </summary>
+        /// /// <remarks>
+        /// Logged with 2nd priority.
+        /// </remarks>
+        public bool ErrorHalt { get; set; } = false;
+        /// <summary>
+        /// The flag representes stopping by Halt command.
+        /// </summary>
+        /// /// <remarks>
+        /// Logged with 3rd priority.
+        /// </remarks>
+        public bool CmdHalt { get; set; } = false;
+        /// <summary>
+        /// The flag represents early exit of curernt script by Exit command.
+        /// </summary>
+        /// /// <remarks>
+        /// Logged with 4th priority.
+        /// </remarks>
+        public bool ScriptHalt { get; set; } = false;
+        #endregion
+
+        #region Check Halt
+        public bool CheckScriptHalt() => UserHalt || ErrorHalt || CmdHalt || ScriptHalt;
+        public bool CheckBuildHalt() => UserHalt || ErrorHalt || CmdHalt;
+        #endregion
+
+        #region Reset
+        public void Reset()
+        {
+            UserHalt = false;
+            ErrorHalt = false;
+            CmdHalt = false;
+            ScriptHalt = false;
+        }
+        #endregion
+
+        #region Backup, Restore
+        public EngineHaltFlags Backup()
+        {
+            return new EngineHaltFlags
+            {
+                UserHalt = this.UserHalt,
+                ErrorHalt = this.ErrorHalt,
+                CmdHalt = this.CmdHalt,
+                ScriptHalt = this.ScriptHalt,
+            };
+        }
+
+        public void Restore(EngineHaltFlags bak)
+        {
+            UserHalt = bak.UserHalt;
+            ErrorHalt = bak.ErrorHalt;
+            CmdHalt = bak.CmdHalt;
+            ScriptHalt = bak.ScriptHalt;
+        }
+        #endregion
+
+        #region FinishCallbackEventParam
+        public string FinishCallbackEventParam()
+        {
+            if (UserHalt)
+                return "STOP";
+            if (ErrorHalt)
+                return "ERROR";
+            if (CmdHalt || ScriptHalt)
+                return "COMMAND";
+            return "DONE";
+        }
+        #endregion
+
+        #region LogHaltReason, ReportHaltReason
+        public LogInfo LogHaltReason()
+        {
+            if (UserHalt)
+                return new LogInfo(LogState.Warning, "Build stopped by user");
+            if (ErrorHalt)
+                return new LogInfo(LogState.Warning, "Build stopped by error");
+            if (CmdHalt)
+                return new LogInfo(LogState.Warning, "Build stopped by [Halt] command");
+            if (ScriptHalt) // Keep this check at last line, must have the lowest priority
+                return new LogInfo(LogState.Warning, "Build stopped by [Exit] command");
+            return null;
+        }
+
+        public string ReportHaltReason()
+        {
+            if (UserHalt)
+                return "user";
+            if (ErrorHalt)
+                return "error";
+            if (CmdHalt)
+                return "[Halt] command";
+            if (ScriptHalt) // Keep this check at last line, must have the lowest priority
+                return "[Exit] command";
+            return null;
+        }
+        #endregion
     }
     #endregion
 }

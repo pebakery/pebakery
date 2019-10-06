@@ -1632,9 +1632,9 @@ namespace PEBakery.Core
 
                 // Report elapsed time
                 await printStatus;
-                string reason = s.RunResultReport();
-                if (reason != null)
-                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                string haltReason = s.RunResultReport();
+                if (haltReason != null)
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
                 else
                     mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
 

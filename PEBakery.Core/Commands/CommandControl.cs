@@ -170,7 +170,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            s.PassCurrentScriptFlag = true;
+            s.HaltFlags.ScriptHalt = true;
 
             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, message, cmd));
 
@@ -187,7 +187,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             s.RunningSubProcess?.Kill();
-            s.CmdHaltFlag = true;
+            s.HaltFlags.CmdHalt = true;
 
             logs.Add(new LogInfo(LogState.Warning, message, cmd));
 

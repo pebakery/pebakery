@@ -705,6 +705,7 @@ namespace PEBakery.WPF
             }
         }
 
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         private async void CreateScriptMetaFilesCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
@@ -987,7 +988,7 @@ namespace PEBakery.WPF
 
             // Stop and wait for the build to end, or forcefully stop it immediately.
             EngineState s = Engine.WorkingEngine.State;
-            if (s.UserHaltFlag && s.RunningSubProcess != null)
+            if (s.HaltFlags.UserHalt && s.RunningSubProcess != null)
             { // Stop is already requested, but waiting for sub-process to end
                 MessageBoxResult result;
                 lock (s.RunningSubProcLock)

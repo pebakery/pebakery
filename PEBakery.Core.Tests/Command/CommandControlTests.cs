@@ -286,7 +286,7 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 EngineTests.Eval(s, rawCode, CodeType.Exit, check);
 
-                Assert.IsTrue(s.PassCurrentScriptFlag);
+                Assert.IsTrue(s.HaltFlags.ScriptHalt);
             }
 
             Template("Exit,UnitTest", ErrorCheck.Warning);
@@ -303,7 +303,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.CmdHaltFlag);
+            Assert.IsTrue(s.HaltFlags.CmdHalt);
         }
         #endregion
 
