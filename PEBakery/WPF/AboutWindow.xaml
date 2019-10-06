@@ -90,21 +90,37 @@
                                Margin="0, 0, 0, 20"
                                FontSize="15"
                                Text="{Binding InfoBuildDate}"/>
-                    <Grid Margin="0, 0, 0, 10"
+                    <Grid Margin="0, 0, 0, 0"
                           HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <iconPacks:PackIconMaterial Kind="GitHubCircle"
-                                                    Width="Auto"
-                                                    Height="Auto" />
+                        <iconPacks:PackIconMaterial Kind="GitHubCircle" Width="20" Height="20"/>
                         <TextBlock Grid.Column="1"
                                    Margin="5, 0, 0, 0"
                                    FontSize="15" >
-                            <Hyperlink NavigateUri="https://github.com/ied206/PEBakery"
+                            <Hyperlink NavigateUri="https://github.com/pebakery/pebakery"
                                        RequestNavigate="Hyperlink_RequestNavigate">
                                 GitHub
+                            </Hyperlink>
+                        </TextBlock>
+                    </Grid>
+                    <Grid Margin="0, 0, 0, 20"
+                          HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <iconPacks:PackIconMaterial Kind="BookVariant" Width="20" Height="20" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="5, 0, 0, 0"
+                                   FontSize="15" >
+                            <Hyperlink NavigateUri="https://github.com/pebakery/pebakery-docs"
+                                       RequestNavigate="Hyperlink_RequestNavigate">
+                                PEBakery Manual
                             </Hyperlink>
                         </TextBlock>
                     </Grid>

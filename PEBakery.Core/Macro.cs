@@ -104,7 +104,7 @@ namespace PEBakery.Core
             if (!MacroScript.Sections.ContainsKey(varDict[KnownVar.APIVAR]))
             {
                 MacroEnabled = false;
-                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
+                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict[KnownVar.APIVAR]}"));
                 return;
             }
             MacroSection = MacroScript.Sections[varDict[KnownVar.APIVAR]];
