@@ -1,6 +1,7 @@
 @echo off
 SETLOCAL
 TITLE Pack Release Binary of PEBakery
+ECHO Pack Release Binary of PEBakery
 
 REM Get Directory Pathes
 SET BaseDir=%~dp0
@@ -8,16 +9,15 @@ IF %BaseDir:~-1%==\ SET BaseDir=%BaseDir:~0,-1%
 REM SET BaseDir=%BaseDir%\..\..
 SET DestDir=%~dp0\BinaryRelease
 
-REM Nuget Package
-res\nuget restore
-
 REM Build PEBakery solution
-REM Adjust these statements according to your envrionment
-REM SET MSBUILD_PATH="%WinDir%\Microsoft.NET\Framework\v4.0.30319\"
-REM SET MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin"
-SET MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin"
-%MSBUILD_PATH%\MSBuild.exe %BaseDir%\LauncherNative /p:Configuration=Release /property:Platform=Win32 /target:Rebuild
-%MSBUILD_PATH%\MSBuild.exe %BaseDir% /p:Configuration=Release /property:Platform="Any CPU" /target:Rebuild
+SET VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+FOR /F "tokens=* usebackq" %%a in (`%VSWHERE% -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) DO SET MSBUILD="%%a"
+ECHO Path of MSBUILD = %MSBUILD%
+ECHO.
+
+REM Build PEBakery Binaries
+%MSBUILD% -t:restore %BaseDir%\LauncherNative /p:Configuration=Release /property:Platform=Win32 /target:Rebuild
+%MSBUILD% -t:restore %BaseDir% /p:Configuration=Release /property:Platform="Any CPU" /target:Rebuild
 
 REM Copy Files
 RD /S /Q %DestDir%
