@@ -48,6 +48,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Command\CommandMacroTests.cs" />
     <Compile Include="Command\CommandScriptTests.cs" />
     <Compile Include="Command\CommandArchiveTests.cs" />
     <Compile Include="Command\CommandBranchTests.cs" />

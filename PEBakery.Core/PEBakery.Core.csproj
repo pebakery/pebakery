@@ -64,6 +64,7 @@
     <Compile Include="CodeOptimizer.cs" />
     <Compile Include="CodeParser.cs" />
     <Compile Include="Commands\CommandDebug.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HttpFileDownloader.cs" />
     <Compile Include="LogInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">

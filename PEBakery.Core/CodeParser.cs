@@ -103,14 +103,14 @@ namespace PEBakery.Core
             return Task.Run(ParseStatements);
         }
 
-        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IList<string> lines)
+        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IReadOnlyList<string> lines)
         {
             return Task.Run(() => ParseStatements(lines));
         }
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements() => ParseStatements(_section.Lines);
 
-        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IList<string> lines)
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IReadOnlyList<string> lines)
         {
             // Select Code sections and compile
             List<CodeCommand> cmds = new List<CodeCommand>();
@@ -146,6 +146,8 @@ namespace PEBakery.Core
             catch (InvalidCodeCommandException e)
             {
                 errLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{_section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                CodeCommand error = new CodeCommand(e.Cmd.RawCode, e.Cmd.Section, CodeType.Error, new CodeInfo_Error(e), e.Cmd.LineIdx);
+                foldedList.Add(error);
             }
 
             if (_opts.OptimizeCode)
@@ -229,7 +231,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCommand, ParseCommandFromSlicedArgs, ParseCodeType, ParseArguments
-        private CodeCommand ParseCommand(IList<string> rawCodes, ref int idx)
+        private CodeCommand ParseCommand(IReadOnlyList<string> rawCodes, ref int idx)
         {
             // Command's line number in physical file
             int lineIdx = _section.LineIdx + 1 + idx;
@@ -4434,11 +4436,24 @@ namespace PEBakery.Core
                         info.Link = newLinkList;
                     }
                     else
+                    {
                         throw new InvalidCodeCommandException("[Else] must be used after [If]", cmd);
-
+                    }
                 }
-                else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
+                else if (cmd.Type == CodeType.Begin || cmd.Type == CodeType.End)
                 {
+                    // Begin and End command must not affect or reset elseFlag
+                    // And it must not be added to foldedList
+                }
+                else if (cmd.Type == CodeType.Comment)
+                { 
+                    // Comment command must not reset elseFlag
+                    // But it must be added to foldedList
+                    foldedList.Add(cmd);
+                }
+                else 
+                {
+                    // The other operands, reset elseFlag and just add them to foldedList.
                     elseFlag = false;
                     foldedList.Add(cmd);
                 }
@@ -4492,7 +4507,7 @@ namespace PEBakery.Core
 
                     return endIdx;
                 }
-                else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
+                else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End || info.Embed.Type == CodeType.Comment) // Cannot come here!
                 {
                     throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                 }
@@ -4580,7 +4595,7 @@ namespace PEBakery.Core
                 elseFlag = true;
                 return endIdx;
             }
-            else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
+            else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End || elseEmbCmd.Type == CodeType.Comment)
             {
                 info.Link.Add(info.Embed);
                 throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with [Else]", cmd);

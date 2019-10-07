@@ -86,9 +86,9 @@ namespace PEBakery.Core
                 return;
             }
 
-            ScriptSection variablesSection = project.MainScript.Sections[ScriptSection.Names.Variables];
+            ScriptSection mainScriptVarSection = project.MainScript.Sections[ScriptSection.Names.Variables];
 
-            Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(variablesSection.Lines);
+            Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(mainScriptVarSection.Lines);
             if (!(varDict.ContainsKey(KnownVar.API) && varDict.ContainsKey(KnownVar.APIVAR)))
             {
                 MacroEnabled = false;

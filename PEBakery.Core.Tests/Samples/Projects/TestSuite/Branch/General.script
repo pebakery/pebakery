@@ -103,15 +103,26 @@ List,Append,%Dest%,#c
 [LoopNestSecond]
 List,Append,%Dest%,#c
 
-[Process-IfElse]
+[Process-IfElse01]
 Set,%Dest%,F
 Set,#r,False
 If,#r,Equal,True,Begin
-    Set,%Dest%,F
+  Set,%Dest%,F
 End
 Else,Begin
-	Set,%Dest%,T
+  Set,%Dest%,T
 End
+
+[Process-IfElse02]
+Set,%Dest%,F
+Set,#r,""
+If,#r,Equal,True,Begin
+  Set,%Dest%,F
+End
+Else,Begin
+  Set,%Dest%,F
+End
+Set,%Dest%,T
 
 [Process-IfElseChain01]
 Set,%Dest%,F
@@ -119,6 +130,7 @@ Set,#r,5
 If,#r,Equal,1,Set,%Dest%,F
 Else,If,#r,Equal,2,Set,%Dest%,F
 Else,If,#r,Equal,3,Set,%Dest%,F
+// Comment must not crash CodeParser by resetting the elseFlag.
 Else,If,#r,Equal,4,Set,%Dest%,F
 Else,If,#r,Equal,5,Set,%Dest%,T
 
@@ -134,6 +146,7 @@ End
 Else,If,#r,Equal,3,Begin
   Set,%Dest%,F
 End
+// Comment must not crash CodeParser by resetting the elseFlag.
 Else,If,#r,Equal,4,Begin
   Set,%Dest%,F
 End

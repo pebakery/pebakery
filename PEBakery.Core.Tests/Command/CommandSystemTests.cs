@@ -176,12 +176,12 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
                 }
             }
-            void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
+            void ScriptTemplate(string treePath, string entrySection, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
                 s.Variables.DeleteKey(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
-                (EngineState st, _) = EngineTests.EvalScript(treePath, check);
+                (EngineState st, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string dest = st.Variables["Dest"];
@@ -212,7 +212,9 @@ namespace PEBakery.Core.Tests.Command
             }, null, null, ErrorCheck.Error);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
-            ScriptTemplate(scPath, "0", "B");
+            ScriptTemplate(scPath, "Process-Simple", "0", "B");
+            ScriptTemplate(scPath, "Process-Branch", "0", "B");
+            ScriptTemplate(scPath, "Process-ImplicitEnd", "-1", "A", ErrorCheck.Warning);
         }
         #endregion
 

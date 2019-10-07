@@ -37,11 +37,11 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("CommandBranch")]
     public class CommandBranchTests
     {
         #region RunExec
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void RunExec()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -66,7 +66,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region Loop
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void Loop()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -100,7 +99,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfElse
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void IfElse()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -112,7 +110,8 @@ namespace PEBakery.Core.Tests.Command
                 Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
             }
 
-            ScriptTemplate(scPath, "Process-IfElse");
+            ScriptTemplate(scPath, "Process-IfElse01");
+            ScriptTemplate(scPath, "Process-IfElse02");
             ScriptTemplate(scPath, "Process-IfElseChain01");
             ScriptTemplate(scPath, "Process-IfElseChain02");
             ScriptTemplate(scPath, "Process-IfElseChain03");
@@ -121,7 +120,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfBeginEnd
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void IfBeginEnd()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -522,8 +520,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistImageInfo
         [TestMethod]
-
-        [TestCategory("CommandBranch")]
         public void IfWimExistImageInfo()
         {
             EngineState s = EngineTests.CreateEngineState();
