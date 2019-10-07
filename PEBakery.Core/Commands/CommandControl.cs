@@ -152,7 +152,7 @@ namespace PEBakery.Core.Commands
 
             // Add Macros
             ScriptSection localSection = sc.Sections[sectionName];
-            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(localSection, lines, true);
+            List<LogInfo> macroLogs = s.Macro.LoadMacroDict(info.Global ? MacroType.Global : MacroType.Local, localSection, lines, true);
             varLogs.AddRange(macroLogs);
 
             if (varLogs.Count == 0) // No variables

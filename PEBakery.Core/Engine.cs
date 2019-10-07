@@ -106,8 +106,8 @@ namespace PEBakery.Core
             s.Logger.BuildWrite(s, s.Variables.LoadDefaultScriptVariables(sc));
 
             // Load Per-Script Macro
-            s.Macro.ResetLocalMacros();
-            s.Logger.BuildWrite(s, s.Macro.LoadLocalMacroDict(sc, false));
+            s.Macro.ResetMacroDict(MacroType.Local);
+            s.Logger.BuildWrite(s, s.Macro.LoadMacroDict(MacroType.Local, sc, false));
 
             // Reset Current Section Parameters
             s.CurSectionInParams = new Dictionary<int, string>();
