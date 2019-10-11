@@ -1650,7 +1650,12 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-                FileHelper.OpenPath(filePath);
+                try { FileHelper.OpenPath(filePath); }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show($"File [{ filePath}] could not be opened.\r\n\r\n{ex.Message}.", $"Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
