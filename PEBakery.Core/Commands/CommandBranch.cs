@@ -93,7 +93,7 @@ namespace PEBakery.Core.Commands
                 // Backup Variables and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
-                localMacros = s.Macro.LocalDict;
+                localMacros = s.Macro.GetMacroDict(MacroType.Local);
 
                 // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
