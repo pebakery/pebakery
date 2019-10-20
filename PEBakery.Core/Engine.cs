@@ -80,7 +80,7 @@ namespace PEBakery.Core
             Debug.Assert(s.PeekDepth == 0, "Incorrect DepthInfoStack handling");
 
             // Set CurrentScript
-            // Note: s.CurrentScriptIdx is not touched here
+            // Note: s.CurrentScriptIdx is not changed here
             if (sc == null)
                 sc = s.CurrentScript;
             else
@@ -1176,8 +1176,8 @@ namespace PEBakery.Core
         /// <summary>
         /// The 1-based index of in-params of current section.
         /// </summary>
-        public Dictionary<int, string> CurSectionInParams { get; set; }
-        public List<string> CurSectionOutParams { get; set; } = null;
+        public Dictionary<int, string> CurSectionInParams { get; set; } = new Dictionary<int, string>();
+        public List<string> CurSectionOutParams { get; set; }
         public string ReturnValue { get; set; } = string.Empty;
         /// <summary>
         /// The flag represents whether an Engine should enter `else` command or not.
@@ -1364,28 +1364,25 @@ namespace PEBakery.Core
                     break;
             }
 
-            // Init DepthInfoStack
+            // Init LocalStateStack
             InitLocalStateStack();
 
             // Init HaltFlags
             HaltFlags = new EngineHaltFlags();
 
-            // Current Section
-            CurrentSection = null;
-            CurSectionInParams = new Dictionary<int, string>();
+            // Use secure random number generator to feed seed of pseudo random number generator.
+            int seed;
+            using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
+            {
+                byte[] seedArray = new byte[4];
+                secureRandom.GetBytes(seedArray);
+                seed = BitConverter.ToInt32(seedArray, 0);
+            }
+            Random = new Random(seed);
 
             // MainViewModel
             MainViewModel = mainModel;
             SetFullProgressMax();
-
-            // Use secure random number generator to feed seed of pseudo random number generator.
-            byte[] seedArray = new byte[4];
-            using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
-            {
-                secureRandom.GetBytes(seedArray);
-            }
-            int seed = BitConverter.ToInt32(seedArray, 0);
-            Random = new Random(seed);
         }
         #endregion
 
@@ -1746,7 +1743,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region EngineHaltState
+    #region EngineHaltFlags
     public class EngineHaltFlags
     {
         #region Properties
@@ -1838,7 +1835,7 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Warning, "Build stopped by error");
             if (CmdHalt)
                 return new LogInfo(LogState.Warning, "Build stopped by [Halt] command");
-            if (ScriptHalt) // Keep this check at last line, must have the lowest priority
+            if (ScriptHalt)
                 return new LogInfo(LogState.Warning, "Build stopped by [Exit] command");
             return null;
         }
@@ -1851,7 +1848,7 @@ namespace PEBakery.Core
                 return "error";
             if (CmdHalt)
                 return "[Halt] command";
-            if (ScriptHalt) // Keep this check at last line, must have the lowest priority
+            if (ScriptHalt)
                 return "[Exit] command";
             return null;
         }

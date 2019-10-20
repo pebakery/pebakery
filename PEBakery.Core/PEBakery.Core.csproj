@@ -182,19 +182,19 @@
       <Version>0.2.0</Version>
     </PackageReference>
     <PackageReference Include="Joveler.Compression.XZ">
-      <Version>3.0.0</Version>
+      <Version>3.1.0</Version>
     </PackageReference>
     <PackageReference Include="Joveler.Compression.ZLib">
-      <Version>3.0.0</Version>
+      <Version>3.1.0</Version>
     </PackageReference>
     <PackageReference Include="Joveler.FileMagician">
-      <Version>1.2.1</Version>
+      <Version>1.3.0</Version>
     </PackageReference>
     <PackageReference Include="MahApps.Metro.IconPacks">
       <Version>2.3.0</Version>
     </PackageReference>
     <PackageReference Include="ManagedWimLib">
-      <Version>1.3.0</Version>
+      <Version>1.4.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNet.Razor">
       <Version>3.2.7</Version>
@@ -205,7 +205,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream">
-      <Version>1.2.2</Version>
+      <Version>1.3.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Wim">
       <Version>1.2.11</Version>
@@ -229,7 +229,7 @@
       <Version>1.1.13</Version>
     </PackageReference>
     <PackageReference Include="Squid-Box.SevenZipSharp">
-      <Version>1.2.219</Version>
+      <Version>1.2.231</Version>
     </PackageReference>
     <PackageReference Include="System.Buffers">
       <Version>4.5.0</Version>

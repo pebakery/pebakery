@@ -1239,7 +1239,7 @@ namespace PEBakery.Core.Tests.Command
 
                 using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
-                    wim.IterateDirTree(1, Wim.RootPath, IterateFlags.RECURSIVE, IterateCallback);
+                    wim.IterateDirTree(1, Path.PathSeparator.ToString(), IterateFlags.RECURSIVE, IterateCallback);
                 }
 
                 return entries;

@@ -690,7 +690,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    // Extract files\
+                    // Extract files
                     s.MainViewModel.SetBuildCommandProgress("WimExtract Progress");
                     try
                     {
