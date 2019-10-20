@@ -7,6 +7,9 @@ Level=5
 Selected=True
 Mandatory=False
 
+[Variables]
+InlineMacro=Set,#r,#1
+
 [Process-Run]
 Set,%Dest%,F
 Run,%ScriptFile%,SetTrue
@@ -27,6 +30,16 @@ RunEx,%ScriptFile%,SetOutParam,In=T
 Set,%Dest%,F
 Set,%ExecVar%,F
 Exec,%ScriptDir%\Exec.script,SetTrue
+Set,%Dest%,#r
+
+[Process-Exec-MacroBak]
+// Test if Exec command successfully preserves local macro dictionary.
+// https://github.com/pebakery/pebakery/commit/268843927156b94f5d1c9c35c8a3359f06b94ff9
+AddVariables,%ScriptFile%,Variables
+Set,%Dest%,F
+Set,%ExecVar%,F
+Exec,%ScriptDir%\Exec.script,SetTrue
+InlineMacro,T
 Set,%Dest%,#r
 
 [SetTrue]

@@ -60,6 +60,7 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-Run-InParam");
             ScriptTemplate(scPath, "Process-RunEx-OutParam");
             ScriptTemplate(scPath, "Process-Exec");
+            ScriptTemplate(scPath, "Process-Exec-MacroBak");
             ScriptTemplate(scPath, "Process-RunEx-OutParam-Error", ErrorCheck.Error);
         }
         #endregion
