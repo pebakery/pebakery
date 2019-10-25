@@ -3374,14 +3374,14 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_IntegerSignedness : MathInfo
     {
-        // Math,ToSign,<%DestVar%>,<Src>,[BitSize]
-        // Math,ToUnsign,<%DestVar%>,<Src>,[BitSize]
+        // Math,ToSign,<%DestVar%>,<Src>,<BitSize>
+        // Math,ToUnsign,<%DestVar%>,<Src>,<BitSize>
 
         public string DestVar;
         public string Src;
-        public uint BitSize; // [8|16|32|64]
+        public string BitSize; // <8|16|32|64>
 
-        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
+        public MathInfo_IntegerSignedness(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;
@@ -3462,12 +3462,12 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitNot : MathInfo
-    { // Math,BitNot,<%DestVar%>,<Src>,[BitSize]
+    { // Math,BitNot,<%DestVar%>,<Src>,<BitSize>
         public string DestVar;
         public string Src; // Should be unsigned
-        public uint BitSize; // [8|16|32|64]
+        public string BitSize; // <BitSize>
 
-        public MathInfo_BitNot(string destVar, string src, uint bitSize)
+        public MathInfo_BitNot(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;
@@ -3482,15 +3482,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitShift : MathInfo
-    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,[BitSize],[UNSIGNED]
+    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,<BitSize>,[UNSIGNED]
         public string DestVar;
         public string Src;
         public string Direction;
         public string Shift;
-        public uint BitSize; // Optional, [8|16|32|64]
+        public string BitSize; // <8|16|32|64>
         public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint bitSize, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, string bitSize, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
@@ -3571,13 +3571,13 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_HexDec : MathInfo
     {
-        // Math,Hex,<%DestVar%>,<Src>,[BitSize]
-        // Math,Dec,<%DestVar%>,<Src>,[BitSize]
+        // Math,Hex,<%DestVar%>,<Src>,<BitSize>
+        // Math,Dec,<%DestVar%>,<Src>,<BitSize>
         public string DestVar;
         public string Src;
-        public uint BitSize; // Optional, [8|16|32|64]
+        public string BitSize;
 
-        public MathInfo_HexDec(string destVar, string src, uint bitSize)
+        public MathInfo_HexDec(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;

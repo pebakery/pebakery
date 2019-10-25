@@ -3181,35 +3181,23 @@ namespace PEBakery.Core
                 case MathType.ToSign:
                 case MathType.ToUnsign:
                     {
-                        // Math,ToSign,<DestVar>,<Src>,[8|16|32|64]
-                        // Math,ToUnsign,<DestVar>,<Src>,[8|16|32|64]
-
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        // Math,ToSign,<DestVar>,<Src>,<BitSize>
+                        // Math,ToUnsign,<DestVar>,<Src>,<BitSize>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
+                        string destVar = args[0];
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        uint bitSize = 32;
-                        if (args.Count == maxArgCount)
-                        {
-                            string sizeStr = args[maxArgCount - 1];
-                            if (sizeStr.Equals("8", StringComparison.Ordinal))
-                                bitSize = 8;
-                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
-                                bitSize = 16;
-                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
-                                bitSize = 32;
-                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
-                                bitSize = 64;
-                            else
-                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
-                        }
+                        // Check BitSize
+                        string bitSize = args[2];
+                        if (!CheckMathBitSizeStr(bitSize))
+                            throw new InvalidCommandException($"[{bitSize} is not a valid bit size", rawCode);
 
-                        info = new MathInfo_IntegerSignedness(args[0], args[1], bitSize);
+                        info = new MathInfo_IntegerSignedness(destVar, args[1], bitSize);
                     }
                     break;
                 case MathType.BoolAnd:
@@ -3264,66 +3252,52 @@ namespace PEBakery.Core
                     }
                     break;
                 case MathType.BitNot:
-                    {  // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                    {  // Math,BitNot,<DestVar>,<Src>,<BitSize>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
+                        string destVar = args[0];
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        uint bitSize = 32;
-                        if (args.Count == maxArgCount)
-                        {
-                            string sizeStr = args[maxArgCount - 1];
-                            if (sizeStr.Equals("8", StringComparison.Ordinal))
-                                bitSize = 8;
-                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
-                                bitSize = 16;
-                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
-                                bitSize = 32;
-                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
-                                bitSize = 64;
-                            else
-                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
-                        }
+                        // Check BitSize
+                        string bitSize = args[2];
+                        if (!CheckMathBitSizeStr(bitSize))
+                            throw new InvalidCommandException($"[{bitSize} is not a valid bit size", rawCode);
 
-                        info = new MathInfo_BitNot(args[0], args[1], bitSize);
+                        info = new MathInfo_BitNot(destVar, args[1], bitSize);
                     }
                     break;
                 case MathType.BitShift:
-                    { // Math,BitShift,<DestVar>,<Src>,<LEFT|RIGHT>,<Shift>,[8|16|32|64],[UNSIGNED]
-                        const int minArgCount = 4;
+                    { // Math,BitShift,<DestVar>,<Src>,<LEFT|RIGHT>,<Shift>,<BitSize>,[UNSIGNED]
+                        const int minArgCount = 5;
                         const int maxArgCount = 6;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
+                        string destVar = args[0];
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        uint size = 32;
+                        // Check BitSize
+                        string bitSize = args[4];
+                        if (!CheckMathBitSizeStr(bitSize))
+                            throw new InvalidCommandException($"[{bitSize} is not a valid bit size", rawCode);
+
                         bool unsigned = false;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
                             if (arg.Equals("UNSIGNED", StringComparison.OrdinalIgnoreCase))
                                 unsigned = true;
-                            else if (arg.Equals("8", StringComparison.Ordinal))
-                                size = 8;
-                            else if (arg.Equals("16", StringComparison.Ordinal))
-                                size = 16;
-                            else if (arg.Equals("32", StringComparison.Ordinal))
-                                size = 32;
-                            else if (arg.Equals("64", StringComparison.Ordinal))
-                                size = 64;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        info = new MathInfo_BitShift(args[0], args[1], args[2], args[3], size, unsigned);
+                        info = new MathInfo_BitShift(destVar, args[1], args[2], args[3], bitSize, unsigned);
                     }
                     break;
                 case MathType.Ceil:
@@ -3368,32 +3342,21 @@ namespace PEBakery.Core
                 case MathType.Hex:
                 case MathType.Dec:
                     {
-                        // Math,Hex,<DestVar>,<Integer>,[BitSize]
-                        // Math,Dec,<DestVar>,<Integer>,[BitSize]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        // Math,Hex,<DestVar>,<Integer>,<BitSize>
+                        // Math,Dec,<DestVar>,<Integer>,<BitSize>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
+                        // Check DestVar
                         string destVar = args[0];
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        uint bitSize = 32;
-                        if (args.Count == 3)
-                        {
-                            string sizeStr = args[2];
-                            if (sizeStr.Equals("8", StringComparison.Ordinal))
-                                bitSize = 8;
-                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
-                                bitSize = 16;
-                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
-                                bitSize = 32;
-                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
-                                bitSize = 64;
-                            else
-                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
-                        }
+                        // Check BitSize
+                        string bitSize = args[2];
+                        if (!CheckMathBitSizeStr(bitSize))
+                            throw new InvalidCommandException($"[{bitSize} is not a valid bit size", rawCode);
 
                         info = new MathInfo_HexDec(destVar, args[1], bitSize);
                     }
@@ -3790,6 +3753,23 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Invalid MathType [{typeStr}]");
 
             return type;
+        }
+
+        /// <summary>
+        /// Return true if valid
+        /// </summary>
+        /// <param name="sizeStr"></param>
+        /// <returns>Return true if valid</returns>
+        public static bool CheckMathBitSizeStr(string sizeStr)
+        {
+            // If a str is a variable, BitSizeStr is always valid
+            if (Variables.DetectType(sizeStr) != Variables.VarKeyType.None)
+                return true;
+
+            // If a str is a const string, it must be one of 8, 16, 32 and 64
+            if (!NumberHelper.ParseInt32(sizeStr, out int sizeVal))
+                return false;
+            return sizeVal == 8 || sizeVal == 16 || sizeVal == 32 || sizeVal == 64;
         }
         #endregion
 
@@ -4314,26 +4294,20 @@ namespace PEBakery.Core
                 string condStr = args[cIdx + 1];
                 BranchConditionType condType;
 
-                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
+                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase) || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Equal;
-                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase) || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.EqualX;
-                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase) || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Smaller;
-                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
-                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase) || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Bigger;
-                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase) || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.SmallerEqual;
-                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase) || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.BiggerEqual;
-                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
-                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase)) // Keep != 
+                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) || // Deprecated
+                    condStr.Equals("!=", StringComparison.OrdinalIgnoreCase)) // Keep != 
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
@@ -4446,12 +4420,12 @@ namespace PEBakery.Core
                     // And it must not be added to foldedList
                 }
                 else if (cmd.Type == CodeType.Comment)
-                { 
+                {
                     // Comment command must not reset elseFlag
                     // But it must be added to foldedList
                     foldedList.Add(cmd);
                 }
-                else 
+                else
                 {
                     // The other operands, reset elseFlag and just add them to foldedList.
                     elseFlag = false;

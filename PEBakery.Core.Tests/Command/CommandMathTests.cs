@@ -149,23 +149,27 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             // IntSign
-            SuccessTemplate(s, "Math,ToSign,%Dest%,1", "1"); // 32
-            SuccessTemplate(s, "Math,ToSign,%Dest%,4294967295", "-1"); // 32
+            SuccessTemplate(s, "Math,ToSign,%Dest%,1,32", "1"); // 32
+            SuccessTemplate(s, "Math,ToSign,%Dest%,4294967295,32", "-1"); // 32
             SuccessTemplate(s, "Math,ToSign,%Dest%,2,16", "2"); // 16
             SuccessTemplate(s, "Math,ToSign,%Dest%,65534,16", "-2"); // 16
+            ErrorTemplate(s, "Math,ToSign,%Dest%,1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,ToSign,%Dest%,4294967295", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
 
             // IntUnsign
-            SuccessTemplate(s, "Math,ToUnsign,%Dest%,1", "1"); // 32
-            SuccessTemplate(s, "Math,ToUnsign,%Dest%,-1", "4294967295"); // 32
+            SuccessTemplate(s, "Math,ToUnsign,%Dest%,1,32", "1"); // 32
+            SuccessTemplate(s, "Math,ToUnsign,%Dest%,-1,32", "4294967295"); // 32
             SuccessTemplate(s, "Math,ToUnsign,%Dest%,2,16", "2"); // 16
             SuccessTemplate(s, "Math,ToUnsign,%Dest%,-2,16", "65534"); // 16
+            ErrorTemplate(s, "Math,ToUnsign,%Dest%,1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,ToUnsign,%Dest%,-1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
 
             // Test Error
             ErrorTemplate(s, "Math,ToSign,Dest,1", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,ToUnsign,%Dest%,1,2", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,ToSign,%Dest%,XYZ", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.3", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.0", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,ToSign,%Dest%,XYZ", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.3", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.0", ErrorCheck.ParserError);
         }
         #endregion
 
@@ -272,15 +276,17 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             // BoolNot
-            SuccessTemplate(s, "Math,BitNot,%Dest%,2", "4294967293"); // 32bit
-            SuccessTemplate(s, "Math,BitNot,%Dest%,4294967293", "2"); // 32bit
+            SuccessTemplate(s, "Math,BitNot,%Dest%,2,32", "4294967293"); // 32bit
+            SuccessTemplate(s, "Math,BitNot,%Dest%,4294967293,32", "2"); // 32bit
             SuccessTemplate(s, "Math,BitNot,%Dest%,2,16", "65533"); // 16bit
             SuccessTemplate(s, "Math,BitNot,%Dest%,65533,16", "2"); // 16bit
 
             // Test Error
+            ErrorTemplate(s, "Math,BitNot,%Dest%,2", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,BitNot,%Dest%,4294967293", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
             ErrorTemplate(s, "Math,BitNot,Dest,12,8", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitNot,%Dest%,12,17", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BitNot,%Dest%,ABC", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BitNot,%Dest%,ABC", ErrorCheck.ParserError);
         }
         #endregion
 
@@ -293,12 +299,14 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             // BitShift
-            SuccessTemplate(s, "Math,BitShift,%Dest%,8,LEFT,2", "32"); // 32bit
-            SuccessTemplate(s, "Math,BitShift,%Dest%,9,RIGHT,1", "4"); // 32bit
+            SuccessTemplate(s, "Math,BitShift,%Dest%,8,LEFT,2,32", "32"); // 32bit
+            SuccessTemplate(s, "Math,BitShift,%Dest%,9,RIGHT,1,32", "4"); // 32bit
             SuccessTemplate(s, "Math,BitShift,%Dest%,7,LEFT,7,16", "896"); // 16bit
             SuccessTemplate(s, "Math,BitShift,%Dest%,7,LEFT,7,8", "128"); // 8bit
 
             // Test Error
+            ErrorTemplate(s, "Math,BitShift,%Dest%,8,LEFT,2", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,BitShift,%Dest%,9,RIGHT,1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
             ErrorTemplate(s, "Math,BitShift,Dest,8,LEFT,2", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitShift,%Dest%,12,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitShift,%Dest%,123,LEFT,7,19", ErrorCheck.ParserError);
@@ -403,12 +411,10 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,32", "0x0000000F");
             SuccessTemplate(s, "Math,Hex,%Dest%,-1,32", "0xFFFFFFFF");
             SuccessTemplate(s, "Math,Hex,%Dest%,255,32", "0x000000FF");
-
-            // 32bit (default)
-            SuccessTemplate(s, "Math,Hex,%Dest%,15", "0x0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F", "0x0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1", "0xFFFFFFFF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255", "0x000000FF");
+            ErrorTemplate(s, "Math,Hex,%Dest%,15", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,Hex,%Dest%,0x0F", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,Hex,%Dest%,-1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,Hex,%Dest%,255", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
 
             // 64bit
             SuccessTemplate(s, "Math,Hex,%Dest%,15,64", "0x000000000000000F");
@@ -447,11 +453,9 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,32", "15");
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,32", "4294967295");
             ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000,32", ErrorCheck.Error);
-
-            // 32bit (default)
-            SuccessTemplate(s, "Math,Dec,%Dest%,0x0F", "15");
-            SuccessTemplate(s, "Math,Dec,%Dest%,-1", "4294967295");
-            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x0F", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,Dec,%Dest%,-1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000", ErrorCheck.ParserError);
 
             // 64bit
             SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,64", "15");
@@ -498,7 +502,7 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Templates
-        public void SuccessTemplate(EngineState s, string rawCode, string destCheck)
+        public static void SuccessTemplate(EngineState s, string rawCode, string destCheck)
         {
             s.Variables.DeleteKey(VarsType.Local, "Dest");
             EngineTests.Eval(s, rawCode, CodeType.Math, ErrorCheck.Success);
@@ -507,7 +511,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(dest.Equals(destCheck, StringComparison.Ordinal));
         }
 
-        public void ErrorTemplate(EngineState s, string rawCode, ErrorCheck check)
+        public static void ErrorTemplate(EngineState s, string rawCode, ErrorCheck check)
         {
             EngineTests.Eval(s, rawCode, CodeType.Math, check);
         }
