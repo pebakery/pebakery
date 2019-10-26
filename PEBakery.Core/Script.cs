@@ -102,6 +102,9 @@ namespace PEBakery.Core
         public string FullIdentifier => $"{_level}_{_realPath}_{_treePath}";
         public string RealIdentifier => $"{_level}_{_realPath}";
         public string TreeIdentifier => $"{_level}_{_treePath}";
+        /// <summary>
+        /// Full path of the script file. In case of the linked script, this property return the real path of the linked .script file.
+        /// </summary>
         public string RealPath
         {
             get
@@ -111,7 +114,13 @@ namespace PEBakery.Core
                 return _realPath;
             }
         }
+        /// <summary>
+        /// 'Direct' full path of the script file. In case of the linked script, this property return the real path of the .link file.
+        /// </summary>
         public string DirectRealPath => _realPath;
+        /// <summary>
+        /// The location script should be displayed in project script tree. It determines the build order. TreePath is empty in linked script.
+        /// </summary>
         public string TreePath
         {
             get => _treePath;
@@ -158,6 +167,9 @@ namespace PEBakery.Core
             }
             set => _project = value;
         }
+        /// <summary>
+        /// Title of the script, displayed in the PEBakery UI.
+        /// </summary>
         public string Title
         {
             get

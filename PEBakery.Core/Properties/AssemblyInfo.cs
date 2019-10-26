@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PEBakery.Core")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Joveler")]
+[assembly: AssemblyCompany("PEBakery Team")]
 [assembly: AssemblyProduct("PEBakery.Core")]
-[assembly: AssemblyCopyright("Copyright © 2016-2018")]
+[assembly: AssemblyCopyright("Copyright © 2016-2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 // ComVisible을 false로 설정하면 이 어셈블리의 형식이 COM 구성 요소에 

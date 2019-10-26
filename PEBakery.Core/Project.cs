@@ -306,6 +306,8 @@ namespace PEBakery.Core
             }
 
             // Sort - script first, directory last
+            // Use StringComparison.InvariantCultureIgnoreCase to emulate WinBuilder sorting
+            // .link files should use RealPath (path of linked .script), not DirectRealPath (path of .link itself)
             scTree.Sort((x, y) =>
             {
                 if (x.Data.Level == y.Data.Level)
@@ -313,16 +315,28 @@ namespace PEBakery.Core
                     if (x.Data.Type == ScriptType.Directory)
                     {
                         if (y.Data.Type == ScriptType.Directory)
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
+                        {
+                            string xPath = Path.GetFileName(x.Data.RealPath);
+                            string yPath = Path.GetFileName(y.Data.RealPath);
+                            return string.Compare(xPath, yPath, StringComparison.InvariantCultureIgnoreCase);
+                        }
                         else
+                        {
                             return 1;
+                        }
                     }
                     else
                     {
                         if (y.Data.Type == ScriptType.Directory)
+                        {
                             return -1;
+                        }
                         else
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
+                        {
+                            string xPath = Path.GetFileName(x.Data.RealPath);
+                            string yPath = Path.GetFileName(y.Data.RealPath);
+                            return string.Compare(xPath, yPath, StringComparison.InvariantCultureIgnoreCase);
+                        }
                     }
                 }
                 else

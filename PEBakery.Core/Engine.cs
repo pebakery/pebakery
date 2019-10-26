@@ -393,7 +393,7 @@ namespace PEBakery.Core
         {
             if (cmds.Count == 0)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.PeekDepth + 1));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in section [{section.Name}]", s.PeekDepth));
                 return null;
             }
 
