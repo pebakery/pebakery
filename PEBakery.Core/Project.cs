@@ -1108,7 +1108,7 @@ namespace PEBakery.Core
                             ScriptParseInfo dpi = DirEntries.FirstOrDefault(x =>
                                 x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                            if (dpi.Equals(default))
+                            if (dpi == null)
                             {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
