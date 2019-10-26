@@ -66,6 +66,7 @@
     <Compile Include="Commands\CommandDebug.cs" />
     <Compile Include="HttpFileDownloader.cs" />
     <Compile Include="LogInfo.cs" />
+    <Compile Include="ProjectCollection.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
