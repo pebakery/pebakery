@@ -44,6 +44,7 @@ namespace PEBakery.Ini.Tests
             ReadKey_1();
             ReadKey_2();
             ReadKey_3();
+            ReadKey_DoubleQuote();
         }
 
         public void ReadKey_1()
@@ -114,6 +115,30 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
                 Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
                 Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void ReadKey_DoubleQuote()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine("CUR_DIR       = \"Cursors\\Material Design Cursors\""); // #134
+                    w.WriteLine("1     = \"ABC\\DEF\"");
+                    w.WriteLine("2=\"XY Z\"");
+                }
+
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("\"XY Z\"", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR").Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
             }
             finally
             {

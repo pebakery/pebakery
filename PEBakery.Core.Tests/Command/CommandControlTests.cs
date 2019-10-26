@@ -384,9 +384,6 @@ namespace PEBakery.Core.Tests.Command
 
             void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
-                // void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = false;
-
-                // (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetState, entrySection);
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {

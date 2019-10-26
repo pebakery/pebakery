@@ -36,6 +36,8 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("Command")]
+    [TestCategory("CommandIni")]
     public class CommandIniTests
     {
         #region SampleStr
@@ -58,6 +60,11 @@ namespace PEBakery.Core.Tests.Command
             "# Sharp", // 14
             "나=8", // 15
             "다=9", // 16
+            string.Empty, // 17
+            "[Doublequote]", // 18
+            "CUR_DIR       = \"Cursors\\Material Design Cursors\"", // 21, See Issue #134
+            "DQ1=\"A B C\"", // 19
+            "DQ2  =  \"X\\Y\\Z\"", // 20, See Issue #134
         };
 
         private static string SampleStr()
@@ -71,8 +78,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IniRead
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandIni")]
         public void IniRead()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -81,8 +86,8 @@ namespace PEBakery.Core.Tests.Command
             string tempDir = FileHelper.GetTempDir();
             try
             {
-                string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
-                string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
+                string tempFile = Path.Combine(tempDir, "sample.ini");
+                string tempFile2 = Path.Combine(tempDir, "empty.ini");
 
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,A,%Dest%", tempFile, sampleStr, "1");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,B,%Dest%", tempFile, sampleStr, "2");
@@ -90,6 +95,9 @@ namespace PEBakery.Core.Tests.Command
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec3,나,%Dest%", tempFile, sampleStr, "8");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec2,無,%Dest%", tempFile, sampleStr, string.Empty);
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec2,Z", tempFile, string.Empty, null, ErrorCheck.ParserError);
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ1,%Dest%", tempFile, sampleStr, "#$qA B C#$q");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ2,%Dest%", tempFile, sampleStr, "#$qX\\Y\\Z#$q");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,CUR_DIR,%Dest%", tempFile, sampleStr, "#$qCursors\\Material Design Cursors#$q");
 
                 // Optimization
                 ReadOptTemplate(s, CodeType.IniReadOp, new List<string>
@@ -116,8 +124,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IniWrite
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandIni")]
         public void IniWrite()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -125,8 +131,8 @@ namespace PEBakery.Core.Tests.Command
             string tempDir = FileHelper.GetTempDir();
             try
             {
-                string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
-                string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
+                string tempFile = Path.Combine(tempDir, "samples.ini");
+                string tempFile2 = Path.Combine(tempDir, "empty.ini");
 
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("[6DoF]");
@@ -229,6 +235,20 @@ namespace PEBakery.Core.Tests.Command
                     $@"IniWrite,{tempFile},6DoF,Descent,Sublevel Zero Redux",
                     $@"IniWrite,{tempFile2},6DoF,Parallax,Revival",
                 }, tempFile, sampleStr, resultStr);
+
+                // Passthrough + Doublequote test, Issue #134
+                b.Clear();
+                b.AppendLine("[Passthrough]");
+                b.AppendLine("DQ1  =  \"A B C\"");
+                b.AppendLine("DQ2  =  \"X\\Y\\Z\"");
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Passthrough]");
+                b.AppendLine("DQ1=\"A B C D\"");
+                b.AppendLine("DQ2  =  \"X\\Y\\Z\"");
+                b.AppendLine();
+                resultStr = b.ToString();
+                WriteTemplate(s, CodeType.IniWrite, $@"IniWrite,{tempFile},Passthrough,DQ1,#$qA B C D#$q", tempFile, sampleStr, resultStr);
             }
             finally
             {
@@ -740,6 +760,68 @@ namespace PEBakery.Core.Tests.Command
             finally
             {
                 Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+
+        #region Rewrite
+        /// <summary>
+        /// Regression test of issue #134
+        /// </summary>
+        [TestMethod]
+        public void Rewrite()
+        {
+            string scTreePath = Path.Combine(EngineTests.Project.ProjectName, "Ini", "Rewrite.script");
+            string destFile = FileHelper.GetTempFile(".pbini");
+            try
+            {
+                void Template(string entrySection)
+                {
+                    void SetState(EngineState es)
+                    {
+                        es.Variables.SetValue(VarsType.Fixed, "DestFile", destFile);
+                    }
+
+                    (EngineState s, _) = EngineTests.EvalScript(scTreePath, ErrorCheck.Success, SetState, entrySection);
+
+                    // Old values read by IniRead
+                    string oa = s.Variables["A"];
+                    string ob = s.Variables["B"];
+                    string oc = s.Variables["C"];
+                    string okc1 = s.Variables["KC1"];
+                    string okc2 = s.Variables["KC2"];
+                    string okc3 = s.Variables["KC3"];
+
+                    // New values written by IniWrite
+                    string na = s.Variables["NA"];
+                    string nb = s.Variables["NB"];
+                    string nc = s.Variables["NC"];
+                    string nkc1 = s.Variables["NKC1"];
+                    string nkc2 = s.Variables["NKC2"];
+                    string nkc3 = s.Variables["NKC3"];
+
+                    // Compare old values and new values
+                    Assert.IsFalse(string.IsNullOrEmpty(oa));
+                    Assert.IsFalse(string.IsNullOrEmpty(ob));
+                    Assert.IsFalse(string.IsNullOrEmpty(oc));
+                    Assert.IsFalse(string.IsNullOrEmpty(okc1));
+                    Assert.IsFalse(string.IsNullOrEmpty(okc2));
+                    Assert.IsFalse(string.IsNullOrEmpty(okc3));
+                    Assert.IsTrue(oa.Equals(na, StringComparison.Ordinal));
+                    Assert.IsTrue(ob.Equals(nb, StringComparison.Ordinal));
+                    Assert.IsTrue(oc.Equals(nc, StringComparison.Ordinal));
+                    Assert.IsTrue(okc1.Equals(nkc1, StringComparison.Ordinal));
+                    Assert.IsTrue(okc2.Equals(nkc2, StringComparison.Ordinal));
+                    Assert.IsTrue(okc3.Equals(nkc3, StringComparison.Ordinal));
+                }
+
+                Template("Process-Rewrite-NoOpts");
+                Template("Process-Rewrite-Opts");
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
             }
         }
         #endregion
