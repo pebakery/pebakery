@@ -257,7 +257,6 @@ namespace PEBakery.Core
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-            // Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
             Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
             _realPath = realPath;
@@ -700,7 +699,7 @@ namespace PEBakery.Core
             string rawLine = sc.MainInfo["Disable"];
 
             // Check if rawCode is Empty
-            if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(rawLine))
                 return null;
 
             // Check double-quote's occurence - must be 2n
@@ -735,11 +734,13 @@ namespace PEBakery.Core
                     if (!pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase))
                         filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     LogInfo log = new LogInfo(LogState.Warning, Logger.LogExceptionMessage(e));
                     errorLogs.Add(log);
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             }
 
             return filteredPaths.ToArray();
