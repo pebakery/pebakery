@@ -210,8 +210,8 @@ namespace PEBakery.Core
                 ScriptParseInfo[] spis = allParseInfos
                     // Only .script and .link
                     .Where(x => !x.IsDir)
-                    // Filter duplicated scripts (TODO: Used this for just in case, change it to assert later)
-                    .Distinct(new ScriptParseInfoComparer())
+                    // Filter duplicated scripts
+                    .Distinct(ScriptParseInfoComparer.Instance)
                     // This sort is for more natural loading messages
                     // It should be sorted one more time later, using KwayTree
                     .OrderBy(x => x.RealPath, StringComparer.OrdinalIgnoreCase)
@@ -222,7 +222,7 @@ namespace PEBakery.Core
                     // Exclude %BaseDir%\Projects\{ProjectName} directory
                     .Where(x => !x.RealPath.Equals(projectDir, StringComparison.OrdinalIgnoreCase))
                     // Filter duplicated directories (such as directory covered both by scripts/links and dirLinks)
-                    .Distinct(new ScriptParseInfoComparer())
+                    .Distinct(ScriptParseInfoComparer.Instance)
                     // This sort is for more natural loading messages
                     // It should be sorted one more time later, using KwayTree
                     .OrderBy(x => x.RealPath, StringComparer.OrdinalIgnoreCase)
@@ -257,9 +257,28 @@ namespace PEBakery.Core
                 string prefix = Path.GetDirectoryName(linkFile.Substring(ProjectRoot.Length + 1)); // +1 for \
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
-                var paths = rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0);
+                // Local functions fo collect ScriptParseInfo
+                void CollectScriptsFromDir(string dirPath)
+                {
+                    ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x) => new ScriptParseInfo
+                    {
+                        RealPath = x.Path,
+                        TreePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\')),
+                        IsDir = x.IsDir,
+                        IsDirLink = true,
+                    };
 
-                foreach (string path in paths)
+                    IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
+                        .Select(x => CreateScriptParseInfo(x));
+                    IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.link", SearchOption.AllDirectories)
+                        .Select(x => CreateScriptParseInfo(x));
+
+                    // Duplicated ScriptParseInfo is removed later by GetScriptPaths.
+                    dirLinks.AddRange(scInfos);
+                    dirLinks.AddRange(linkInfos);
+                }
+
+                foreach (string path in rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0))
                 {
                     Debug.Assert(path != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
@@ -282,16 +301,32 @@ namespace PEBakery.Core
                             {
                                 Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
-                                var infos = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
-                                    .Select(x => new ScriptParseInfo
-                                    {
-                                        RealPath = x.Path,
-                                        TreePath = Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')),
-                                        IsDir = x.IsDir,
-                                        IsDirLink = true,
-                                    });
-                                dirLinks.AddRange(infos);
+                                CollectScriptsFromDir(subDir);
                             }
+
+                            /*
+                            string[] subDirs = Directory.GetDirectories(dirPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
+
+                                ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x) => new ScriptParseInfo
+                                {
+                                    RealPath = x.Path,
+                                    TreePath = Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')),
+                                    IsDir = x.IsDir,
+                                    IsDirLink = true,
+                                };
+
+                                IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => CreateScriptParseInfo(x));
+                                dirLinks.AddRange(scInfos);
+
+                                IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetFilesExWithDirs(subDir, "*.link", SearchOption.AllDirectories)
+                                    .Select(x => CreateScriptParseInfo(x));
+                                dirLinks.AddRange(linkInfos);
+                            }
+                            */
                         }
                         else
                         { // Relative to %BaseDir%
@@ -307,16 +342,31 @@ namespace PEBakery.Core
                             {
                                 Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
-                                var infos = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
-                                    .Select(x => new ScriptParseInfo
-                                    {
-                                        RealPath = x.Path,
-                                        TreePath = Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')),
-                                        IsDir = x.IsDir,
-                                        IsDirLink = true,
-                                    });
-                                dirLinks.AddRange(infos);
+                                CollectScriptsFromDir(subDir);
                             }
+                            /*
+                            string[] subDirs = Directory.GetDirectories(fullPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
+
+                                ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x) => new ScriptParseInfo
+                                {
+                                    RealPath = x.Path,
+                                    TreePath = Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')),
+                                    IsDir = x.IsDir,
+                                    IsDirLink = true,
+                                };
+
+                                IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => CreateScriptParseInfo(x));
+                                dirLinks.AddRange(scInfos);
+
+                                IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetFilesExWithDirs(subDir, "*.link", SearchOption.AllDirectories)
+                                    .Select(x => CreateScriptParseInfo(x));
+                                dirLinks.AddRange(linkInfos);
+                            }
+                            */
                         }
                     }
                     else
@@ -335,15 +385,7 @@ namespace PEBakery.Core
                                 continue;
                             }
 
-                            var infos = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
-                                .Select(x => new ScriptParseInfo
-                                {
-                                    RealPath = x.Path,
-                                    TreePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\')),
-                                    IsDir = x.IsDir,
-                                    IsDirLink = true,
-                                });
-                            dirLinks.AddRange(infos);
+                            CollectScriptsFromDir(dirPath);
                         }
                         else
                         { // Relative to %BaseDir%
@@ -356,15 +398,7 @@ namespace PEBakery.Core
                                 continue;
                             }
 
-                            var infos = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
-                                .Select(x => new ScriptParseInfo
-                                {
-                                    RealPath = x.Path,
-                                    TreePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')),
-                                    IsDir = x.IsDir,
-                                    IsDirLink = true,
-                                });
-                            dirLinks.AddRange(infos);
+                            CollectScriptsFromDir(fullPath);
                         }
                     }
                 }
@@ -439,7 +473,8 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
 
-            // Doing this will consume memory, but also greatly increase performance.
+            // Doing this will consume some memory, but also greatly increase performance.
+            // -> Actually, using a cache relieves GC pressure a lot, so it is effective even for memory consumption.
             CacheModel.ScriptCache[] cachePool = null;
             if (scriptCache != null)
             {
@@ -472,7 +507,7 @@ namespace PEBakery.Core
             int loadCount = 0;
             bool cacheValid = true;
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
-            Debug.Assert(linkSources.Count(x => x.IsDirLink) == 0);
+            // Debug.Assert(linkSources.Count(x => x.IsDirLink) == 0);
             Parallel.ForEach(linkSources, sc =>
             {
                 Script linkTarget = null;
@@ -495,7 +530,7 @@ namespace PEBakery.Core
                             {
                                 linkTarget.TreePath = string.Empty;
                                 linkTarget.Project = sc.Project;
-                                linkTarget.IsDirLink = false;
+                                linkTarget.IsDirLink = sc.IsDirLink;
                                 cached = Project.LoadReport.Stage2Cached;
                             }
                         }
@@ -507,7 +542,7 @@ namespace PEBakery.Core
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = ScriptType.Link;
                             string fullPath = Path.Combine(_baseDir, linkRealPath);
-                            linkTarget = new Script(type, fullPath, string.Empty, sc.Project, null, false, false, false);
+                            linkTarget = new Script(type, fullPath, string.Empty, sc.Project, null, false, false, sc.IsDirLink);
 
                             Debug.Assert(sc != null);
                         }
@@ -522,10 +557,12 @@ namespace PEBakery.Core
                     }
                     while (linkTarget.Type != ScriptType.Script);
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 { // Parser Error
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                 if (valid)
                 {
@@ -542,7 +579,7 @@ namespace PEBakery.Core
 
                 if (scriptCache == null)
                 {
-                    // Loading a project without script cache generates a lot of Gen 2 heap object
+                    // Loading a project without a script cache generates a lot of Gen 2 heap object
                     int thisCount = Interlocked.Increment(ref loadCount);
                     if (thisCount % Project.LoadGCInterval == 0)
                         GC.Collect();
@@ -705,7 +742,7 @@ namespace PEBakery.Core
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
                         if (Path.GetExtension(spi.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
-                            sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, null, isMainScript, false, false);
+                            sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, null, isMainScript, false, spi.IsDirLink);
                         else
                             sc = new Script(ScriptType.Script, spi.RealPath, spi.TreePath, this, null, isMainScript, false, spi.IsDirLink);
 
@@ -723,11 +760,13 @@ namespace PEBakery.Core
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                     progress?.Report((cached, null));
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             });
 
             // mainScriptIdx
@@ -783,10 +822,12 @@ namespace PEBakery.Core
             {
                 UpdateInfo = new ProjectUpdateInfo(selectedChannel, pBaseUrl);
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (ArgumentException)
             {
                 UpdateInfo = new ProjectUpdateInfo();
             }
+#pragma warning restore CA1031 // Do not catch general exception types
         }
         #endregion
 
@@ -841,7 +882,7 @@ namespace PEBakery.Core
                         ScriptParseInfo dpi = dpis.FirstOrDefault(x =>
                             x.IsDirLink == sc.IsDirLink &&
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                        Debug.Assert(!dpi.Equals(default), $"Unable to find proper directory ({sc.TreePath})");
+                        Debug.Assert(dpi != null, $"Unable to find proper directory of ({sc.TreePath})");
 
                         // Create new directory script instance from a directory parse info.
                         // Do not have to cache these scripts, these directory script instance is only used once.
@@ -978,10 +1019,12 @@ namespace PEBakery.Core
                         return null;
                 }
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch
             { // Do nothing - intentionally left blank
                 return null;
             }
+#pragma warning restore CA1031 // Do not catch general exception types
 
             return sc;
         }

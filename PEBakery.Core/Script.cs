@@ -257,7 +257,7 @@ namespace PEBakery.Core
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-            Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
+            // Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
             Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
             _realPath = realPath;
@@ -1077,8 +1077,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Struct ScriptParseInfo
-    public struct ScriptParseInfo : IEquatable<ScriptParseInfo>
+    #region ScriptParseInfo
+    public class ScriptParseInfo : IEquatable<ScriptParseInfo>
     {
         public string RealPath;
         public string TreePath;
@@ -1124,6 +1124,8 @@ namespace PEBakery.Core
         {
             return x.RealPath.GetHashCode() ^ x.TreePath.GetHashCode() ^ x.IsDir.GetHashCode() ^ x.IsDirLink.GetHashCode();
         }
+
+        public static ScriptParseInfoComparer Instance { get; } = new ScriptParseInfoComparer();
     }
     #endregion
 }
