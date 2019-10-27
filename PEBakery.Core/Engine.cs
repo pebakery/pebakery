@@ -1319,7 +1319,7 @@ namespace PEBakery.Core
             Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            logger.SystemWrite(macroLogs);
+            // logger.SystemWrite(macroLogs);
 
             RunMode = mode;
             switch (RunMode)
