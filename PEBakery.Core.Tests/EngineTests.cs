@@ -39,17 +39,17 @@ namespace PEBakery.Core.Tests
         Success = 0,
         Warning = 10,
         Overwrite = 11,
-        Error = 20,
+        RuntimeError = 20,
         ParserError = 21,
     }
 
-    [TestClass]
-    public class EngineTests
+    public static class EngineTests
     {
         #region Static Fields
         public static Project Project;
         public static Logger Logger;
         public static string BaseDir;
+        public static string TestBench;
         public static string MagicFile;
         public static bool IsOnline;
         #endregion
@@ -405,7 +405,7 @@ namespace PEBakery.Core.Tests
                         Assert.IsTrue(result);
                     }
                     break;
-                case ErrorCheck.Error:
+                case ErrorCheck.RuntimeError:
                     {
                         bool result = false;
                         foreach (LogInfo log in logs)

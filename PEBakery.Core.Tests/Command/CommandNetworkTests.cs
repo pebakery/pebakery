@@ -183,7 +183,7 @@ namespace PEBakery.Core.Tests.Command
                 // Test without NOERR
                 string testUrl = GenerateNeverExistUrl();
                 string rawCode = $"WebGet,\"{testUrl}/Sample.txt\",\"{destFile}\"";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Equals("0", StringComparison.Ordinal));
@@ -252,7 +252,7 @@ namespace PEBakery.Core.Tests.Command
                 s.ReturnValue = string.Empty;
 
                 rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",TimeOut=0";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Length == 0);
@@ -262,7 +262,7 @@ namespace PEBakery.Core.Tests.Command
                 s.ReturnValue = string.Empty;
 
                 rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",TimeOut=-10";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Length == 0);
@@ -306,7 +306,7 @@ namespace PEBakery.Core.Tests.Command
                 s.ReturnValue = string.Empty;
 
                 string rawCode = $"WebGet,\"{_sampleFileUrl}\",\"{destFile}\",MD5=00000000000000000000000000000000";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Equals("1", StringComparison.Ordinal));
@@ -316,7 +316,7 @@ namespace PEBakery.Core.Tests.Command
                 s.ReturnValue = string.Empty;
 
                 rawCode = $"WebGet,\"{_sampleFileUrl}\",\"{destFile}\",MD5=0";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Length == 0);

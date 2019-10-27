@@ -152,7 +152,7 @@ namespace PEBakery.Core.Tests.Command
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.txt,{destDir}", "*.txt", true);
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.ini,{destDir},NOREC", "*.ini", false);
 
-            SingleTemplate($@"FileCopy,{pbSrcDir}\P.txt,{destDir}", "P.txt", null, ErrorCheck.Error);
+            SingleTemplate($@"FileCopy,{pbSrcDir}\P.txt,{destDir}", "P.txt", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir}", "C.txt", null, ErrorCheck.Overwrite, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},NOWARN", "C.txt", null, ErrorCheck.Success, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE", "C.txt", null, ErrorCheck.Overwrite, true);
@@ -287,8 +287,8 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
             Template($@"FileRename,{destDir}\A.txt,{destDir}\R.txt", "A.txt", "R.txt");
-            Template($@"FileRename,{destDir}\A.txt,{destDir}\B.txt", "A.txt", "B.txt", ErrorCheck.Error);
-            Template($@"FileRename,{destDir}\R.txt,{destDir}\S.txt", "R.txt", "S.txt", ErrorCheck.Error);
+            Template($@"FileRename,{destDir}\A.txt,{destDir}\B.txt", "A.txt", "B.txt", ErrorCheck.RuntimeError);
+            Template($@"FileRename,{destDir}\R.txt,{destDir}\S.txt", "R.txt", "S.txt", ErrorCheck.RuntimeError);
             Template($@"FileMove,{destDir}\A.txt,{destDir}\R.txt", "A.txt", "R.txt");
         }
         #endregion
@@ -366,7 +366,7 @@ namespace PEBakery.Core.Tests.Command
             Template($@"FileSize,{scriptSrcDir}\B.txt,%Dest%", "2");
             Template($@"FileSize,{scriptSrcDir}\C.txt,%Dest%", "3");
             Template($@"Retrieve,FileSize,{scriptSrcDir}\C.txt,%Dest%", "3");
-            Template($@"FileSize,{scriptSrcDir}\NotExist,%Dest%", string.Empty, ErrorCheck.Error);
+            Template($@"FileSize,{scriptSrcDir}\NotExist,%Dest%", string.Empty, ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -533,7 +533,7 @@ namespace PEBakery.Core.Tests.Command
                 Template($@"DirDelete,{tempDir}\ABCD", "ABCD");
                 Template($@"DirDelete,{tempDir}\ABDE", "ABDE");
                 Template($@"DirDelete,{tempDir}", string.Empty);
-                Template($@"DirDelete,{tempDir}\ACDE.txt", "ACDE.txt", ErrorCheck.Error, false);
+                Template($@"DirDelete,{tempDir}\ACDE.txt", "ACDE.txt", ErrorCheck.RuntimeError, false);
             }
             finally
             {
@@ -583,8 +583,8 @@ namespace PEBakery.Core.Tests.Command
 
             Template($@"DirMove,{destDir}\ABCD,{destDir}\XYZ", "ABCD", "XYZ");
             Template($@"DirMove,{destDir}\ABDE,{destDir}\ABCD", "ABDE", Path.Combine("ABCD", "ABDE"));
-            Template($@"DirMove,{destDir}\XYZ,{destDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
-            Template($@"DirMove,{destDir}\ACDE.txt,{destDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
+            Template($@"DirMove,{destDir}\XYZ,{destDir}\WUV", "XYZ", "WUV", ErrorCheck.RuntimeError);
+            Template($@"DirMove,{destDir}\ACDE.txt,{destDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -630,7 +630,7 @@ namespace PEBakery.Core.Tests.Command
 
             Template($@"DirMake,{destDir}\A", "A");
             Template($@"DirMake,{destDir}\A", "A", ErrorCheck.Success, true, false);
-            Template($@"DirMake,{destDir}\A", "A", ErrorCheck.Error, false, true);
+            Template($@"DirMake,{destDir}\A", "A", ErrorCheck.RuntimeError, false, true);
         }
         #endregion
 
@@ -659,7 +659,7 @@ namespace PEBakery.Core.Tests.Command
             Template($@"DirSize,{scriptSrcDir}\ABDE,%Dest%", "3");
             Template($@"DirSize,{scriptSrcDir},%Dest%", "13");
             Template($@"Retrieve,FolderSize,{scriptSrcDir},%Dest%", "13");
-            Template($@"DirSize,{scriptSrcDir}\NotExist,%Dest%", string.Empty, ErrorCheck.Error);
+            Template($@"DirSize,{scriptSrcDir}\NotExist,%Dest%", string.Empty, ErrorCheck.RuntimeError);
         }
         #endregion
 

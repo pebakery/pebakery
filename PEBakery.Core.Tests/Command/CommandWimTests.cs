@@ -78,7 +78,7 @@ namespace PEBakery.Core.Tests.Command
 
             // Per-Image Information
             SuccessTemplate($@"WimInfo,{pbSrcDir}\LZX.wim,1,Name,%Dest%", "Sample");
-            SuccessTemplate($@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%", null, ErrorCheck.Error);
+            SuccessTemplate($@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%", null, ErrorCheck.RuntimeError);
             ErrorTemplate($@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%,NOERR");
         }
         #endregion
@@ -124,7 +124,7 @@ namespace PEBakery.Core.Tests.Command
             Template($@"WimApply,{pbSampleDir}\BootLZX.wim,1,{pbDestDir},CHECK,NOACL,NOATTRIB");
 
             Template($@"WimApply,{pbSampleDir}\LZX.wim,1,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", ErrorCheck.ParserError);
-            Template($@"WimApply,{pbSampleDir}\LZX.wim,2,{pbDestDir}", ErrorCheck.Error);
+            Template($@"WimApply,{pbSampleDir}\LZX.wim,2,{pbDestDir}", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -227,8 +227,8 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", new string[0]);
 
             SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\ACDE.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", null, ErrorCheck.ParserError);
-            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", null, ErrorCheck.Error);
-            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\Z.txt,{pbDestDir}", null, ErrorCheck.Error);
+            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", null, ErrorCheck.RuntimeError);
+            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\Z.txt,{pbDestDir}", null, ErrorCheck.RuntimeError);
 
             OptTemplate(CodeType.WimExtractOp, new List<string>
             {
@@ -374,19 +374,19 @@ namespace PEBakery.Core.Tests.Command
             Template($@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH",
                 null, ErrorCheck.ParserError);
             Template($@"WimExtractBulk,{pbSampleDir}\LZX.wim,2,{pbDestDir}\ListFile.txt,{pbDestDir}",
-                null, ErrorCheck.Error);
+                null, ErrorCheck.RuntimeError);
             Template($@"WimExtractBulk,{pbSampleDir}\Split.swm,1,{pbDestDir}\ListFile.txt,{pbDestDir},Split={pbSampleDir}\Split*.swm",
                 new string[]
                 {
                     // Unicode test with Korean letter
                     "나", "다"
-                }, ErrorCheck.Error);
+                }, ErrorCheck.RuntimeError);
 
             Template($@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}",
                 new string[]
                 {
                     Path.Combine("Z.txt"),
-                }, ErrorCheck.Error);
+                }, ErrorCheck.RuntimeError);
 
             Template($@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},NOERR",
                 new string[]
@@ -454,7 +454,7 @@ namespace PEBakery.Core.Tests.Command
                 Template($@"WimCapture,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,LZX,ImageDesc=MaxCompress", "LZX.wim");
                 Template($@"WimCapture,{pbSampleDir}\Src01,{pbDestDir}\LZMS.wim,LZMS,Flags=PEBakeryWimFlag", "LZMS.wim");
 
-                Template($@"WimCapture,{pbSampleDir}\Src01,{pbDestDir}\XPRESS.wim,WRONGCOMP", "XPRESS.wim", ErrorCheck.Error);
+                Template($@"WimCapture,{pbSampleDir}\Src01,{pbDestDir}\XPRESS.wim,WRONGCOMP", "XPRESS.wim", ErrorCheck.RuntimeError);
                 Template($@"WimCapture,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,LZX,TRASH", "LZX.wim", ErrorCheck.ParserError);
             }
             finally
@@ -592,7 +592,7 @@ namespace PEBakery.Core.Tests.Command
             Template($@"WimDelete,{pbDestDir}\MultiImage.wim,3,CHECK", "MultiImage.wim");
 
             Template($@"WimDelete,{pbDestDir}\MultiImage.wim,3,TRASH", "MultiImage.wim", ErrorCheck.ParserError);
-            Template($@"WimDelete,{pbDestDir}\MultiImage.wim,4", "MultiImage.wim", ErrorCheck.Error);
+            Template($@"WimDelete,{pbDestDir}\MultiImage.wim,4", "MultiImage.wim", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -645,10 +645,10 @@ namespace PEBakery.Core.Tests.Command
 
             Template($@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\가,\다", "LZX.wim", @"\다");
             Template($@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03,\,CHECK", "LZX.wim", @"\");
-            Template($@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\나,\ACDE.txt,PRESERVE", "LZX.wim", null, ErrorCheck.Error);
+            Template($@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\나,\ACDE.txt,PRESERVE", "LZX.wim", null, ErrorCheck.RuntimeError);
 
             Template($@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\나,\ACDE.txt,TRASH", "LZX.wim", null, ErrorCheck.ParserError);
-            Template($@"WimPathAdd,{pbDestDir}\LZX.wim,2,{pbSampleDir}\Src03\나,\ACDE.txt", "LZX.wim", null, ErrorCheck.Error);
+            Template($@"WimPathAdd,{pbDestDir}\LZX.wim,2,{pbSampleDir}\Src03\나,\ACDE.txt", "LZX.wim", null, ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -700,8 +700,8 @@ namespace PEBakery.Core.Tests.Command
             Template($@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ABDE,REBUILD", "LZX.wim", @"\ABDE");
 
             Template($@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt,TRASH", "LZX.wim", null, ErrorCheck.ParserError);
-            Template($@"WimPathDelete,{pbDestDir}\LZX.wim,2,\ACDE.txt", "LZX.wim", null, ErrorCheck.Error);
-            Template($@"WimPathDelete,{pbDestDir}\LZX.wim,1,\NONEXIST", "LZX.wim", null, ErrorCheck.Error);
+            Template($@"WimPathDelete,{pbDestDir}\LZX.wim,2,\ACDE.txt", "LZX.wim", null, ErrorCheck.RuntimeError);
+            Template($@"WimPathDelete,{pbDestDir}\LZX.wim,1,\NONEXIST", "LZX.wim", null, ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -761,7 +761,7 @@ namespace PEBakery.Core.Tests.Command
             Template($@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABCD,\Z", "LZX.wim", @"\ABCD", @"\Z");
 
             Template($@"WimPathRename,{pbDestDir}\LZX.wim,1,\ERROR,\DUMMY,TRASH", "LZX.wim", null, null, ErrorCheck.ParserError);
-            Template($@"WimPathRename,{pbDestDir}\LZX.wim,2,\없음,\DUMMY", "LZX.wim", null, null, ErrorCheck.Error);
+            Template($@"WimPathRename,{pbDestDir}\LZX.wim,2,\없음,\DUMMY", "LZX.wim", null, null, ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -972,8 +972,8 @@ namespace PEBakery.Core.Tests.Command
                 ExportNewTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,Recomp=LZMS,NOCHECK", "XPRESS.wim", "LZMS.wim");
                 ExportExistTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,ImageName=Solid,CHECK", "XPRESS.wim", "LZMS.wim");
 
-                ExportNewTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,Recomp=KEEP,CHECK", "XPRESS.wim", "LZMS.wim", ErrorCheck.Error);
-                ExportExistTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,ImageName=Solid,Recomp=LZMS,CHECK", "XPRESS.wim", "LZMS.wim", ErrorCheck.Error);
+                ExportNewTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,Recomp=KEEP,CHECK", "XPRESS.wim", "LZMS.wim", ErrorCheck.RuntimeError);
+                ExportExistTemplate($@"WimExport,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\LZMS.wim,ImageName=Solid,Recomp=LZMS,CHECK", "XPRESS.wim", "LZMS.wim", ErrorCheck.RuntimeError);
             }
             finally
             {

@@ -71,7 +71,7 @@ namespace PEBakery.Core.Tests.Command
                 @"Error1",
                 @"Error2",
                 @"Error3",
-            }, ErrorCheck.Error);
+            }, ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "ErrorOff.script");
             ScriptTemplate(scPath);
@@ -205,11 +205,11 @@ namespace PEBakery.Core.Tests.Command
                 @"System,SetLocal",
                 @"System,SetLocal",
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.Error);
+            }, null, null, ErrorCheck.RuntimeError);
             SingleTemplate(new List<string>
             {
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.Error);
+            }, null, null, ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
             ScriptTemplate(scPath, "Process-Simple", "0", "B");

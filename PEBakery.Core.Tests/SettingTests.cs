@@ -12,7 +12,7 @@ namespace PEBakery.Core.Tests
         [TestCategory("Setting")]
         public void ReadFromFile()
         {
-            string testBench = EngineTests.Project.Variables.Expand("%TestBench%");
+            string testBench = EngineTests.TestBench;
             string srcDir = Path.Combine(testBench, "Setting");
 
             string settingFile = Path.Combine(srcDir, "SubSetting1.ini");

@@ -81,7 +81,7 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,Sub,3,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Mul,%Dest%,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Div,%Dest%,4,2,1", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,Add,%Dest%,T,3", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Add,%Dest%,T,3", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -113,9 +113,9 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,IntDiv,%DestQ%,DestR,3,2", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,3,2,1", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,3", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,3,F", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,A,F", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,B,C", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,3,F", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,A,F", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,IntDiv,%DestQ%,%DestR%,B,C", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -136,7 +136,7 @@ namespace PEBakery.Core.Tests.Command
             // Test Error
             ErrorTemplate(s, "Math,Neg,Dest,1", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Neg,%Dest%,1,2", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,Neg,%Dest%,XYZ", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Neg,%Dest%,XYZ", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -176,7 +176,7 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,ToSign,%Dest%,XYZ", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.3", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,ToUnsign,%Dest%,12.0", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,ToUnsign,%Dest%,-2,%Garbage%", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,ToUnsign,%Dest%,-2,%Garbage%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -222,7 +222,7 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,BoolAnd,Dest,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BoolOr,3,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BoolXor,%Dest%,4", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BoolXor,%Dest%,B,E", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BoolXor,%Dest%,B,E", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -243,7 +243,7 @@ namespace PEBakery.Core.Tests.Command
             // Test Error
             ErrorTemplate(s, "Math,BoolNot,Dest,True,2", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BoolNot,%Dest%,True,2", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BoolNot,%Dest%,ABC", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BoolNot,%Dest%,ABC", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -270,7 +270,7 @@ namespace PEBakery.Core.Tests.Command
             // Test Error
             ErrorTemplate(s, "Math,BitAnd,Dest,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitOr,%Dest%,1,2,37", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BoolXor,%Dest%,B,E", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BoolXor,%Dest%,B,E", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -298,7 +298,7 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,BitNot,Dest,12,8", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitNot,%Dest%,12,17", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitNot,%Dest%,ABC", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BitNot,%Dest%,2,%Garbage%", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BitNot,%Dest%,2,%Garbage%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -322,7 +322,7 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,BitShift,Dest,8,LEFT,2", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitShift,%Dest%,12,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,BitShift,%Dest%,123,LEFT,7,19", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,BitShift,%Dest%,XYZ,LEFT,7,16", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,BitShift,%Dest%,XYZ,LEFT,7,16", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -351,9 +351,9 @@ namespace PEBakery.Core.Tests.Command
             // Test Error
             ErrorTemplate(s, "Math,Ceil,Dest,21,10", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Floor,%Dest%,21", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,Round,%Dest%,21,-1", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,Round,%Dest%,XYZ,16", ErrorCheck.Error);
-            ErrorTemplate(s, "Math,Round,%Dest%,21,XYZ", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Round,%Dest%,21,-1", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,Round,%Dest%,XYZ,16", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,Round,%Dest%,21,XYZ", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -412,7 +412,7 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,8", "0x0F");
             SuccessTemplate(s, "Math,Hex,%Dest%,-1,8", "0xFF");
             SuccessTemplate(s, "Math,Hex,%Dest%,255,8", "0xFF");
-            ErrorTemplate(s, "Math,Hex,%Dest%,2000,8", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Hex,%Dest%,2000,8", ErrorCheck.RuntimeError);
 
             // 16bit
             SuccessTemplate(s, "Math,Hex,%Dest%,15,16", "0x000F");
@@ -444,10 +444,10 @@ namespace PEBakery.Core.Tests.Command
 
             // Test Error
             ErrorTemplate(s, "Math,Hex,%Dest%", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,Hex,%Dest%,15,%Garbage%", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Hex,%Dest%,15,%Garbage%", ErrorCheck.RuntimeError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9,12", ErrorCheck.ParserError);
-            ErrorTemplate(s, "Math,Hex,%Dest%,256,8", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Hex,%Dest%,256,8", ErrorCheck.RuntimeError);
         }
 
         [TestMethod]
@@ -464,24 +464,24 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,Dec,%Dest%,0xFF,8", "255");
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,8", "255");
             SuccessTemplate(s, "Math,Dec,%Dest%,255,8", "255");
-            ErrorTemplate(s, "Math,Dec,%Dest%,0xFFFF,8", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0xFFFF,8", ErrorCheck.RuntimeError);
 
             // 16bit
             SuccessTemplate(s, "Math,Dec,%Dest%,0x000F,16", "15");
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,16", "65535");
             SuccessTemplate(s, "Math,Dec,%Dest%,0xFFFF,16", "65535");
-            ErrorTemplate(s, "Math,Dec,%Dest%,0x10000,16", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x10000,16", ErrorCheck.RuntimeError);
 
             // 16bit (Variable)
             SuccessTemplate(s, "Math,Dec,%Dest%,0x000F,%BitSize%", "15");
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,%BitSize%", "65535");
             SuccessTemplate(s, "Math,Dec,%Dest%,0xFFFF,%BitSize%", "65535");
-            ErrorTemplate(s, "Math,Dec,%Dest%,0x10000,%BitSize%", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x10000,%BitSize%", ErrorCheck.RuntimeError);
 
             // 32bit
             SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,32", "15");
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,32", "4294967295");
-            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000,32", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000,32", ErrorCheck.RuntimeError);
             ErrorTemplate(s, "Math,Dec,%Dest%,0x0F", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
             ErrorTemplate(s, "Math,Dec,%Dest%,-1", ErrorCheck.ParserError); // Had been valid prior to 0.9.6 beta6
             ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000", ErrorCheck.ParserError);
@@ -491,7 +491,7 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate(s, "Math,Dec,%Dest%,-1,64", "18446744073709551615");
 
             // Test Error
-            ErrorTemplate(s, "Math,Dec,%Dest%,0x000F,%Garbage%", ErrorCheck.Error);
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x000F,%Garbage%", ErrorCheck.RuntimeError);
             ErrorTemplate(s, "Math,Dec,%Dest%", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Dec,%Dest%,256,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Dec,%Dest%,256,9,12", ErrorCheck.ParserError);
@@ -527,7 +527,7 @@ namespace PEBakery.Core.Tests.Command
             // Test Error
             ErrorTemplate(s, "Math,Rand", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Rand,%Dest%,0,1,2", ErrorCheck.ParserError);
-            ErrorTemplate(s, $"Math,Rand,%Dest%,0,{(long)int.MaxValue + 16}", ErrorCheck.Error);
+            ErrorTemplate(s, $"Math,Rand,%Dest%,0,{(long)int.MaxValue + 16}", ErrorCheck.RuntimeError);
         }
         #endregion
 

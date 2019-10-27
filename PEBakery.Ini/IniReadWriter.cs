@@ -144,7 +144,6 @@ namespace PEBakery.Ini
                 Encoding encoding = EncodingHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
-                    // int len = iniKeys.Count;
                     string rawLine;
                     bool inTargetSection = false;
                     string currentSection = null;
@@ -1776,6 +1775,66 @@ namespace PEBakery.Ini
             }
 
             return result;
+        }
+        #endregion
+
+        #region Compact
+        public static void Compact(string filePath)
+        {
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(filePath))
+            {
+                rwLock = LockDict[filePath];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[filePath] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                // Append IniKey into existing file
+                string tempPath = FileHelper.GetTempFile();
+                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    while (true)
+                    {
+                        string rawLine = r.ReadLine();
+                        if (rawLine == null) // End of file
+                            break;
+
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) && line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        { // Section head encountered (e.g. [DestinationDirs]), just trim it
+                            w.WriteLine(line.ToString());
+                        }
+                        else
+                        {
+                            int idx = line.IndexOf('=');
+                            if (idx != -1 && idx != 0) // there is key, and key name is not empty
+                            { // Ini style entry, reformat into [Key=Value] template
+                                string key = line.Slice(0, idx).Trim().ToString();
+                                string value = line.Slice(idx + 1).Trim().ToString();
+                                w.WriteLine($"{key}={value}");
+                            }
+                            else
+                            { // Non-ini style entry, trim only end of it (Commands are often indented)
+                                w.WriteLine(line.ToString());
+                            }
+                        }
+                    }
+                }
+
+                FileHelper.FileReplaceEx(tempPath, filePath);
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
         }
         #endregion
 

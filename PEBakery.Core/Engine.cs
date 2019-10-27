@@ -621,6 +621,9 @@ namespace PEBakery.Core
                     case CodeType.IniMerge:
                         logs.AddRange(CommandIni.IniMerge(s, cmd));
                         break;
+                    case CodeType.IniCompact:
+                        logs.AddRange(CommandIni.IniCompact(s, cmd));
+                        break;
                     #endregion
                     #region 05 Wim
                     case CodeType.WimMount:
@@ -1318,8 +1321,7 @@ namespace PEBakery.Core
             Project = project;
             Logger = logger;
 
-            Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            // logger.SystemWrite(macroLogs);
+            Macro = new Macro(Project, Variables, out _);
 
             RunMode = mode;
             switch (RunMode)

@@ -1046,6 +1046,14 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniMerge(args[0], args[1]);
                     }
+                case CodeType.IniCompact:
+                    { // IniCompact,<FilePath>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_IniCompact(args[0]);
+                    }
                 #endregion
                 #region 05 Wim
                 case CodeType.WimMount:

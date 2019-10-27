@@ -52,7 +52,7 @@ namespace PEBakery.Core.Tests.Command
             DestSuccessTemplate(s, "StrFormat,IntToBytes,2193525697413,%Dest%", "1.995TB");
             DestSuccessTemplate(s, "StrFormat,IntToBytes,2270940112101573,%Dest%", "2.017PB");
             DestSuccessTemplate(s, "StrFormat,IntToBytes,2229281815548396000,%Dest%", "1980PB");
-            DestErrorTemplate(s, "StrFormat,IntToBytes,WrongInteger,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, "StrFormat,IntToBytes,WrongInteger,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -70,7 +70,7 @@ namespace PEBakery.Core.Tests.Command
             DestSuccessTemplate(s, "StrFormat,BytesToInt,1.995TB,%Dest%", "2193525697414");
             DestSuccessTemplate(s, "StrFormat,BytesToInt,2.017PB,%Dest%", "2270940112101573");
             DestSuccessTemplate(s, "StrFormat,BytesToInt,1980PB,%Dest%", "2229281815548395520");
-            DestErrorTemplate(s, "StrFormat,BytesToInt,WrongBytes,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, "StrFormat,BytesToInt,WrongBytes,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -84,7 +84,7 @@ namespace PEBakery.Core.Tests.Command
 
             DestSuccessTemplate(s, "StrFormat,Hex,1234,%Dest%", "000004D2");
             DestSuccessTemplate(s, "StrFormat,Hex,-1234,%Dest%", "FFFFFB2E");
-            DestErrorTemplate(s, "StrFormat,Hex,ABCD,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, "StrFormat,Hex,ABCD,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -96,7 +96,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            InitDestErrorTemplate(s, "StrFormat,Ceil,%Dest%,-10", "4", ErrorCheck.Error);
+            InitDestErrorTemplate(s, "StrFormat,Ceil,%Dest%,-10", "4", ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, "StrFormat,Ceil,%Dest%,10", "6", "10");
             InitDestSuccessTemplate(s, "StrFormat,Ceil,%Dest%,800", "799", "800");
             InitDestSuccessTemplate(s, "StrFormat,Ceil,%Dest%,800", "801", "1600");
@@ -115,7 +115,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            InitDestErrorTemplate(s, "StrFormat,Floor,%Dest%,-10", "4", ErrorCheck.Error);
+            InitDestErrorTemplate(s, "StrFormat,Floor,%Dest%,-10", "4", ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, "StrFormat,Floor,%Dest%,10", "6", "0");
             InitDestSuccessTemplate(s, "StrFormat,Floor,%Dest%,800", "799", "0");
             InitDestSuccessTemplate(s, "StrFormat,Floor,%Dest%,800", "801", "800");
@@ -252,7 +252,7 @@ namespace PEBakery.Core.Tests.Command
             DestSuccessTemplate(s, @"StrFormat,Path,C:\Windows\System32,%Dest%", @"C:\Windows\");
             DestSuccessTemplate(s, @"StrFormat,Path,,%Dest%", string.Empty);
             DestSuccessTemplate(s, @"StrFormat,Path,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206/");
-            DestErrorTemplate(s, @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -299,8 +299,8 @@ namespace PEBakery.Core.Tests.Command
             InitDestSuccessTemplate(s, @"StrFormat,Inc,%Dest%,20", "15", "35");
             InitDestSuccessTemplate(s, @"StrFormat,Inc,%Dest%,20", "0x0F", "35");
             InitDestSuccessTemplate(s, @"StrFormat,Inc,%Dest%,1", "Y", "Z");
-            InitDestErrorTemplate(s, @"StrFormat,Inc,%Dest%,2", "Y", ErrorCheck.Error);
-            InitDestErrorTemplate(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.Error);
+            InitDestErrorTemplate(s, @"StrFormat,Inc,%Dest%,2", "Y", ErrorCheck.RuntimeError);
+            InitDestErrorTemplate(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, @"StrFormat,Inc,%Dest%,20", "-5", "15");
             InitDestSuccessTemplate(s, @"StrFormat,Inc,%Dest%,-5", "20", "15");
         }
@@ -317,9 +317,9 @@ namespace PEBakery.Core.Tests.Command
             InitDestSuccessTemplate(s, @"StrFormat,Dec,%Dest%,20", "15", "-5");
             InitDestSuccessTemplate(s, @"StrFormat,Dec,%Dest%,0x0F", "20", "5");
             InitDestSuccessTemplate(s, @"StrFormat,Dec,%Dest%,1", "B", "A");
-            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,2", "B", ErrorCheck.Error);
-            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.Error);
-            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.Error);
+            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,2", "B", ErrorCheck.RuntimeError);
+            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.RuntimeError);
+            InitDestErrorTemplate(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, @"StrFormat,Dec,%Dest%,20", "-5", "-25");
             InitDestSuccessTemplate(s, @"StrFormat,Dec,%Dest%,-5", "20", "25");
         }
@@ -336,8 +336,8 @@ namespace PEBakery.Core.Tests.Command
             InitDestSuccessTemplate(s, @"StrFormat,Mult,%Dest%,20", "4", "80");
             InitDestSuccessTemplate(s, @"StrFormat,Mult,%Dest%,0x0F", "20", "300");
             // WB082 reports error
-            InitDestErrorTemplate(s, @"StrFormat,Mult,%Dest%,2", "a", ErrorCheck.Error);
-            InitDestErrorTemplate(s, @"StrFormat,Mult,%Dest%,20", string.Empty, ErrorCheck.Error);
+            InitDestErrorTemplate(s, @"StrFormat,Mult,%Dest%,2", "a", ErrorCheck.RuntimeError);
+            InitDestErrorTemplate(s, @"StrFormat,Mult,%Dest%,20", string.Empty, ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, @"StrFormat,Mult,%Dest%,20", "-5", "-100");
             InitDestSuccessTemplate(s, @"StrFormat,Mult,%Dest%,-5", "20", "-100");
         }
@@ -354,8 +354,8 @@ namespace PEBakery.Core.Tests.Command
             InitDestSuccessTemplate(s, @"StrFormat,Div,%Dest%,20", "81", "4");
             InitDestSuccessTemplate(s, @"StrFormat,Div,%Dest%,0x0F", "20", "1");
             // WB082 reports error
-            InitDestErrorTemplate(s, @"StrFormat,Div,%Dest%,2", "a", ErrorCheck.Error);
-            InitDestErrorTemplate(s, @"StrFormat,Div,%Dest%,20", string.Empty, ErrorCheck.Error);
+            InitDestErrorTemplate(s, @"StrFormat,Div,%Dest%,2", "a", ErrorCheck.RuntimeError);
+            InitDestErrorTemplate(s, @"StrFormat,Div,%Dest%,20", string.Empty, ErrorCheck.RuntimeError);
             InitDestSuccessTemplate(s, @"StrFormat,Div,%Dest%,20", "-25", "-1");
             InitDestSuccessTemplate(s, @"StrFormat,Div,%Dest%,-5", "20", "-4");
         }
@@ -401,10 +401,10 @@ namespace PEBakery.Core.Tests.Command
 
             DestSuccessTemplate(s, @"StrFormat,SubStr,PEBakery,3,2,%Dest%", "Ba");
             DestSuccessTemplate(s, @"StrFormat,SubStr,PEBakery,4,3,%Dest%", "ake");
-            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,0,2,%Dest%", ErrorCheck.Error);
-            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,3,0,%Dest%", ErrorCheck.Error);
-            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,10,2,%Dest%", ErrorCheck.Error);
-            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,3,10,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,0,2,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,3,0,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,10,2,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,3,10,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -463,7 +463,7 @@ namespace PEBakery.Core.Tests.Command
             DestSuccessTemplate(s, @"StrFormat,CTrim,_-PEBakery-_,_-,%Dest%", "PEBakery");
             DestSuccessTemplate(s, "StrFormat,CTrim, PEBakery ,\" \",%Dest%", "PEBakery");
             // Access violation in WB082
-            DestErrorTemplate(s, "StrFormat,CTrim,PEBakery,,%Dest%", ErrorCheck.Error);
+            DestErrorTemplate(s, "StrFormat,CTrim,PEBakery,,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 

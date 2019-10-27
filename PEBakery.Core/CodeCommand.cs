@@ -54,7 +54,7 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 Ini
-        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge,
+        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge, IniCompact,
         IniWriteOp = 480, IniReadOp, IniDeleteOp, IniReadSectionOp, IniAddSectionOp, IniDeleteSectionOp, IniWriteTextLineOp,
         // 05 Wim
         WimMount = 500, WimUnmount,
@@ -1299,6 +1299,22 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{SrcFile},{DestFile}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniCompact : CodeInfo
+    { // IniCompact,<FilePath>
+        public string FilePath;
+
+        public CodeInfo_IniCompact(string filePath)
+        {
+            FilePath = filePath;
+        }
+
+        public override string ToString()
+        {
+            return FilePath;
         }
     }
     #endregion

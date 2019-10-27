@@ -488,7 +488,7 @@ namespace PEBakery.Core.Tests.Command
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
-                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.Error);
+                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.RuntimeError);
 
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("[6DoF]");
@@ -764,59 +764,31 @@ namespace PEBakery.Core.Tests.Command
         }
         #endregion
 
-        #region Rewrite
-        /// <summary>
-        /// Regression test of issue #134
-        /// </summary>
+        #region IniCompact
         [TestMethod]
-        public void Rewrite()
+        public void IniCompact()
         {
-            string scTreePath = Path.Combine(EngineTests.Project.ProjectName, "Ini", "Rewrite.script");
-            string destFile = FileHelper.GetTempFile(".pbini");
+            EngineState s = EngineTests.CreateEngineState();
+
+            string srcFile = Path.Combine(EngineTests.TestBench, "CommandIni", "BeforeCompact.ini");
+            string compFile = Path.Combine(EngineTests.TestBench, "CommandIni", "AfterCompact.ini");
+
+            string srcStr;
+            using (StreamReader sr = new StreamReader(srcFile, Encoding.UTF8, false))
+            {
+                srcStr = sr.ReadToEnd();
+            }
+            string compStr;
+            using (StreamReader sr = new StreamReader(compFile, Encoding.UTF8, false))
+            {
+               compStr = sr.ReadToEnd();
+            }
+
+            string destFile = FileHelper.GetTempFile(".ini");
             try
             {
-                void Template(string entrySection)
-                {
-                    void SetState(EngineState es)
-                    {
-                        es.Variables.SetValue(VarsType.Fixed, "DestFile", destFile);
-                    }
-
-                    (EngineState s, _) = EngineTests.EvalScript(scTreePath, ErrorCheck.Success, SetState, entrySection);
-
-                    // Old values read by IniRead
-                    string oa = s.Variables["A"];
-                    string ob = s.Variables["B"];
-                    string oc = s.Variables["C"];
-                    string okc1 = s.Variables["KC1"];
-                    string okc2 = s.Variables["KC2"];
-                    string okc3 = s.Variables["KC3"];
-
-                    // New values written by IniWrite
-                    string na = s.Variables["NA"];
-                    string nb = s.Variables["NB"];
-                    string nc = s.Variables["NC"];
-                    string nkc1 = s.Variables["NKC1"];
-                    string nkc2 = s.Variables["NKC2"];
-                    string nkc3 = s.Variables["NKC3"];
-
-                    // Compare old values and new values
-                    Assert.IsFalse(string.IsNullOrEmpty(oa));
-                    Assert.IsFalse(string.IsNullOrEmpty(ob));
-                    Assert.IsFalse(string.IsNullOrEmpty(oc));
-                    Assert.IsFalse(string.IsNullOrEmpty(okc1));
-                    Assert.IsFalse(string.IsNullOrEmpty(okc2));
-                    Assert.IsFalse(string.IsNullOrEmpty(okc3));
-                    Assert.IsTrue(oa.Equals(na, StringComparison.Ordinal));
-                    Assert.IsTrue(ob.Equals(nb, StringComparison.Ordinal));
-                    Assert.IsTrue(oc.Equals(nc, StringComparison.Ordinal));
-                    Assert.IsTrue(okc1.Equals(nkc1, StringComparison.Ordinal));
-                    Assert.IsTrue(okc2.Equals(nkc2, StringComparison.Ordinal));
-                    Assert.IsTrue(okc3.Equals(nkc3, StringComparison.Ordinal));
-                }
-
-                Template("Process-Rewrite-NoOpts");
-                Template("Process-Rewrite-Opts");
+                WriteTemplate(s, CodeType.IniCompact, $@"IniCompact,{destFile}", destFile, srcStr, compStr, ErrorCheck.Success);
+                WriteTemplate(s, CodeType.IniCompact, $@"IniCompact,{destFile},Error", destFile, srcStr, compStr, ErrorCheck.ParserError);
             }
             finally
             {

@@ -243,7 +243,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pImage1,%Dest%", @"230");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pImage1,%Dest%", @"40");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pImage1,%Dest%", @"40");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pImage1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pImage1,%Dest%", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pImage1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,Url,{scriptFile},Interface,pImage1,%Dest%", string.Empty);
 
@@ -254,7 +254,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pTextFile1,%Dest%", @"20");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pTextFile1,%Dest%", @"200");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pTextFile1,%Dest%", @"86");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pTextFile1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pTextFile1,%Dest%", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pTextFile1,%Dest%", string.Empty);
 
             // 8 - Button
@@ -265,7 +265,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pButton1,%Dest%", @"115");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pButton1,%Dest%", @"80");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pButton1,%Dest%", @"25");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pButton1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pButton1,%Dest%", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pButton1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pButton1,%Dest%", @"Hello");
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pButton1,%Dest%", @"False");
@@ -277,7 +277,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pWebLabel1,%Dest%", @"160");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pWebLabel1,%Dest%", @"32");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pWebLabel1,%Dest%", @"18");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pWebLabel1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pWebLabel1,%Dest%", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pWebLabel1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,Url,{scriptFile},Interface,pWebLabel1,%Dest%", @"https://github.com/pebakery/pebakery");
 
@@ -300,7 +300,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pBevel1,%Dest%", @"150");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pBevel1,%Dest%", @"235");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pBevel1,%Dest%", @"60");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pBevel1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pBevel1,%Dest%", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pBevel1,%Dest%", string.Empty);
 
             // 13 - FileBox
@@ -453,15 +453,15 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,FontWeight,{scriptFile},Interface,pTextLabel1,Bold", @"pTextLabel1",
                 null, @"Display,1,1,20,50,230,18,8,Bold");
             SingleTemplate($@"WriteInterface,FontWeight,{scriptFile},Interface,pTextLabel1,Error", @"pTextLabel1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 2 - NumberBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,2", @"pNumberBox1",
                 "2", @"pNumberBox1,1,2,20,70,40,22,2,0,100,1");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,200", @"pNumberBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,Str", @"pNumberBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,NumberMin,{scriptFile},Interface,pNumberBox1,10", @"pNumberBox1",
                 "10", @"pNumberBox1,1,2,20,70,40,22,10,10,100,1");
             SingleTemplate($@"WriteInterface,NumberMax,{scriptFile},Interface,pNumberBox1,1", @"pNumberBox1",
@@ -469,7 +469,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,NumberTick,{scriptFile},Interface,pNumberBox1,5", @"pNumberBox1",
                 null, @"pNumberBox1,1,2,20,70,40,22,3,0,100,5");
             SingleTemplate($@"WriteInterface,NumberMin,{scriptFile},Interface,pNumberBox1,Error", @"pNumberBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 3 - CheckBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pCheckBox1,False", @"pCheckBox1",
@@ -479,13 +479,13 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pCheckBox1,None", @"pCheckBox1",
                 null, @"pCheckBox1,1,3,20,100,200,18,True");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pCheckBox1,True", @"pCheckBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 4 - ComboBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pComboBox1,B", @"pComboBox1",
                 "B", @"B,1,4,20,130,150,21,A,B,C,D");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pComboBox1,E", @"pComboBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z", @"pComboBox1",
                 "X", @"X,1,4,20,130,150,21,X,Y,Z");
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X$Y$Z,Delim=$", @"pComboBox1",
@@ -495,33 +495,33 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pComboBox1,None", @"pComboBox1",
                 null, @"A,1,4,20,130,150,21,A,B,C,D");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pComboBox1,True", @"pComboBox1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 5 - Image
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pImage1,PEBakery", @"pImage1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pImage1,https://github.com/pebakery/pebakery", @"pImage1",
                 null, @"Logo.jpg,1,5,20,230,40,40,https://github.com/pebakery/pebakery");
 
             // 6 - TextFile
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextFile1,PEBakery", @"pTextFile1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 8 - Button
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pButton1,PEBakery", @"pButton1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,World", @"pButton1",
                 null, @"ShowProgress,1,8,240,115,80,25,World,0,False");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,""""", @"pButton1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,None", @"pButton1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,True", @"pButton1",
                 null, @"ShowProgress,1,8,240,115,80,25,Hello,0,True");
 
             // 10 - WebLabel
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pWebLabel1,PEBakery", @"pWebLabel1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pWebLabel1,https://github.com/pebakery", @"pWebLabel1",
                 null, @"GitHub,1,10,250,160,32,18,https://github.com/pebakery");
 
@@ -533,11 +533,11 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioButton1,None", @"pRadioButton1",
                 null, @"pRadioButton1,1,11,250,180,100,20,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioButton1,True", @"pRadioButton1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 12 - Bevel
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pBevel1,PEBakery", @"pBevel1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // 13 - FileBox
             SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pFileBox1,D:\PEBakery\Launcher.exe", @"pFileBox1",
@@ -549,9 +549,9 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2", @"pRadioGroup1",
                 "2", @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,3", @"pRadioGroup1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,Items", @"pRadioGroup1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X|Y|Z", @"pRadioGroup1",
                 "0", @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X$Y$Z,Delim=$", @"pRadioGroup1",
@@ -561,7 +561,7 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,None", @"pRadioGroup1",
                 null, @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,True", @"pRadioGroup1",
-                null, null, ErrorCheck.Error);
+                null, null, ErrorCheck.RuntimeError);
 
             // Optimization
             OptTemplate(new List<string>

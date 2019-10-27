@@ -80,7 +80,7 @@ namespace PEBakery.Core.Tests.Command
             // REG_DWORD
             ReadTemplate(s, CodeType.RegRead, @"RegRead,HKLM,""SOFTWARE\Microsoft\Internet Explorer"",IntegratedBrowser,%Dest%", "1");
             // Error
-            ReadTemplate(s, CodeType.RegRead, @"RegRead,HKLM,SOFTWARE\Microsoft\DirectX,NotExistValue,%Dest%", string.Empty, ErrorCheck.Error);
+            ReadTemplate(s, CodeType.RegRead, @"RegRead,HKLM,SOFTWARE\Microsoft\DirectX,NotExistValue,%Dest%", string.Empty, ErrorCheck.RuntimeError);
 
             // Read and write arbitrary keys
             const string subKeyStr = RegReadPath;
@@ -365,29 +365,29 @@ namespace PEBakery.Core.Tests.Command
                 // Before
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Before,A,C", new string[] { "C", "A", "B" });
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Before,B,C", new string[] { "A", "C", "B" });
-                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Before,D,C", new string[] { "A", "B" }, ErrorCheck.Error);
+                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Before,D,C", new string[] { "A", "B" }, ErrorCheck.RuntimeError);
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Before,A,B", new string[] { "A", "B" }, ErrorCheck.Warning);
                 // Behind
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Behind,A,C", new string[] { "A", "C", "B" });
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Behind,B,C", new string[] { "A", "B", "C" });
-                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Behind,D,C", new string[] { "A", "B" }, ErrorCheck.Error);
+                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Behind,D,C", new string[] { "A", "B" }, ErrorCheck.RuntimeError);
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Behind,A,B", new string[] { "A", "B" }, ErrorCheck.Warning);
                 // Place
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,1,C", new string[] { "C", "A", "B" });
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,2,C", new string[] { "A", "C", "B" });
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,3,C", new string[] { "A", "B", "C" });
-                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,0,C", new string[] { "C", "A", "B" }, ErrorCheck.Error);
-                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,4,C", new string[] { "C", "A", "B" }, ErrorCheck.Error);
+                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,0,C", new string[] { "C", "A", "B" }, ErrorCheck.RuntimeError);
+                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,4,C", new string[] { "C", "A", "B" }, ErrorCheck.RuntimeError);
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,1,B", new string[] { "A", "B" }, ErrorCheck.Warning);
                 // Delete
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Delete,A", new string[] { "B" });
                 NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Delete,B", new string[] { "A" });
-                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Delete,C", new string[] { "A", "B" }, ErrorCheck.Error);
+                NormalTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Delete,C", new string[] { "A", "B" }, ErrorCheck.RuntimeError);
                 // Index
                 IndexTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Index,A,%Dest%", 1, "A");
                 IndexTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Index,B,%Dest%", 2, "B");
                 IndexTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Index,C,%Dest%", 0, "C");
-                IndexTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Index,A", 1, "A", ErrorCheck.Error);
+                IndexTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Index,A", 1, "A", ErrorCheck.RuntimeError);
                 // Error
                 ErrorTemplate($@"RegMulti,HKCU,{subKeyStr},Key,Place,1,C,E", ErrorCheck.ParserError);
             }
@@ -549,15 +549,15 @@ namespace PEBakery.Core.Tests.Command
 
             // Error
             SingleTemplate($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
-                singleSrcSet, destSet, ErrorCheck.Error);
+                singleSrcSet, destSet, ErrorCheck.RuntimeError);
             WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet}", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20", "Set31" },
-                ErrorCheck.Error);
+                ErrorCheck.RuntimeError);
             WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet}", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20" },
-                ErrorCheck.Error);
+                ErrorCheck.RuntimeError);
 
             #region CreateRegValues, CheckRegValues
             void CreateRegValues(RegistryKey hKey, string subKeyPath)
