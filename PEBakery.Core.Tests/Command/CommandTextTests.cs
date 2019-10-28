@@ -223,7 +223,10 @@ namespace PEBakery.Core.Tests.Command
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("A B C");
                 b.AppendLine(" D E F");
-                b.AppendLine("  X Y Z");
+                b.AppendLine("G H I ");
+                b.AppendLine("  J K L");
+                b.AppendLine("M N O  ");
+                b.AppendLine("  X Y Z  ");
                 b.AppendLine();
                 b.AppendLine("\t가 나 다");
                 string sampleStr = b.ToString();
@@ -233,6 +236,9 @@ namespace PEBakery.Core.Tests.Command
                 b = new StringBuilder();
                 b.AppendLine("A B C");
                 b.AppendLine("D E F");
+                b.AppendLine("G H I");
+                b.AppendLine("J K L");
+                b.AppendLine("M N O");
                 b.AppendLine("X Y Z");
                 b.AppendLine();
                 b.AppendLine("가 나 다");

@@ -568,7 +568,7 @@ namespace PEBakery.WPF
                         {
                             BuildId = buildId,
                             State = LogState.Info,
-                            Message = "No Error or Warning",
+                            Message = "No Errors or Warnings",
                             Time = DateTime.MinValue,
                         });
                     }

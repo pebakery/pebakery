@@ -408,28 +408,29 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
-            int i = 0;
+            int linesTrimmed = 0;
             string tempPath = FileHelper.GetTempFile();
             using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
+
                 while ((srcLine = r.ReadLine()) != null)
                 {
-                    // WB082 delete spaces only if spaces are placed in front of line.
-                    // Same with C#'s string.TrimStart().
                     int count = StringHelper.CountSubStr(srcLine, " ");
                     if (0 < count)
-                    {
-                        i++;
+                    {                  
                         srcLine = srcLine.TrimStart();
+                        srcLine = srcLine.TrimEnd();
+                        if (!StringHelper.CountSubStr(srcLine, " ").Equals(count)) //only count lines that we actually trimmed
+                            linesTrimmed++;
                     }
                     w.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] spaces"));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted leading and trailing spaces from [{linesTrimmed}] lines"));
 
             return logs;
         }
