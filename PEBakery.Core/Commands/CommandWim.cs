@@ -1648,7 +1648,7 @@ namespace PEBakery.Core.Commands
             // Check SrcWim
             if (!File.Exists(wimFile))
                 return LogInfo.LogErrorMessage(logs, $"File [{wimFile}] does not exist");
-            if (StringEscaper.PathSecurityCheck(wimFile, out string errorMsg) == false)
+            if (!StringEscaper.PathSecurityCheck(wimFile, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
@@ -1742,7 +1742,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"File [{srcWimPath}] does not exist");
 
             // Check DestWim
-            if (StringEscaper.PathSecurityCheck(destWimPath, out string errorMsg) == false)
+            if (!StringEscaper.PathSecurityCheck(destWimPath, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
