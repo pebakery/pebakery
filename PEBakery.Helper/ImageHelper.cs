@@ -295,7 +295,6 @@ namespace PEBakery.Helper
                 src.CopyPixels(srcPixels, stride, 0);
                 src.CopyPixels(destPixels, stride, 0);
 
-                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 for (int y = 0; y < src.PixelHeight; y++)
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
@@ -312,6 +311,7 @@ namespace PEBakery.Helper
                 }
 
                 Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 dest.WritePixels(rect, destPixels, stride, 0);
                 return dest;
             }
@@ -324,7 +324,6 @@ namespace PEBakery.Helper
                 src.CopyPixels(srcPixels, stride, 0);
                 src.CopyPixels(destPixels, stride, 0);
 
-                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 for (int y = 0; y < src.PixelHeight; y++)
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
@@ -342,6 +341,7 @@ namespace PEBakery.Helper
                 }
 
                 Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 dest.WritePixels(rect, destPixels, stride, 0);
                 return dest;
             }
@@ -355,7 +355,6 @@ namespace PEBakery.Helper
                 byte[] destPixels = new byte[pixelFourBytes];
                 src.CopyPixels(srcPixels, threeStride, 0);
 
-                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 for (int y = 0; y < src.PixelHeight; y++)
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
@@ -379,6 +378,7 @@ namespace PEBakery.Helper
                 }
 
                 Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
                 dest.WritePixels(rect, destPixels, fourStride, 0);
                 return dest;
             }

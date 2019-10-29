@@ -401,15 +401,31 @@ namespace PEBakery.WPF
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (values == null || values.Length != 2)
+            if (values == null || values.Length != 3)
                 return string.Empty;
 
-            if (!(values[0] is int refScriptId))
+            if (!(values[0] is int scriptId))
                 return string.Empty;
-            if (!(values[1] is Dictionary<int, string> scTitleDict))
+            if (!(values[1] is int refScriptId))
+                return string.Empty;
+            if (!(values[2] is Dictionary<int, string> scTitleDict))
                 return string.Empty;
 
-            return scTitleDict.ContainsKey(refScriptId) ? scTitleDict[refScriptId] : string.Empty;
+            if (refScriptId != 0) // Referenced Script
+            {
+                if (scTitleDict.ContainsKey(refScriptId))
+                    return scTitleDict[refScriptId];
+                else
+                    return string.Empty;
+            }
+            else if (scriptId != 0)
+            {
+                if (scTitleDict.ContainsKey(scriptId))
+                    return scTitleDict[scriptId];
+                else
+                    return string.Empty;
+            }
+            return string.Empty;
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, CultureInfo culture)

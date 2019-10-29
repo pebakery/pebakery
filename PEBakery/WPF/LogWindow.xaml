@@ -294,6 +294,7 @@
                                             </GridViewColumn.Width>
                                             <GridViewColumn.DisplayMemberBinding>
                                                 <MultiBinding Converter="{StaticResource RefScriptIdToTitleConverter}">
+                                                    <Binding Path="ScriptId" Mode="OneWay"/>
                                                     <Binding Path="RefScriptId" Mode="OneWay"/>
                                                     <Binding Path="DataContext.ScriptTitleDict" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Mode="OneWay"/>
                                                 </MultiBinding>
