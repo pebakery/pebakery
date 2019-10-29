@@ -130,13 +130,17 @@ namespace PEBakery.Helper
         #region Svg
         public static DrawingGroup SvgToDrawingGroup(Stream stream)
         {
-            FileSvgReader reader = new FileSvgReader(new WpfDrawingSettings
+            WpfDrawingSettings settings = new WpfDrawingSettings
             {
                 CultureInfo = CultureInfo.InvariantCulture,
                 IncludeRuntime = true,
-            });
-            reader.Read(stream);
-            return reader.Drawing;
+            };
+
+            using (FileSvgReader reader = new FileSvgReader(settings))
+            {
+                reader.Read(stream);
+                return reader.Drawing;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -297,7 +301,7 @@ namespace PEBakery.Helper
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
                         int i = (x + y * src.PixelWidth) * 4;
-                        
+
                         byte r = srcPixels[i];
                         byte g = srcPixels[i + 1];
                         byte b = srcPixels[i + 2];
