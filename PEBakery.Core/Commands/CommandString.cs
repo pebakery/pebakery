@@ -350,6 +350,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case StrFormatType.SubStr:
+                case StrFormatType.Mid:
                     { // Index start from 1, not 0!
                         StrFormatInfo_SubStr subInfo = info.SubInfo.Cast<StrFormatInfo_SubStr>();
 

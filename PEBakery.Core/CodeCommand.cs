@@ -2773,7 +2773,7 @@ namespace PEBakery.Core
         PathCombine = 60,
         Inc = 70, Dec, Mult, Div, // Use of Math Command is recommended
         Left = 80, Right,
-        SubStr = 90, // Added in PEBakery
+        SubStr = 90, Mid, // SubStr term added in PEBakery as alias to Mid 
         Len = 100,
         LTrim = 110, RTrim, CTrim, NTrim,
         UCase = 120, LCase,
@@ -3000,6 +3000,7 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
     { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
+      // Alias: StrFormat,Mid,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
         public string SrcStr;
         public string StartPos; // Index start from 1, not 0!
         public string Length;

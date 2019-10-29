@@ -2837,6 +2837,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.SubStr:
+                case StrFormatType.Mid:
                     { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)

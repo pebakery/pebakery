@@ -405,6 +405,13 @@ namespace PEBakery.Core.Tests.Command
             DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,3,0,%Dest%", ErrorCheck.RuntimeError);
             DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,10,2,%Dest%", ErrorCheck.RuntimeError);
             DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,3,10,%Dest%", ErrorCheck.RuntimeError);
+
+            DestSuccessTemplate(s, @"StrFormat,Mid,PEBakery,3,2,%Dest%", "Ba");
+            DestSuccessTemplate(s, @"StrFormat,Mid,PEBakery,4,3,%Dest%", "ake");
+            DestErrorTemplate(s, @"StrFormat,Mid,PEBakery,0,2,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,Mid,PEBakery,3,0,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,Mid,Joveler,10,2,%Dest%", ErrorCheck.RuntimeError);
+            DestErrorTemplate(s, @"StrFormat,Mid,Joveler,3,10,%Dest%", ErrorCheck.RuntimeError);
         }
         #endregion
 
