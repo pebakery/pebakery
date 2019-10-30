@@ -31,12 +31,12 @@ using System;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("Command")]
+    [TestCategory("CommandString")]
     public class CommandStringTests
     {
         #region IntToBytes
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
         public void IntToBytes()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -58,8 +58,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region BytesToInt
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void BytesToInt()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -76,8 +76,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region Hex
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void Hex()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -89,8 +89,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Ceil
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Ceil()
         {
@@ -108,8 +108,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Floor
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Floor()
         {
@@ -127,8 +127,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Round
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Round()
         {
@@ -146,8 +146,6 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Date
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
         [TestMethod]
         public void Date()
         {
@@ -160,7 +158,7 @@ namespace PEBakery.Core.Tests.Command
             StrFormat_Date_5();
         }
 
-        public void StrFormat_Date_1()
+        public static void StrFormat_Date_1()
         {
             const string rawCode = "StrFormat,Date,%Dest%,yyyy-mm-dd_hh:nn:ss.zzz";
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
@@ -172,7 +170,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(subInfo.FormatString.Equals("yyyy-MM-dd_HH:mm:ss.fff", StringComparison.Ordinal));
         }
 
-        public void StrFormat_Date_2()
+        public static void StrFormat_Date_2()
         {
             const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
@@ -184,7 +182,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddHHmmssfff", StringComparison.Ordinal));
         }
 
-        public void StrFormat_Date_3()
+        public static void StrFormat_Date_3()
         {
             const string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
@@ -196,7 +194,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.Fail();
         }
 
-        public void StrFormat_Date_4()
+        public static void StrFormat_Date_4()
         {
             const string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
@@ -208,7 +206,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.Fail();
         }
 
-        public void StrFormat_Date_5()
+        public static void StrFormat_Date_5()
         {
             const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
@@ -222,8 +220,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region FileName
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void FileName()
         {
@@ -237,8 +235,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region DirPath, Path
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void DirPath()
         {
@@ -257,8 +255,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Ext
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Ext()
         {
@@ -273,8 +271,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region PathCombine
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void PathCombine()
         {
@@ -289,8 +287,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Inc
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Inc()
         {
@@ -307,8 +305,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Dec
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Dec()
         {
@@ -326,8 +324,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Mult
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Mult()
         {
@@ -344,8 +342,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Div
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Div()
         {
@@ -362,8 +360,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Left
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Left()
         {
@@ -377,8 +375,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Right
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Right()
         {
@@ -391,20 +389,11 @@ namespace PEBakery.Core.Tests.Command
         }
         #endregion
 
-        #region SubStr
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        #region Mid
         [TestMethod]
-        public void SubStr()
+        public void Mid()
         {
             EngineState s = EngineTests.CreateEngineState();
-
-            DestSuccessTemplate(s, @"StrFormat,SubStr,PEBakery,3,2,%Dest%", "Ba");
-            DestSuccessTemplate(s, @"StrFormat,SubStr,PEBakery,4,3,%Dest%", "ake");
-            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,0,2,%Dest%", ErrorCheck.RuntimeError);
-            DestErrorTemplate(s, @"StrFormat,SubStr,PEBakery,3,0,%Dest%", ErrorCheck.RuntimeError);
-            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,10,2,%Dest%", ErrorCheck.RuntimeError);
-            DestErrorTemplate(s, @"StrFormat,SubStr,Joveler,3,10,%Dest%", ErrorCheck.RuntimeError);
 
             DestSuccessTemplate(s, @"StrFormat,Mid,PEBakery,3,2,%Dest%", "Ba");
             DestSuccessTemplate(s, @"StrFormat,Mid,PEBakery,4,3,%Dest%", "ake");
@@ -416,8 +405,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Len
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Len()
         {
@@ -429,8 +418,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region LTrim
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void LTrim()
         {
@@ -444,8 +433,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region RTrim
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void RTrim()
         {
@@ -459,8 +448,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region CTrim
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void CTrim()
         {
@@ -475,8 +464,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region NTrim
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void NTrim()
         {
@@ -489,8 +478,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region UCase
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void UCase()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -503,8 +492,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region LCase
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void LCase()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -516,8 +505,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Pos
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Pos()
         {
@@ -531,8 +520,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region PosX
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void PosX()
         {
@@ -546,8 +535,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Replace
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Replace()
         {
@@ -561,8 +550,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region ReplaceX
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void ReplaceX()
         {
@@ -576,8 +565,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Split
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         [TestMethod]
         public void Split()
         {
@@ -592,8 +581,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PadLeft
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void PadLeft()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -607,8 +596,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PadRight
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        
+        
         public void PadRight()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -621,7 +610,7 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Utility
-        public void InitDestSuccessTemplate(EngineState s, string rawCode, string initStr, string destStr)
+        public static void InitDestSuccessTemplate(EngineState s, string rawCode, string initStr, string destStr)
         {
             s.Variables["Dest"] = initStr;
             EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
@@ -630,13 +619,13 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(dest.Equals(destStr, StringComparison.Ordinal));
         }
 
-        public void InitDestErrorTemplate(EngineState s, string rawCode, string initStr, ErrorCheck check)
+        public static void InitDestErrorTemplate(EngineState s, string rawCode, string initStr, ErrorCheck check)
         {
             s.Variables["Dest"] = initStr;
             EngineTests.Eval(s, rawCode, CodeType.StrFormat, check);
         }
 
-        public void DestSuccessTemplate(EngineState s, string rawCode, string destStr)
+        public static void DestSuccessTemplate(EngineState s, string rawCode, string destStr)
         {
             EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
 
@@ -647,7 +636,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void DestErrorTemplate(EngineState s, string rawCode, ErrorCheck check)
+        public static void DestErrorTemplate(EngineState s, string rawCode, ErrorCheck check)
         {
             EngineTests.Eval(s, rawCode, CodeType.StrFormat, check);
         }

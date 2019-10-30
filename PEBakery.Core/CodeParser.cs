@@ -2836,9 +2836,8 @@ namespace PEBakery.Core
                         info = new StrFormatInfo_LeftRight(args[0], args[1], args[2]);
                     }
                     break;
-                case StrFormatType.SubStr:
                 case StrFormatType.Mid:
-                    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<DestVar>
+                    { // StrFormat,Mid,<SrcStr>,<StartPos>,<Length>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -2846,7 +2845,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[3]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[3]}] is not a valid variable name", rawCode);
 
-                        info = new StrFormatInfo_SubStr(args[0], args[1], args[2], args[3]);
+                        info = new StrFormatInfo_Mid(args[0], args[1], args[2], args[3]);
                     }
                     break;
                 case StrFormatType.Len:
