@@ -32,6 +32,7 @@ IF EXIST %DestDir%\Binary\*.pdb DEL %DestDir%\Binary\*.pdb
 IF EXIST %DestDir%\Binary\*.xml DEL %DestDir%\Binary\*.xml
 IF EXIST %DestDir%\Binary\x86\*.so DEL %DestDir%\Binary\x86\*.so
 IF EXIST %DestDir%\Binary\x64\*.so DEL %DestDir%\Binary\x64\*.so
+IF EXIST %DestDir%\Binary\x64\*.dylib DEL %DestDir%\Binary\x64\*.dylib
 IF EXIST %DestDir%\Binary\armhf RD /S /Q %DestDir%\Binary\armhf
 IF EXIST %DestDir%\Binary\arm64 RD /S /Q %DestDir%\Binary\arm64
 IF EXIST %DestDir%\Binary\*.db DEL %DestDir%\Binary\*.db

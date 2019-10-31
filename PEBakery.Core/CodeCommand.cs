@@ -2999,8 +2999,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Mid : StrFormatInfo
-    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
-      // Alias: StrFormat,Mid,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
+    { // StrFormat,Mid,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
         public string SrcStr;
         public string StartPos; // Index start from 1, not 0!
         public string Length;
