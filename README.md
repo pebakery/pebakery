@@ -23,12 +23,12 @@ PEBakery is backward compatible with WinBuilder 082 and makes significant improv
 
 The official release version is recommended for general use.
 
-A nightly build is provided for the testing purpose.
+A nightly build is provided for testing purposes.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
 
-**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide so you know what script breaking changes to expect and when compatibilty options need to be enabled.
+**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
 ## Prerequisites
 
@@ -45,12 +45,12 @@ Please read [LICENSE](./LICENSE) for details.
 
 ## Build
 
-To compile PEBakery from source, Visual Studio and .Net Framework are required.
+Visual Studio, .Net Framework, and .Net Core are required to compile PEBakery from the source.
 
 ### Requirement
 
 - [Visual Studio 2019 16.3](https://visualstudio.microsoft.com/en/thank-you-downloading-visual-studio/?sku=community&rel=16) or higher.
-- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) or higher for C# application projects.
+- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) for C# application projects.
 - [.Net Core 2.1 SDK](https://dotnet.microsoft.com/download) or higher for C# libraries.
 - [Windows 10 SDK (10.0.18362.0)](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) for compiling [LauncherNative](./LauncherNative).
   - [LauncherNative](./LauncherNative) can be compiled with virtually any supported version of Windows SDK.
@@ -68,10 +68,8 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 
-### PEBakery Nightly (20191003)
+### PEBakery Beta 6
 
-![Win10XPE with PEBakery 20191003](./Image/PEBakery-nightly-Win10XPE.png)
+![Win10XPE with PEBakery Beta 6](./Image/PEBakery-Win10XPE.png)
 
-### PEBakery Beta 5
-
-![ChrisPE with PEBakery Beta 5](./Image/PEBakery-ChrisPE.png)
+![ChrisPE with PEBakery Beta 6](./Image/PEBakery-ChrisPE.png)
