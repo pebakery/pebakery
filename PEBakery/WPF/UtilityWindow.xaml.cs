@@ -169,9 +169,9 @@ namespace PEBakery.WPF
                         mainModel.BuildTreeItems.Clear();
 
                         // Report elapsed build time
-                        string reason = s.RunResultReport();
-                        if (reason != null)
-                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                        string haltReason = s.RunResultReport();
+                        if (haltReason != null)
+                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
                         else
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 

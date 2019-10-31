@@ -2554,6 +2554,14 @@ namespace PEBakery.WPF
                 }
                 Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
 
+                if (items.Count < 2)
+                {
+                    string errMsg = $"{SelectedUICtrl.Type} [{SelectedUICtrl.Key}] must contain at least one item";
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot Delete Value: {errMsg}"));
+                    MessageBox.Show(errMsg + '.', "Cannot Delete Value", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 int idx = UICtrlListItemBoxSelectedIndex;
 
                 items.RemoveAt(idx);

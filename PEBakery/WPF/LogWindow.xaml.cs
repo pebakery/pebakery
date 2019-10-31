@@ -553,6 +553,11 @@ namespace PEBakery.WPF
                 int scriptId = _scriptEntries[scriptIdx].Item2;
                 int buildId = _scriptEntries[scriptIdx].Item3;
 
+                // Script Title Dict for script origin
+                ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>()
+                    .Where(x => x.BuildId == buildId)
+                    .ToDictionary(x => x.Id, x => x.Name);
+
                 if (scriptId == -1)
                 { // Total Summary
                     // BuildLog
@@ -568,7 +573,7 @@ namespace PEBakery.WPF
                         {
                             BuildId = buildId,
                             State = LogState.Info,
-                            Message = "No Error or Warning",
+                            Message = "No Errors or Warnings",
                             Time = DateTime.MinValue,
                         });
                     }
@@ -596,11 +601,6 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Per Script
-                    // Script Title Dict for script origin
-                    ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>()
-                        .Where(x => x.BuildId == buildId)
-                        .ToDictionary(x => x.Id, x => x.Name);
-
                     // BuildLog
                     var builds = LogDb.Table<LogModel.BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);

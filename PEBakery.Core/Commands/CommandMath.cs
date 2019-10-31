@@ -131,16 +131,20 @@ namespace PEBakery.Core.Commands
                 case MathType.ToSign:
                 case MathType.ToUnsign:
                     {
-                        // Math,IntSign,<DestVar>,<Src>,[8|16|32|64]
-                        // Math,IntUnsign,<DestVar>,<Src>,[8|16|32|64]
+                        // Math,IntSign,<DestVar>,<Src>,<BitSize>
+                        // Math,IntUnsign,<DestVar>,<Src>,<BitSize>
                         MathInfo_IntegerSignedness subInfo = info.SubInfo.Cast<MathInfo_IntegerSignedness>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
+                        string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
+                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        if (errorMsg != null)
+                            return LogInfo.LogErrorMessage(logs, errorMsg);
 
                         string destStr;
                         if (info.Type == MathType.ToSign)
                         { // Unsigned int to signed int
-                            switch (subInfo.BitSize)
+                            switch (bitSize)
                             {
                                 case 8:
                                     {
@@ -180,7 +184,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         { // Signed int to unsigned int
-                            switch (subInfo.BitSize)
+                            switch (bitSize)
                             {
                                 case 8:
                                     {
@@ -328,9 +332,13 @@ namespace PEBakery.Core.Commands
                         MathInfo_BitNot subInfo = info.SubInfo.Cast<MathInfo_BitNot>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
-                        string destStr;
+                        string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
+                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        if (errorMsg != null)
+                            return LogInfo.LogErrorMessage(logs, errorMsg);
 
-                        switch (subInfo.BitSize)
+                        string destStr;
+                        switch (bitSize)
                         {
                             case 8:
                                 {
@@ -388,8 +396,13 @@ namespace PEBakery.Core.Commands
                         else if (!directionStr.Equals("Right", StringComparison.OrdinalIgnoreCase))
                             return LogInfo.LogErrorMessage(logs, $"[{directionStr}] must be one of [Left, Right]");
 
+                        string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
+                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        if (errorMsg != null)
+                            return LogInfo.LogErrorMessage(logs, errorMsg);
+
                         string destStr;
-                        switch (subInfo.BitSize)
+                        switch (bitSize)
                         {
                             case 8:
                                 {
@@ -525,8 +538,13 @@ namespace PEBakery.Core.Commands
                         MathInfo_HexDec subInfo = info.SubInfo.Cast<MathInfo_HexDec>();
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Src);
+                        string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
+                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        if (errorMsg != null)
+                            return LogInfo.LogErrorMessage(logs, errorMsg);
+
                         string dest;
-                        switch (subInfo.BitSize)
+                        switch (bitSize)
                         {
                             case 8:
                                 if (!NumberHelper.ParseSignedAsUInt8(intStr, out byte u8))
@@ -593,6 +611,21 @@ namespace PEBakery.Core.Commands
             }
 
             return logs;
+        }
+
+        /// <summary>
+        /// Parse and check bitSizeStr
+        /// </summary>
+        /// <param name="bitSizeStr">String to parse</param>
+        /// <param name="bitSize">Parsed bitSize integer</param>
+        /// <returns>Null if succeed, an error message string if failed</returns>
+        public static string ParseAndCheckBitSize(string bitSizeStr, out int bitSize)
+        {
+            if (!NumberHelper.ParseInt32(bitSizeStr, out bitSize))
+                return $"[{bitSizeStr}] is not a valid integer";
+            if (!(bitSize == 8 || bitSize == 16 || bitSize == 32 || bitSize == 64))
+                return $"[{bitSizeStr}] is not a valid bit size";
+            return null;
         }
     }
 }

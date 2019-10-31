@@ -493,8 +493,8 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         // Load Per-Script Macro
-                        s.Macro.ResetLocalMacros();
-                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Section.Script, false);
+                        s.Macro.ResetMacroDict(MacroType.Local);
+                        varLogs = s.Macro.LoadMacroDict(MacroType.Local, cmd.Section.Script, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, "Variables are reset to their default state"));

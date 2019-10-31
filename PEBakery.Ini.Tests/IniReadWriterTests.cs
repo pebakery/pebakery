@@ -34,21 +34,22 @@ using System.Text;
 namespace PEBakery.Ini.Tests
 {
     [TestClass]
+    [TestCategory("PEBakery.Ini")]
     public class IniReadWriterTests
     {
         #region ReadKey
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void ReadKey()
         {
             ReadKey_1();
             ReadKey_2();
             ReadKey_3();
+            ReadKey_DoubleQuote();
         }
 
-        public void ReadKey_1()
+        public static void ReadKey_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 Assert.IsNull(IniReadWriter.ReadKey(tempFile, "Section", "Key"));
@@ -59,9 +60,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadKey_2()
+        public static void ReadKey_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -84,9 +85,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadKey_3()
+        public static void ReadKey_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -120,19 +121,42 @@ namespace PEBakery.Ini.Tests
                 File.Delete(tempFile);
             }
         }
+
+        public static void ReadKey_DoubleQuote()
+        {
+            string tempFile = FileHelper.GetTempFile();
+            try
+            {
+                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine("CUR_DIR       = \"Cursors\\Material Design Cursors\"");
+                    w.WriteLine("1     = \"ABC\\DEF\"");
+                    w.WriteLine("2=\"XY Z\"");
+                }
+
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("\"XY Z\"", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR").Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
         #endregion
 
         #region ReadKeys
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void ReadKeys()
         {
             ReadKeys_1();
         }
 
-        public void ReadKeys_1()
+        public static void ReadKeys_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -185,7 +209,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteKey
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void WriteKey()
         {
@@ -197,9 +220,9 @@ namespace PEBakery.Ini.Tests
             WriteKey_6();
         }
 
-        public void WriteKey_1()
+        public static void WriteKey_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "Value"));
@@ -223,9 +246,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKey_2()
+        public static void WriteKey_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -259,9 +282,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKey_3()
+        public static void WriteKey_3()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -297,9 +320,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKey_4()
+        public static void WriteKey_4()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -335,7 +358,7 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKey_5()
+        public static void WriteKey_5()
         {
             string tempFile = FileHelper.GetTempFile();
             try
@@ -361,7 +384,7 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKey_6()
+        public static void WriteKey_6()
         { // https://github.com/pebakery/pebakery/issues/57
             string tempFile = FileHelper.GetTempFile();
             try
@@ -416,7 +439,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteKeys
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void WriteKeys()
         {
@@ -424,9 +446,9 @@ namespace PEBakery.Ini.Tests
             WriteKeys_2();
         }
 
-        public void WriteKeys_1()
+        public static void WriteKeys_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -464,9 +486,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteKeys_2()
+        public static void WriteKeys_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -533,7 +555,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteRawLine
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void WriteRawLine()
         {
@@ -544,9 +565,9 @@ namespace PEBakery.Ini.Tests
             WriteRawLine_5();
         }
 
-        public void WriteRawLine_1()
+        public static void WriteRawLine_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -573,9 +594,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteRawLine_2()
+        public static void WriteRawLine_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -609,9 +630,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteRawLine_3()
+        public static void WriteRawLine_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -645,9 +666,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteRawLine_4()
+        public static void WriteRawLine_4()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -683,9 +704,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteRawLine_5()
+        public static void WriteRawLine_5()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -723,7 +744,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteRawLines
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void WriteRawLines()
         {
@@ -731,9 +751,9 @@ namespace PEBakery.Ini.Tests
             WriteRawLines_2();
         }
 
-        public void WriteRawLines_1()
+        public static void WriteRawLines_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -794,9 +814,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void WriteRawLines_2()
+        public static void WriteRawLines_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -859,7 +879,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region RenameKey
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void RenameKey()
         {
@@ -868,9 +888,9 @@ namespace PEBakery.Ini.Tests
             RenameKey_3();
         }
 
-        public void RenameKey_1()
+        public static void RenameKey_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -908,9 +928,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void RenameKey_2()
+        public static void RenameKey_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -949,9 +969,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void RenameKey_3()
+        public static void RenameKey_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -992,16 +1012,16 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region RenameKeys
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void RenameKeys()
         {
             RenameKeys_1();
         }
 
-        public void RenameKeys_1()
+        public static void RenameKeys_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1061,7 +1081,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region DeleteKey
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void DeleteKey()
         {
@@ -1070,9 +1090,9 @@ namespace PEBakery.Ini.Tests
             DeleteKey_3();
         }
 
-        public void DeleteKey_1()
+        public static void DeleteKey_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1109,9 +1129,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void DeleteKey_2()
+        public static void DeleteKey_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1150,9 +1170,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void DeleteKey_3()
+        public static void DeleteKey_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1191,16 +1211,16 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region DeleteKeys
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void DeleteKeys()
         {
             DeleteKeys_1();
         }
 
-        public void DeleteKeys_1()
+        public static void DeleteKeys_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1258,7 +1278,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region ReadSection
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void ReadSection()
         {
@@ -1267,9 +1287,9 @@ namespace PEBakery.Ini.Tests
             ReadSection_3();
         }
 
-        public void ReadSection_1()
+        public static void ReadSection_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1293,9 +1313,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadSection_2()
+        public static void ReadSection_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1316,9 +1336,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadSection_3()
+        public static void ReadSection_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1365,7 +1385,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region ReadSections
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void ReadSections()
         {
@@ -1374,9 +1394,9 @@ namespace PEBakery.Ini.Tests
             ReadSections_3();
         }
 
-        public void ReadSections_1()
+        public static void ReadSections_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1400,9 +1420,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadSections_2()
+        public static void ReadSections_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1429,9 +1449,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadSections_3()
+        public static void ReadSections_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1483,7 +1503,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region AddSection
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void AddSection()
         {
@@ -1492,9 +1512,9 @@ namespace PEBakery.Ini.Tests
             AddSection_3();
         }
 
-        public void AddSection_1()
+        public static void AddSection_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1520,9 +1540,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void AddSection_2()
+        public static void AddSection_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1557,9 +1577,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void AddSection_3()
+        public static void AddSection_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1614,7 +1634,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region AddSections
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void AddSections()
         {
@@ -1622,9 +1642,9 @@ namespace PEBakery.Ini.Tests
             AddSections_2();
         }
 
-        public void AddSections_1()
+        public static void AddSections_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1661,9 +1681,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void AddSections_2()
+        public static void AddSections_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1723,14 +1743,14 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteSectionFast
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void WriteSectionFast()
         {
             #region Template
             void MultiStrTemplate(string section, string[] strs, string before, string after)
             {
-                string tempFile = Path.GetTempFileName();
+                string tempFile = FileHelper.GetTempFile();
                 try
                 {
                     EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1756,7 +1776,7 @@ namespace PEBakery.Ini.Tests
 
             void SingleStrTemplate(string section, string str, string before, string after)
             {
-                string tempFile = Path.GetTempFileName();
+                string tempFile = FileHelper.GetTempFile();
                 try
                 {
                     EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1782,8 +1802,8 @@ namespace PEBakery.Ini.Tests
 
             void TextReaderTemplate(string section, string str, string before, string after)
             {
-                string tempSrcFile = Path.GetTempFileName();
-                string tempDestFile = Path.GetTempFileName();
+                string tempSrcFile = FileHelper.GetTempFile();
+                string tempDestFile = FileHelper.GetTempFile();
                 try
                 {
                     EncodingHelper.WriteTextBom(tempSrcFile, Encoding.UTF8);
@@ -1877,7 +1897,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region RenameSection
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void RenameSection()
         {
@@ -1886,9 +1906,9 @@ namespace PEBakery.Ini.Tests
             RenameSection_3();
         }
 
-        public void RenameSection_1()
+        public static void RenameSection_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1911,9 +1931,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void RenameSection_2()
+        public static void RenameSection_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -1947,9 +1967,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void RenameSection_3()
+        public static void RenameSection_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2001,7 +2021,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region RenameSections
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void RenameSections()
         {
@@ -2009,9 +2029,9 @@ namespace PEBakery.Ini.Tests
             RenameSections_2();
         }
 
-        public void RenameSections_1()
+        public static void RenameSections_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2066,9 +2086,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void RenameSections_2()
+        public static void RenameSections_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2126,7 +2146,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region DeleteSection
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void DeleteSection()
         {
@@ -2135,9 +2155,9 @@ namespace PEBakery.Ini.Tests
             DeleteSection_3();
         }
 
-        public void DeleteSection_1()
+        public static void DeleteSection_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2160,9 +2180,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void DeleteSection_2()
+        public static void DeleteSection_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2191,9 +2211,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void DeleteSection_3()
+        public static void DeleteSection_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2242,7 +2262,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region DeleteSections
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void DeleteSections()
         {
@@ -2250,9 +2270,9 @@ namespace PEBakery.Ini.Tests
             DeleteSections_2();
         }
 
-        public void DeleteSections_1()
+        public static void DeleteSections_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2301,9 +2321,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void DeleteSections_2()
+        public static void DeleteSections_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2360,7 +2380,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region ReadRawSection
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void ReadRawSection()
         {
@@ -2370,9 +2390,9 @@ namespace PEBakery.Ini.Tests
             ReadRawSection_4();
         }
 
-        public void ReadRawSection_1()
+        public static void ReadRawSection_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2403,9 +2423,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadRawSection_2()
+        public static void ReadRawSection_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2438,9 +2458,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadRawSection_3()
+        public static void ReadRawSection_3()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2477,9 +2497,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadRawSection_4()
+        public static void ReadRawSection_4()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2521,7 +2541,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region ReadRawSections
-        [TestCategory("PEBakery.Ini")]
+
         [TestMethod]
         public void ReadRawSections()
         {
@@ -2529,9 +2549,9 @@ namespace PEBakery.Ini.Tests
             ReadRawSections_2();
         }
 
-        public void ReadRawSections_1()
+        public static void ReadRawSections_1()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2581,9 +2601,9 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void ReadRawSections_2()
+        public static void ReadRawSections_2()
         {
-            string tempFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2632,7 +2652,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region Merge2
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void Merge2()
         {
@@ -2642,10 +2661,10 @@ namespace PEBakery.Ini.Tests
             Merge2_4();
         }
 
-        public void Merge2_1()
+        public static void Merge2_1()
         {
-            string tempFile = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2682,10 +2701,10 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge2_2()
+        public static void Merge2_2()
         {
-            string tempFile = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
@@ -2731,10 +2750,10 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge2_3()
+        public static void Merge2_3()
         {
-            string tempFile = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
@@ -2784,10 +2803,10 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge2_4()
+        public static void Merge2_4()
         {
-            string tempFile = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
@@ -2838,7 +2857,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region Merge3
-        [TestCategory("PEBakery.Ini")]
         [TestMethod]
         public void Merge3()
         {
@@ -2850,11 +2868,11 @@ namespace PEBakery.Ini.Tests
             Merge3_6();
         }
 
-        public void Merge3_1()
+        public static void Merge3_1()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
@@ -2868,7 +2886,7 @@ namespace PEBakery.Ini.Tests
                     read = r.ReadToEnd();
                 }
 
-                Assert.IsTrue(read.Equals(string.Empty, StringComparison.Ordinal));
+                Assert.IsTrue(read.Length == 0);
             }
             finally
             {
@@ -2878,11 +2896,11 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge3_2()
+        public static void Merge3_2()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
@@ -2920,11 +2938,11 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge3_3()
+        public static void Merge3_3()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
@@ -2971,11 +2989,11 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge3_4()
+        public static void Merge3_4()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
@@ -3026,11 +3044,11 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge3_5()
+        public static void Merge3_5()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
@@ -3081,11 +3099,11 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        public void Merge3_6()
+        public static void Merge3_6()
         {
-            string tempFile1 = Path.GetTempFileName();
-            string tempFile2 = Path.GetTempFileName();
-            string destFile = Path.GetTempFileName();
+            string tempFile1 = FileHelper.GetTempFile();
+            string tempFile2 = FileHelper.GetTempFile();
+            string destFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
@@ -3147,9 +3165,67 @@ namespace PEBakery.Ini.Tests
         }
         #endregion
 
+        #region Compact
+        [TestMethod]
+        public void Compact()
+        {
+            string tempFile = FileHelper.GetTempFile();
+            try
+            {
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("  Header  ");
+                b.AppendLine();
+                b.AppendLine("       [NonIniStyle]");
+                b.AppendLine("1");
+                b.AppendLine("  2");
+                b.AppendLine("3  ");
+                b.AppendLine(" 4    ");
+                b.AppendLine();
+                b.AppendLine("[IniStyle]           ");
+                b.AppendLine("일=一");
+                b.AppendLine(" 이 = 二 ");
+                b.AppendLine("  삼  =  三  ");
+                b.AppendLine("사     =       四    ");
+                string srcStr = b.ToString();
+                b.Clear();
+                b.AppendLine("Header");
+                b.AppendLine();
+                b.AppendLine("[NonIniStyle]");
+                b.AppendLine("1");
+                b.AppendLine("2");
+                b.AppendLine("3");
+                b.AppendLine("4");
+                b.AppendLine();
+                b.AppendLine("[IniStyle]");
+                b.AppendLine("일=一");
+                b.AppendLine("이=二");
+                b.AppendLine("삼=三");
+                b.AppendLine("사=四");
+                string compStr = b.ToString();
+
+                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    sw.Write(b.ToString());
+                }
+
+                IniReadWriter.Compact(tempFile);
+
+                string resultStr;
+                using (StreamReader sr = new StreamReader(tempFile, Encoding.UTF8, false))
+                {
+                    resultStr = sr.ReadToEnd();
+                }
+                Assert.IsTrue(resultStr.Equals(compStr, StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+        #endregion
+
         #region Fast Forward
         [TestMethod]
-        [TestCategory("PEBakery.Ini")]
         public void FastForwardTextReader()
         {
             void Template(string section, string src, string expected)
@@ -3199,7 +3275,6 @@ namespace PEBakery.Ini.Tests
         }
 
         [TestMethod]
-        [TestCategory("PEBakery.Ini")]
         public void FastForwardTextWriter()
         {
             void Template(string section, string src, string expected, bool copyFromNewSection)

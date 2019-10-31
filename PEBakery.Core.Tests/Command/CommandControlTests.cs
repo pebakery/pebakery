@@ -28,6 +28,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Ini;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
@@ -35,11 +36,11 @@ using System.IO;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("CommandControl")]
     public class CommandControlTests
     {
         #region Set
         [TestMethod]
-        [TestCategory("CommandControl")]
         public void Set()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -256,23 +257,53 @@ namespace PEBakery.Core.Tests.Command
 
         #region AddVariables
         [TestMethod]
-        [TestCategory("CommandControl")]
         public void AddVariables()
         {
-            EngineState s = EngineTests.CreateEngineState();
-            string scPath = Path.Combine(EngineTests.BaseDir, Project.Names.Projects, "TestSuite", "Control", "General.script");
-
-            void Template(string rawCode, VarsType varsType)
+            // Add variables
             {
-                EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+                EngineState s = EngineTests.CreateEngineState();
+                string scPath = Path.Combine(EngineTests.BaseDir, Project.Names.Projects, "TestSuite", "Control", "General.script");
 
-                Assert.IsTrue(s.Variables.GetValue(varsType, "A").Equals("1", StringComparison.Ordinal));
-                Assert.IsTrue(s.Variables.GetValue(varsType, "B").Equals("2", StringComparison.Ordinal));
-                Assert.IsTrue(s.Variables.GetValue(varsType, "C").Equals("3", StringComparison.Ordinal));
+                void VariableTemplate(string rawCode, VarsType varsType)
+                {
+                    s.ReturnValue = string.Empty;
+                    EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+
+                    Assert.IsTrue(s.Variables.GetValue(varsType, "A").Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(s.Variables.GetValue(varsType, "B").Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(s.Variables.GetValue(varsType, "C").Equals("3", StringComparison.Ordinal));
+
+                    Dictionary<string, CodeCommand> macroDict = s.Macro.GetMacroDict(varsType == VarsType.Global ? MacroType.Global : MacroType.Local);
+                    Assert.IsTrue(macroDict.ContainsKey("InlineMacro"));
+                    EngineTests.Eval(s, "InlineMacro", CodeType.Macro, ErrorCheck.Success);
+                    Assert.IsTrue(s.ReturnValue.Equals("T", StringComparison.Ordinal));
+                }
+
+                VariableTemplate($"AddVariables,{scPath},TestVars", VarsType.Local);
+                VariableTemplate($"AddVariables,{scPath},TestVars,GLOBAL", VarsType.Global);
             }
 
-            Template($"AddVariables,{scPath},TestVars", VarsType.Local);
-            Template($"AddVariables,{scPath},TestVars,GLOBAL", VarsType.Global);
+            // Add macro
+            {
+                void ScriptTemplate(string treePath, string entrySection, MacroType type, ErrorCheck check = ErrorCheck.Success)
+                {
+                    (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        Dictionary<string, CodeCommand> macroDict = s.Macro.GetMacroDict(type);
+                        Assert.IsTrue(macroDict.ContainsKey("SectionMacro"));
+                        Assert.IsTrue(macroDict.ContainsKey("InlineMacro"));
+
+                        Assert.IsTrue(s.ReturnValue.Equals("T", StringComparison.Ordinal));
+                    }
+                }
+
+                string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
+                ScriptTemplate(scPath, "Process-SectionMacro-Global", MacroType.Global);
+                ScriptTemplate(scPath, "Process-SectionMacro-Local", MacroType.Local);
+                ScriptTemplate(scPath, "Process-InlineMacro-Global", MacroType.Global);
+                ScriptTemplate(scPath, "Process-InlineMacro-Local", MacroType.Local);
+            }
         }
         #endregion
 
@@ -286,7 +317,7 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 EngineTests.Eval(s, rawCode, CodeType.Exit, check);
 
-                Assert.IsTrue(s.PassCurrentScriptFlag);
+                Assert.IsTrue(s.HaltFlags.ScriptHalt);
             }
 
             Template("Exit,UnitTest", ErrorCheck.Warning);
@@ -303,7 +334,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.CmdHaltFlag);
+            Assert.IsTrue(s.HaltFlags.CmdHalt);
         }
         #endregion
 
@@ -353,9 +384,7 @@ namespace PEBakery.Core.Tests.Command
 
             void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
-                void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = false;
-
-                (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetState, entrySection);
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string destStr = s.Variables.GetValue(VarsType.Local, "Dest");

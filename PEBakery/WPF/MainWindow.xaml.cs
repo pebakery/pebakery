@@ -270,12 +270,6 @@ namespace PEBakery.WPF
             {
                 e.CanExecute = false;
             }
-
-            /*
-            e.CanExecute = Model != null && !Model.WorkInProgress &&
-                           Global.Projects != null && Global.Projects.FullyLoaded;
-                           */
-
         }
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -532,7 +526,7 @@ namespace PEBakery.WPF
                     {
                         // Ask user for confirmation
                         MessageBox.Show(this,
-                            $"Directory [{targetScript.Title}] does not have updateable children scripts.",
+                            $"Directory [{targetScript.Title}] does not contain any scripts that are able to be updated.",
                             "No updateable scripts",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
@@ -553,7 +547,7 @@ namespace PEBakery.WPF
                 else
                     targetScriptCountStr = $"script [{targetScript.Title}]";
                 MessageBoxResult result = MessageBox.Show(this,
-                    $"Are you sure to update {targetScriptCountStr}?",
+                    $"Are you sure you want to update {targetScriptCountStr}?",
                     "Continue?",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -711,6 +705,7 @@ namespace PEBakery.WPF
             }
         }
 
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         private async void CreateScriptMetaFilesCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
@@ -761,7 +756,7 @@ namespace PEBakery.WPF
                     {
                         // Ask user for confirmation
                         MessageBox.Show(this,
-                            $"Directory [{targetScript.Title}] does not have any child scripts.",
+                            $"Directory [{targetScript.Title}] does not contain any scripts.",
                             "No child scripts",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
@@ -794,7 +789,7 @@ namespace PEBakery.WPF
                     idx += 1;
                     Model.BuildFullProgressValue = idx;
                     Model.DisplayScriptTexts(sc, null);
-                    Model.ScriptTitleText = $"({idx}/{targetScripts.Length}) " + Model.ScriptTitleText;
+                    Model.ScriptTitleText = Model.ScriptTitleText;
                     Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
                     Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
                     {
@@ -805,10 +800,10 @@ namespace PEBakery.WPF
                             return;
 
                         if (Model.CurBuildTree != null)
-                            Model.CurBuildTree.BuildFocus = false;
+                            Model.CurBuildTree.Focus = false;
                         Model.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(Model.BuildTreeItems[0], sc.RealPath);
                         if (Model.CurBuildTree != null)
-                            Model.CurBuildTree.BuildFocus = true;
+                            Model.CurBuildTree.Focus = true;
                     }));
 
                     // Do the real job
@@ -890,6 +885,7 @@ namespace PEBakery.WPF
                 focusedElement.DataContext is ProjectTreeItemModel node)
             {
                 node.Checked = !node.Checked;
+                // node.Focus = true;
                 e.Handled = true;
             }
         }
@@ -911,6 +907,8 @@ namespace PEBakery.WPF
                 double msec = watch.Elapsed.TotalMilliseconds;
                 Model.StatusBarText = $"{sc.Title} rendered ({msec:0}ms)";
             }));
+
+            MainTreeView.Focus();
         }
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -990,7 +988,7 @@ namespace PEBakery.WPF
 
             // Stop and wait for the build to end, or forcefully stop it immediately.
             EngineState s = Engine.WorkingEngine.State;
-            if (s.UserHaltFlag && s.RunningSubProcess != null)
+            if (s.HaltFlags.UserHalt && s.RunningSubProcess != null)
             { // Stop is already requested, but waiting for sub-process to end
                 MessageBoxResult result;
                 lock (s.RunningSubProcLock)

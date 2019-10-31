@@ -28,10 +28,17 @@
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
 {
+    public enum MacroType
+    {
+        Global = 0,
+        Local = 1,
+    }
+
     public class Macro
     {
         #region Constants
@@ -55,7 +62,7 @@ namespace PEBakery.Core
         /// <summary>
         /// [ApiVar] of macro script
         /// </summary>
-        public Dictionary<string, CodeCommand> GlobalDict { get; }
+        public Dictionary<string, CodeCommand> GlobalDict { get; private set; }
             = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
         /// Macro defined in current script's [Variables] 
@@ -79,9 +86,9 @@ namespace PEBakery.Core
                 return;
             }
 
-            ScriptSection variablesSection = project.MainScript.Sections[ScriptSection.Names.Variables];
+            ScriptSection mainScriptVarSection = project.MainScript.Sections[ScriptSection.Names.Variables];
 
-            Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(variablesSection.Lines);
+            Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(mainScriptVarSection.Lines);
             if (!(varDict.ContainsKey(KnownVar.API) && varDict.ContainsKey(KnownVar.APIVAR)))
             {
                 MacroEnabled = false;
@@ -104,7 +111,7 @@ namespace PEBakery.Core
             if (!MacroScript.Sections.ContainsKey(varDict[KnownVar.APIVAR]))
             {
                 MacroEnabled = false;
-                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
+                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict[KnownVar.APIVAR]}"));
                 return;
             }
             MacroSection = MacroScript.Sections[varDict[KnownVar.APIVAR]];
@@ -170,77 +177,131 @@ namespace PEBakery.Core
         #endregion
 
         #region Local Macro
-        public List<LogInfo> LoadLocalMacroDict(Script sc, bool append, string sectionName = ScriptSection.Names.Variables)
+        public List<LogInfo> LoadMacroDict(MacroType type, Script sc, bool append, string sectionName = ScriptSection.Names.Variables)
         {
-            if (sc.Sections.ContainsKey(sectionName))
-            {
-                ScriptSection section = sc.Sections[sectionName];
+            if (!sc.Sections.ContainsKey(sectionName))
+                return new List<LogInfo>();
+            
+            ScriptSection section = sc.Sections[sectionName];
 
-                // [Variables]'s type is SectionDataType.Lines
-                // Pick key-value only if key is not wrapped by %
-                Dictionary<string, string> dict = IniReadWriter.ParseIniLinesIniStyle(section.Lines);
-                return LoadLocalMacroDict(section, dict, append);
-            }
-
-            return new List<LogInfo>();
+            // Pick key-value only if key is not wrapped by %
+            Dictionary<string, string> dict = IniReadWriter.ParseIniLinesIniStyle(section.Lines);
+            return LoadMacroDict(type, section, dict, append);
         }
 
-        public List<LogInfo> LoadLocalMacroDict(ScriptSection section, IEnumerable<string> lines, bool append)
+        public List<LogInfo> LoadMacroDict(MacroType type, ScriptSection section, IEnumerable<string> lines, bool append)
         {
             Dictionary<string, string> dict = IniReadWriter.ParseIniLinesIniStyle(lines);
-            return LoadLocalMacroDict(section, dict, append);
+            return LoadMacroDict(type, section, dict, append);
         }
 
-        private List<LogInfo> LoadLocalMacroDict(ScriptSection section, Dictionary<string, string> dict, bool append)
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
+        private List<LogInfo> LoadMacroDict(MacroType type, ScriptSection section, Dictionary<string, string> newDict, bool append)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            if (!append)
-                LocalDict.Clear();
-
-            if (0 < dict.Keys.Count)
+            
+            // Select proper macroDict
+            Dictionary<string, CodeCommand> macroDict;
+            switch (type)
             {
-                int count = 0;
-                logs.Add(new LogInfo(LogState.Info, $"Import Local Macro from [{section.Name}]", 0));
-                foreach (var kv in dict)
-                {
-                    try
-                    {
-                        // Macro Name Validation
-                        if (!Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"Invalid local macro name [{kv.Key}]"));
-                            continue;
-                        }
-
-                        CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
-                        LocalDict[kv.Key] = parser.ParseStatement(kv.Value);
-                        logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
-                        count += 1;
-                    }
-                    catch (Exception e)
-                    {
-                        logs.Add(new LogInfo(LogState.Error, e));
-                    }
-                }
-                logs.Add(new LogInfo(LogState.Info, $"Imported {count} Local Macro", 0));
-                logs.Add(new LogInfo(LogState.None, Logger.LogSeparator, 0));
+                case MacroType.Global:
+                    macroDict = GlobalDict;
+                    break;
+                case MacroType.Local:
+                    macroDict = LocalDict;
+                    break;
+                default:
+                    throw new CriticalErrorException($"Invalid MacroType {type}");
             }
+
+            // Do not clear macroDict in the append mode
+            if (!append)
+                macroDict.Clear();
+
+            // If the newDict is empty, skip the rest
+            if (newDict.Keys.Count == 0)
+                return logs;
+            
+            // Parse and register commands to the macroDict
+            int count = 0;
+            CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
+            logs.Add(new LogInfo(LogState.Info, $"Import {type} Macro from [{section.Name}]", 0));
+            foreach (var kv in newDict)
+            {
+                try
+                {
+                    // Macro Name Validation
+                    if (!Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                        continue;
+                    }
+                    
+                    CodeCommand macroCmd = parser.ParseStatement(kv.Value);
+                    macroDict[kv.Key] = macroCmd;
+                    logs.Add(new LogInfo(LogState.Success, $"{type} macro [{kv.Key}] set to [{kv.Value}]", 1));
+                    count += 1;
+                }
+                catch (Exception e)
+                {
+                    logs.Add(new LogInfo(LogState.Error, e));
+                }
+            }
+            logs.Add(new LogInfo(LogState.Info, $"Imported {count} {type} Macro", 0));
+            logs.Add(new LogInfo(LogState.None, Logger.LogSeparator, 0));
 
             return logs;
         }
 
-        public void ResetLocalMacros()
+        public void ResetMacroDict(MacroType type)
         {
-            LocalDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
+            switch (type)
+            {
+                case MacroType.Global:
+                    GlobalDict.Clear();
+                    break;
+                case MacroType.Local:
+                    LocalDict.Clear();
+                    break;
+                default:
+                    throw new CriticalErrorException($"Invalid MacroType {type}");
+            }
         }
 
         /// <summary>
         /// Local Macro from [Variables]
         /// </summary>
         /// <param name="newDict"></param>
-        public void SetLocalMacros(Dictionary<string, CodeCommand> newDict)
+        public void SetMacroDict(MacroType type, Dictionary<string, CodeCommand> newDict)
         {
-            LocalDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
+            switch (type)
+            {
+                case MacroType.Global:
+                    GlobalDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+                case MacroType.Local:
+                    LocalDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+                default:
+                    throw new CriticalErrorException($"Invalid MacroType {type}");
+            }
+        }
+
+        public Dictionary<string, CodeCommand> GetMacroDict(MacroType type)
+        {
+            Dictionary<string, CodeCommand> macroDict;
+            switch (type)
+            {
+                case MacroType.Global:
+                    macroDict = new Dictionary<string, CodeCommand>(GlobalDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+                case MacroType.Local:
+                    macroDict = new Dictionary<string, CodeCommand>(LocalDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+                default:
+                    throw new CriticalErrorException($"Invalid MacroType {type}");
+            }
+            return macroDict;
         }
         #endregion
 

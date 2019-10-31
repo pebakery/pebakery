@@ -36,6 +36,8 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("Command")]
+    [TestCategory("CommandIni")]
     public class CommandIniTests
     {
         #region SampleStr
@@ -58,6 +60,11 @@ namespace PEBakery.Core.Tests.Command
             "# Sharp", // 14
             "나=8", // 15
             "다=9", // 16
+            string.Empty, // 17
+            "[Doublequote]", // 18
+            "CUR_DIR       = \"Cursors\\Material Design Cursors\"", // 21, See Issue #134
+            "DQ1=\"A B C\"", // 19
+            "DQ2  =  \"X\\Y\\Z\"", // 20, See Issue #134
         };
 
         private static string SampleStr()
@@ -71,8 +78,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IniRead
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandIni")]
         public void IniRead()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -81,8 +86,8 @@ namespace PEBakery.Core.Tests.Command
             string tempDir = FileHelper.GetTempDir();
             try
             {
-                string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
-                string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
+                string tempFile = Path.Combine(tempDir, "sample.ini");
+                string tempFile2 = Path.Combine(tempDir, "empty.ini");
 
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,A,%Dest%", tempFile, sampleStr, "1");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,B,%Dest%", tempFile, sampleStr, "2");
@@ -90,6 +95,9 @@ namespace PEBakery.Core.Tests.Command
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec3,나,%Dest%", tempFile, sampleStr, "8");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec2,無,%Dest%", tempFile, sampleStr, string.Empty);
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec2,Z", tempFile, string.Empty, null, ErrorCheck.ParserError);
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ1,%Dest%", tempFile, sampleStr, "#$qA B C#$q");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ2,%Dest%", tempFile, sampleStr, "#$qX\\Y\\Z#$q");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,CUR_DIR,%Dest%", tempFile, sampleStr, "#$qCursors\\Material Design Cursors#$q");
 
                 // Optimization
                 ReadOptTemplate(s, CodeType.IniReadOp, new List<string>
@@ -116,8 +124,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IniWrite
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandIni")]
         public void IniWrite()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -125,8 +131,8 @@ namespace PEBakery.Core.Tests.Command
             string tempDir = FileHelper.GetTempDir();
             try
             {
-                string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
-                string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
+                string tempFile = Path.Combine(tempDir, "samples.ini");
+                string tempFile2 = Path.Combine(tempDir, "empty.ini");
 
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("[6DoF]");
@@ -229,6 +235,20 @@ namespace PEBakery.Core.Tests.Command
                     $@"IniWrite,{tempFile},6DoF,Descent,Sublevel Zero Redux",
                     $@"IniWrite,{tempFile2},6DoF,Parallax,Revival",
                 }, tempFile, sampleStr, resultStr);
+
+                // Passthrough + Doublequote test, Issue #134
+                b.Clear();
+                b.AppendLine("[Passthrough]");
+                b.AppendLine("DQ1  =  \"A B C\"");
+                b.AppendLine("DQ2  =  \"X\\Y\\Z\"");
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Passthrough]");
+                b.AppendLine("DQ1=\"A B C D\"");
+                b.AppendLine("DQ2  =  \"X\\Y\\Z\"");
+                b.AppendLine();
+                resultStr = b.ToString();
+                WriteTemplate(s, CodeType.IniWrite, $@"IniWrite,{tempFile},Passthrough,DQ1,#$qA B C D#$q", tempFile, sampleStr, resultStr);
             }
             finally
             {
@@ -468,7 +488,7 @@ namespace PEBakery.Core.Tests.Command
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
-                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.Error);
+                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.RuntimeError);
 
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("[6DoF]");
@@ -740,6 +760,40 @@ namespace PEBakery.Core.Tests.Command
             finally
             {
                 Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+
+        #region IniCompact
+        [TestMethod]
+        public void IniCompact()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string srcFile = Path.Combine(EngineTests.TestBench, "CommandIni", "BeforeCompact.ini");
+            string compFile = Path.Combine(EngineTests.TestBench, "CommandIni", "AfterCompact.ini");
+
+            string srcStr;
+            using (StreamReader sr = new StreamReader(srcFile, Encoding.UTF8, false))
+            {
+                srcStr = sr.ReadToEnd();
+            }
+            string compStr;
+            using (StreamReader sr = new StreamReader(compFile, Encoding.UTF8, false))
+            {
+               compStr = sr.ReadToEnd();
+            }
+
+            string destFile = FileHelper.GetTempFile(".ini");
+            try
+            {
+                WriteTemplate(s, CodeType.IniCompact, $@"IniCompact,{destFile}", destFile, srcStr, compStr, ErrorCheck.Success);
+                WriteTemplate(s, CodeType.IniCompact, $@"IniCompact,{destFile},Error", destFile, srcStr, compStr, ErrorCheck.ParserError);
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
             }
         }
         #endregion

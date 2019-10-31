@@ -44,13 +44,13 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             ReadTemplate(s, "List,Get,%ListStr%,2,%Dest%", "1|2|3|4|5", "2");
-            ReadTemplate(s, "List,Get,%ListStr%,0,%Dest%", "1|2|3|4|5", null, ErrorCheck.Error);
-            ReadTemplate(s, "List,Get,%ListStr%,6,%Dest%", "1|2|3|4|5", null, ErrorCheck.Error);
+            ReadTemplate(s, "List,Get,%ListStr%,0,%Dest%", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
+            ReadTemplate(s, "List,Get,%ListStr%,6,%Dest%", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             ReadTemplate(s, "List,Get,%ListStr%,2,%Dest%,Delim=$", "1$2$3$4$5", "2");
             ReadTemplate(s, "List,Get,%ListStr%,2,%Dest%,Delim=abc", "1abc2abc3abc4abc5", "2");
             ReadTemplate(s, "List,Get,%ListStr%,1,%Dest%,Delim=$", "1|2|3|4|5", "1|2|3|4|5");
             ReadTemplate(s, "List,Get,%ListStr%,2,%Dest%,Error", string.Empty, null, ErrorCheck.ParserError);
-            ReadTemplate(s, "List,Get,%ListStr%,Z,%Dest%", "1|2|3|4|5", null, ErrorCheck.Error);
+            ReadTemplate(s, "List,Get,%ListStr%,Z,%Dest%", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             ReadTemplate(s, "List,Get,ListStr,2,%Dest%", "1|2|3|4|5", null, ErrorCheck.ParserError);
             ReadTemplate(s, "List,Get,%ListStr%,2,Dest", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
@@ -65,13 +65,13 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             WriteTemplate(s, "List,Set,%ListStr%,2,Z", "1|2|3|4|5", "1|Z|3|4|5");
-            WriteTemplate(s, "List,Set,%ListStr%,0,Z", "1|2|3|4|5", null, ErrorCheck.Error);
-            WriteTemplate(s, "List,Set,%ListStr%,6,Z", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Set,%ListStr%,0,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
+            WriteTemplate(s, "List,Set,%ListStr%,6,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Set,%ListStr%,2,Z,Delim=$", "1$2$3$4$5", "1$Z$3$4$5");
             WriteTemplate(s, "List,Set,%ListStr%,2,Z,Delim=abc", "1abc2abc3abc4abc5", "1abcZabc3abc4abc5");
             WriteTemplate(s, "List,Set,%ListStr%,1,Z,Delim=$", "1|2|3|4|5", "Z");
             WriteTemplate(s, "List,Set,%ListStr%,2,Z,Error", "1|2|3|4|5", null, ErrorCheck.ParserError);
-            WriteTemplate(s, "List,Set,%ListStr%,Z,Z", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Set,%ListStr%,Z,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Set,ListStr,Z,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion
@@ -104,13 +104,13 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             WriteTemplate(s, "List,Insert,%ListStr%,3,Z", "1|2|3|4|5", "1|2|Z|3|4|5");
-            WriteTemplate(s, "List,Insert,%ListStr%,0,Z", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Insert,%ListStr%,0,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Insert,%ListStr%,6,Z", "1|2|3|4|5", "1|2|3|4|5|Z");
-            WriteTemplate(s, "List,Insert,%ListStr%,7,Z", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Insert,%ListStr%,7,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Insert,%ListStr%,2,Z,Delim=$", "1|2|3|4|5", "1|2|3|4|5$Z");
             WriteTemplate(s, "List,Insert,%ListStr%,2,Z,Delim=abc", "1|2|3|4|5", "1|2|3|4|5abcZ");
             WriteTemplate(s, "List,Insert,%ListStr%,2,Z,Delim=$", "1$2$3$4$5", "1$Z$2$3$4$5");
-            WriteTemplate(s, "List,Insert,%ListStr%,Z,Z", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Insert,%ListStr%,Z,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Insert,%ListStr%,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
             WriteTemplate(s, "List,Insert,ListStr,1,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
@@ -163,8 +163,8 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             WriteTemplate(s, "List,RemoveAt,%ListStr%,2", "1|2|3|4|5", "1|3|4|5");
-            WriteTemplate(s, "List,RemoveAt,%ListStr%,Z", "1|2|3|4|5", null, ErrorCheck.Error);
-            WriteTemplate(s, "List,RemoveAt,%ListStr%,2,Delim=$", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,RemoveAt,%ListStr%,Z", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
+            WriteTemplate(s, "List,RemoveAt,%ListStr%,2,Delim=$", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,RemoveAt,%ListStr%,2,Delim=$", "1$2$3$4$5", "1$3$4$5");
             WriteTemplate(s, "List,RemoveAt,%ListStr%,2,Error", "1|2|3|4|5", null, ErrorCheck.ParserError);
             WriteTemplate(s, "List,RemoveAt,ListStr,2", "1|2|3|4|5", null, ErrorCheck.ParserError);
@@ -284,7 +284,7 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,Sort,%ListStr%,DESC", "A|C|b|B|a", "C|b|B|a|A");
             WriteTemplate(s, "List,Sort,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
             WriteTemplate(s, "List,Sort,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
-            WriteTemplate(s, "List,Sort,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Sort,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Sort,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion
@@ -305,7 +305,7 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,SortX,%ListStr%,DESC", "A|C|b|B|a", "b|a|C|B|A");
             WriteTemplate(s, "List,SortX,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
             WriteTemplate(s, "List,SortX,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
-            WriteTemplate(s, "List,SortX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,SortX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,SortX,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion
@@ -326,7 +326,7 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,SortN,%ListStr%,DESC", "A|C|b|B|a", "C|b|B|a|A");
             WriteTemplate(s, "List,SortN,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
             WriteTemplate(s, "List,SortN,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
-            WriteTemplate(s, "List,SortN,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,SortN,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,SortN,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion
@@ -347,7 +347,7 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,SortNX,%ListStr%,DESC", "A|C|b|B|a", "b|a|C|B|A");
             WriteTemplate(s, "List,SortNX,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
             WriteTemplate(s, "List,SortNX,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
-            WriteTemplate(s, "List,SortNX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,SortNX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,SortNX,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion

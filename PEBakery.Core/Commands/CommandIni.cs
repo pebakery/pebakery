@@ -701,5 +701,24 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        public static List<LogInfo> IniCompact(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            CodeInfo_IniCompact info = cmd.Info.Cast<CodeInfo_IniCompact>();
+
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
+
+            if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            IniReadWriter.Compact(filePath);
+            logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was compacted", cmd));
+
+            return logs;
+        }
     }
 }

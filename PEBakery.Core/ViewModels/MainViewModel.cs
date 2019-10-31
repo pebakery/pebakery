@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -612,8 +613,8 @@ namespace PEBakery.Core.ViewModels
         {
             get
             {
-                double percent = (BuildScriptProgressValue + 1) / BuildScriptProgressMax;
-                return $"{BuildScriptProgressValue + 1}/{BuildScriptProgressMax} ({percent:P1})";
+                double percent = Math.Min(BuildScriptProgressValue / BuildScriptProgressMax, 1);
+                return $"{percent:P1}";
             }
         }
 
@@ -634,7 +635,8 @@ namespace PEBakery.Core.ViewModels
             get => _buildScriptProgressValue;
             set
             {
-                SetProperty(ref _buildScriptProgressValue, value);
+                double newValue = Math.Min(value, BuildScriptProgressMax);
+                SetProperty(ref _buildScriptProgressValue, newValue);
                 OnPropertyUpdate(nameof(BuildScriptProgressPercentStr));
             }
         }
@@ -650,8 +652,8 @@ namespace PEBakery.Core.ViewModels
         {
             get
             {
-                double percent = (BuildFullProgressValue + 1) / BuildFullProgressMax;
-                return $"{BuildFullProgressValue + 1}/{BuildFullProgressMax} ({percent:P1})";
+                double percent = Math.Min(BuildFullProgressValue / BuildFullProgressMax, 1);
+                return $"{percent:P1}";
             }
         }
 
@@ -672,7 +674,8 @@ namespace PEBakery.Core.ViewModels
             get => _buildFullProgressValue;
             set
             {
-                SetProperty(ref _buildFullProgressValue, value);
+                double newValue = Math.Min(value, BuildFullProgressMax);
+                SetProperty(ref _buildFullProgressValue, newValue);
                 OnPropertyUpdate(nameof(BuildFullProgressPercentStr));
             }
         }
@@ -976,6 +979,7 @@ namespace PEBakery.Core.ViewModels
                         if (Global.Setting.Script.EnableCache)
                         {
                             double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (scriptCount + 2 * linkCount);
+                            cachePercent = Math.Min(cachePercent, 100);
                             msg = $"{scriptCount + linkCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                             StatusBarText = msg;
                         }
@@ -1291,6 +1295,7 @@ namespace PEBakery.Core.ViewModels
             });
         }
 
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void DisplayScriptLogo(Script sc)
         {
             if (sc.Type == ScriptType.Directory)
@@ -1586,14 +1591,16 @@ namespace PEBakery.Core.ViewModels
             {
                 while (true)
                 {
+                    // If the Engine was not started yet, do not print elapsed status
                     if (s.StartTime == DateTime.MinValue)
-                    { // Engine not started yet
+                    {
                         s.MainViewModel.StatusBarText = msg;
-                        return;
                     }
-
-                    TimeSpan t = DateTime.UtcNow - s.StartTime;
-                    s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+                    else
+                    {
+                        TimeSpan t = DateTime.UtcNow - s.StartTime;
+                        s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+                    }
 
                     if (token.IsCancellationRequested)
                         return;
@@ -1607,7 +1614,7 @@ namespace PEBakery.Core.ViewModels
         /// <summary>
         /// Open text file using specified/default code editor, without Administrator privilege.
         /// </summary>
-        /// <param name="filePath"></param>
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))
@@ -1643,9 +1650,12 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
-                FileHelper.OpenPath(filePath);
-#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
+                try { FileHelper.OpenPath(filePath); }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show($"File [{ filePath}] could not be opened.\r\n\r\n{ex.Message}.", $"Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 

@@ -102,6 +102,9 @@ namespace PEBakery.Core
         public string FullIdentifier => $"{_level}_{_realPath}_{_treePath}";
         public string RealIdentifier => $"{_level}_{_realPath}";
         public string TreeIdentifier => $"{_level}_{_treePath}";
+        /// <summary>
+        /// Full path of the script file. In case of the linked script, this property return the real path of the linked .script file.
+        /// </summary>
         public string RealPath
         {
             get
@@ -111,7 +114,13 @@ namespace PEBakery.Core
                 return _realPath;
             }
         }
+        /// <summary>
+        /// 'Direct' full path of the script file. In case of the linked script, this property return the real path of the .link file.
+        /// </summary>
         public string DirectRealPath => _realPath;
+        /// <summary>
+        /// The location script should be displayed in project script tree. It determines the build order. TreePath is empty in linked script.
+        /// </summary>
         public string TreePath
         {
             get => _treePath;
@@ -158,6 +167,9 @@ namespace PEBakery.Core
             }
             set => _project = value;
         }
+        /// <summary>
+        /// Title of the script, displayed in the PEBakery UI.
+        /// </summary>
         public string Title
         {
             get
@@ -257,7 +269,6 @@ namespace PEBakery.Core
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-            Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
             Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
             _realPath = realPath;
@@ -406,7 +417,7 @@ namespace PEBakery.Core
                 type = SectionType.AttachEncodeNow;
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
-            else // Can be SectionType.Code or SectionType.AttachFileList
+            else // Can be SectionType.Code, SectionType.Interface or SectionType.AttachFileList
                 type = inspectCode ? DetectTypeOfNotInspectedSection(sectionName) : SectionType.NotInspected;
             return type;
         }
@@ -700,7 +711,7 @@ namespace PEBakery.Core
             string rawLine = sc.MainInfo["Disable"];
 
             // Check if rawCode is Empty
-            if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(rawLine))
                 return null;
 
             // Check double-quote's occurence - must be 2n
@@ -735,11 +746,13 @@ namespace PEBakery.Core
                     if (!pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase))
                         filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     LogInfo log = new LogInfo(LogState.Warning, Logger.LogExceptionMessage(e));
                     errorLogs.Add(log);
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             }
 
             return filteredPaths.ToArray();
@@ -1077,8 +1090,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Struct ScriptParseInfo
-    public struct ScriptParseInfo : IEquatable<ScriptParseInfo>
+    #region ScriptParseInfo
+    public class ScriptParseInfo : IEquatable<ScriptParseInfo>
     {
         public string RealPath;
         public string TreePath;
@@ -1124,6 +1137,8 @@ namespace PEBakery.Core
         {
             return x.RealPath.GetHashCode() ^ x.TreePath.GetHashCode() ^ x.IsDir.GetHashCode() ^ x.IsDirLink.GetHashCode();
         }
+
+        public static ScriptParseInfoComparer Instance { get; } = new ScriptParseInfoComparer();
     }
     #endregion
 }

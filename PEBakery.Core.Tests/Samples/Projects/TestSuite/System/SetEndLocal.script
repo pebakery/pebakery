@@ -7,20 +7,61 @@ Level=5
 Selected=True
 Mandatory=False
 
-[Process]
+[Process-Simple]
 Set,%Dest%,0
-Run,%ScriptFile%,Depth1
+Run,%ScriptFile%,Simple-Depth1
 Echo,#r
 
-[Depth1]
+[Simple-Depth1]
 System,SetLocal
 Set,%Dest%,1
 Set,#r,A
-Run,%ScriptFile%,Depth2,B
+Run,%ScriptFile%,Simple-Depth2,B
 System,EndLocal
 
-[Depth2]
+[Simple-Depth2]
 System,SetLocal
 Set,%Dest%,#1
 Set,#r,#1
 System,EndLocal
+
+[Process-Branch]
+Set,%Dest%,0
+Run,%ScriptFile%,Branch-Depth1,True
+Echo,#r
+
+[Branch-Depth1]
+System,SetLocal
+If,#1,Equal,True,Begin
+  Set,%Dest%,1
+  Set,#r,A
+  Run,%ScriptFile%,Branch-Depth2,False,B
+End
+Else,Begin
+  Echo,"Do Nothing"
+End
+System,EndLocal
+
+[Branch-Depth2]
+System,SetLocal
+If,#1,Equal,True,Begin
+  Echo,"Do Nothing"
+End
+Else,Begin
+  Set,%Dest%,#2
+  Set,#r,#2
+End
+System,EndLocal
+
+[Process-ImplicitEnd]
+Set,%Dest%,0
+Run,%ScriptFile%,ImplicitEnd-Depth1,True
+Echo,#r
+
+[ImplicitEnd-Depth1]
+If,#1,Equal,True,Begin
+  System,SetLocal
+  Set,%Dest%,1
+  Set,#r,A
+End
+Set,%Dest%,-1

@@ -154,10 +154,13 @@ namespace PEBakery.Core
                             _w.WriteLine("<Errors>");
 
                             int[] scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id)).ToArray();
-
                             int[] refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
-                            LogModel.Script[] refScLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id)).ToArray();
+                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
+                                .ToArray();
+                            LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
+                                .ToArray();
                             foreach (LogModel.Script scLog in scLogs)
                             {
                                 LogModel.BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
@@ -169,10 +172,12 @@ namespace PEBakery.Core
                                 foreach (LogModel.BuildLog eLog in eLogs)
                                 {
                                     _w.WriteLine(eLog.Export(LogExportType.Text, false, false));
-                                    if (eLog.RefScriptId != 0 && eLog.RefScriptId != eLog.ScriptId)
-                                    {
+
+                                    string refScriptText = ExportRefScriptText(eLog, scOriginLogs);
+                                    if (refScriptText != null)
+                                    { // Referenced scripts
                                         _w.Write("  ");
-                                        _w.WriteLine(ExportRefScriptText(eLog, refScLogs));
+                                        _w.WriteLine(refScriptText);
                                     }
                                 }
                                 _w.WriteLine();
@@ -188,10 +193,14 @@ namespace PEBakery.Core
                             _w.WriteLine("<Warnings>");
 
                             int[] scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id)).ToArray();
-
                             int[] refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
-                            LogModel.Script[] refScLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id)).ToArray();
+                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
+                                .ToArray();
+                            LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id))
+                                // .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
+                                .ToArray();
 
                             foreach (LogModel.Script scLog in scLogs)
                             {
@@ -206,10 +215,12 @@ namespace PEBakery.Core
                                 foreach (LogModel.BuildLog wLog in wLogs)
                                 {
                                     _w.WriteLine(wLog.Export(LogExportType.Text, false, false));
-                                    if (wLog.RefScriptId != 0 && wLog.RefScriptId != wLog.ScriptId)
+
+                                    string refScriptText = ExportRefScriptText(wLog, scOriginLogs);
+                                    if (refScriptText != null)
                                     { // Referenced scripts
                                         _w.Write("  ");
-                                        _w.WriteLine(ExportRefScriptText(wLog, refScLogs));
+                                        _w.WriteLine(refScriptText);
                                     }
                                 }
                                 _w.WriteLine();
@@ -322,8 +333,7 @@ namespace PEBakery.Core
                             foreach (LogModel.Script scLog in processedScripts)
                             {
                                 // Log codes
-                                var cLogs = _db.Table<LogModel.BuildLog>()
-                                    .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id);
+                                var cLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id);
                                 if (!opts.IncludeComments)
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Comment) != LogModel.BuildLogFlag.Comment);
                                 if (!opts.IncludeMacros)
@@ -394,11 +404,14 @@ namespace PEBakery.Core
                             LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
                             if (0 < errors.Length)
                             {
-                                int[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
-                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-
+                                int[] scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
                                 int[] refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
-                                LogModel.Script[] refScLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id)).ToArray();
+                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
+                                    .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
+                                    .ToArray();
+                                LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
+                                    .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
+                                    .ToArray();
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
@@ -416,7 +429,7 @@ namespace PEBakery.Core
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
                                                 Href = errIdx++,
-                                            }, ExportRefScriptText(x, refScLogs))).ToArray();
+                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
                                 }
                             }
                         }
@@ -428,11 +441,14 @@ namespace PEBakery.Core
                             LogModel.BuildLog[] warns = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
                             if (0 < warns.Length)
                             {
-                                int[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
-                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-
+                                int[] scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
                                 int[] refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
-                                LogModel.Script[] refScLogs = _db.Table<LogModel.Script>().Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id)).ToArray();
+                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
+                                    .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
+                                    .ToArray();
+                                LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
+                                    .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
+                                    .ToArray();
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
@@ -449,7 +465,7 @@ namespace PEBakery.Core
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
                                                 Href = warnIdx++,
-                                            }, ExportRefScriptText(x, refScLogs))).ToArray();
+                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
                                 }
                             }
                         }
@@ -608,20 +624,34 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ExportRefScriptText
-        private static string ExportRefScriptText(LogModel.BuildLog bLog, LogModel.Script[] refScLogs)
+        #region ExportScriptOriginText
+        private static string ExportRefScriptText(LogModel.BuildLog bLog, LogModel.Script[] scLogs)
         {
-            if (bLog.RefScriptId == 0 || bLog.RefScriptId == bLog.ScriptId)
+            if (bLog.RefScriptId != 0)
+            { // Referenced script
+                LogModel.Script refScLog = scLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
+                if (refScLog == null)
+                    return "|-> Referenced an unknown script";
+
+                string path = refScLog.TreePath;
+                if (path.Length == 0)
+                    path = refScLog.RealPath;
+                return $"|-> Referenced script [{refScLog.Name}] ({path})";
+            }
+            else
+            { // Not a referenced sript
                 return null;
+                /*
+                LogModel.Script scLog = scLogs.FirstOrDefault(x => x.Id == bLog.ScriptId);
+                if (scLog == null)
+                    return null;
 
-            LogModel.Script refScLog = refScLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
-            if (refScLog == null)
-                return "|-> Referenced unknown script";
-
-            string path = refScLog.TreePath;
-            if (path.Length == 0)
-                path = refScLog.RealPath;
-            return $"|-> Referenced script [{refScLog.Name}] ({path})";
+                string path = scLog.TreePath;
+                if (path.Length == 0)
+                    path = scLog.RealPath;
+                return $"|-> Script [{scLog.Name}] ({path})";
+                */
+            }
         }
         #endregion
 

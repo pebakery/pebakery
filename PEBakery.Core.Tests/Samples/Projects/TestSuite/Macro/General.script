@@ -1,0 +1,88 @@
+[Main]
+Title=BranchGeneral
+Author=ied206
+Description=UnitTest
+Version=001
+Level=5
+Selected=True
+Mandatory=False
+
+[Variables]
+InlineMacro=Set,#r,#1
+SectionMacro=Run,%ScriptFile%,SectionMacroImpl
+CondMacro01=Run,%ScriptFile%,CondMacroImpl01
+CondMacro02=Run,%ScriptFile%,CondMacroImpl02
+PhoenixMacro=Run,%ScriptFile%,PhoenixMacroImpl
+
+[SectionMacroImpl]
+Set,#r,#1
+
+[CondMacroImpl01]
+Set,#r,0
+If,#1,Equal,True,Begin
+  Set,#r,T
+End
+Else,Begin
+  Set,#r,F
+End
+
+[CondMacroImpl02]
+Set,#r,0
+If,#1,Equal,True,Set,#r,F
+Else,Set,#r,F
+Set,#r,T
+
+[PhoenixMacroImpl]
+System,SetLocal
+Set,#r,F
+If,#1,Equal,"",Exit,"Syntax Error"
+If,#2,Equal,"",Exit,"Syntax Error"
+If,#3,Equal,"",Exit,"Syntax Error"
+GetParam,1,%A%
+GetParam,2,%B%
+GetParam,3,%C%
+If,#1,Equal,True,Begin
+  If,#2,Equal,0,Set,#r,0
+  Else,If,#2,Equal,1,Set,#r,1
+  Else,If,#2,Equal,2,Set,#r,2
+  Else,If,#2,Equal,3,Set,#r,3
+  Else,Exit,"Syntax Error"
+  
+  If,#3,Equal,T,Set,#r,A
+  Else,If,#3,Equal,F,Set,#r,B
+  // The comment between If and Else had crashed CodeParser.FoldBranchCodeBlock() method in the past. 
+  Else,Halt,"Syntax Error"
+End
+Else,Begin
+  If,#3,Equal,T,Set,#r,X
+  Else,If,#3,Equal,F,Set,#r,Y
+  // The bug was reported by @homes32, and investigated and fixed by @ied206.
+  Else,Halt,"Syntax Error"
+End
+Set,#r,T
+System,EndLocal
+
+[Process-InlineMacro]
+AddVariables,%ScriptFile%,Variables
+Set,#r,F
+InlineMacro,T
+
+[Process-SectionMacro]
+AddVariables,%ScriptFile%,Variables
+Set,#r,F
+SectionMacro,T
+
+[Process-CondMacro01]
+AddVariables,%ScriptFile%,Variables
+Set,#r,F
+CondMacro01,True
+
+[Process-CondMacro02]
+AddVariables,%ScriptFile%,Variables
+Set,#r,F
+CondMacro02,True
+
+[Process-PhoenixMacro]
+AddVariables,%ScriptFile%,Variables
+Set,#r,F
+PhoenixMacro,True,3,T

@@ -54,7 +54,7 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 Ini
-        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge,
+        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge, IniCompact,
         IniWriteOp = 480, IniReadOp, IniDeleteOp, IniReadSectionOp, IniAddSectionOp, IniDeleteSectionOp, IniWriteTextLineOp,
         // 05 Wim
         WimMount = 500, WimUnmount,
@@ -181,9 +181,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Optimize
-#pragma warning disable IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
-        public bool OptimizeCompare(CodeInfo info) => false;
-#pragma warning restore IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
+        public virtual bool OptimizeCompare(CodeInfo info) => false;
         #endregion
     }
     #endregion
@@ -782,7 +780,7 @@ namespace PEBakery.Core
             Mode = mode;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_TXTAddLine info = cmpInfo.Cast<CodeInfo_TXTAddLine>();
             if (info == null)
@@ -830,7 +828,7 @@ namespace PEBakery.Core
             NewStr = newStr;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_TXTReplace info = cmpInfo.Cast<CodeInfo_TXTReplace>();
             if (info == null)
@@ -875,7 +873,7 @@ namespace PEBakery.Core
             DeleteLine = deleteLine;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_TXTDelLine info = cmpInfo.Cast<CodeInfo_TXTDelLine>();
             if (info == null)
@@ -960,7 +958,7 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniRead info = cmpInfo.Cast<CodeInfo_IniRead>();
             if (info == null)
@@ -1012,7 +1010,7 @@ namespace PEBakery.Core
             Value = value;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniWrite info = cmpInfo.Cast<CodeInfo_IniWrite>();
             if (info == null)
@@ -1061,7 +1059,7 @@ namespace PEBakery.Core
             Key = key;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniDelete info = cmpInfo.Cast<CodeInfo_IniDelete>();
             if (info == null)
@@ -1110,7 +1108,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniReadSection info = cmpInfo.Cast<CodeInfo_IniReadSection>();
             if (info == null)
@@ -1160,7 +1158,7 @@ namespace PEBakery.Core
             Section = section;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniAddSection info = cmpInfo.Cast<CodeInfo_IniAddSection>();
             if (info == null)
@@ -1203,7 +1201,7 @@ namespace PEBakery.Core
             Section = section;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniDeleteSection info = cmpInfo.Cast<CodeInfo_IniDeleteSection>();
             if (info == null)
@@ -1250,7 +1248,7 @@ namespace PEBakery.Core
             Append = append;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_IniWriteTextLine info = cmpInfo.Cast<CodeInfo_IniWriteTextLine>();
             if (info == null)
@@ -1301,6 +1299,22 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{SrcFile},{DestFile}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniCompact : CodeInfo
+    { // IniCompact,<FilePath>
+        public string FilePath;
+
+        public CodeInfo_IniCompact(string filePath)
+        {
+            FilePath = filePath;
+        }
+
+        public override string ToString()
+        {
+            return FilePath;
         }
     }
     #endregion
@@ -1450,7 +1464,7 @@ namespace PEBakery.Core
             NoAttribFlag = noAttrib;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         { // Condition : Every argument except DestDir should be identical
             CodeInfo_WimExtract info = cmpInfo.Cast<CodeInfo_WimExtract>();
             if (info != null)
@@ -1773,7 +1787,7 @@ namespace PEBakery.Core
             PreserveFlag = preserveFlag;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
             {
@@ -1856,7 +1870,7 @@ namespace PEBakery.Core
             Path = path;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
             {
@@ -1935,7 +1949,7 @@ namespace PEBakery.Core
             DestPath = destPath;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
             {
@@ -2437,7 +2451,7 @@ namespace PEBakery.Core
             Visibility = visibility;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo) => true;
+        public override bool OptimizeCompare(CodeInfo cmpInfo) => true;
 
         public override string ToString()
         {
@@ -2493,7 +2507,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
             if (info == null)
@@ -2556,7 +2570,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
             CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
             if (info == null)
@@ -2759,7 +2773,7 @@ namespace PEBakery.Core
         PathCombine = 60,
         Inc = 70, Dec, Mult, Div, // Use of Math Command is recommended
         Left = 80, Right,
-        SubStr = 90, // Added in PEBakery
+        Mid = 90,
         Len = 100,
         LTrim = 110, RTrim, CTrim, NTrim,
         UCase = 120, LCase,
@@ -2984,14 +2998,14 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class StrFormatInfo_SubStr : StrFormatInfo
-    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
+    public class StrFormatInfo_Mid : StrFormatInfo
+    { // StrFormat,Mid,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
         public string SrcStr;
         public string StartPos; // Index start from 1, not 0!
         public string Length;
         public string DestVar;
 
-        public StrFormatInfo_SubStr(string srcStr, string startPos, string length, string destVar)
+        public StrFormatInfo_Mid(string srcStr, string startPos, string length, string destVar)
         {
             SrcStr = srcStr;
             StartPos = startPos;
@@ -3376,14 +3390,14 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_IntegerSignedness : MathInfo
     {
-        // Math,ToSign,<%DestVar%>,<Src>,[BitSize]
-        // Math,ToUnsign,<%DestVar%>,<Src>,[BitSize]
+        // Math,ToSign,<%DestVar%>,<Src>,<BitSize>
+        // Math,ToUnsign,<%DestVar%>,<Src>,<BitSize>
 
         public string DestVar;
         public string Src;
-        public uint BitSize; // [8|16|32|64]
+        public string BitSize; // <8|16|32|64>
 
-        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
+        public MathInfo_IntegerSignedness(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;
@@ -3464,12 +3478,12 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitNot : MathInfo
-    { // Math,BitNot,<%DestVar%>,<Src>,[BitSize]
+    { // Math,BitNot,<%DestVar%>,<Src>,<BitSize>
         public string DestVar;
         public string Src; // Should be unsigned
-        public uint BitSize; // [8|16|32|64]
+        public string BitSize; // <BitSize>
 
-        public MathInfo_BitNot(string destVar, string src, uint bitSize)
+        public MathInfo_BitNot(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;
@@ -3484,15 +3498,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitShift : MathInfo
-    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,[BitSize],[UNSIGNED]
+    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,<BitSize>,[UNSIGNED]
         public string DestVar;
         public string Src;
         public string Direction;
         public string Shift;
-        public uint BitSize; // Optional, [8|16|32|64]
+        public string BitSize; // <8|16|32|64>
         public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint bitSize, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, string bitSize, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
@@ -3573,13 +3587,13 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_HexDec : MathInfo
     {
-        // Math,Hex,<%DestVar%>,<Src>,[BitSize]
-        // Math,Dec,<%DestVar%>,<Src>,[BitSize]
+        // Math,Hex,<%DestVar%>,<Src>,<BitSize>
+        // Math,Dec,<%DestVar%>,<Src>,<BitSize>
         public string DestVar;
         public string Src;
-        public uint BitSize; // Optional, [8|16|32|64]
+        public string BitSize;
 
-        public MathInfo_HexDec(string destVar, string src, uint bitSize)
+        public MathInfo_HexDec(string destVar, string src, string bitSize)
         {
             DestVar = destVar;
             Src = src;

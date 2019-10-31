@@ -93,7 +93,7 @@ namespace PEBakery.Core.Commands
                 // Backup Variables and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
-                localMacros = s.Macro.LocalDict;
+                localMacros = s.Macro.GetMacroDict(MacroType.Local);
 
                 // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
@@ -101,8 +101,8 @@ namespace PEBakery.Core.Commands
                 s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, ls.Depth + 1));
 
                 // Load Per-Script Macro
-                s.Macro.ResetLocalMacros();
-                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(sc, false);
+                s.Macro.ResetMacroDict(MacroType.Local);
+                List<LogInfo> macroLogs = s.Macro.LoadMacroDict(MacroType.Local, sc, false);
                 s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, ls.Depth + 1));
             }
 
@@ -121,7 +121,7 @@ namespace PEBakery.Core.Commands
                 s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
 
                 // Restore Local Macros
-                s.Macro.SetLocalMacros(localMacros);
+                s.Macro.SetMacroDict(MacroType.Local, localMacros);
             }
 
             s.Logger.LogEndOfSection(s, targetSection, ls.Depth, inCurrentScript, cmd);

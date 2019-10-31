@@ -37,11 +37,11 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory("CommandBranch")]
     public class CommandBranchTests
     {
         #region RunExec
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void RunExec()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -60,13 +60,13 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-Run-InParam");
             ScriptTemplate(scPath, "Process-RunEx-OutParam");
             ScriptTemplate(scPath, "Process-Exec");
-            ScriptTemplate(scPath, "Process-RunEx-OutParam-Error", ErrorCheck.Error);
+            ScriptTemplate(scPath, "Process-Exec-MacroBak");
+            ScriptTemplate(scPath, "Process-RunEx-OutParam-Error", ErrorCheck.RuntimeError);
         }
         #endregion
 
         #region Loop
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void Loop()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -83,16 +83,16 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-Loop01", "1|Z|2|Z|3|Z", false);
             ScriptTemplate(scPath, "Process-Loop02", "1|Z|2|Z|3|Z", false);
             ScriptTemplate(scPath, "Process-LoopEx-OutParam", "1|Z|2|Z|3|Z", false);
-            ScriptTemplate(scPath, "Process-LoopEx-OutParam-Error", string.Empty, false, ErrorCheck.Error);
+            ScriptTemplate(scPath, "Process-LoopEx-OutParam-Error", string.Empty, false, ErrorCheck.RuntimeError);
             ScriptTemplate(scPath, "Process-LoopLetter01", "C|Z|D|Z|E|Z", false);
             ScriptTemplate(scPath, "Process-LoopLetter02", "C|Z|D|Z|E|Z", false);
             ScriptTemplate(scPath, "Process-LoopLetterEx-OutParam", "C|Z|D|Z|E|Z", false);
-            ScriptTemplate(scPath, "Process-LoopLetterEx-OutParam-Error", string.Empty, false, ErrorCheck.Error);
+            ScriptTemplate(scPath, "Process-LoopLetterEx-OutParam-Error", string.Empty, false, ErrorCheck.RuntimeError);
 
             ScriptTemplate(scPath, "Process-LoopCompat01", "C|Z|D|Z|E|Z", true);
             ScriptTemplate(scPath, "Process-LoopCompat02", "C|Z|D|Z|E|Z", true);
-            ScriptTemplate(scPath, "Process-LoopCompat01", string.Empty, false, ErrorCheck.Error);
-            ScriptTemplate(scPath, "Process-LoopCompat02", string.Empty, false, ErrorCheck.Error);
+            ScriptTemplate(scPath, "Process-LoopCompat01", string.Empty, false, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-LoopCompat02", string.Empty, false, ErrorCheck.RuntimeError);
 
             ScriptTemplate(scPath, "Process-LoopNest", "1|4|5|1|2|4|5|2|3|4|5|3", false);
         }
@@ -100,7 +100,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfElse
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void IfElse()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -112,7 +111,8 @@ namespace PEBakery.Core.Tests.Command
                 Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
             }
 
-            ScriptTemplate(scPath, "Process-IfElse");
+            ScriptTemplate(scPath, "Process-IfElse01");
+            ScriptTemplate(scPath, "Process-IfElse02");
             ScriptTemplate(scPath, "Process-IfElseChain01");
             ScriptTemplate(scPath, "Process-IfElseChain02");
             ScriptTemplate(scPath, "Process-IfElseChain03");
@@ -121,7 +121,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfBeginEnd
         [TestMethod]
-        [TestCategory("CommandBranch")]
         public void IfBeginEnd()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
@@ -522,8 +521,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistImageInfo
         [TestMethod]
-
-        [TestCategory("CommandBranch")]
         public void IfWimExistImageInfo()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -638,7 +635,7 @@ namespace PEBakery.Core.Tests.Command
             // Ambiguity Test - WinBuilder treat this as a If,ExistSection command
             {
                 s.Variables["Dest"] = "F";
-                EngineTests.EvalLines(s, new List<string> { "If,ExistSection,Equal,ExistSection,Set,%Dest%,T" }, ErrorCheck.Error, out CodeCommand[] cmds);
+                EngineTests.EvalLines(s, new List<string> { "If,ExistSection,Equal,ExistSection,Set,%Dest%,T" }, ErrorCheck.RuntimeError, out CodeCommand[] cmds);
                 CodeInfo_If info = cmds[0].Info.Cast<CodeInfo_If>();
                 Assert.AreEqual(BranchConditionType.ExistSection, info.Condition.Type);
             }

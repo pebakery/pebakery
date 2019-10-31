@@ -101,19 +101,18 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Build Mode Property
-        private bool _buildFocus = false;
-        public bool BuildFocus
+        private bool _focus = false;
+        public bool Focus
         {
-            get => _buildFocus;
+            get => _focus;
             set
             {
-                _buildFocus = value;
+                SetProperty(ref _focus, value);
                 OnPropertyUpdate(nameof(Icon));
-                OnPropertyUpdate(nameof(BuildFocus));
                 OnPropertyUpdate(nameof(BuildFontWeight));
             }
         }
-        public FontWeight BuildFontWeight => _buildFocus ? FontWeights.SemiBold : FontWeights.Normal;
+        public FontWeight BuildFontWeight => _focus ? FontWeights.SemiBold : FontWeights.Normal;
         #endregion
 
         #region Enabled CheckBox

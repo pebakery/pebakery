@@ -130,13 +130,17 @@ namespace PEBakery.Helper
         #region Svg
         public static DrawingGroup SvgToDrawingGroup(Stream stream)
         {
-            FileSvgReader reader = new FileSvgReader(new WpfDrawingSettings
+            WpfDrawingSettings settings = new WpfDrawingSettings
             {
                 CultureInfo = CultureInfo.InvariantCulture,
                 IncludeRuntime = true,
-            });
-            reader.Read(stream);
-            return reader.Drawing;
+            };
+
+            using (FileSvgReader reader = new FileSvgReader(settings))
+            {
+                reader.Read(stream);
+                return reader.Drawing;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,6 +239,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region MaskWhiteAsTrapsarent
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteToBrga32Bitmap(byte[] pixels, int idx, byte r, byte g, byte b, byte a)
         {
             pixels[idx] = r;
@@ -243,7 +248,8 @@ namespace PEBakery.Helper
             pixels[idx + 3] = a;
         }
 
-        private static (byte r, byte g, byte b, byte a) ReadFromBrga32Bitmap(byte[] pixels, int idx)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (byte r, byte g, byte b, byte a) ReadFromBgra32Bitmap(byte[] pixels, int idx)
         {
             byte r = pixels[idx];
             byte g = pixels[idx + 1];
@@ -253,6 +259,17 @@ namespace PEBakery.Helper
             return (r, g, b, a);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (byte g, byte b, byte a) ReadFromBgr32Bitmap(byte[] pixels, int idx)
+        {
+            byte r = pixels[idx];
+            byte g = pixels[idx + 1];
+            byte b = pixels[idx + 2];
+
+            return (r, g, b);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static (byte r, byte g, byte b) ReadFromBrg24Bitmap(byte[] pixels, int idx)
         {
             byte r = pixels[idx];
@@ -268,64 +285,107 @@ namespace PEBakery.Helper
         /// <param name="src"></param>
         /// <returns></returns>
         public static BitmapSource MaskWhiteAsTransparent(BitmapSource src)
-        {
-            if (src.Format.Equals(PixelFormats.Bgr24))
-            {
-                int stride = src.PixelWidth * 3;
-                byte[] srcPixels = new byte[stride * src.PixelHeight];
+        { // D:\Jang\Build\Source\PEBakery\pebakery\PEBakery.Helper.Tests\Samples\ImageHelper\MaskWhiteAsTransport
+            if (src.Format.Equals(PixelFormats.Bgra32))
+            { // Pixel is 4B, B-G-R-A
+                int stride = src.PixelWidth * 4;
+                int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
+                byte[] srcPixels = new byte[pixelFourBytes];
+                byte[] destPixels = new byte[pixelFourBytes];
                 src.CopyPixels(srcPixels, stride, 0);
+                src.CopyPixels(destPixels, stride, 0);
 
-                WriteableBitmap dest =
-                    new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
-                byte[] destPixels = new byte[src.PixelWidth * src.PixelHeight * 4];
                 for (int y = 0; y < src.PixelHeight; y++)
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
-                        int rgb24Idx = (x + y * src.PixelWidth) * 3;
-                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
+                        int i = (x + y * src.PixelWidth) * 4;
 
-                        byte a = 255;
-                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24Idx);
+                        byte r = srcPixels[i];
+                        byte g = srcPixels[i + 1];
+                        byte b = srcPixels[i + 2];
+                        byte a = srcPixels[i + 3];
+                        if (r == 255 && g == 255 && b == 255 & a == 255)
+                            destPixels[i + 3] = 0; // Max transparency
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                dest.WritePixels(rect, destPixels, stride, 0);
+                return dest;
+            }
+            else if (src.Format.Equals(PixelFormats.Bgr32))
+            { // Pixel is 4B, B-G-R-X
+                int stride = src.PixelWidth * 4;
+                int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
+                byte[] srcPixels = new byte[pixelFourBytes];
+                byte[] destPixels = new byte[pixelFourBytes];
+                src.CopyPixels(srcPixels, stride, 0);
+                src.CopyPixels(destPixels, stride, 0);
+
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int i = (x + y * src.PixelWidth) * 4;
+
+                        byte r = srcPixels[i];
+                        byte g = srcPixels[i + 1];
+                        byte b = srcPixels[i + 2];
+                        if (r == 255 && g == 255 && b == 255)
+                            destPixels[i + 3] = 0; // Max transparency
+                        else
+                            destPixels[i + 3] = 255; // No transparency
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                dest.WritePixels(rect, destPixels, stride, 0);
+                return dest;
+            }
+            else if (src.Format.Equals(PixelFormats.Bgr24))
+            { // Pixel is 3B, B-G-R
+                int threeStride = src.PixelWidth * 3;
+                int fourStride = src.PixelWidth * 4;
+                int pixelThreeBytes = src.PixelWidth * src.PixelHeight * 3;
+                int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
+                byte[] srcPixels = new byte[pixelThreeBytes];
+                byte[] destPixels = new byte[pixelFourBytes];
+                src.CopyPixels(srcPixels, threeStride, 0);
+
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int threeIdx = (x + y * src.PixelWidth) * 3;
+                        byte r = srcPixels[threeIdx];
+                        byte g = srcPixels[threeIdx + 1];
+                        byte b = srcPixels[threeIdx + 2];
+                        byte a;
                         if (r == 255 && g == 255 && b == 255)
                             a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
+                        else
+                            a = 255;
+
+                        int fourIdx = (x + y * src.PixelWidth) * 4;
+                        destPixels[fourIdx] = r;
+                        destPixels[fourIdx + 1] = g;
+                        destPixels[fourIdx + 2] = b;
+                        destPixels[fourIdx + 3] = a;
                     }
                 }
 
                 Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
-                dest.WritePixels(rect, destPixels, src.PixelWidth * 4, 0);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                dest.WritePixels(rect, destPixels, fourStride, 0);
                 return dest;
             }
-
-            if (src.Format.Equals(PixelFormats.Bgra32))
+            else
             {
-                int stride = src.PixelWidth * 4;
-                byte[] srcPixels = new byte[stride * src.PixelHeight];
-                src.CopyPixels(srcPixels, stride, 0);
-
-                WriteableBitmap dest =
-                    new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
-                byte[] destPixels = new byte[src.PixelWidth * src.PixelHeight * 4];
-                for (int y = 0; y < src.PixelHeight; y++)
-                {
-                    for (int x = 0; x < src.PixelWidth; x++)
-                    {
-                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
-
-                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32Idx);
-                        if (r == 255 && g == 255 && b == 255 & a == 255)
-                            a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
-                    }
-                }
-
-                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
-                dest.WritePixels(rect, destPixels, src.PixelWidth * 4, 0);
-                return dest;
+                return src;
             }
-
-            return src;
         }
         #endregion
     }

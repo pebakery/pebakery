@@ -211,11 +211,8 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            if (File.Exists(fileName) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
-                return logs;
-            }
+            if (!File.Exists(fileName))
+                return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
@@ -347,7 +344,6 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
             List<(CodeCommand, string)> prepDeleteLine = new List<(CodeCommand, string)>();
-            // foreach (CodeInfo_TXTDelLine info in infoOp.InfoList)
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
                 CodeInfo_TXTDelLine info = subCmd.Info.Cast<CodeInfo_TXTDelLine>();
@@ -408,28 +404,27 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = EncodingHelper.DetectBom(fileName);
 
-            int i = 0;
+            int linesTrimmed = 0;
             string tempPath = FileHelper.GetTempFile();
-            using (StreamReader r = new StreamReader(fileName, encoding, false))
-            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+            using (StreamReader sr = new StreamReader(fileName, encoding, false))
+            using (StreamWriter sw = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
-                while ((srcLine = r.ReadLine()) != null)
+                while ((srcLine = sr.ReadLine()) != null)
                 {
-                    // WB082 delete spaces only if spaces are placed in front of line.
-                    // Same with C#'s string.TrimStart().
                     int count = StringHelper.CountSubStr(srcLine, " ");
                     if (0 < count)
                     {
-                        i++;
-                        srcLine = srcLine.TrimStart();
+                        srcLine = srcLine.Trim();
+                        if (!StringHelper.CountSubStr(srcLine, " ").Equals(count)) //only count lines that we actually trimmed
+                            linesTrimmed++;
                     }
-                    w.WriteLine(srcLine);
+                    sw.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] spaces"));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted leading and trailing spaces from [{linesTrimmed}] lines"));
 
             return logs;
         }
@@ -457,7 +452,7 @@ namespace PEBakery.Core.Commands
                 string lineFromSrc;
                 while ((lineFromSrc = r.ReadLine()) != null)
                 {
-                    if (lineFromSrc.Equals(string.Empty, StringComparison.Ordinal))
+                    if (lineFromSrc.Length == 0)
                         i++;
                     else
                         w.WriteLine(lineFromSrc);

@@ -256,7 +256,7 @@ namespace PEBakery.Core
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing && Db != null)
             {
@@ -1157,6 +1157,39 @@ namespace PEBakery.Core
             public string FullIdentifier => $"{Level}_{Order}_{Name}_{RealPath}_{TreePath}";
         }
 
+        public class ScriptEqualityComparer : IEqualityComparer<Script>
+        {
+            public static ScriptEqualityComparer Instance = new ScriptEqualityComparer();
+
+            private ScriptEqualityComparer()
+            {
+
+            }
+
+            public bool Equals(Script x, Script y)
+            {
+                if (x == null)
+                {
+                    if (y == null)
+                        return true;
+                    else
+                        return false;
+                }
+                else
+                {
+                    if (y == null)
+                        return false;
+                    else
+                        return x.Id == y.Id;
+                }
+            }
+
+            public int GetHashCode(Script obj)
+            {
+                return obj.Id;
+            }
+        }
+
         public class Variable
         {
             [PrimaryKey, AutoIncrement]
@@ -1248,8 +1281,7 @@ namespace PEBakery.Core
             public int ScriptId { get; set; }
             /// <summary>
             /// Where the command resides in (Run/Exec).
-            /// Put same value with ScriptId if a command did not reference script.
-            /// 0 is also treated as 'not referenced script'.
+            /// 0 is treated as 'not referenced script'.
             /// </summary>
             public int RefScriptId { get; set; }
             public int Depth { get; set; }

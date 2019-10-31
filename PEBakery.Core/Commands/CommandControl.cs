@@ -152,7 +152,7 @@ namespace PEBakery.Core.Commands
 
             // Add Macros
             ScriptSection localSection = sc.Sections[sectionName];
-            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(localSection, lines, true);
+            List<LogInfo> macroLogs = s.Macro.LoadMacroDict(info.Global ? MacroType.Global : MacroType.Local, localSection, lines, true);
             varLogs.AddRange(macroLogs);
 
             if (varLogs.Count == 0) // No variables
@@ -170,7 +170,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            s.PassCurrentScriptFlag = true;
+            s.HaltFlags.ScriptHalt = true;
 
             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, message, cmd));
 
@@ -187,7 +187,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             s.RunningSubProcess?.Kill();
-            s.CmdHaltFlag = true;
+            s.HaltFlags.CmdHalt = true;
 
             logs.Add(new LogInfo(LogState.Warning, message, cmd));
 

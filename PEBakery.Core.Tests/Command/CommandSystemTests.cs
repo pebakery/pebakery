@@ -71,7 +71,7 @@ namespace PEBakery.Core.Tests.Command
                 @"Error1",
                 @"Error2",
                 @"Error3",
-            }, ErrorCheck.Error);
+            }, ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "ErrorOff.script");
             ScriptTemplate(scPath);
@@ -176,12 +176,12 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
                 }
             }
-            void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
+            void ScriptTemplate(string treePath, string entrySection, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
                 s.Variables.DeleteKey(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
-                (EngineState st, _) = EngineTests.EvalScript(treePath, check);
+                (EngineState st, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string dest = st.Variables["Dest"];
@@ -205,14 +205,16 @@ namespace PEBakery.Core.Tests.Command
                 @"System,SetLocal",
                 @"System,SetLocal",
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.Error);
+            }, null, null, ErrorCheck.RuntimeError);
             SingleTemplate(new List<string>
             {
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.Error);
+            }, null, null, ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
-            ScriptTemplate(scPath, "0", "B");
+            ScriptTemplate(scPath, "Process-Simple", "0", "B");
+            ScriptTemplate(scPath, "Process-Branch", "0", "B");
+            ScriptTemplate(scPath, "Process-ImplicitEnd", "-1", "A", ErrorCheck.Warning);
         }
         #endregion
 

@@ -459,7 +459,7 @@ namespace PEBakery.Core.Tests.Command
             FileTemplate("ex2.jpg", testCode, ErrorCheck.Success);
 
             testCode = $"Expand,\"%TestBench%\\CommandArchive\\ex2.cab\",\"{destDir}\",ex1.jpg";
-            FileTemplate("ex1.jpg", testCode, ErrorCheck.Error);
+            FileTemplate("ex1.jpg", testCode, ErrorCheck.RuntimeError);
 
             testCode = $"Expand,\"%TestBench%\\CommandArchive\\ex3.jp_\",\"{destDir}\",ex3.jpg,PRESERVE";
             FileTemplate("ex3.jpg", testCode, ErrorCheck.Success, false, true);
@@ -562,7 +562,7 @@ namespace PEBakery.Core.Tests.Command
             try
             {
                 string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
-                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.RuntimeError);
             }
             finally
             {
