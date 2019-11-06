@@ -105,10 +105,6 @@ namespace PEBakery.Core
         Error Message = $"The archive was created with a different version of ZLBArchive v{value}"
     0x18 : Decompress by WB082 is unaffected by this value
     0x1C : When changed, WB082 thinks the encoded file is corrupted
-    
-    [Improvement Points]
-    - Zopfli support in place of zlib, for better compression rate while keeping compability with WB082
-    - Design more robust script format. 
     */
     #endregion
 

@@ -96,6 +96,7 @@
     <Compile Include="FileTypeDetector.cs" />
     <Compile Include="JsonConverters.cs" />
     <Compile Include="UpdateJson.cs" />
+    <Compile Include="ViewModels\DebugViewModel.cs" />
     <Compile Include="WpfControls\CustomMessageBox.xaml.cs">
       <DependentUpon>CustomMessageBox.xaml</DependentUpon>
     </Compile>

@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.ViewModels;
 using System.Collections.Generic;
 
 namespace PEBakery.Core.Commands
@@ -50,7 +51,10 @@ namespace PEBakery.Core.Commands
                         {
                             logs.Add(new LogInfo(LogState.Info, "Breakpoint triggered"));
 
-                            // TODO: (Before v1.0) Activate debugger window
+                            // Activate debugger window
+                            // DebugViewModel
+
+                            // Wait until user closes debugger window 
                         }
                     }
                     break;
