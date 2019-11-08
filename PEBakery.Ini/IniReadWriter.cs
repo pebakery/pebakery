@@ -241,16 +241,28 @@ namespace PEBakery.Ini
         #endregion
 
         #region WriteKey
+        /// <summary>
+        /// Write a pair of key and value into .ini file
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool WriteKey(string file, string section, string key, string value)
         {
             return InternalWriteKeys(file, new List<IniKey> { new IniKey(section, key, value) });
         }
 
+        /// <summary>
+        /// Write a pair of key and value into .ini file
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool WriteKey(string file, IniKey iniKey)
         {
             return InternalWriteKeys(file, new List<IniKey> { iniKey });
         }
 
+        /// <summary>
+        /// Write multiple pairs of key and value into .ini file
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool WriteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalWriteKeys(file, iniKeys.ToList());
@@ -901,18 +913,33 @@ namespace PEBakery.Ini
         #endregion
 
         #region DeleteKey
+        /// <summary>
+        /// Delete a pair of key and value from .ini file
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool DeleteKey(string file, IniKey iniKey)
         {
             return InternalDeleteKeys(file, new IniKey[] { iniKey })[0];
         }
+
+        /// <summary>
+        /// Delete a pair of key and value from .ini file
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool DeleteKey(string file, string section, string key)
         {
             return InternalDeleteKeys(file, new IniKey[] { new IniKey(section, key) })[0];
         }
+
+        /// <summary>
+        /// Delete pairs of key and value from .ini file
+        /// </summary>
+        /// <returns>The bool[] containing the result of opertaions. If the operation of a iniKey succeeded, it returns true.</returns>
         public static bool[] DeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalDeleteKeys(file, iniKeys);
         }
+
         private static bool[] InternalDeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             IniKey[] keys = iniKeys.ToArray();
@@ -1531,28 +1558,42 @@ namespace PEBakery.Ini
         #endregion
 
         #region DeleteSection
+        /// <summary>
+        /// Delete a section from an .ini file.
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool DeleteSection(string file, IniKey iniKey)
         {
             return InternalDeleteSection(file, new string[] { iniKey.Section })[0];
         }
+
+        /// <summary>
+        /// Delete a section from an .ini file.
+        /// </summary>
+        /// <returns>If the operation was successful, the function returns true.</returns>
         public static bool DeleteSection(string file, string section)
         {
             return InternalDeleteSection(file, new string[] { section })[0];
         }
+
+        /// <summary>
+        /// Delete sections from an .ini file.
+        /// </summary>
+        /// <returns>The bool[] containing the result of opertaions. If the operation of a iniKey succeeded, it returns true.</returns>
         public static bool[] DeleteSections(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalDeleteSection(file, iniKeys.Select(x => x.Section));
         }
+
+        /// <summary>
+        /// Delete sections from an .ini file.
+        /// </summary>
+        /// <returns>The bool[] containing the result of opertaions. If the operation of a iniKey succeeded, it returns true.</returns>
         public static bool[] DeleteSections(string file, IEnumerable<string> sections)
         {
             return InternalDeleteSection(file, sections);
         }
-        /// <summary>
-        /// Return true if success
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="sections"></param>
-        /// <returns></returns>
+
         private static bool[] InternalDeleteSection(string file, IEnumerable<string> sections)
         {
             List<string> sectionList = sections.ToList();
