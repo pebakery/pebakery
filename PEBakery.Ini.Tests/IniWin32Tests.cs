@@ -68,14 +68,6 @@ namespace PEBakery.Ini.Tests
         }
         #endregion
 
-        #region WriteSection
-        [TestMethod]
-        public void WriteSection()
-        {
-            // Assert.IsTrue(SampleDirName.WriteSection("D:\\Before.ini", string.Empty));
-        }
-        #endregion
-
         #region Template
         void Template(string srcFileName, string expectFileName, Func<string, bool> testFunc)
         {
