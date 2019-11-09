@@ -1886,7 +1886,7 @@ namespace PEBakery.Core
         private static MemoryStream DecodeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterNonIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -2140,7 +2140,7 @@ namespace PEBakery.Core
         private static EncodeMode ReadEncodeModeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterNonIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;

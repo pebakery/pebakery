@@ -256,22 +256,37 @@ namespace PEBakery.Helper
         /// <summary>
         /// Replace src with dest. 
         /// </summary>
-        /// <param name="src"></param>
-        /// <param name="dest"></param>
-        public static void FileReplaceEx(string src, string dest)
+        /// <param name="srcPath"></param>
+        /// <param name="destPath"></param>
+        public static void FileReplaceEx(string srcPath, string destPath)
         {
-            try
-            {
-                // File.Copy removes ACL and ADS.
-                // Instead, use File.Replace.
-                File.Replace(src, dest, null);
+            // ile.Replace throws IOException if src and dest are located in different volume.
+            // To decreate amount of exception throwed, check drive by ourself and use File.Copy as fallback.
+            string fullSrcPath = Path.GetFullPath(srcPath);
+            string fullDestPath = Path.GetFullPath(destPath);
+            
+            string srcDrive = Path.GetPathRoot(fullSrcPath);
+            string destDrive = Path.GetPathRoot(fullDestPath);
+            if (srcDrive.Equals(destDrive, StringComparison.Ordinal))
+            {                
+                try
+                {
+                    // File.Copy removes ACL and ADS.
+                    // Instead, use File.Replace.
+                    File.Replace(srcPath, destPath, null);
+                }
+                catch (IOException)
+                { // Failsafe
+                  // File.Replace throws IOException if src and dest files are in different volume.
+                  // In this case, try File.Copy as fallback.
+                    File.Copy(srcPath, destPath, true);
+                    File.Delete(srcPath);
+                }
             }
-            catch (IOException)
+            else
             {
-                // However, File.Replace throws IOException if src and dest files are in different volume.
-                // In this case, try File.Copy as fallback.
-                File.Copy(src, dest, true);
-                File.Delete(src);
+                File.Copy(srcPath, destPath, true);
+                File.Delete(srcPath);
             }
         }
         #endregion

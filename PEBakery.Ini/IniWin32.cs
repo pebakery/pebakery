@@ -27,15 +27,15 @@ using System.IO;
 namespace PEBakery.Ini
 {
     /// <summary>
-    /// Win32 API version of IniReadWriter. Provided for compatibility.
+    /// Win32 API version of IniReadWriter. Provided only for compatibility. Does not support UTF-8 files.
     /// </summary>
     public static class IniWin32
     {
         #region WriteKey
         /// <summary>
-        /// Write a pair of key and value into .ini file
+        /// Write a pair of key and value into .ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool WriteKey(string filePath, string section, string key, string value)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
@@ -44,9 +44,9 @@ namespace PEBakery.Ini
         }
 
         /// <summary>
-        /// Write a pair of key and value into an ini file
+        /// Write a pair of key and value into an ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool WriteKey(string filePath, IniKey iniKey)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
@@ -57,9 +57,9 @@ namespace PEBakery.Ini
 
         #region DeleteKey
         /// <summary>
-        /// Delete a pair of key and value from an .ini file
+        /// Delete a pair of key and value from an .ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool DeleteKey(string filePath, string section, string key)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
@@ -68,9 +68,9 @@ namespace PEBakery.Ini
         }
 
         /// <summary>
-        /// Delete a pair of key and value from an .ini file
+        /// Delete a pair of key and value from an .ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool DeleteKey(string filePath, IniKey iniKey)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
@@ -83,7 +83,7 @@ namespace PEBakery.Ini
         /// <summary>
         /// Delete a section from an .ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool DeleteSection(string filePath, string section)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
@@ -94,7 +94,7 @@ namespace PEBakery.Ini
         /// <summary>
         /// Delete a section from an .ini file.
         /// </summary>
-        /// <returns>If the operation was successful, the function returns true.</returns>
+        /// <returns>Returns true if the operation was successful.</returns>
         public static bool DeleteSection(string filePath, IniKey iniKey)
         {
             // Make sure to use full path to avoid disrupting Windows directory.
