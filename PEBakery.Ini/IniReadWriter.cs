@@ -383,7 +383,7 @@ namespace PEBakery.Ini
                                 break;
                         }
 
-                        // lineBuffer 내에 있는 key들을 검사해서 덮어 쓸 것들을 확인한다.
+                        // Check keys inside of lineBuffer, and find out which value should be overwritten.
                         foreach ((string targetLine, string targetRawLine) in lineBuffer)
                         {
                             int eIdx = targetLine.IndexOf('=');
@@ -497,6 +497,270 @@ namespace PEBakery.Ini
                                 lineBuffer.Add((line.ToString(), rawLine));
                             else // Pass-through
                                 w.WriteLine(rawLine);
+                        }
+
+                        firstLine = false;
+                        lastLine = line;
+                    }
+                }
+
+                if (inputKeys.Count == 0)
+                { // Success
+                    FileHelper.FileReplaceEx(tempPath, filePath);
+                    result = true;
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
+
+            return result;
+        }
+        #endregion
+
+        #region (Write) WriteCompactKey
+        /// <summary>
+        /// Write a pair of key and value into an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="filePath">An ini file to manipulate.</param>
+        /// <param name="section">Name of the target section.</param>
+        /// <param name="key">Key to insert/overwrite.</param>
+        /// <param name="value">New value to insert/overwrite.</param>
+        /// <returns>Returns true if the operation was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteCompactKey(string filePath, string section, string key, string value)
+        {
+            return InternalWriteCompactKeys(filePath, new List<IniKey> { new IniKey(section, key, value) });
+        }
+
+        /// <summary>
+        /// Write a pair of key and value into an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="filePath">An ini file to manipulate.</param>
+        /// <param name="iniKey">Tuple of Section, Key, and Value.</param>
+        /// <returns>Returns true if the operation was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteCompactKey(string filePath, IniKey iniKey)
+        {
+            return InternalWriteCompactKeys(filePath, new List<IniKey> { iniKey });
+        }
+
+        /// <summary>
+        /// Write multiple pairs of key and value into an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="filePath">An ini file to manipulate.</param>
+        /// <param name="iniKeys">Enumberable tuples of Section, Key, and Value.</param>
+        /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalWriteCompactKeys(filePath, iniKeys.ToList());
+        }
+
+        private static bool InternalWriteCompactKeys(string filePath, List<IniKey> inputKeys)
+        {
+            #region FinalizeFile
+            void FinalizeFile(StreamWriter w, ReadOnlySpan<char> lastLine, bool firstEmptyLine)
+            {
+                bool firstSection = true;
+                if (0 < inputKeys.Count)
+                {
+                    // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
+                    string[] unprocessedSections = inputKeys
+                        .Select(x => x.Section)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                    foreach (string section in unprocessedSections)
+                    {
+                        // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
+                        IniKey[] secKeys = inputKeys
+                            .Where(x => x.Section.Equals(section))
+                            .ToArray();
+
+                        if ((lastLine == null || lastLine.Length != 0) && (!firstSection || firstEmptyLine))
+                            w.WriteLine();
+                        w.WriteLine($"[{section}]");
+
+                        foreach (IniKey secKey in secKeys)
+                        {
+                            w.WriteLine($"{secKey.Key}={secKey.Value}");
+                            inputKeys.RemoveAll(x =>
+                                x.Section.Equals(section, StringComparison.OrdinalIgnoreCase) &&
+                                x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        firstSection = false;
+                    }
+                }
+            }
+            #endregion
+
+            // If file does not exist just create new file and insert keys.
+            if (!File.Exists(filePath))
+            {
+                using (StreamWriter w = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    FinalizeFile(w, null, false);
+                }
+                return true;
+            }
+
+            // Append IniKey into existing file
+            bool result = false;
+            string tempPath = FileHelper.GetTempFile();
+            try
+            {
+                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    bool inTargetSection = false;
+                    string currentSection = null;
+                    List<string> lineBuffers = new List<string>(32);
+
+                    #region FinalizeSection
+                    void FinalizeSection()
+                    {
+                        Debug.Assert(currentSection != null);
+                        List<IniKey> secKeys = inputKeys
+                            .Where(x => x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                        Debug.Assert(0 < secKeys.Count);
+
+                        // Remove tailing empty lines 
+                        for (int i = lineBuffers.Count - 1; 0 <= i; i--)
+                        {
+                            string targetLine = lineBuffers[i];
+                            if (targetLine.Length == 0)
+                                lineBuffers.RemoveAt(i);
+                            else
+                                break;
+                        }
+
+                        // Check keys inside of lineBuffer, and find out which value should be overwritten.
+                        foreach (string line in lineBuffers)
+                        {
+                            int eIdx = line.IndexOf('=');
+                            if (eIdx == -1 || // No identifier '='
+                                eIdx == 0 || // Key length is 0
+                                IsLineComment(line)) // Does line start with { ";", "#", "//" }?
+                            {
+                                w.WriteLine(line.ToArray());
+                            }
+                            else
+                            {
+                                // Overwrite if key=line already exists
+                                bool processed = false;
+                                ReadOnlySpan<char> targetKey = line.AsSpan().Slice(0, eIdx).Trim();
+
+                                // Call ToArray() to make copy of secKeys
+                                foreach (IniKey secKey in secKeys.ToArray())
+                                {
+                                    if (targetKey.Equals(secKey.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        processed = true;
+                                        w.WriteLine($"{secKey.Key}={secKey.Value}");
+
+                                        // Remove processed keys
+                                        inputKeys.RemoveAll(x =>
+                                            x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase) &&
+                                            x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
+                                        secKeys.RemoveAll(x =>
+                                            x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
+
+                                        break;
+                                    }
+                                }
+
+                                if (!processed)
+                                {
+                                    string compacted = CompactKeyValuePairLine(line);
+                                    w.WriteLine(compacted);
+                                }
+
+                            }
+                        }
+
+                        lineBuffers.Clear();
+
+                        // Process remaining keys
+                        // Call ToArray() to make copy of secKeys
+                        foreach (IniKey secKey in secKeys.ToArray())
+                        {
+                            w.WriteLine($"{secKey.Key}={secKey.Value}");
+
+                            // Remove processed keys
+                            inputKeys.RemoveAll(x =>
+                                x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase) &&
+                                x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
+                            secKeys.RemoveAll(x =>
+                                x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
+                        }
+                        w.WriteLine();
+
+                        Debug.Assert(secKeys.Count == 0);
+                    }
+                    #endregion
+
+                    bool firstLine = true;
+                    ReadOnlySpan<char> lastLine = null;
+                    while (true)
+                    {
+                        string rawLine = r.ReadLine();
+                        if (rawLine == null)
+                        { // Last line!
+                            if (inTargetSection)
+                                FinalizeSection();
+
+                            // Finalize file
+                            FinalizeFile(w, lastLine, !firstLine);
+                            break;
+                        }
+
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Section head like [Process] encountered
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        {
+                            // Finalize section
+                            if (inTargetSection)
+                                FinalizeSection();
+
+                            // Write section name
+                            w.WriteLine(rawLine);
+
+                            if (inputKeys.Count == 0)
+                            { // Job done, no more section parsing
+                                inTargetSection = false;
+                            }
+                            else
+                            {
+                                string foundSection = line.Slice(1, line.Length - 2).ToString();
+                                if (0 < inputKeys.Count(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                }
+                                else
+                                {
+                                    inTargetSection = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (inTargetSection)
+                            { // Save section lines into a buffer, which will be flushed in FinalizeSection().
+                                lineBuffers.Add(line.ToString());
+                            }
+                            else
+                            { // Write compact or trimmed line
+                                string compacted = CompactKeyValuePairLine(line);
+                                w.WriteLine(compacted);
+                            }
                         }
 
                         firstLine = false;
@@ -636,66 +900,149 @@ namespace PEBakery.Ini
                 return true;
             }
 
+            bool result = false;
             List<int> processedKeys = new List<int>(keys.Count);
             string tempPath = FileHelper.GetTempFile();
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
-            using (StreamReader reader = new StreamReader(filePath, encoding, true))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            try
             {
-                string rawLine;
-                bool inTargetSection = false;
-                ReadOnlySpan<char> currentSection = null;
-                List<string> processedSections = new List<string>(keys.Count);
-
-                // Is Original File Empty?
-                if (reader.Peek() == -1)
+                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                using (StreamReader reader = new StreamReader(filePath, encoding, true))
+                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
-                    reader.Close();
+                    string rawLine;
+                    bool inTargetSection = false;
+                    ReadOnlySpan<char> currentSection = null;
+                    List<string> processedSections = new List<string>(keys.Count);
 
-                    // Write all and exit
-                    string beforeSection = string.Empty;
-                    for (int i = 0; i < keys.Count; i++)
+                    // Is Original File Empty?
+                    if (reader.Peek() == -1)
                     {
-                        if (beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
+                        reader.Close();
+
+                        // Write all and exit
+                        string beforeSection = string.Empty;
+                        for (int i = 0; i < keys.Count; i++)
                         {
-                            if (0 < i)
+                            if (!beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (0 < i)
+                                    writer.WriteLine();
+                                writer.WriteLine($"[{keys[i].Section}]");
+                            }
+
+                            // File is blank, so we don't have to consider "append"
+                            writer.WriteLine(keys[i].Key);
+
+                            beforeSection = keys[i].Section;
+                        }
+                        writer.Close();
+                        FileHelper.FileReplaceEx(tempPath, filePath);
+                        return true;
+                    }
+
+                    // Main Logic
+                    while ((rawLine = reader.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineWritten = false;
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comments. If you wrote all keys successfully, also skip.
+                        if (keys.Count == 0 || IsLineComment(line))
+                        {
+                            thisLineWritten = true;
+                            writer.WriteLine(rawLine);
+                        }
+                        else
+                        {
+                            // Check if encountered section head Ex) [Process]
+                            if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                                line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                            {
+                                ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                                // Append Mode : Add to last line of section
+                                if (append && inTargetSection)
+                                { // End of targetSection and start of foundSection
+                                    for (int i = 0; i < keys.Count; i++)
+                                    {
+                                        if (processedKeys.Contains(i))
+                                            continue;
+
+                                        // Add to last line of foundSection
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            processedKeys.Add(i);
+                                            writer.WriteLine(keys[i].Key);
+                                        }
+                                    }
+                                }
+
+                                // Start of the section
+                                inTargetSection = false;
+                                // Only sections contained in iniKeys will be targeted
+                                for (int i = 0; i < keys.Count; i++)
+                                {
+                                    if (processedKeys.Contains(i))
+                                        continue;
+
+                                    if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        inTargetSection = true;
+                                        currentSection = foundSection;
+                                        processedSections.Add(currentSection.ToString());
+                                        break; // for shorter O(n)
+                                    }
+                                }
+
+                                // Non-Append Mode : Add to first line of section
+                                if (!append && inTargetSection)
+                                {
+                                    for (int i = 0; i < keys.Count; i++)
+                                    {
+                                        if (processedKeys.Contains(i))
+                                            continue;
+
+                                        // Add to last line of foundSection
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            if (!thisLineWritten)
+                                                writer.WriteLine(rawLine);
+                                            thisLineWritten = true;
+
+                                            processedKeys.Add(i);
+                                            writer.WriteLine(keys[i].Key);
+                                        }
+                                    }
+
+                                    inTargetSection = false;
+                                }
+                            }
+
+                            // Blank line - for Append Mode
+                            if (line.Length == 0)
+                            {
+                                if (append && inTargetSection)
+                                {
+                                    for (int i = 0; i < keys.Count; i++)
+                                    {
+                                        if (processedKeys.Contains(i))
+                                            continue;
+
+                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        { // append key to section
+                                            processedKeys.Add(i);
+                                            writer.WriteLine(keys[i].Key);
+                                        }
+                                    }
+                                }
+                                thisLineWritten = true;
                                 writer.WriteLine();
-                            writer.WriteLine($"[{keys[i].Section}]");
+                            }
                         }
 
-                        // File is blank, so we don't have to consider "append"
-                        writer.WriteLine(keys[i].Key);
-
-                        beforeSection = keys[i].Section;
-                    }
-                    writer.Close();
-                    FileHelper.FileReplaceEx(tempPath, filePath);
-                    return true;
-                }
-
-                // Main Logic
-                while ((rawLine = reader.ReadLine()) != null)
-                { // Read text line by line
-                    bool thisLineWritten = false;
-                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-
-                    // Ignore comments. If you wrote all keys successfully, also skip.
-                    if (keys.Count == 0 ||
-                        line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
-                    {
-                        thisLineWritten = true;
-                        writer.WriteLine(rawLine);
-                    }
-                    else
-                    {
-                        // Check if encountered section head Ex) [Process]
-                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
-                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        // End of file
+                        if (reader.Peek() == -1)
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
-
                             // Append Mode : Add to last line of section
                             if (append && inTargetSection)
                             { // End of targetSection and start of foundSection
@@ -708,142 +1055,63 @@ namespace PEBakery.Ini
                                     if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         processedKeys.Add(i);
-                                        writer.WriteLine(keys[i].Key);
-                                    }
-                                }
-                            }
 
-                            // Start of the section
-                            inTargetSection = false;
-                            // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < keys.Count; i++)
-                            {
-                                if (processedKeys.Contains(i))
-                                    continue;
-
-                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                {
-                                    inTargetSection = true;
-                                    currentSection = foundSection;
-                                    processedSections.Add(currentSection.ToString());
-                                    break; // for shorter O(n)
-                                }
-                            }
-
-                            // Non-Append Mode : Add to first line of section
-                            if (!append && inTargetSection)
-                            {
-                                for (int i = 0; i < keys.Count; i++)
-                                {
-                                    if (processedKeys.Contains(i))
-                                        continue;
-
-                                    // Add to last line of foundSection
-                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                    {
                                         if (!thisLineWritten)
                                             writer.WriteLine(rawLine);
                                         thisLineWritten = true;
 
-                                        processedKeys.Add(i);
-                                        writer.WriteLine(keys[i].Key);
-                                    }
-                                }
-
-                                inTargetSection = false;
-                            }
-                        }
-
-                        // Blank line - for Append Mode
-                        if (line.Length == 0)
-                        {
-                            if (append && inTargetSection)
-                            {
-                                for (int i = 0; i < keys.Count; i++)
-                                {
-                                    if (processedKeys.Contains(i))
-                                        continue;
-
-                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                    { // append key to section
-                                        processedKeys.Add(i);
                                         writer.WriteLine(keys[i].Key);
                                     }
                                 }
                             }
-                            thisLineWritten = true;
-                            writer.WriteLine();
-                        }
-                    }
 
-                    // End of file
-                    if (reader.Peek() == -1)
-                    {
-                        // Append Mode : Add to last line of section
-                        if (append && inTargetSection)
-                        { // End of targetSection and start of foundSection
-                            for (int i = 0; i < keys.Count; i++)
-                            {
-                                if (processedKeys.Contains(i))
-                                    continue;
-
-                                // Add to last line of foundSection
-                                if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                {
-                                    processedKeys.Add(i);
-
-                                    if (!thisLineWritten)
-                                        writer.WriteLine(rawLine);
-                                    thisLineWritten = true;
-
-                                    writer.WriteLine(keys[i].Key);
-                                }
-                            }
-                        }
-
-                        if (!append)
-                        {
-                            if (!thisLineWritten)
-                                writer.WriteLine(rawLine);
-                            thisLineWritten = true;
-                        }
-
-                        // Not in section, so create new section
-                        for (int i = 0; i < keys.Count; i++)
-                        { // At this time, only not found section remains in iniKeys
-                            if (processedKeys.Contains(i))
-                                continue;
-
-                            if (!processedSections.Any(s => s.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)))
+                            if (!append)
                             {
                                 if (!thisLineWritten)
                                     writer.WriteLine(rawLine);
                                 thisLineWritten = true;
-
-                                processedSections.Add(keys[i].Section);
-                                writer.WriteLine($"\r\n[{keys[i].Section}]");
                             }
 
-                            processedKeys.Add(i);
+                            // Not in section, so create new section
+                            for (int i = 0; i < keys.Count; i++)
+                            { // At this time, only not found section remains in iniKeys
+                                if (processedKeys.Contains(i))
+                                    continue;
 
-                            writer.WriteLine(keys[i].Key);
+                                if (!processedSections.Any(s => s.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    if (!thisLineWritten)
+                                        writer.WriteLine(rawLine);
+                                    thisLineWritten = true;
+
+                                    processedSections.Add(keys[i].Section);
+                                    writer.WriteLine($"\r\n[{keys[i].Section}]");
+                                }
+
+                                processedKeys.Add(i);
+
+                                writer.WriteLine(keys[i].Key);
+                            }
                         }
-                    }
 
-                    if (!thisLineWritten)
-                        writer.WriteLine(rawLine);
+                        if (!thisLineWritten)
+                            writer.WriteLine(rawLine);
+                    }
+                }
+
+                if (processedKeys.Count == keys.Count)
+                {
+                    result = true;
+                    FileHelper.FileReplaceEx(tempPath, filePath);
                 }
             }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
 
-            if (processedKeys.Count == keys.Count)
-            {
-                FileHelper.FileReplaceEx(tempPath, filePath);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return result;
         }
         #endregion
 
@@ -898,92 +1166,97 @@ namespace PEBakery.Ini
                 return processed; // All False
 
             string tempPath = FileHelper.GetTempFile();
-            Encoding encoding = EncodingHelper.DetectBom(file);
-            using (StreamReader r = new StreamReader(file, encoding, false))
-            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+            try
             {
-                if (r.Peek() == -1)
+                Encoding encoding = EncodingHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
-                    r.Close();
-                    return processed; // All False
-                }
-
-                string rawLine;
-                bool inTargetSection = false;
-                ReadOnlySpan<char> currentSection = null;
-
-                while ((rawLine = r.ReadLine()) != null)
-                { // Read text line by line
-                    bool thisLineProcessed = false;
-                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-
-                    // Ignore comments. If you deleted all keys successfully, also skip.
-                    if (processed.Count(x => !x) == 0
-                        || line.StartsWith("#".AsSpan(), StringComparison.Ordinal)
-                        || line.StartsWith(";".AsSpan(), StringComparison.Ordinal)
-                        || line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                    if (r.Peek() == -1)
                     {
-                        w.WriteLine(rawLine);
-                        continue;
+                        r.Close();
+                        return processed; // All False
                     }
 
-                    // Check if encountered section head Ex) [Process]
-                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
-                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
-                    {
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                    string rawLine;
+                    bool inTargetSection = false;
+                    ReadOnlySpan<char> currentSection = null;
 
-                        // Start of the section
-                        inTargetSection = false;
-                        // Only sections contained in iniKeys will be targeted
-                        for (int i = 0; i < keys.Length; i++)
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineProcessed = false;
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comments. If you deleted all keys successfully, also skip.
+                        if (processed.Count(x => !x) == 0 || IsLineComment(line))
                         {
-                            if (processed[i])
-                                continue;
-
-                            if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                            {
-                                inTargetSection = true;
-                                currentSection = foundSection;
-                                break; // for shorter O(n)
-                            }
+                            w.WriteLine(rawLine);
+                            continue;
                         }
-                        thisLineProcessed = true;
-                        w.WriteLine(rawLine);
-                    }
 
-                    // key=value
-                    int idx = line.IndexOf('=');
-                    if (idx != -1 && idx != 0) // Key exists
-                    {
-                        if (inTargetSection) // process here only if we are in target section
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
-                            ReadOnlySpan<char> lineValue = line.Slice(idx + 1).Trim();
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                            // Start of the section
+                            inTargetSection = false;
+                            // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < keys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                IniKey key = keys[i];
-                                if (currentSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
-                                    && lineKey.Equals(key.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                { // key exists, so do not write this line, which lead to 'deletion'
-                                    w.WriteLine($"{key.Value}={lineValue.ToString()}");
-                                    thisLineProcessed = true;
-                                    processed[i] = true;
+                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                            thisLineProcessed = true;
+                            w.WriteLine(rawLine);
+                        }
+
+                        // key=value
+                        int idx = line.IndexOf('=');
+                        if (idx != -1 && idx != 0) // Key exists
+                        {
+                            if (inTargetSection) // process here only if we are in target section
+                            {
+                                ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
+                                ReadOnlySpan<char> lineValue = line.Slice(idx + 1).Trim();
+                                for (int i = 0; i < keys.Length; i++)
+                                {
+                                    if (processed[i])
+                                        continue;
+
+                                    IniKey key = keys[i];
+                                    if (currentSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
+                                        && lineKey.Equals(key.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                        w.WriteLine($"{key.Value}={lineValue.ToString()}");
+                                        thisLineProcessed = true;
+                                        processed[i] = true;
+                                    }
                                 }
                             }
                         }
+
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
                     }
-
-                    if (!thisLineProcessed)
-                        w.WriteLine(rawLine);
                 }
-            }
 
-            if (processed.Any(x => x))
-                FileHelper.FileReplaceEx(tempPath, file);
+                if (processed.Any(x => x))
+                    FileHelper.FileReplaceEx(tempPath, file);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            } 
 
             return processed;
         }
@@ -1036,89 +1309,237 @@ namespace PEBakery.Ini
                 return processed; // All False
 
             string tempPath = FileHelper.GetTempFile();
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
-            using (StreamReader r = new StreamReader(filePath, encoding, false))
-            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+            try
             {
-                if (r.Peek() == -1)
+                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
-                    r.Close();
-                    return processed; // All False
-                }
-
-                string rawLine;
-                bool inTargetSection = false;
-                ReadOnlySpan<char> currentSection = null;
-
-                while ((rawLine = r.ReadLine()) != null)
-                { // Read text line by line
-                    bool thisLineProcessed = false;
-                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-
-                    // Ignore comments. If you deleted all keys successfully, also skip.
-                    if (processed.Count(x => !x) == 0 ||
-                        line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                    if (r.Peek() == -1)
                     {
-                        w.WriteLine(rawLine);
-                        continue;
+                        r.Close();
+                        return processed; // All False
                     }
 
-                    // Check if encountered section head Ex) [Process]
-                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
-                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
-                    {
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                    string rawLine;
+                    bool inTargetSection = false;
+                    ReadOnlySpan<char> currentSection = null;
 
-                        // Start of the section
-                        inTargetSection = false;
-                        // Only sections contained in iniKeys will be targeted
-                        for (int i = 0; i < keys.Length; i++)
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineProcessed = false;
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comments. If you deleted all keys successfully, also skip.
+                        if (processed.Count(x => !x) == 0 || IsLineComment(line))
                         {
-                            if (processed[i])
-                                continue;
-
-                            if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                            {
-                                inTargetSection = true;
-                                currentSection = foundSection;
-                                break; // for shorter O(n)
-                            }
+                            w.WriteLine(rawLine);
+                            continue;
                         }
-                        thisLineProcessed = true;
-                        w.WriteLine(rawLine);
-                    }
 
-                    // key=value
-                    int idx = line.IndexOf('=');
-                    if (idx != -1 && idx != 0) // Key exists
-                    {
-                        if (inTargetSection) // process here only if we are in target section
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                            // Start of the section
+                            inTargetSection = false;
+                            // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < keys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
-                                    && lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                { // key exists, so do not write this line, which lead to 'deletion'
-                                    thisLineProcessed = true;
-                                    processed[i] = true;
+                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                            thisLineProcessed = true;
+                            w.WriteLine(rawLine);
+                        }
+
+                        // key=value
+                        int idx = line.IndexOf('=');
+                        if (idx != -1 && idx != 0) // Key exists
+                        {
+                            if (inTargetSection) // process here only if we are in target section
+                            {
+                                ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
+                                for (int i = 0; i < keys.Length; i++)
+                                {
+                                    if (processed[i])
+                                        continue;
+
+                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
+                                        lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                        thisLineProcessed = true;
+                                        processed[i] = true;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (!thisLineProcessed)
-                        w.WriteLine(rawLine);
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
+                    }
                 }
+
+                if (0 < processed.Count(x => x))
+                    FileHelper.FileReplaceEx(tempPath, filePath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
             }
 
-            if (0 < processed.Count(x => x))
-                FileHelper.FileReplaceEx(tempPath, filePath);
+            return processed;
+        }
+        #endregion
+
+        #region (Write) DeleteCompactKey
+        /// <summary>
+        /// Delete target key and its value from an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="filePath">An ini file to manipulate.</param>
+        /// <param name="section">Name of the target section.</param>
+        /// <returns>Returns true if the operation was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool DeleteCompactKey(string filePath, string section, string key)
+        {
+            return InternalDeleteCompactKeys(filePath, new IniKey[] { new IniKey(section, key) })[0];
+        }
+
+        /// <summary>
+        /// Delete target key and its value from an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="filePath">An ini file to manipulate.</param>
+        /// <param name="iniKey">Tuple of Section and Key.</param>
+        /// <returns>Returns true if the operation was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool DeleteCompactKey(string filePath, IniKey iniKey)
+        {
+            return InternalDeleteCompactKeys(filePath, new IniKey[] { iniKey })[0];
+        }
+
+        /// <summary>
+        /// Delete target keys and their value from an .ini file, and also compact the file.
+        /// </summary>
+        /// <param name="iniKeys">Enumerable tuples of Section and Key.</param>
+        /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool[] DeleteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalDeleteCompactKeys(filePath, iniKeys);
+        }
+
+        private static bool[] InternalDeleteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
+        {
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
+            for (int i = 0; i < processed.Length; i++)
+                processed[i] = false;
+
+            if (!File.Exists(filePath))
+                return processed; // All False
+
+            string tempPath = FileHelper.GetTempFile();
+            try
+            {
+                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    if (r.Peek() == -1)
+                    {
+                        r.Close();
+                        return processed; // All False
+                    }
+
+                    string rawLine;
+                    bool inTargetSection = false;
+                    ReadOnlySpan<char> currentSection = null;
+
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineProcessed = false;
+                        ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
+
+                        // Ignore comments. If you deleted all keys successfully, also skip.
+                        if (processed.Count(x => !x) == 0 || IsLineComment(line))
+                        {
+                            w.WriteLine(line.ToString());
+                            continue;
+                        }
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
+                            line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                        {
+                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+
+                            // Start of the section
+                            inTargetSection = false;
+                            // Only sections contained in iniKeys will be targeted
+                            for (int i = 0; i < keys.Length; i++)
+                            {
+                                if (processed[i])
+                                    continue;
+
+                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                            thisLineProcessed = true;
+                            w.WriteLine(line.ToString());
+                        }
+
+                        // key=value
+                        int idx = line.IndexOf('=');
+                        if (idx != -1 && idx != 0) // Key exists
+                        {
+                            if (inTargetSection) // process here only if we are in target section
+                            {
+                                ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
+                                for (int i = 0; i < keys.Length; i++)
+                                {
+                                    if (processed[i])
+                                        continue;
+
+                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
+                                        lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                        thisLineProcessed = true;
+                                        processed[i] = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!thisLineProcessed)
+                        {
+                            string compacted = CompactKeyValuePairLine(line);
+                            w.WriteLine(compacted);
+                        }
+                    }
+                }
+
+                if (0 < processed.Count(x => x))
+                    FileHelper.FileReplaceEx(tempPath, filePath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
 
             return processed;
         }
@@ -1903,7 +2324,7 @@ namespace PEBakery.Ini
         {
             return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section), includeEmptyLines);
         }
-        
+
         private static Dictionary<string, List<string>> InternalReadRawSection(string filePath, IEnumerable<string> sections, bool includeEmptyLines)
         {
             List<string> sectionNames = sections.ToList();
@@ -2040,17 +2461,8 @@ namespace PEBakery.Ini
                         }
                         else
                         {
-                            int idx = line.IndexOf('=');
-                            if (idx != -1 && idx != 0) // there is key, and key name is not empty
-                            { // Ini style entry, reformat into [Key=Value] template
-                                string key = line.Slice(0, idx).Trim().ToString();
-                                string value = line.Slice(idx + 1).Trim().ToString();
-                                w.WriteLine($"{key}={value}");
-                            }
-                            else
-                            { // Non-ini style entry, trim only end of it (Commands are often indented)
-                                w.WriteLine(line.ToString());
-                            }
+                            string compacted = CompactKeyValuePairLine(line);
+                            w.WriteLine(compacted);
                         }
                     }
                 }
@@ -2483,9 +2895,20 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLineComment(string line)
         {
-            return line.StartsWith("#", StringComparison.Ordinal) ||
-                   line.StartsWith(";", StringComparison.Ordinal) ||
-                   line.StartsWith("//", StringComparison.Ordinal);
+            return IsLineComment(line.AsSpan());
+        }
+
+        /// <summary>
+        /// Check whether a text line is a comment or not.
+        /// </summary>
+        /// <param name="lineSpan">A text line to check.</param>
+        /// <returns>Returns true if a text line is a comment.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsLineComment(ReadOnlySpan<char> lineSpan)
+        {
+            return lineSpan.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
+                   lineSpan.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
+                   lineSpan.StartsWith("//".AsSpan(), StringComparison.Ordinal);
         }
         #endregion
 
@@ -2609,6 +3032,46 @@ namespace PEBakery.Ini
                 values.Add(value);
             }
             return (keys, values);
+        }
+        #endregion
+
+        #region (Utility) CompactKeyValuePairString
+        /// <summary>
+        /// Compacts ini-style key-value pair lines.
+        /// </summary>
+        /// <remarks>
+        /// The method also handles non-ini style entry by just trimming its start and end.
+        /// </remarks>
+        /// <param name="line">A text line to compact.</param>
+        /// <returns>Compacted string</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string CompactKeyValuePairLine(string line)
+        {
+            return CompactKeyValuePairLine(line.AsSpan());
+        }
+
+        /// <summary>
+        /// Compacts ini-style key-value pair lines.
+        /// </summary>
+        /// <remarks>
+        /// The method also handles non-ini style entry by just trimming its start and end.
+        /// </remarks>
+        /// <param name="lineSpan">A text line to compact.</param>
+        /// <returns>Compacted string</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string CompactKeyValuePairLine(ReadOnlySpan<char> lineSpan)
+        {
+            int idx = lineSpan.IndexOf('=');
+            if (idx != -1 && idx != 0) // there is key, and key name is not empty
+            { // Ini style entry, reformat into [Key=Value] template
+                string key = lineSpan.Slice(0, idx).Trim().ToString();
+                string value = lineSpan.Slice(idx + 1).Trim().ToString();
+                return $"{key}={value}";
+            }
+            else
+            { // Non-ini style entry, trim only end of it (Commands are often indented)
+                return lineSpan.ToString();
+            }
         }
         #endregion
     }

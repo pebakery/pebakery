@@ -41,8 +41,8 @@ namespace PEBakery.Ini.Tests
         {
             bool DeleteKeyString(string destFile) => IniWin32.WriteKey(destFile, "Section3", "K", "V");
             bool DeleteKeyStruct(string destFile) => IniWin32.WriteKey(destFile, new IniKey("Section3", "K", "V"));
-            Template("Before.ini", "AfterWriteKey.ini", DeleteKeyString);
-            Template("Before.ini", "AfterWriteKey.ini", DeleteKeyStruct);
+            WriteTemplate("Before.ini", "AfterWriteKey.ini", DeleteKeyString);
+            WriteTemplate("Before.ini", "AfterWriteKey.ini", DeleteKeyStruct);
         }
         #endregion
 
@@ -52,8 +52,8 @@ namespace PEBakery.Ini.Tests
         {
             bool DeleteKeyString(string destFile) => IniWin32.DeleteKey(destFile, "Section1", "A");
             bool DeleteKeyStruct(string destFile) => IniWin32.DeleteKey(destFile, new IniKey("Section1", "A"));
-            Template("Before.ini", "AfterDeleteKey.ini", DeleteKeyString);
-            Template("Before.ini", "AfterDeleteKey.ini", DeleteKeyStruct);
+            WriteTemplate("Before.ini", "AfterDeleteKey.ini", DeleteKeyString);
+            WriteTemplate("Before.ini", "AfterDeleteKey.ini", DeleteKeyStruct);
         }
         #endregion
 
@@ -63,13 +63,13 @@ namespace PEBakery.Ini.Tests
         {
             bool DeleteSectionString(string destFile) => IniWin32.DeleteSection(destFile, "Section1");
             bool DeleteSectionStruct(string destFile) => IniWin32.DeleteSection(destFile, new IniKey("Section1"));
-            Template("Before.ini", "AfterDeleteSection.ini", DeleteSectionString);
-            Template("Before.ini", "AfterDeleteSection.ini", DeleteSectionStruct);
+            WriteTemplate("Before.ini", "AfterDeleteSection.ini", DeleteSectionString);
+            WriteTemplate("Before.ini", "AfterDeleteSection.ini", DeleteSectionStruct);
         }
         #endregion
 
-        #region Template
-        void Template(string srcFileName, string expectFileName, Func<string, bool> testFunc)
+        #region WriteTemplate
+        void WriteTemplate(string srcFileName, string expectFileName, Func<string, bool> testFunc)
         {
             string srcFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, srcFileName);
             string expectFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, expectFileName);

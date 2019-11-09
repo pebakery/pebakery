@@ -554,6 +554,132 @@ namespace PEBakery.Ini.Tests
         }
         #endregion
 
+        #region WriteCompactKey
+        [TestMethod]
+        public void WriteCompactKey()
+        {
+            void Template(string srcStr, string expectStr, IniKey iniKey)
+            {
+                string tempFile = FileHelper.GetTempFile();
+                try
+                {
+                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                    {
+                        sw.Write(srcStr);
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteCompactKey(tempFile, iniKey));
+
+                    string resultStr;
+                    using (StreamReader sr = new StreamReader(tempFile))
+                    {
+                        resultStr = sr.ReadToEnd();
+                    }
+
+                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine(" B = 2");
+            b.AppendLine("C = 3 ");
+            b.AppendLine(" D = 4 ");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine(" ㄴ = 乙");
+            b.AppendLine("ㄷ = 丙 ");
+            b.AppendLine(" ㄹ = 丁 ");
+            b.AppendLine();
+            string src = b.ToString();
+
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=5");
+            b.AppendLine("B=2");
+            b.AppendLine("C=3");
+            b.AppendLine("D=4");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine();
+            Template(src, b.ToString(), new IniKey("Section1", "A", "5"));
+
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine("B=2");
+            b.AppendLine("C=3");
+            b.AppendLine("D=4");
+            b.AppendLine("Z=9");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine();
+            Template(src, b.ToString(), new IniKey("Section1", "Z", "9"));
+
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine("B=2");
+            b.AppendLine("C=3");
+            b.AppendLine("D=4");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=戊");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine();
+            Template(src, b.ToString(), new IniKey("Section2", "ㄱ", "戊"));
+
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine("B=2");
+            b.AppendLine("C=3");
+            b.AppendLine("D=4");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine("ㅁ=戊");
+            b.AppendLine();
+            Template(src, b.ToString(), new IniKey("Section2", "ㅁ", "戊"));
+
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine("B=2");
+            b.AppendLine("C=3");
+            b.AppendLine("D=4");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine("One=일");
+            Template(src, b.ToString(), new IniKey("Section3", "One", "일"));
+        }
+        #endregion
+
         #region WriteRawLine
         [TestMethod]
         public void WriteRawLine()
