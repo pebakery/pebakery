@@ -558,40 +558,17 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void WriteCompactKey()
         {
-            void Template(string srcStr, string expectStr, IniKey iniKey)
-            {
-                string tempFile = FileHelper.GetTempFile();
-                try
-                {
-                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
-                    {
-                        sw.Write(srcStr);
-                    }
-
-                    Assert.IsTrue(IniReadWriter.WriteCompactKey(tempFile, iniKey));
-
-                    string resultStr;
-                    using (StreamReader sr = new StreamReader(tempFile))
-                    {
-                        resultStr = sr.ReadToEnd();
-                    }
-
-                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
-                }
-                finally
-                {
-                    File.Delete(tempFile);
-                }
-            }
+            IniKey iniKey;
+            bool TestWriteKey(string tempFile) => IniReadWriter.WriteCompactKey(tempFile, iniKey);
 
             StringBuilder b = new StringBuilder();
-            b.AppendLine("[Section1]");
+            b.AppendLine("[Section1] ");
             b.AppendLine("A=1");
             b.AppendLine(" B = 2");
             b.AppendLine("C = 3 ");
             b.AppendLine(" D = 4 ");
             b.AppendLine();
-            b.AppendLine("[Section2]");
+            b.AppendLine(" [Section2]");
             b.AppendLine("ㄱ=甲");
             b.AppendLine(" ㄴ = 乙");
             b.AppendLine("ㄷ = 丙 ");
@@ -612,7 +589,8 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄷ=丙");
             b.AppendLine("ㄹ=丁");
             b.AppendLine();
-            Template(src, b.ToString(), new IniKey("Section1", "A", "5"));
+            iniKey = new IniKey("Section1", "A", "5");
+            WriteTemplate(src, b.ToString(), TestWriteKey);
 
             b.Clear();
             b.AppendLine("[Section1]");
@@ -628,7 +606,8 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄷ=丙");
             b.AppendLine("ㄹ=丁");
             b.AppendLine();
-            Template(src, b.ToString(), new IniKey("Section1", "Z", "9"));
+            iniKey = new IniKey("Section1", "Z", "9");
+            WriteTemplate(src, b.ToString(), TestWriteKey);
 
             b.Clear();
             b.AppendLine("[Section1]");
@@ -643,7 +622,8 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄷ=丙");
             b.AppendLine("ㄹ=丁");
             b.AppendLine();
-            Template(src, b.ToString(), new IniKey("Section2", "ㄱ", "戊"));
+            iniKey = new IniKey("Section2", "ㄱ", "戊");
+            WriteTemplate(src, b.ToString(), TestWriteKey);
 
             b.Clear();
             b.AppendLine("[Section1]");
@@ -659,7 +639,8 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄹ=丁");
             b.AppendLine("ㅁ=戊");
             b.AppendLine();
-            Template(src, b.ToString(), new IniKey("Section2", "ㅁ", "戊"));
+            iniKey = new IniKey("Section2", "ㅁ", "戊");
+            WriteTemplate(src, b.ToString(), TestWriteKey);
 
             b.Clear();
             b.AppendLine("[Section1]");
@@ -676,7 +657,8 @@ namespace PEBakery.Ini.Tests
             b.AppendLine();
             b.AppendLine("[Section3]");
             b.AppendLine("One=일");
-            Template(src, b.ToString(), new IniKey("Section3", "One", "일"));
+            iniKey = new IniKey("Section3", "One", "일");
+            WriteTemplate(src, b.ToString(), TestWriteKey);
         }
         #endregion
 
@@ -2781,10 +2763,117 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void Merge2()
         {
-            Merge2_1();
-            Merge2_2();
-            Merge2_3();
-            Merge2_4();
+            // 1st
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            string src1 = b.ToString();
+            Merge2Template(src1, string.Empty, src1);
+
+            // 2nd
+            b.Clear();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string src2 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            b.AppendLine();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            Merge2Template(src1, src2, b.ToString());
+
+            // 3rd
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("04=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            src2 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("04=D");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            Merge2Template(src1, src2, b.ToString());
+
+            // 4th
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("02=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            src1 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            src2 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            Merge2Template(src1, src2, b.ToString());
+
+            // 5th
+            b.Clear();
+            b.AppendLine("[Section1] ");
+            b.AppendLine("A=6");
+            b.AppendLine(" B = 7");
+            b.AppendLine("C = 8 ");
+            b.AppendLine(" D = 9 ");
+            b.AppendLine();
+            b.AppendLine(" [Section3]");
+            b.AppendLine("일=一");
+            b.AppendLine(" 이 = 二");
+            b.AppendLine("삼 = 三 ");
+            b.AppendLine(" 사 = 四 ");
+            b.AppendLine();
+            src1 = b.ToString();
+            b.Clear();
+            b.AppendLine("  [Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine(" B = 2");
+            b.AppendLine("C = 3 ");
+            b.AppendLine(" D = 4 ");
+            b.AppendLine();
+            b.AppendLine(" [Section2]  ");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine(" ㄴ = 乙");
+            b.AppendLine("ㄷ = 丙 ");
+            b.AppendLine(" ㄹ = 丁 ");
+            b.AppendLine();
+            src2 = b.ToString(); 
+            // Result
+            b.Clear();
+            b.AppendLine("  [Section1]");
+            b.AppendLine("A=6");
+            b.AppendLine("B=7");
+            b.AppendLine("C=8");
+            b.AppendLine("D=9");
+            b.AppendLine();
+            b.AppendLine(" [Section2]  ");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine(" ㄴ = 乙");
+            b.AppendLine("ㄷ = 丙 ");
+            b.AppendLine(" ㄹ = 丁 ");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine("일=一");
+            b.AppendLine("이=二");
+            b.AppendLine("삼=三");
+            b.AppendLine("사=四");
+            Merge2Template(src1, src2, b.ToString());
         }
 
         public static void Merge2_1()
@@ -2979,6 +3068,64 @@ namespace PEBakery.Ini.Tests
                 File.Delete(tempFile);
                 File.Delete(destFile);
             }
+        }
+        #endregion
+
+        #region MergeCompact2
+        [TestMethod]
+        public void MergeCompact2()
+        {
+            // Prepare source file
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1] ");
+            b.AppendLine("A=6");
+            b.AppendLine(" B = 7");
+            b.AppendLine("C = 8 ");
+            b.AppendLine(" D = 9 ");
+            b.AppendLine();
+            b.AppendLine(" [Section3]");
+            b.AppendLine("일=一");
+            b.AppendLine(" 이 = 二");
+            b.AppendLine("삼 = 三 ");
+            b.AppendLine(" 사 = 四 ");
+            b.AppendLine();
+            string src1 = b.ToString();
+
+            b.Clear();
+            b.AppendLine("  [Section1]");
+            b.AppendLine("A=1");
+            b.AppendLine(" B = 2");
+            b.AppendLine("C = 3 ");
+            b.AppendLine(" D = 4 ");
+            b.AppendLine();
+            b.AppendLine(" [Section2]  ");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine(" ㄴ = 乙");
+            b.AppendLine("ㄷ = 丙 ");
+            b.AppendLine(" ㄹ = 丁 ");
+            b.AppendLine();
+            string src2 = b.ToString(); 
+
+            // Result
+            b.Clear();
+            b.AppendLine("[Section1]");
+            b.AppendLine("A=6");
+            b.AppendLine("B=7");
+            b.AppendLine("C=8");
+            b.AppendLine("D=9");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("ㄱ=甲");
+            b.AppendLine("ㄴ=乙");
+            b.AppendLine("ㄷ=丙");
+            b.AppendLine("ㄹ=丁");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine("일=一");
+            b.AppendLine("이=二");
+            b.AppendLine("삼=三");
+            b.AppendLine("사=四");
+            Merge2Template(src1, src2, b.ToString(), true);
         }
         #endregion
 
@@ -3472,6 +3619,71 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("[병]");
             b.AppendLine("UnicodeC");
             Template(null, srcStr, b.ToString(), true);
+        }
+        #endregion
+
+        #region Template
+        void WriteTemplate(string srcStr, string expectStr, Func<string, bool> testFunc)
+        {
+            string tempFile = FileHelper.GetTempFile();
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    sw.Write(srcStr);
+                }
+
+                Assert.IsTrue(testFunc.Invoke(tempFile));
+
+                string resultStr;
+                using (StreamReader sr = new StreamReader(tempFile))
+                {
+                    resultStr = sr.ReadToEnd();
+                }
+
+                Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        void Merge2Template(string srcStr1, string srcStr2, string expectStr, bool compact = false)
+        {
+            string srcTempFile = FileHelper.GetTempFile();
+            string destTempFile = FileHelper.GetTempFile();
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(srcTempFile, false, Encoding.UTF8))
+                {
+                    sw.Write(srcStr1);
+                }
+                using (StreamWriter sw = new StreamWriter(destTempFile, false, Encoding.UTF8))
+                {
+                    sw.Write(srcStr2);
+                }
+
+                bool result;
+                if (compact)
+                    result = IniReadWriter.MergeCompact(srcTempFile, destTempFile);
+                else
+                    result = IniReadWriter.Merge(srcTempFile, destTempFile);
+                Assert.IsTrue(result);
+
+                string resultStr;
+                using (StreamReader sr = new StreamReader(destTempFile))
+                {
+                    resultStr = sr.ReadToEnd();
+                }
+
+                Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(srcTempFile);
+                File.Delete(destTempFile);
+            }
         }
         #endregion
     }

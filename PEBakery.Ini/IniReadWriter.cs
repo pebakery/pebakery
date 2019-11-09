@@ -25,6 +25,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Concurrent;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -730,7 +731,7 @@ namespace PEBakery.Ini
                                 FinalizeSection();
 
                             // Write section name
-                            w.WriteLine(rawLine);
+                            w.WriteLine(line.ToString());
 
                             if (inputKeys.Count == 0)
                             { // Job done, no more section parsing
@@ -2391,13 +2392,39 @@ namespace PEBakery.Ini
             // kvSec => Key: Section Value:<Key-Value>
             foreach (var kvSec in srcIniFile.Sections)
             {
+                string section = kvSec.Key;
+                Dictionary<string, string> kvPairs = kvSec.Value;
+
                 List<IniKey> keys = new List<IniKey>();
 
                 // kvKey => Key:Key Value:Value
-                foreach (var kvKey in kvSec.Value)
-                    keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
+                foreach (var kvKey in kvPairs)
+                    keys.Add(new IniKey(section, kvKey.Key, kvKey.Value));
 
                 result &= InternalWriteKeys(destFile, keys);
+            }
+
+            return result;
+        }
+
+        public static bool MergeCompact(string srcFile, string destFile)
+        {
+            IniFile srcIniFile = new IniFile(srcFile);
+
+            bool result = true;
+            // kvSec => Key: Section Value:<Key-Value>
+            foreach (var kvSec in srcIniFile.Sections)
+            {
+                string section = kvSec.Key;
+                Dictionary<string, string> kvPairs = kvSec.Value;
+
+                List<IniKey> keys = new List<IniKey>();
+
+                // kvKey => Key:Key Value:Value
+                foreach (var kvKey in kvPairs)
+                    keys.Add(new IniKey(section, kvKey.Key, kvKey.Value));
+
+                result &= InternalWriteCompactKeys(destFile, keys);
             }
 
             return result;
@@ -2738,7 +2765,7 @@ namespace PEBakery.Ini
         /// Parse entire content of an .ini file.
         /// </summary>
         /// <param name="srcFile">An .ini file to read.</param>
-        public static Dictionary<string, Dictionary<string, string>> ParseToDict(string srcFile)
+        public static Dictionary<string, Dictionary<string, string>> ParseFileToDict(string srcFile)
         {
             Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -2778,8 +2805,8 @@ namespace PEBakery.Ini
                         int idx = line.IndexOf('=');
                         if (idx != -1 && idx != 0) // there is key, and key name is not empty
                         {
-                            string key = line.Slice(0, idx).ToString();
-                            string value = line.Slice(idx + 1).ToString();
+                            string key = line.Slice(0, idx).Trim().ToString();
+                            string value = line.Slice(idx + 1).Trim().ToString();
 
                             dict[section][key] = value;
                         }
@@ -3092,7 +3119,7 @@ namespace PEBakery.Ini
         public IniFile(string filePath)
         {
             FilePath = filePath;
-            Sections = IniReadWriter.ParseToDict(filePath);
+            Sections = IniReadWriter.ParseFileToDict(filePath);
         }
     }
     #endregion
