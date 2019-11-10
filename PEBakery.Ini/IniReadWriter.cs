@@ -24,7 +24,6 @@
 
 using PEBakery.Helper;
 using System;
-using System.Collections.Concurrent;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,7 +32,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 // ReSharper disable UnusedMember.Global
 
 namespace PEBakery.Ini
@@ -1257,7 +1255,7 @@ namespace PEBakery.Ini
             {
                 if (File.Exists(tempPath))
                     File.Delete(tempPath);
-            } 
+            }
 
             return processed;
         }
@@ -1472,7 +1470,7 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Ignore comments. If you deleted all keys successfully, also skip.
-                        if (processed.Count(x => !x) == 0 || IsLineComment(line))
+                        if (IsLineComment(line))
                         {
                             w.WriteLine(line.ToString());
                             continue;
@@ -1517,7 +1515,7 @@ namespace PEBakery.Ini
 
                                     if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
                                         lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                    { // key exists, do not write this line to 'delete' them.
                                         thisLineProcessed = true;
                                         processed[i] = true;
                                     }

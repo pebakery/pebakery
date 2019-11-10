@@ -43,7 +43,7 @@
         Loaded="Window_Loaded"
         WindowStartupLocation="CenterOwner"
         Title="PEBakery Settings"
-        Width="600" Height="550"
+        Width="600" Height="560"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
         <!-- Global -->
@@ -919,15 +919,11 @@
 
                     <TextBlock Margin="0, 0, 0, 3"
                                FontWeight="Bold"
-                               Text="Asterisk Bug"/>
+                               Text="Script Tree"/>
                     <Separator Margin="0, 0, 0, 3"
                                BorderBrush="Black"
                                BorderThickness="2"/>
                     <StackPanel Margin="3, 3, 3, 0">
-                        <CheckBox Margin="0, 0, 0, 3"
-                                  VerticalContentAlignment="Center"
-                                  Content="Simulate WinBuilder's *.* bug in DirCopy"
-                                  IsChecked="{Binding CompatAsteriskBugDirCopy}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
                                   Content="Simulate WinBuilder's *.* bug in folder.project"
@@ -940,24 +936,28 @@
                     <Separator Margin="0, 0, 0, 3"
                                BorderBrush="Black"
                                BorderThickness="2"/>
-                    <StackPanel Margin="3, 3, 3, 0" >
+                    <StackPanel Margin="3, 3, 3, 0">
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="FileRename and DirMove work like PathMove"
-                                      IsChecked="{Binding CompatFileRenameCanMoveDir}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Simulate WinBuilder's *.* bug in DirCopy"
+                                  IsChecked="{Binding CompatAsteriskBugDirCopy}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="FileRename and DirMove work like PathMove"
+                                  IsChecked="{Binding CompatFileRenameCanMoveDir}" />
                         <CheckBox Margin="0, 0, 0, 3" 
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow letter in Loop"
-                                      IsChecked="{Binding CompatAllowLetterInLoop}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Allow letter in Loop"
+                                  IsChecked="{Binding CompatAllowLetterInLoop}" />
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable deprecated legacy branch conditions"
-                                      IsChecked="{Binding CompatLegacyBranchCondition}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable deprecated legacy branch conditions"
+                                  IsChecked="{Binding CompatLegacyBranchCondition}" />
                         <!-- ReSharper disable once MarkupAttributeTypo -->
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
                                   Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
-                                      IsChecked="{Binding CompatLegacyRegWrite}" />
+                                  IsChecked="{Binding CompatLegacyRegWrite}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
                                   Content="Allow Set to modify interface controls"
@@ -970,6 +970,10 @@
                                   VerticalContentAlignment="Center"
                                   Content="Enable legacy section parameter commands (e.g. PackParam)"
                                   IsChecked="{Binding CompatLegacySectionParamCommand}" />
+                        <CheckBox Margin="0, 0, 0, 3" 
+                                  VerticalContentAlignment="Center"
+                                  Content="Auto compact .ini files in some commands (e.g. IniWrite, IniDelete, IniMerge)"
+                                  IsChecked="{Binding AutoCompactIniWriteCommand}" />
                     </StackPanel>
 
                     <TextBlock Margin="0, 3, 0, 3"

@@ -1271,6 +1271,7 @@ namespace PEBakery.Core
         public bool CompatAllowSetModifyInterface { get; set; } = false;
         public bool CompatDisableExtendedSectionParams { get; set; } = false;
         public bool CompatOverridableLoopCounter { get; set; } = false;
+        public bool CompatAutoCompactIniWriteCommand { get; set; } = false;
         #endregion
 
         #region Command State Fields and Properties
@@ -1405,6 +1406,7 @@ namespace PEBakery.Core
             CompatAllowSetModifyInterface = compat.AllowSetModifyInterface;
             CompatDisableExtendedSectionParams = compat.DisableExtendedSectionParams;
             CompatOverridableLoopCounter = compat.OverridableLoopCounter;
+            CompatAutoCompactIniWriteCommand = compat.AutoCompactIniWriteCommand;
         }
         #endregion
 

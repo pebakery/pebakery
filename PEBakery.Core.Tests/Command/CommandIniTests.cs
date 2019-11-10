@@ -249,6 +249,78 @@ namespace PEBakery.Core.Tests.Command
                 b.AppendLine();
                 resultStr = b.ToString();
                 WriteTemplate(s, CodeType.IniWrite, $@"IniWrite,{tempFile},Passthrough,DQ1,#$qA B C D#$q", tempFile, sampleStr, resultStr);
+
+                // Compat (AutoCompactIniWriteCommand)
+                s.CompatAutoCompactIniWriteCommand = true;
+                b.Clear();
+                b.AppendLine("[Section1] ");
+                b.AppendLine("A=1");
+                b.AppendLine(" B = 2");
+                b.AppendLine("C = 3 ");
+                b.AppendLine(" D = 4 ");
+                b.AppendLine();
+                b.AppendLine(" [Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine(" ㄴ = 乙");
+                b.AppendLine("ㄷ = 丙 ");
+                b.AppendLine(" ㄹ = 丁 ");
+                b.AppendLine();
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Section1]");
+                b.AppendLine("A=6");
+                b.AppendLine("B=2");
+                b.AppendLine("C=3");
+                b.AppendLine("D=4");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine("ㄴ=乙");
+                b.AppendLine("ㄷ=丙");
+                b.AppendLine("ㄹ=丁");
+                b.AppendLine();
+                resultStr = b.ToString();
+                WriteTemplate(s, CodeType.IniWrite, $@"IniWrite,{tempFile},Section1,A,6", tempFile, sampleStr, resultStr);
+
+                // Optimization + Compat (AutoCompactIniWriteCommand)
+                b.Clear();
+                b.AppendLine("[Section1] ");
+                b.AppendLine("A=1");
+                b.AppendLine(" B = 2");
+                b.AppendLine("C = 3 ");
+                b.AppendLine(" D = 4 ");
+                b.AppendLine();
+                b.AppendLine(" [Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine(" ㄴ = 乙");
+                b.AppendLine("ㄷ = 丙 ");
+                b.AppendLine(" ㄹ = 丁 ");
+                b.AppendLine();
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Section1]");
+                b.AppendLine("A=6");
+                b.AppendLine("B=2");
+                b.AppendLine("C=3");
+                b.AppendLine("D=4");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine("ㄴ=乙");
+                b.AppendLine("ㄷ=丙");
+                b.AppendLine("ㄹ=丁");
+                b.AppendLine("ㅁ=戊");
+                b.AppendLine();
+                b.AppendLine("[Section3]");
+                b.AppendLine("일=1");
+                resultStr = b.ToString();
+                WriteOptTemplate(s, CodeType.IniWriteOp, new List<string>
+                {
+                    $@"IniWrite,{tempFile},Section1,A,6",
+                    $@"IniWrite,{tempFile},Section2,ㅁ,戊",
+                    $@"IniWrite,{tempFile},Section3,일,1",
+                }, tempFile, sampleStr, resultStr);
+                s.CompatAutoCompactIniWriteCommand = false;
             }
             finally
             {
@@ -345,6 +417,72 @@ namespace PEBakery.Core.Tests.Command
                     $@"IniDelete,{tempFile},6DoF,Descent",
                     $@"IniDelete,{tempFile2},6DoF,Parallax",
                 }, tempFile, sampleStr, resultStr);
+
+                // Compat (AutoCompactIniWriteCommand)
+                s.CompatAutoCompactIniWriteCommand = true;
+                b.Clear();
+                b.AppendLine("[Section1] ");
+                b.AppendLine("A=1");
+                b.AppendLine(" B = 2");
+                b.AppendLine("C = 3 ");
+                b.AppendLine(" D = 4 ");
+                b.AppendLine();
+                b.AppendLine(" [Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine(" ㄴ = 乙");
+                b.AppendLine("ㄷ = 丙 ");
+                b.AppendLine(" ㄹ = 丁 ");
+                b.AppendLine();
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Section1]");
+                b.AppendLine("B=2");
+                b.AppendLine("C=3");
+                b.AppendLine("D=4");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine("ㄴ=乙");
+                b.AppendLine("ㄷ=丙");
+                b.AppendLine("ㄹ=丁");
+                b.AppendLine();
+                resultStr = b.ToString();
+                WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},Section1,A", tempFile, sampleStr, resultStr);
+
+                // Optimization + Compat (AutoCompactIniWriteCommand)
+                b.Clear();
+                b.AppendLine("[Section1] ");
+                b.AppendLine("A=1");
+                b.AppendLine(" B = 2");
+                b.AppendLine("C = 3 ");
+                b.AppendLine(" D = 4 ");
+                b.AppendLine();
+                b.AppendLine(" [Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine(" ㄴ = 乙");
+                b.AppendLine("ㄷ = 丙 ");
+                b.AppendLine(" ㄹ = 丁 ");
+                b.AppendLine();
+                sampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Section1]");
+                b.AppendLine("B=2");
+                b.AppendLine("C=3");
+                b.AppendLine("D=4");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine("ㄷ=丙");
+                b.AppendLine("ㄹ=丁");
+                b.AppendLine();
+                resultStr = b.ToString();
+                WriteOptTemplate(s, CodeType.IniDeleteOp, new List<string>
+                {
+                    $@"IniDelete,{tempFile},Section1,A",
+                    $@"IniDelete,{tempFile},Section2,ㄴ",
+                    $@"IniDelete,{tempFile},Section2,ㅁ",
+                }, tempFile, sampleStr, resultStr);
+                s.CompatAutoCompactIniWriteCommand = false;
             }
             finally
             {
@@ -756,6 +894,58 @@ namespace PEBakery.Core.Tests.Command
                     tempSrcFile, srcSampleStr, tempDestFile, destSampleStr, resultStr);
 
                 WriteTemplate(s, CodeType.IniMerge, $@"IniMerge,{tempSrcFile}", tempSrcFile, string.Empty, null, ErrorCheck.ParserError);
+
+                // Compat (AutoCompactIniWriteCommand)
+                s.CompatAutoCompactIniWriteCommand = true;
+                b.Clear();
+                b.AppendLine("[Section1] ");
+                b.AppendLine("A=6");
+                b.AppendLine(" B = 7");
+                b.AppendLine("C = 8 ");
+                b.AppendLine(" D = 9 ");
+                b.AppendLine();
+                b.AppendLine(" [Section3]");
+                b.AppendLine("일=一");
+                b.AppendLine(" 이 = 二");
+                b.AppendLine("삼 = 三 ");
+                b.AppendLine(" 사 = 四 ");
+                b.AppendLine();
+                srcSampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("  [Section1]");
+                b.AppendLine("A=1");
+                b.AppendLine(" B = 2");
+                b.AppendLine("C = 3 ");
+                b.AppendLine(" D = 4 ");
+                b.AppendLine();
+                b.AppendLine(" [Section2]  ");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine(" ㄴ = 乙");
+                b.AppendLine("ㄷ = 丙 ");
+                b.AppendLine(" ㄹ = 丁 ");
+                b.AppendLine();
+                destSampleStr = b.ToString();
+                b.Clear();
+                b.AppendLine("[Section1]");
+                b.AppendLine("A=6");
+                b.AppendLine("B=7");
+                b.AppendLine("C=8");
+                b.AppendLine("D=9");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("ㄱ=甲");
+                b.AppendLine("ㄴ=乙");
+                b.AppendLine("ㄷ=丙");
+                b.AppendLine("ㄹ=丁");
+                b.AppendLine();
+                b.AppendLine("[Section3]");
+                b.AppendLine("일=一");
+                b.AppendLine("이=二");
+                b.AppendLine("삼=三");
+                b.AppendLine("사=四");
+                resultStr = b.ToString();
+                MergeTemplate(s, CodeType.IniMerge, $@"IniMerge,{tempSrcFile},{tempDestFile}", tempSrcFile, srcSampleStr, tempDestFile, destSampleStr, resultStr);
+                s.CompatAutoCompactIniWriteCommand = false;
             }
             finally
             {
@@ -781,7 +971,7 @@ namespace PEBakery.Core.Tests.Command
             string compStr;
             using (StreamReader sr = new StreamReader(compFile, Encoding.UTF8, false))
             {
-               compStr = sr.ReadToEnd();
+                compStr = sr.ReadToEnd();
             }
 
             string destFile = FileHelper.GetTempFile(".ini");
@@ -870,7 +1060,7 @@ namespace PEBakery.Core.Tests.Command
 
         private static void WriteTemplate(
             EngineState s, CodeType type,
-            string rawCode, string testFile, string sampleStr, string compStr,
+            string rawCode, string testFile, string sampleStr, string expectStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(testFile))
@@ -888,13 +1078,13 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.Eval(s, rawCode, type, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
-                    string dest;
+                    string resultStr;
                     using (StreamReader r = new StreamReader(testFile, Encoding.UTF8))
                     {
-                        dest = r.ReadToEnd();
+                        resultStr = r.ReadToEnd();
                     }
 
-                    Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
                 }
             }
             finally
@@ -906,7 +1096,7 @@ namespace PEBakery.Core.Tests.Command
 
         private static void WriteOptTemplate(
             EngineState s, CodeType? opType,
-            List<string> rawCodes, string testFile, string sampleStr, string compStr,
+            List<string> rawCodes, string testFile, string sampleStr, string expectStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(testFile))
@@ -923,13 +1113,13 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.EvalOptLines(s, opType, rawCodes, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
-                    string dest;
+                    string resultStr;
                     using (StreamReader r = new StreamReader(testFile, Encoding.UTF8))
                     {
-                        dest = r.ReadToEnd();
+                        resultStr = r.ReadToEnd();
                     }
 
-                    Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
                 }
             }
             finally
@@ -941,7 +1131,7 @@ namespace PEBakery.Core.Tests.Command
 
         private static void MergeTemplate(
             EngineState s, CodeType type,
-            string rawCode, string srcFile, string srcSampleStr, string destFile, string destSampleStr, string compStr,
+            string rawCode, string srcFile, string srcSampleStr, string destFile, string destSampleStr, string expectStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(srcFile))
@@ -972,7 +1162,7 @@ namespace PEBakery.Core.Tests.Command
                         dest = r.ReadToEnd();
                     }
 
-                    Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                    Assert.IsTrue(dest.Equals(expectStr, StringComparison.Ordinal));
                 }
             }
             finally
