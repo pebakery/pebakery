@@ -973,7 +973,7 @@
                         <CheckBox Margin="0, 0, 0, 3" 
                                   VerticalContentAlignment="Center"
                                   Content="Auto compact .ini files in some commands (e.g. IniWrite, IniDelete, IniMerge)"
-                                  IsChecked="{Binding AutoCompactIniWriteCommand}" />
+                                  IsChecked="{Binding CompatAutoCompactIniWriteCommand}" />
                     </StackPanel>
 
                     <TextBlock Margin="0, 3, 0, 3"

@@ -1025,7 +1025,7 @@ namespace PEBakery.WPF
     public static class MainViewCommands
     {
         #region Main Buttons
-        public static readonly RoutedCommand ProjectBuildStartCommand = new RoutedUICommand("Build a Project", "ProjectBuildStart", typeof(MainViewCommands),
+        public static readonly RoutedCommand ProjectBuildStartCommand = new RoutedUICommand("Build the Selected Project", "ProjectBuildStart", typeof(MainViewCommands),
             new InputGestureCollection
             {
                 new KeyGesture(Key.F10),
