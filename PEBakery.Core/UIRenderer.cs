@@ -111,6 +111,7 @@ namespace PEBakery.Core
         /// <param name="sc">Script to get interface.</param>
         /// <param name="sectionName">Set to null for auto detection.</param>
         /// <returns></returns>
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, string sectionName = null)
         {
             // Check if script has custom interface section
@@ -137,6 +138,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Render
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void Render()
         {
             if (UICtrls == null) // This script does not have 'Interface' section
@@ -772,6 +774,7 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
+        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void Image_Click_OpenImage(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;

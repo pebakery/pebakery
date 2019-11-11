@@ -238,6 +238,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include=".editorconfig" />
     <None Include="App.manifest">
       <SubType>Designer</SubType>
     </None>

@@ -1475,6 +1475,7 @@ namespace PEBakery.WPF
                     return;
 
                 OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
+                OnPropertyUpdate(nameof(UICtrlBevelCaption));
                 OnPropertyUpdate(nameof(UICtrlBevelFontSize));
                 OnPropertyUpdate(nameof(UICtrlBevelFontWeightIndex));
                 OnPropertyUpdate(nameof(UICtrlBevelFontStyleIndex));
