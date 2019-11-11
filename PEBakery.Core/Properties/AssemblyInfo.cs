@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PEBakery.Core")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("PEBakery Team")]
+[assembly: AssemblyCompany("Team PEBakery")]
 [assembly: AssemblyProduct("PEBakery.Core")]
 [assembly: AssemblyCopyright("Copyright © 2016-2019")]
 [assembly: AssemblyTrademark("")]
@@ -30,5 +30,5 @@ using System.Runtime.InteropServices;
 // 모든 값을 지정하거나 아래와 같이 '*'를 사용하여 빌드 번호 및 수정 번호를
 // 기본값으로 할 수 있습니다.
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.9.6.0")]
-[assembly: AssemblyFileVersion("0.9.6.0")]
+[assembly: AssemblyVersion("0.9.6.1")]
+[assembly: AssemblyFileVersion("0.9.6.1")]
