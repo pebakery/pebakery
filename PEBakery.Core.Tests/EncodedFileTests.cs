@@ -438,9 +438,9 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
-        #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
+        #region ReadFileInfo, ReadLogoInfo, ReadFolderInfo, ReadAllFilesInfo
         [TestMethod]
-        public void GetFileInfo()
+        public void ReadFileInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -454,7 +454,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, folderExample, fileName, detail);
                 Assert.IsTrue(report.Success);
                 Assert.IsTrue(comp.Equals(report.Result));
             }
@@ -512,8 +512,7 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void GetLogoInfo()
+        public void ReadLogoInfo()
         {
             EngineState s = EngineTests.CreateEngineState();
             string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
@@ -527,7 +526,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(testScript, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadLogoInfo(testScript, detail);
                 if (comp == null)
                 {
                     Assert.IsFalse(report.Success);
@@ -562,8 +561,7 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void GetFolderInfo()
+        public void ReadFolderInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -577,7 +575,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
-                ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(sc, FolderExample, detail);
                 Assert.IsTrue(report.Success);
                 EncodedFileInfo[] infos = report.Result;
                 Assert.AreEqual(comps.Count, infos.Length);
@@ -627,8 +625,7 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void GetAllFilesInfo()
+        public void ReadAllFilesInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -642,7 +639,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool inspectEncodedSize, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                EncodedFile.ReadFileInfoOptions opts = new EncodedFile.ReadFileInfoOptions
+                ReadFileInfoOptions opts = new ReadFileInfoOptions
                 {
                     InspectEncodeMode = inspectEncodedSize,
                 };

@@ -52,6 +52,29 @@ using System.Windows.Media;
 // ReSharper disable InconsistentNaming
 namespace PEBakery.WPF
 {
+    #region UIControlModifiedEvent
+    public class UIControlModifiedEventArgs : EventArgs
+    {
+        public UIControl UIControl { get; set; }
+        public List<UIControl> UIControls { get; set; }
+        public bool MultiSelect => UIControls != null;
+        public bool InfoNotUpdated { get; set; }
+
+        public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
+        {
+            UIControl = uiCtrl;
+            InfoNotUpdated = infoNotUpdated;
+        }
+        public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
+        {
+            UIControls = uiCtrls;
+            InfoNotUpdated = infoNotUpdated;
+        }
+    }
+
+    public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
+    #endregion
+
     #region ScriptEditWindow
     // ReSharper disable once RedundantExtendsListEntry
     public partial class ScriptEditWindow : Window
@@ -245,7 +268,7 @@ namespace PEBakery.WPF
                 m.InvokeUIControlEvent(true);
         }
 
-        private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
+        private void ViewModel_UIControlModified(object sender, UIControlModifiedEventArgs e)
         {
             if (e.MultiSelect)
             {
@@ -453,26 +476,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Events
-        public class UIControlModifiedEventArgs : EventArgs
-        {
-            public UIControl UIControl { get; set; }
-            public List<UIControl> UIControls { get; set; }
-            public bool MultiSelect => UIControls != null;
-            public bool InfoNotUpdated { get; set; }
-
-            public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
-            {
-                UIControl = uiCtrl;
-                InfoNotUpdated = infoNotUpdated;
-            }
-            public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
-            {
-                UIControls = uiCtrls;
-                InfoNotUpdated = infoNotUpdated;
-            }
-        }
-        public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
+        #region Event
         public event UIControlModifiedHandler UIControlModified;
         #endregion
 
@@ -2701,7 +2705,7 @@ namespace PEBakery.WPF
 
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
-                    ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
+                    ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
                     if (!report.Success)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -3835,7 +3839,7 @@ namespace PEBakery.WPF
                     if (fi.EncodeMode != null)
                         return;
 
-                    ResultReport<EncodedFileInfo> report = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                    ResultReport<EncodedFileInfo> report = await EncodedFile.ReadFileInfoAsync(Script, dirName, fileName, true);
                     if (report.Success)
                     { // Success
                         EncodedFileInfo newInfo = report.Result;
@@ -3901,7 +3905,7 @@ namespace PEBakery.WPF
             // General
             if (EncodedFile.ContainsLogo(Script))
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(Script, true);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadLogoInfo(Script, true);
                 if (!report.Success)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -4003,7 +4007,7 @@ namespace PEBakery.WPF
             AttachedFolders.Clear();
             AttachedFiles.Clear();
 
-            EncodedFile.ReadFileInfoOptions opts = new EncodedFile.ReadFileInfoOptions
+            ReadFileInfoOptions opts = new ReadFileInfoOptions
             {
                 IncludeAuthorEncoded = AttachAdvancedViewEnabled,
                 IncludeInterfaceEncoded = AttachAdvancedViewEnabled,
