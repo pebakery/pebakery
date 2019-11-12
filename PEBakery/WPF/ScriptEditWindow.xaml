@@ -1401,33 +1401,17 @@
                             </StackPanel>
                         </StackPanel>
                         <!-- Advanced View -->
-                        <StackPanel Margin="0, 0, 0, 10">
-                            <DockPanel Margin="0, 0, 0, 5">
-                                <CheckBox DockPanel.Dock="Right"
-                                          VerticalAlignment="Bottom"
-                                          Command="{Binding EnableAdvancedViewCommand}"
-                                          IsChecked="{Binding AttachEnableAdvancedView}"/>
-                                <TextBlock DockPanel.Dock="Left"
-                                           FontWeight="Bold"
-                                           FontSize="13"
-                                           Text="Advanced View"/>
-                            </DockPanel>
-                            <Separator Margin="0, 0, 0, 5"
-                                       SnapsToDevicePixels="True"
-                                       BorderBrush="Black"
-                                       BorderThickness="2"/>
-                            <StackPanel Margin="3, 0, 3, 0"
-                                        IsEnabled="{Binding AttachEnableAdvancedView}">
-                                <CheckBox Height="20" Content="AuthorEncoded"
-                                          VerticalContentAlignment="Top"
-                                          Command="{Binding EnableAuthorEncodedCommand}"
-                                          IsChecked="{Binding AttachIncludeAuthorEncoded}"/>
-                                <CheckBox Height="20" Content="InterfaceEncoded"
-                                          VerticalContentAlignment="Top"
-                                          Command="{Binding EnableInterfaceEncodedCommand}"
-                                          IsChecked="{Binding AttachIncludeInterfaceEncoded}"/>
-                            </StackPanel>
-                        </StackPanel>
+                        <DockPanel Margin="0, 0, 0, 10"
+                                   ToolTip="Intended for expert users only!">
+                            <CheckBox DockPanel.Dock="Right"
+                                      VerticalAlignment="Bottom"
+                                      Command="{Binding EnableAdvancedViewCommand}"
+                                      IsChecked="{Binding AttachAdvancedViewEnabled}"/>
+                            <TextBlock DockPanel.Dock="Left"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Text="Advanced View"/>
+                        </DockPanel>
                     </StackPanel>
                     <!-- List of Folders -->
                     <ListView Grid.Row="0" Grid.Column="1"

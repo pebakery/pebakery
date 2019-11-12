@@ -1771,26 +1771,13 @@ namespace PEBakery.WPF
             set => SetProperty(ref _attachProgressIndeterminate, value);
         }
 
-        private bool _attachEnableAdvancedView = false;
-        public bool AttachEnableAdvancedView
+        private bool _attachAdvancedViewEnabled = false;
+        public bool AttachAdvancedViewEnabled
         {
-            get => _attachEnableAdvancedView;
-            set => SetProperty(ref _attachEnableAdvancedView, value);
+            get => _attachAdvancedViewEnabled;
+            set => SetProperty(ref _attachAdvancedViewEnabled, value);
         }
 
-        private bool _attachIncludeInterfaceEncoded = false;
-        public bool AttachIncludeInterfaceEncoded
-        {
-            get => _attachIncludeInterfaceEncoded;
-            set => SetProperty(ref _attachIncludeInterfaceEncoded, value);
-        }
-
-        private bool _attachIncludeAuthorEncoded = false;
-        public bool AttachIncludeAuthorEncoded
-        {
-            get => _attachIncludeAuthorEncoded;
-            set => SetProperty(ref _attachIncludeAuthorEncoded, value);
-        }
         #endregion
 
         #region InvokeUIControlEvent
@@ -3888,72 +3875,14 @@ namespace PEBakery.WPF
 
         #region Command - Attachment (Advanced)
         private ICommand _enableAdvancedViewCommand;
-        private ICommand _enableAuthorEncodedCommand;
-        private ICommand _enableInterfaceEncodedCommand;
         public ICommand EnableAdvancedViewCommand => GetRelayCommand(ref _enableAdvancedViewCommand, "Enable advanced view", EnableAdvancedViewCommand_Execute, CanExecuteFunc);
-        public ICommand EnableAuthorEncodedCommand => GetRelayCommand(ref _enableAuthorEncodedCommand, "Enable [AuthorEncoded]", EnableAuthorEncodedCommand_Execute, AdvancedView_CanExecute);
-        public ICommand EnableInterfaceEncodedCommand => GetRelayCommand(ref _enableInterfaceEncodedCommand, "Enable [InterfaceEncoded]", EnableInterfaceEncodedCommand_Execute, AdvancedView_CanExecute);
-
-        private bool AdvancedView_CanExecute(object parameter)
-        {
-            return CanExecuteCommand && AttachEnableAdvancedView;
-        }
 
         private void EnableAdvancedViewCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                if (AttachEnableAdvancedView)
-                {
-                    MessageBoxResult result = MessageBox.Show(_window,
-                        "Advanced view allows access resources embedded in the script's interface and is intended for expert users only!\r\nIf you do not understand the inner workings of PEBakery's interface and attachment handling you can easily corrupt your script!\r\n\r\nAre you sure you want to enable advanced view?",
-                        "Warning",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    if (result == MessageBoxResult.No)
-                        AttachEnableAdvancedView = false;
-                }
-                else
-                { // Turn off all advanced view
-                    AttachIncludeAuthorEncoded = false;
-                    AttachIncludeInterfaceEncoded = false;
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void EnableAuthorEncodedCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
                 ReadScriptAttachment();
-
-                if (AttachIncludeAuthorEncoded)
-                    SelectScriptAttachedFolder(ScriptSection.Names.AuthorEncoded);
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void EnableInterfaceEncodedCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                ReadScriptAttachment();
-
-                if (AttachIncludeInterfaceEncoded)
-                    SelectScriptAttachedFolder(ScriptSection.Names.InterfaceEncoded);
             }
             finally
             {
@@ -4016,7 +3945,6 @@ namespace PEBakery.WPF
 
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
-
         }
 
         /// <summary>
@@ -4075,14 +4003,14 @@ namespace PEBakery.WPF
             AttachedFolders.Clear();
             AttachedFiles.Clear();
 
-            EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
+            EncodedFile.ReadFileInfoOptions opts = new EncodedFile.ReadFileInfoOptions
             {
-                IncludeAuthorEncoded = AttachIncludeAuthorEncoded,
-                IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
+                IncludeAuthorEncoded = AttachAdvancedViewEnabled,
+                IncludeInterfaceEncoded = AttachAdvancedViewEnabled,
                 InspectEncodeMode = false,
             };
 
-            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(Script, opts);
+            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(Script, opts);
             if (!report.Success)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -4098,10 +4026,11 @@ namespace PEBakery.WPF
                 files.AddRange(kv.Value);
             }
 
+            // Reading encode mode form encoded file requires decompression of footer.
             Parallel.ForEach(files, fi =>
             {
                 if (fi.EncodedSize <= EncodedFile.DecodeInMemorySizeLimit)
-                    fi.EncodeMode = EncodedFile.GetEncodeMode(Script, fi.FolderName, fi.FileName, true);
+                    fi.EncodeMode = EncodedFile.ReadEncodeMode(Script, fi.FolderName, fi.FileName, true);
             });
 
             // Attachment

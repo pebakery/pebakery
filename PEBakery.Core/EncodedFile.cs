@@ -901,44 +901,49 @@ namespace PEBakery.Core
             return new ResultReport<EncodedFileInfo[]>(true, infos.ToArray(), null);
         }
 
-        public struct GetFileInfoOptions
+        public struct ReadFileInfoOptions
         {
             public bool IncludeAuthorEncoded;
             public bool IncludeInterfaceEncoded;
             public bool InspectEncodeMode;
         }
 
-        public static Task<ResultReport<Dictionary<string, List<EncodedFileInfo>>>> GetAllFilesInfoAsync(Script sc, GetFileInfoOptions opts)
+        public static Task<ResultReport<Dictionary<string, List<EncodedFileInfo>>>> ReadAllFilesInfoAsync(Script sc, ReadFileInfoOptions opts)
         {
-            return Task.Run(() => GetAllFilesInfo(sc, opts));
+            return Task.Run(() => ReadAllFilesInfo(sc, opts));
         }
 
-        public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> GetAllFilesInfo(Script sc, GetFileInfoOptions opts)
+        public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> ReadAllFilesInfo(Script sc, ReadFileInfoOptions opts)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
-            if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null); // Return empty dict
 
-            List<string> folderNames = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
-            int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
-            if (aeIdx != -1)
+            // Encoded folders to check
+            List<string> folderNames = new List<string>();
+            // Check EncodedFolders (Must come first)
+            if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
-                folderNames.RemoveAt(aeIdx);
-            }
+                folderNames.AddRange(IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines));
+                int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
+                if (aeIdx != -1)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
+                    folderNames.RemoveAt(aeIdx);
+                }
 
-            int ieIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
-            if (ieIdx != -1)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
-                folderNames.RemoveAt(ieIdx);
+                int ieIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
+                if (ieIdx != -1)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
+                    folderNames.RemoveAt(ieIdx);
+                }
             }
-
+            // Check AuthorEncoded
             if (opts.IncludeAuthorEncoded && sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 folderNames.Add(ScriptSection.Names.AuthorEncoded);
+            // Check IterfaceEncoded
             if (opts.IncludeInterfaceEncoded && sc.Sections.ContainsKey(ScriptSection.Names.InterfaceEncoded))
                 folderNames.Add(ScriptSection.Names.InterfaceEncoded);
 
@@ -997,12 +1002,12 @@ namespace PEBakery.Core
             return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null);
         }
 
-        public static Task<EncodeMode> GetEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
+        public static Task<EncodeMode> ReadEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
         {
-            return Task.Run(() => GetEncodeMode(sc, folderName, fileName, inMem));
+            return Task.Run(() => ReadEncodeMode(sc, folderName, fileName, inMem));
         }
 
-        public static EncodeMode GetEncodeMode(Script sc, string folderName, string fileName, bool inMem = false)
+        public static EncodeMode ReadEncodeMode(Script sc, string folderName, string fileName, bool inMem = false)
         {
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (inMem)

@@ -642,11 +642,11 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool inspectEncodedSize, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
+                EncodedFile.ReadFileInfoOptions opts = new EncodedFile.ReadFileInfoOptions
                 {
                     InspectEncodeMode = inspectEncodedSize,
                 };
-                ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(sc, opts);
+                ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(sc, opts);
                 Assert.IsTrue(report.Success);
                 Dictionary<string, List<EncodedFileInfo>> infoDict = report.Result;
                 Assert.AreEqual(compDict.Count, infoDict.Count);
