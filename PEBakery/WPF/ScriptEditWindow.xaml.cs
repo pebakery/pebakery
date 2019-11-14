@@ -481,6 +481,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Basic
+        private readonly object _scriptLock = new object();
         public Script Script;
         private readonly Window _window;
         public MainViewModel MainViewModel { get; }
@@ -2946,7 +2947,8 @@ namespace PEBakery.WPF
         {
             async void InternalDeleteInterfaceEncodedFile(string delFileName)
             {
-                ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                // ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                ResultReport<Script> report = EncodedFile.DeleteFile(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
                 if (report.Success)
                     Script = report.Result;
                 else

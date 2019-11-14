@@ -352,7 +352,8 @@ namespace PEBakery.Ini
 
             // Append IniKey into existing file
             bool result = false;
-            string tempPath = FileHelper.GetTempFile();
+            string ext = Path.GetExtension(filePath);
+            string tempPath = FileHelper.GetTempFile(ext);
             try
             {
                 Encoding encoding = EncodingHelper.DetectBom(filePath);
@@ -1307,7 +1308,8 @@ namespace PEBakery.Ini
             if (!File.Exists(filePath))
                 return processed; // All False
 
-            string tempPath = FileHelper.GetTempFile();
+            string ext = Path.GetExtension(filePath);
+            string tempPath = FileHelper.GetTempFile(ext);
             try
             {
                 Encoding encoding = EncodingHelper.DetectBom(filePath);
@@ -1315,9 +1317,8 @@ namespace PEBakery.Ini
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
-                    {
-                        r.Close();
-                        return processed; // All False
+                    { // All False
+                        return processed;
                     }
 
                     string rawLine;

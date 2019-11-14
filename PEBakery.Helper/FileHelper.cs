@@ -30,6 +30,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -448,6 +449,10 @@ namespace PEBakery.Helper
         #endregion
 
         #region GetFilesEx
+        /// <summary>
+        /// Search for files while ignoring UnauthorizedAccessException
+        /// </summary>
+        /// <returns></returns>
         public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
@@ -546,6 +551,10 @@ namespace PEBakery.Helper
         #endregion
 
         #region DirectoryDeleteEx
+        /// <summary>
+        /// Delete a directory recursively, including readonly and hidden file/dirs.
+        /// </summary>
+        /// <param name="path"></param>
         public static void DirectoryDeleteEx(string path)
         {
             DirectoryInfo root = new DirectoryInfo(path);
@@ -714,16 +723,23 @@ namespace PEBakery.Helper
         /// </summary>
         public static Version WindowsVersion()
         {
-            // Environment.OSVersion is deprecated
-            // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
-            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-            string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
-            int major = fvi.FileMajorPart;
-            int minor = fvi.FileMinorPart;
-            int build = fvi.FileBuildPart;
-            int revision = fvi.FilePrivatePart;
-            return new Version(major, minor, build, revision);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Environment.OSVersion is deprecated
+                // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
+                int major = fvi.FileMajorPart;
+                int minor = fvi.FileMinorPart;
+                int build = fvi.FileBuildPart;
+                int revision = fvi.FilePrivatePart;
+                return new Version(major, minor, build, revision);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
         #endregion
 
