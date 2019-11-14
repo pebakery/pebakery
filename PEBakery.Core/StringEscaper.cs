@@ -51,7 +51,7 @@ namespace PEBakery.Core
 
         #region PathSecurityCheck
         /// <summary>
-        /// 
+        /// Check if a path is safe to write. Allows wildcard.
         /// </summary>
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
@@ -62,12 +62,44 @@ namespace PEBakery.Core
 
             // PathSecurityCheck should be able to process paths like [*.exe]
             // So remove filename if necessary.
+            /*
             string fullPath;
+            int lastDirSepIdx = path.LastIndexOf('\\');
             int lastWildcardIdx = path.IndexOfAny(new char[] { '*', '?' });
-            if (lastWildcardIdx != -1 && path.LastIndexOf('\\') < lastWildcardIdx)
-                fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
+            if (lastDirSepIdx == -1)
+            { // Ex) ABC.* -> No directory path separator
+
+                fullPath = Environment.CurrentDirectory;
+            }
+            else if (lastWildcardIdx != -1 && lastDirSepIdx < lastWildcardIdx)
+            { // Ex) AB\CD\DE.*
+                string dirPath = path.Substring(0, lastDirSepIdx);
+                fullPath = Path.GetFullPath(dirPath);
+            }
             else
+            { // Valid Win32 path
                 fullPath = Path.GetFullPath(path);
+            }
+            */
+
+            string fullPath;
+            int lastDirSepIdx = path.LastIndexOf('\\');
+            int lastWildcardIdx = path.IndexOfAny(new char[] { '*', '?' });
+            if (lastWildcardIdx != -1)
+            { // With wildcard
+                fullPath = FileHelper.GetDirNameEx(path);
+
+                // If the directory path contains wildcard, the path is invalid.
+                if (fullPath.IndexOfAny(new char[] { '*', '?' }) != -1)
+                {
+                    errorMsg = $"Directory path [{fullPath}] contains one or more wildcards";
+                    return false;
+                }
+            }
+            else
+            { // Without wildcard
+                fullPath = Path.GetFullPath(path);
+            }
 
             foreach (string f in ForbiddenPaths)
             {

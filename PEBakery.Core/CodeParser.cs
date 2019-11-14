@@ -2202,7 +2202,9 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
+                            {
                                 inParams.Add(arg.Substring(inKey.Length));
+                            }
                             else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 string varKey = arg.Substring(outKey.Length);
@@ -2211,7 +2213,9 @@ namespace PEBakery.Core
                                 outParams.Add(varKey);
                             }
                             else
+                            {
                                 throw new InvalidCommandException($"Parameter of [{type}] must start with [In=] or [Out=]", rawCode);
+                            }
                         }
 
                         return new CodeInfo_RunExec(scriptFile, sectionName, inParams, outParams);

@@ -89,7 +89,8 @@ namespace PEBakery.Core.Commands
                 }
                 else // DestPath not exist, or it is a file
                 {
-                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
+                    string destDir = FileHelper.GetDirNameEx(destPath);
+                    Directory.CreateDirectory(destDir);
                     if (destPathExists)
                     {
                         if (info.Preserve)

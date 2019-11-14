@@ -38,11 +38,12 @@ using System.Text;
 namespace PEBakery.Core.Tests
 {
     [TestClass]
+    [TestCategory(nameof(StringEscaper))]
     public class StringEscaperTests
     {
         #region Escape
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void Escape()
         {
             Escape_1();
@@ -93,7 +94,7 @@ namespace PEBakery.Core.Tests
 
         #region QuoteEscape
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void QuoteEscape()
         {
             QuoteEscape_1();
@@ -142,7 +143,7 @@ namespace PEBakery.Core.Tests
 
         #region Unescape
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void Unescape()
         {
             Unescape_1();
@@ -215,7 +216,7 @@ namespace PEBakery.Core.Tests
 
         #region QuoteUnescape
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void QuoteUnescape()
         {
             QuoteUnescape_1();
@@ -253,7 +254,7 @@ namespace PEBakery.Core.Tests
 
         #region ExpandSectionParams
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void ExpandSectionParams()
         {
             ExpandSectionParams_1();
@@ -378,7 +379,7 @@ namespace PEBakery.Core.Tests
 
         #region ExpandVariables
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void ExpandVariables()
         {
             ExpandVariables_1();
@@ -488,7 +489,7 @@ namespace PEBakery.Core.Tests
 
         #region Preprocess
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void Preprocess()
         {
             Preprocess_1();
@@ -599,7 +600,6 @@ namespace PEBakery.Core.Tests
 
         #region PathSecurityCheck
         [TestMethod]
-        [TestCategory("StringEscaper")]
         public void PathSecurityCheck()
         {
             void Template(string path, bool expected)
@@ -615,14 +615,21 @@ namespace PEBakery.Core.Tests
                 Template(Path.Combine(normalDir, "PEBakery.exe"), true);
                 Template(Path.Combine(normalDir, "Wildcard.*"), true);
                 Template(Path.Combine(normalDir, "Wild*.???"), true);
-                Template("C:\\", true);
-                Template(string.Empty, true);
             }
             finally
             {
                 if (Directory.Exists(normalDir))
                     Directory.Delete(normalDir, true);
             }
+
+            // Valid paths
+            Template("C:\\", true);
+            Template("Wildcard.*", true);
+            Template("Wild*.???", true);
+            Template(string.Empty, true);
+
+            // Invalid paths
+            Template("*\\program.exe", false);
 
             // %WinDir%
             string winDir = Environment.GetEnvironmentVariable("WinDir");
@@ -651,7 +658,7 @@ namespace PEBakery.Core.Tests
 
         #region IsPathValid
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void IsPathValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
@@ -679,7 +686,7 @@ namespace PEBakery.Core.Tests
 
         #region IsFileNameValid
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void IsFileNameValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
@@ -707,7 +714,7 @@ namespace PEBakery.Core.Tests
 
         #region PackRegBinary
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void PackRegBinary()
         {
             PackRegBinary_1();
@@ -733,7 +740,7 @@ namespace PEBakery.Core.Tests
 
         #region UnpackRegBinary
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void UnpackRegBinary()
         {
             UnpackRegBinary_1();
@@ -751,7 +758,7 @@ namespace PEBakery.Core.Tests
 
         #region PackRegMultiBinary
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void PackRegMultiBinary()
         {
             PackRegMultiBinary_1();
@@ -773,7 +780,7 @@ namespace PEBakery.Core.Tests
 
         #region PackRegMultiString
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void PackRegMultiString()
         {
             string[] src =
@@ -790,7 +797,7 @@ namespace PEBakery.Core.Tests
 
         #region UnpackRegMultiString
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void UnpackRegMultiString()
         {
             const string src = "C:\\#$zHello#$zWorld";
@@ -809,7 +816,7 @@ namespace PEBakery.Core.Tests
 
         #region List as Concatinated String
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void UnpackListStr()
         {
             void Template(string listStr, string delimiter, List<string> compList)
@@ -873,7 +880,7 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        [TestCategory("StringEscaper")]
+        
         public void PackListStr()
         {
             void Template(List<string> list, string delimiter, string comp)

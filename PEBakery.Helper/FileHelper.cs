@@ -218,40 +218,21 @@ namespace PEBakery.Helper
         #region Path Operations
         /// <summary>
         /// Extends Path.GetDirectoryName().
-        /// If returned dir path is empty, change it to "."
+        /// Prevents returning of null, by calling Path.GetFullPath().
+        /// Also allows wildcard in filename.
         /// </summary>
-        /// <param name="path"></param>
         /// <returns></returns>
         public static string GetDirNameEx(string path)
         {
-            string dirName = Path.GetDirectoryName(path);
-            if (dirName == null)
-                return null;
-            if (dirName.Length == 0) // e.g. Hello.txt
-                return "."; // Consider path as [.\Hello.txt].
-            return dirName;
-        }
-
-        /// <summary>
-        /// Get Parent directory name, not full path.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string GetParentDirName(string path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            string dirName = Path.GetDirectoryName(path);
-            if (dirName == null)
-                return string.Empty;
-
-            int idx = dirName.LastIndexOf(Path.DirectorySeparatorChar);
-            if (idx != -1)
-                dirName = dirName.Substring(idx + 1, dirName.Length - (idx + 1));
+            int lastDirSepIdx = path.LastIndexOf('\\');
+            if (lastDirSepIdx == -1)
+            { // Ex) ABC.*, ABC.so -> No directory separator
+                return ".";
+            }
             else
-                dirName = string.Empty;
-
-            return dirName;
+            { // Ex) AB\CD\EF.so, AB\?.exe
+                return path.Substring(0, lastDirSepIdx);
+            }
         }
 
         /// <summary>

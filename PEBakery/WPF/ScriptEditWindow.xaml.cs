@@ -2945,9 +2945,8 @@ namespace PEBakery.WPF
         }
         private string DeleteInterfaceEncodedFile(UIControl uiCtrl)
         {
-            async void InternalDeleteInterfaceEncodedFile(string delFileName)
+            void InternalDeleteInterfaceEncodedFile(string delFileName)
             {
-                // ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
                 ResultReport<Script> report = EncodedFile.DeleteFile(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
                 if (report.Success)
                     Script = report.Result;

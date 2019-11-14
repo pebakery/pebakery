@@ -36,6 +36,8 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory(nameof(PEBakery.Core.Tests.Command))]
+    [TestCategory(nameof(PEBakery.Core.Commands.CommandFile))]
     [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandFileTests
     {
@@ -46,8 +48,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCopy
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+        
         public void FileCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -162,8 +163,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileDelete
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void FileDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -246,8 +247,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileRename, FileMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void FileRename()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -295,8 +296,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCreateBlank
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void FileCreateBlank()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -345,8 +346,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileSize
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void FileSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -372,8 +373,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileVersion
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void FileVersion()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -398,8 +399,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirCopy
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void DirCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -486,8 +487,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirDelete
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void DirDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -545,8 +546,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void DirMove()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -590,8 +591,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMake
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void DirMake()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -636,8 +637,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirSize
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void DirSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -665,8 +666,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PathMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+       
+       
         public void PathMove()
         {
             EngineState s = EngineTests.CreateEngineState();

@@ -23,7 +23,7 @@ namespace PEBakery.Core.ViewModels
 
     public class DebugViewModel : ViewModelBase
     {
-        public event DebugWindowOpenEventHandler DebugWindowOpened;
+        // public event DebugWindowOpenEventHandler DebugWindowOpened;
 
         public static AutoResetEvent AutoEvent = new AutoResetEvent(false);
 
