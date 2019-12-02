@@ -48,7 +48,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCopy
         [TestMethod]
-        
         public void FileCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -158,6 +157,8 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},NOWARN", "C.txt", null, ErrorCheck.Success, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE", "C.txt", null, ErrorCheck.Overwrite, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE,NOWARN", "C.txt", null, ErrorCheck.Success, true, true);
+
+            SingleTemplate($@"FileCopy,{pbSrcDir}\A.txt,{destDir}\NonExistDir\", "A.txt", null, ErrorCheck.Warning, false, false);
         }
         #endregion
 

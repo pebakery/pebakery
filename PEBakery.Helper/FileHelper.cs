@@ -30,6 +30,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -246,11 +247,11 @@ namespace PEBakery.Helper
             // To decreate amount of exception throwed, check drive by ourself and use File.Copy as fallback.
             string fullSrcPath = Path.GetFullPath(srcPath);
             string fullDestPath = Path.GetFullPath(destPath);
-            
+
             string srcDrive = Path.GetPathRoot(fullSrcPath);
             string destDrive = Path.GetPathRoot(fullDestPath);
             if (srcDrive.Equals(destDrive, StringComparison.Ordinal))
-            {                
+            {
                 try
                 {
                     // File.Copy removes ACL and ADS.
@@ -259,8 +260,8 @@ namespace PEBakery.Helper
                 }
                 catch (IOException)
                 { // Failsafe
-                  // File.Replace throws IOException if src and dest files are in different volume.
-                  // In this case, try File.Copy as fallback.
+                    // File.Replace throws IOException if src and dest files are in different volume.
+                    // In this case, try File.Copy as fallback.
                     File.Copy(srcPath, destPath, true);
                     File.Delete(srcPath);
                 }
@@ -274,10 +275,21 @@ namespace PEBakery.Helper
         #endregion
 
         #region GetFileSize
-        public static long GetFileSize(string srcFile)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long GetFileSize(string srcFile) => new FileInfo(srcFile).Length;
+        #endregion
+
+        #region IsPathNonExistDir
+        /// <summary>
+        /// Is the given path is really non-existing directory path? 
+        /// Ex) D:\Test\
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPathNonExistDir(string path)
         {
-            FileInfo info = new FileInfo(srcFile);
-            return info.Length;
+            return !Directory.Exists(path) && path.EndsWith("\\", StringComparison.Ordinal) && Path.GetFileName(path).Length == 0;
         }
         #endregion
 

@@ -43,7 +43,6 @@ namespace PEBakery.Core.Tests
     {
         #region Escape
         [TestMethod]
-        
         public void Escape()
         {
             Escape_1();
@@ -52,7 +51,7 @@ namespace PEBakery.Core.Tests
             Escape_4();
         }
 
-        public void Escape_1()
+        public static void Escape_1()
         {
             string src = SampleString;
             string dest = StringEscaper.Escape(src, false, false);
@@ -60,7 +59,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Escape_2()
+        public static void Escape_2()
         {
             string src = SampleString;
             string dest = StringEscaper.Escape(src, true, false);
@@ -68,7 +67,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Escape_3()
+        public static void Escape_3()
         {
             string src = SampleString;
             string dest = StringEscaper.Escape(src, true, true);
@@ -76,7 +75,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Escape_4()
+        public static void Escape_4()
         {
             string[] srcStrs = { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> destStrs = StringEscaper.Escape(srcStrs, true);
@@ -94,7 +93,6 @@ namespace PEBakery.Core.Tests
 
         #region QuoteEscape
         [TestMethod]
-        
         public void QuoteEscape()
         {
             QuoteEscape_1();
@@ -102,7 +100,7 @@ namespace PEBakery.Core.Tests
             QuoteEscape_3();
         }
 
-        public void QuoteEscape_1()
+        public static void QuoteEscape_1()
         {
             string src = SampleString;
             string dest = StringEscaper.QuoteEscape(src, false, false);
@@ -110,7 +108,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void QuoteEscape_2()
+        public static void QuoteEscape_2()
         {
             string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> dests = StringEscaper.QuoteEscape(srcs);
@@ -125,7 +123,7 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void QuoteEscape_3()
+        public static void QuoteEscape_3()
         {
             string[] srcStrs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> destStrs = StringEscaper.QuoteEscape(srcStrs);
@@ -143,7 +141,6 @@ namespace PEBakery.Core.Tests
 
         #region Unescape
         [TestMethod]
-        
         public void Unescape()
         {
             Unescape_1();
@@ -154,39 +151,39 @@ namespace PEBakery.Core.Tests
             Unescape_6();
         }
 
-        public void Unescape_1()
+        public static void Unescape_1()
         {
             const string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, false);
-            string comp = StringEscaperTests.SampleString;
+            string comp = SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Unescape_2()
+        public static void Unescape_2()
         {
             const string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, true);
-            string comp = StringEscaperTests.SampleString;
+            string comp = SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Unescape_3()
+        public static void Unescape_3()
         {
             const string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, false);
-            string comp = StringEscaperTests.SampleString;
+            string comp = SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Unescape_4()
+        public static void Unescape_4()
         {
             const string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, true);
-            string comp = StringEscaperTests.SampleString;
+            string comp = SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Unescape_5()
+        public static void Unescape_5()
         {
             string[] srcs = new string[]
             {
@@ -206,7 +203,7 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void Unescape_6()
+        public static void Unescape_6()
         {
             const string src = "Incomplete#$";
             string dest = StringEscaper.Unescape(src);
@@ -216,22 +213,21 @@ namespace PEBakery.Core.Tests
 
         #region QuoteUnescape
         [TestMethod]
-        
         public void QuoteUnescape()
         {
             QuoteUnescape_1();
             QuoteUnescape_2();
         }
 
-        public void QuoteUnescape_1()
+        public static void QuoteUnescape_1()
         {
             string src = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
             string dest = StringEscaper.QuoteUnescape(src);
-            string comp = StringEscaperTests.SampleString;
+            string comp = SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void QuoteUnescape_2()
+        public static void QuoteUnescape_2()
         {
             string[] srcs = new string[]
             {
@@ -254,7 +250,6 @@ namespace PEBakery.Core.Tests
 
         #region ExpandSectionParams
         [TestMethod]
-        
         public void ExpandSectionParams()
         {
             ExpandSectionParams_1();
@@ -266,7 +261,7 @@ namespace PEBakery.Core.Tests
             ExpandSectionParams_7();
         }
 
-        public void ExpandSectionParams_1()
+        public static void ExpandSectionParams_1()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -280,7 +275,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_2()
+        public static void ExpandSectionParams_2()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -293,7 +288,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_3()
+        public static void ExpandSectionParams_3()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -306,7 +301,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_4()
+        public static void ExpandSectionParams_4()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -319,7 +314,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_5()
+        public static void ExpandSectionParams_5()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -347,7 +342,7 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_6()
+        public static void ExpandSectionParams_6()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -364,7 +359,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandSectionParams_7()
+        public static void ExpandSectionParams_7()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -379,7 +374,6 @@ namespace PEBakery.Core.Tests
 
         #region ExpandVariables
         [TestMethod]
-        
         public void ExpandVariables()
         {
             ExpandVariables_1();
@@ -390,7 +384,7 @@ namespace PEBakery.Core.Tests
             ExpandVariables_6();
         }
 
-        public void ExpandVariables_1()
+        public static void ExpandVariables_1()
         {
             EngineState s = EngineTests.CreateEngineState();
 
@@ -403,7 +397,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandVariables_2()
+        public static void ExpandVariables_2()
         {
             EngineState s = EngineTests.CreateEngineState();
             s.CurSectionInParams[1] = "World";
@@ -414,7 +408,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandVariables_3()
+        public static void ExpandVariables_3()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -427,7 +421,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandVariables_4()
+        public static void ExpandVariables_4()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -440,7 +434,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ExpandVariables_5()
+        public static void ExpandVariables_5()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -468,7 +462,7 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void ExpandVariables_6()
+        public static void ExpandVariables_6()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -489,7 +483,6 @@ namespace PEBakery.Core.Tests
 
         #region Preprocess
         [TestMethod]
-        
         public void Preprocess()
         {
             Preprocess_1();
@@ -500,7 +493,7 @@ namespace PEBakery.Core.Tests
             Preprocess_6();
         }
 
-        public void Preprocess_1()
+        public static void Preprocess_1()
         {
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -512,7 +505,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Preprocess_2()
+        public static void Preprocess_2()
         {
             EngineState s = EngineTests.CreateEngineState();
             Variables.SetVariable(s, "#1", "World");
@@ -523,7 +516,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Preprocess_3()
+        public static void Preprocess_3()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
@@ -536,7 +529,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Preprocess_4()
+        public static void Preprocess_4()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -549,7 +542,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Preprocess_5()
+        public static void Preprocess_5()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -577,7 +570,7 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void Preprocess_6()
+        public static void Preprocess_6()
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 2);
@@ -658,7 +651,6 @@ namespace PEBakery.Core.Tests
 
         #region IsPathValid
         [TestMethod]
-        
         public void IsPathValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
@@ -686,7 +678,6 @@ namespace PEBakery.Core.Tests
 
         #region IsFileNameValid
         [TestMethod]
-        
         public void IsFileNameValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
@@ -714,14 +705,13 @@ namespace PEBakery.Core.Tests
 
         #region PackRegBinary
         [TestMethod]
-        
         public void PackRegBinary()
         {
             PackRegBinary_1();
             PackRegBinary_2();
         }
 
-        public void PackRegBinary_1()
+        public static void PackRegBinary_1()
         {
             byte[] src = Encoding.Unicode.GetBytes("C:\\");
             string dest = StringEscaper.PackRegBinary(src);
@@ -729,7 +719,7 @@ namespace PEBakery.Core.Tests
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void PackRegBinary_2()
+        public static void PackRegBinary_2()
         {
             byte[] src = new byte[] { 0x43, 0x00, 0x3A, 0x00, 0x5C, 0x00 };
             string dest = StringEscaper.PackRegBinary(src);
@@ -740,13 +730,12 @@ namespace PEBakery.Core.Tests
 
         #region UnpackRegBinary
         [TestMethod]
-        
         public void UnpackRegBinary()
         {
             UnpackRegBinary_1();
         }
 
-        public void UnpackRegBinary_1()
+        public static void UnpackRegBinary_1()
         {
             string src = "43,00,3A,00,5C,00";
             Assert.IsTrue(StringEscaper.UnpackRegBinary(src, out byte[] dest));
@@ -758,13 +747,12 @@ namespace PEBakery.Core.Tests
 
         #region PackRegMultiBinary
         [TestMethod]
-        
         public void PackRegMultiBinary()
         {
             PackRegMultiBinary_1();
         }
 
-        public void PackRegMultiBinary_1()
+        public static void PackRegMultiBinary_1()
         {
             string[] src = new string[]
             {
@@ -780,7 +768,6 @@ namespace PEBakery.Core.Tests
 
         #region PackRegMultiString
         [TestMethod]
-        
         public void PackRegMultiString()
         {
             string[] src =
@@ -797,7 +784,6 @@ namespace PEBakery.Core.Tests
 
         #region UnpackRegMultiString
         [TestMethod]
-        
         public void UnpackRegMultiString()
         {
             const string src = "C:\\#$zHello#$zWorld";
@@ -816,7 +802,6 @@ namespace PEBakery.Core.Tests
 
         #region List as Concatinated String
         [TestMethod]
-        
         public void UnpackListStr()
         {
             void Template(string listStr, string delimiter, List<string> compList)
@@ -880,7 +865,7 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        
+
         public void PackListStr()
         {
             void Template(List<string> list, string delimiter, string comp)

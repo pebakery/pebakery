@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -120,7 +121,7 @@ namespace PEBakery.Helper
             return '0' <= ch && ch <= '9';
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWildcard(string str)
         {
             return str.IndexOfAny(new[] { '*', '?' }) != -1;
