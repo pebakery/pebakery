@@ -164,8 +164,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileDelete
         [TestMethod]
-       
-       
         public void FileDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -248,8 +246,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileRename, FileMove
         [TestMethod]
-       
-       
         public void FileRename()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -297,8 +293,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCreateBlank
         [TestMethod]
-       
-       
         public void FileCreateBlank()
         {
             EngineState s = EngineTests.CreateEngineState();
