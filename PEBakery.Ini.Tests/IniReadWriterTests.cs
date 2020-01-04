@@ -262,7 +262,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "B"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -298,7 +298,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -336,7 +336,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -409,7 +409,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Interface", "FileBox3", "Overwrite3"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -461,7 +461,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -518,7 +518,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -683,7 +683,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "RawLine"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -718,7 +718,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LineAppend", true));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -754,7 +754,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LinePrepend", false));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -790,7 +790,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -828,7 +828,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -889,7 +889,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, false));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -952,7 +952,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, true));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1014,7 +1014,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "2", "0"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1055,7 +1055,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsFalse(IniReadWriter.RenameKey(tempFile, "Section", "5", "0"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1096,7 +1096,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "0", "9"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1159,7 +1159,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(result.All(x => x));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1216,7 +1216,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "2"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1256,7 +1256,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsFalse(IniReadWriter.DeleteKey(tempFile, "Section", "5"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1297,7 +1297,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "4"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1358,7 +1358,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(result.All(x => x));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1629,7 +1629,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1664,7 +1664,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1709,7 +1709,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section4"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1767,7 +1767,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1819,7 +1819,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -1869,7 +1869,7 @@ namespace PEBakery.Ini.Tests
 
                     Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, strs));
 
-                    Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                    Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                     using (StreamReader r = new StreamReader(tempFile, encoding))
                     {
                         string result = r.ReadToEnd();
@@ -1895,7 +1895,7 @@ namespace PEBakery.Ini.Tests
 
                     Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, str));
 
-                    Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                    Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                     using (StreamReader r = new StreamReader(tempFile, encoding))
                     {
                         string result = r.ReadToEnd();
@@ -1931,7 +1931,7 @@ namespace PEBakery.Ini.Tests
                         Assert.IsTrue(IniReadWriter.WriteSectionFast(tempDestFile, section, tr));
                     }
 
-                    Encoding encoding = EncodingHelper.DetectBom(tempDestFile);
+                    Encoding encoding = EncodingHelper.DetectEncoding(tempDestFile);
                     using (StreamReader r = new StreamReader(tempDestFile, encoding))
                     {
                         string result = r.ReadToEnd();
@@ -2024,7 +2024,7 @@ namespace PEBakery.Ini.Tests
                 // Induce Error
                 Assert.IsFalse(IniReadWriter.RenameSection(tempFile, "Sec1", "Sec2"));
 
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     string read = r.ReadToEnd();
@@ -2055,7 +2055,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section", "Another"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2099,7 +2099,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section2", "SectionB"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2167,7 +2167,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(results.All(x => x));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2224,7 +2224,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(results.Any(x => !x));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2273,7 +2273,7 @@ namespace PEBakery.Ini.Tests
                 // Induce Error
                 Assert.IsFalse(IniReadWriter.DeleteSection(tempFile, "Section"));
 
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     string read = r.ReadToEnd();
@@ -2303,7 +2303,7 @@ namespace PEBakery.Ini.Tests
 
                 Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section"));
 
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     // Must be same
@@ -2343,7 +2343,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section2"));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2409,7 +2409,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(results.All(x => x));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2461,7 +2461,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(results[1]);
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(tempFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
                 using (StreamReader r = new StreamReader(tempFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2895,7 +2895,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2941,7 +2941,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -2993,7 +2993,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3046,7 +3046,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3153,7 +3153,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3189,7 +3189,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3237,7 +3237,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3291,7 +3291,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3347,7 +3347,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();
@@ -3410,7 +3410,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
 
                 string read;
-                Encoding encoding = EncodingHelper.DetectBom(destFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
                 using (StreamReader r = new StreamReader(destFile, encoding))
                 {
                     read = r.ReadToEnd();

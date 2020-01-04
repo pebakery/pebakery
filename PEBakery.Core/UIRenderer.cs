@@ -866,7 +866,7 @@ namespace PEBakery.Core
                     {
                         using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                         {
-                            Encoding encoding = EncodingHelper.DetectBom(ms);
+                            Encoding encoding = EncodingHelper.DetectEncoding(ms);
                             ms.Position = 0;
                             using (StreamReader sr = new StreamReader(ms, encoding, false))
                             {

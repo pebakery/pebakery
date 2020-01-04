@@ -1551,7 +1551,7 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     encodeStream.Position = 0;
 
-                    Encoding encoding = EncodingHelper.DetectBom(backupFile);
+                    Encoding encoding = EncodingHelper.DetectEncoding(backupFile);
                     using (StreamReader tr = new StreamReader(backupFile, encoding, false))
                     using (StreamWriter tw = new StreamWriter(sc.RealPath, false, encoding))
                     {
@@ -1639,7 +1639,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = EncodingHelper.DetectBom(scPath);
+                    Encoding encoding = EncodingHelper.DetectEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);
@@ -2048,7 +2048,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = EncodingHelper.DetectBom(scPath);
+                    Encoding encoding = EncodingHelper.DetectEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);

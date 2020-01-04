@@ -31,12 +31,12 @@ using System.Text;
 namespace PEBakery.Helper.Tests
 {
     [TestClass]
+    [TestCategory(nameof(PEBakery.Helper))]
+    [TestCategory(nameof(EncodingHelper))]
     public class EncodingHelperTests
     {
         #region LogCodePage
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("EncodingHelper")]
         public void LogCodePage()
         {
             // Determined by current system default locale
@@ -53,8 +53,6 @@ namespace PEBakery.Helper.Tests
 
         #region DetectBom
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("EncodingHelper")]
         public void DetectBom()
         {
             string tempDir = FileHelper.GetTempDir();
@@ -99,10 +97,53 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
 
+        #region DetectEncoding
+        [TestMethod]
+        public void DetectEncoding()
+        {
+            string tempDir = FileHelper.GetTempDir();
+            string tempFile = Path.Combine(tempDir, "Sample.txt");
+            string srcDir = Path.Combine(TestSetup.SampleDir, "EncodingHelper");
+
+            try
+            {
+                // ANSI
+                File.Create(tempFile).Close();
+                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), EncodingHelper.DefaultAnsi);
+                string srcFile = Path.Combine(srcDir, "CP949.txt");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), EncodingHelper.DefaultAnsi);
+                srcFile = Path.Combine(srcDir, "ShiftJIS.html");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), EncodingHelper.DefaultAnsi);
+
+                // UTF-16 LE
+                EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
+                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.Unicode);
+                srcFile = Path.Combine(srcDir, "UTF16LE.txt");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.Unicode);
+
+                // UTF-16 BE
+                EncodingHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
+                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.BigEndianUnicode);
+                srcFile = Path.Combine(srcDir, "UTF16BE.txt");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.BigEndianUnicode);
+
+                // UTF-8
+                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.UTF8);
+                srcFile = Path.Combine(srcDir, "UTF8.txt");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.UTF8);
+                srcFile = Path.Combine(srcDir, "UTF8woBOM.txt");
+                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), new UTF8Encoding(false));
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+
         #region IsText
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("EncodingHelper")]
         public void IsText()
         {
             const int peekSize = 16 * 1024;

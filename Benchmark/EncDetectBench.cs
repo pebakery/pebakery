@@ -1,13 +1,10 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Joveler.FileMagician;
+using PEBakery.Helper;
 using PEBakery.Helper.ThirdParty;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static PEBakery.Helper.ThirdParty.TextEncodingDetect;
 
 namespace Benchmark
 {
@@ -135,9 +132,9 @@ namespace Benchmark
             return type;
         }
 
-        public DetectedEncoding DetectAutoIt(byte[] rawData, int sizeLimit)
+        public TextEncoding DetectAutoIt(byte[] rawData, int sizeLimit)
         {
-            return _autoitDetect.DetectEncoding(rawData, sizeLimit);
+            return _autoitDetect.DetectEncoding(rawData.AsSpan(0, sizeLimit));
         }
         #endregion
     }

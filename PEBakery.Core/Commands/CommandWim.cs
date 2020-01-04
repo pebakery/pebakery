@@ -761,7 +761,7 @@ namespace PEBakery.Core.Commands
                 List<string> extractGlobPaths = new List<string>();
 
                 // Read listfile
-                Encoding encoding = EncodingHelper.DetectBom(listFilePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(listFilePath);
                 using (StreamReader r = new StreamReader(listFilePath, encoding, false))
                 {
                     var extractPaths = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim());

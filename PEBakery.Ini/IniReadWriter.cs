@@ -169,7 +169,7 @@ namespace PEBakery.Ini
         {
             List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader reader = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -356,7 +356,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile(ext);
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -612,7 +612,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -905,7 +905,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader reader = new StreamReader(filePath, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1168,7 +1168,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(file);
+                Encoding encoding = EncodingHelper.DetectEncoding(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1312,7 +1312,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile(ext);
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1451,7 +1451,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1609,7 +1609,7 @@ namespace PEBakery.Ini
             foreach (string section in sectionNames)
                 secDict[section] = null;
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader reader = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -1759,7 +1759,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1941,7 +1941,7 @@ namespace PEBakery.Ini
             try
             {
                 bool finished = false;
-                Encoding encoding = EncodingHelper.DetectBom(file);
+                Encoding encoding = EncodingHelper.DetectEncoding(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2046,7 +2046,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2164,7 +2164,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2330,7 +2330,7 @@ namespace PEBakery.Ini
             List<string> sectionNames = sections.ToList();
             Dictionary<string, List<string>> secDict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2470,7 +2470,7 @@ namespace PEBakery.Ini
             try
             {
                 // Append IniKey into existing file
-                Encoding encoding = EncodingHelper.DetectBom(filePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2513,7 +2513,7 @@ namespace PEBakery.Ini
         {
             List<string> sections = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -2539,7 +2539,7 @@ namespace PEBakery.Ini
         {
             bool result = false;
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2590,7 +2590,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2643,7 +2643,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2711,7 +2711,7 @@ namespace PEBakery.Ini
             for (int i = 0; i < sectionNames.Length; i++)
                 lines[i] = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectBom(filePath);
+            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -2771,7 +2771,7 @@ namespace PEBakery.Ini
             if (!File.Exists(srcFile))
                 return dict; // Return Empty dict if srcFile does not exist
 
-            Encoding encoding = EncodingHelper.DetectBom(srcFile);
+            Encoding encoding = EncodingHelper.DetectEncoding(srcFile);
             using (StreamReader r = new StreamReader(srcFile, encoding))
             {
                 // Is Original File Empty?

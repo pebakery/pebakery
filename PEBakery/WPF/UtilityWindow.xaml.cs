@@ -397,7 +397,7 @@ namespace PEBakery.WPF
             CodeFile = Path.Combine(p.ProjectDir, "CodeBox.txt");
             if (File.Exists(CodeFile))
             {
-                Encoding encoding = EncodingHelper.DetectBom(CodeFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(CodeFile);
                 using (StreamReader r = new StreamReader(CodeFile, encoding))
                 {
                     CodeBoxInput = await r.ReadToEndAsync();
@@ -432,7 +432,7 @@ Description=Test Commands
 
         public void SaveCodeBox()
         {
-            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectBom(CodeFile) : Encoding.UTF8;
+            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectEncoding(CodeFile) : Encoding.UTF8;
             using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
                 w.Write(CodeBoxInput);

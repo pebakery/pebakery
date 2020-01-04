@@ -315,7 +315,7 @@ namespace PEBakery.Core.Tests.Command
                     if (check == ErrorCheck.Success)
                     {
                         Assert.IsTrue(File.Exists(destFullPath));
-                        Assert.IsTrue(EncodingHelper.DetectBom(destFullPath).Equals(encoding));
+                        Assert.IsTrue(EncodingHelper.DetectEncoding(destFullPath).Equals(encoding));
                     }
                 }
                 finally

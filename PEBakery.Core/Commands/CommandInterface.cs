@@ -1225,7 +1225,7 @@ namespace PEBakery.Core.Commands
             }
 
             string txtStr;
-            Encoding encoding = EncodingHelper.DetectBom(srcFile);
+            Encoding encoding = EncodingHelper.DetectEncoding(srcFile);
             using (StreamReader r = new StreamReader(srcFile, encoding))
             {
                 txtStr = r.ReadToEnd().Trim();
