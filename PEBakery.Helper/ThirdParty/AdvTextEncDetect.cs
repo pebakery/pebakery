@@ -23,6 +23,7 @@
  */
 
 using System;
+using System.Text;
 
 namespace PEBakery.Helper.ThirdParty
 {
@@ -42,7 +43,7 @@ namespace PEBakery.Helper.ThirdParty
     #endregion
 
     #region TextEncodingDetect
-    public class TextEncodingDetect
+    public class AdvTextEncDetect
     {
         #region BOM Sequences
         private readonly byte[] _utf16BeBom =
@@ -382,6 +383,32 @@ namespace PEBakery.Helper.ThirdParty
             // If we get to here then only valid UTF-8 sequences have been processed
             // If we only saw chars in the range 0-127 then we can't assume UTF8 (the caller will need to decide)
             return onlySawAsciiRange ? TextEncoding.Ascii : TextEncoding.Utf8NoBom;
+        }
+        #endregion
+
+        #region TextEncodingToBclEncoding
+        public static Encoding TextEncodingToBclEncoding(TextEncoding textEnc)
+        {
+            switch (textEnc)
+            {
+                case TextEncoding.Utf8NoBom:
+                    return new UTF8Encoding(false);
+                case TextEncoding.Utf8Bom:
+                    return new UTF8Encoding(true);
+                case TextEncoding.Utf16LeBom:
+                    return new UnicodeEncoding(false, true);
+                case TextEncoding.Utf16LeNoBom:
+                    return new UnicodeEncoding(false, false);
+                case TextEncoding.Utf16BeBom:
+                    return new UnicodeEncoding(true, true);
+                case TextEncoding.Utf16BeNoBom:
+                    return new UnicodeEncoding(false, true);
+                case TextEncoding.None:
+                case TextEncoding.Ansi:
+                case TextEncoding.Ascii:
+                default:
+                    return EncodingHelper.DefaultAnsi;
+            }
         }
         #endregion
     }

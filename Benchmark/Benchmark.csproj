@@ -227,6 +227,9 @@
       <Private>True</Private>
       <Private>True</Private>
     </Reference>
+    <Reference Include="UtfUnknown, Version=2.0.0.0, Culture=neutral, PublicKeyToken=90217ce7a23260d4, processorArchitecture=MSIL">
+      <HintPath>..\packages\UTF.Unknown.2.3.0\lib\net40\UtfUnknown.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EncDetectBench.cs" />

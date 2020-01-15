@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
  
     MIT License
 
@@ -109,31 +109,33 @@ namespace PEBakery.Helper.Tests
             {
                 // ANSI
                 File.Create(tempFile).Close();
-                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), EncodingHelper.DefaultAnsi);
+                Assert.AreEqual(EncodingHelper.DefaultAnsi, EncodingHelper.DetectEncoding(tempFile));
                 string srcFile = Path.Combine(srcDir, "CP949.txt");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), EncodingHelper.DefaultAnsi);
+                Assert.AreEqual(EncodingHelper.DefaultAnsi, EncodingHelper.DetectEncoding(srcFile));
+                srcFile = Path.Combine(srcDir, "EUCKR.jsp");
+                Assert.AreEqual(EncodingHelper.DefaultAnsi, EncodingHelper.DetectEncoding(srcFile));
                 srcFile = Path.Combine(srcDir, "ShiftJIS.html");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), EncodingHelper.DefaultAnsi);
+                Assert.AreEqual(EncodingHelper.DefaultAnsi, EncodingHelper.DetectEncoding(srcFile));
 
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
-                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.Unicode);
+                Assert.AreEqual(Encoding.Unicode, EncodingHelper.DetectEncoding(tempFile));
                 srcFile = Path.Combine(srcDir, "UTF16LE.txt");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.Unicode);
-
+                Assert.AreEqual(Encoding.Unicode, EncodingHelper.DetectEncoding(srcFile));
+                    
                 // UTF-16 BE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
-                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.BigEndianUnicode);
+                Assert.AreEqual(Encoding.BigEndianUnicode, EncodingHelper.DetectEncoding(tempFile));
                 srcFile = Path.Combine(srcDir, "UTF16BE.txt");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.BigEndianUnicode);
+                Assert.AreEqual(Encoding.BigEndianUnicode, EncodingHelper.DetectEncoding(srcFile));
 
                 // UTF-8
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                Assert.AreEqual(EncodingHelper.DetectEncoding(tempFile), Encoding.UTF8);
+                Assert.AreEqual(Encoding.UTF8, EncodingHelper.DetectEncoding(tempFile));
                 srcFile = Path.Combine(srcDir, "UTF8.txt");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), Encoding.UTF8);
+                Assert.AreEqual(Encoding.UTF8, EncodingHelper.DetectEncoding(srcFile));
                 srcFile = Path.Combine(srcDir, "UTF8woBOM.txt");
-                Assert.AreEqual(EncodingHelper.DetectEncoding(srcFile), new UTF8Encoding(false));
+                Assert.AreEqual(new UTF8Encoding(false), EncodingHelper.DetectEncoding(srcFile));
             }
             finally
             {

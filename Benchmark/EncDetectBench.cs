@@ -5,6 +5,7 @@ using PEBakery.Helper.ThirdParty;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UtfUnknown;
 
 namespace Benchmark
 {
@@ -13,7 +14,7 @@ namespace Benchmark
         private string _sampleDir;
         private string _magicFile;
         private Magic _magic;
-        private TextEncodingDetect _autoitDetect;
+        private AdvTextEncDetect _autoitDetect;
 
         // SrcFiles
         [ParamsSource(nameof(SrcFileNames))]
@@ -41,14 +42,12 @@ namespace Benchmark
         public IReadOnlyList<int> BufferSizes { get; set; } = new int[]
         {
             4 * 1024,
-            8 * 1024,
             16 * 1024,
-            32 * 1024,
             64 * 1024,
-            128 * 1024,
             256 * 1024,
         };
 
+        #region Setup and Cleanup
         [GlobalSetup]
         public void GlobalSetup()
         {
@@ -58,7 +57,7 @@ namespace Benchmark
             _sampleDir = Path.GetFullPath(Path.Combine(binaryDir, "..", "..", "Samples"));
             _magicFile = Path.Combine(binaryDir, "magic.mgc");
             _magic = Magic.Open(_magicFile);
-            _autoitDetect = new TextEncodingDetect();
+            _autoitDetect = new AdvTextEncDetect();
 
             foreach (string srcFileName in SrcFileNames)
             {
@@ -81,6 +80,7 @@ namespace Benchmark
             _magic.Dispose();
             Program.NativeGlobalCleanup();
         }
+        #endregion
 
         #region Benchmark
         [Benchmark]
@@ -95,6 +95,13 @@ namespace Benchmark
         {
             byte[] rawData = SrcFiles[SrcFileName];
             DetectAutoIt(rawData, BufferSize);
+        }
+
+        [Benchmark]
+        public void UtfUnknown()
+        {
+            byte[] rawData = SrcFiles[SrcFileName];
+            DetectUtfUnknown(rawData, BufferSize);
         }
         #endregion
 
@@ -132,9 +139,17 @@ namespace Benchmark
             return type;
         }
 
-        public TextEncoding DetectAutoIt(byte[] rawData, int sizeLimit)
+        public TextEncoding DetectAutoIt(ReadOnlySpan<byte> rawData, int sizeLimit)
         {
-            return _autoitDetect.DetectEncoding(rawData.AsSpan(0, sizeLimit));
+            return _autoitDetect.DetectEncoding(rawData.Slice(0, sizeLimit));
+        }
+
+        public DetectionResult DetectUtfUnknown(byte[] rawData, int sizeLimit)
+        {
+            using (MemoryStream ms = new MemoryStream(rawData, 0, sizeLimit))
+            {
+                return CharsetDetector.DetectFromStream(ms);
+            }
         }
         #endregion
     }

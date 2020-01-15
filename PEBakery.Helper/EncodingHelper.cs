@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -61,39 +61,7 @@ namespace PEBakery.Helper
             }
         }
 
-        private static TextEncodingDetect AdvDetect = new TextEncodingDetect();
-        #endregion
-
-        #region ToTextEncoding
-        /*
-        public static TextEncoding BclEncodingToTextEncoding(Encoding encoding)
-        {
-        }
-        */
-
-        public static Encoding TextEncodingToBclEncoding(TextEncoding textEnc)
-        {
-            switch (textEnc)
-            {
-                case TextEncoding.Utf8NoBom:
-                    return new UTF8Encoding(false);
-                case TextEncoding.Utf8Bom:
-                    return new UTF8Encoding(true);
-                case TextEncoding.Utf16LeBom:
-                    return new UnicodeEncoding(false, true);
-                case TextEncoding.Utf16LeNoBom:
-                    return new UnicodeEncoding(false, false);
-                case TextEncoding.Utf16BeBom:
-                    return new UnicodeEncoding(true, true);
-                case TextEncoding.Utf16BeNoBom:
-                    return new UnicodeEncoding(false, true);
-                case TextEncoding.None:
-                case TextEncoding.Ansi:
-                case TextEncoding.Ascii:
-                default:
-                    return DefaultAnsi;
-            }
-        }
+        private readonly static AdvTextEncDetect AdvDetect = new AdvTextEncDetect();
         #endregion
 
         #region DetectBom
@@ -161,23 +129,24 @@ namespace PEBakery.Helper
         {
             byte[] buffer = new byte[peekSize];
             int bytesRead = s.Read(buffer, 0, buffer.Length);
+
             return DetectEncoding(buffer, 0, bytesRead);
         }
 
         public static Encoding DetectEncoding(byte[] buffer, int offset, int count)
         {
             TextEncoding textEnc = AdvDetect.DetectEncoding(buffer, offset, count);
-            return TextEncodingToBclEncoding(textEnc);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
         }
 
         public static Encoding DetectEncoding(ReadOnlySpan<byte> span)
         {
             TextEncoding textEnc = AdvDetect.DetectEncoding(span);
-            return TextEncodingToBclEncoding(textEnc);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
         }
-        #endregion 
+#endregion
 
-        #region WriteTextBom
+#region WriteTextBom
         public static void WriteTextBom(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -204,9 +173,9 @@ namespace PEBakery.Helper
             else if (encoding.CodePage != DefaultAnsi.CodePage) // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
         }
-        #endregion
+#endregion
 
-        #region TextBomLength
+#region TextBomLength
         public static int TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -243,9 +212,9 @@ namespace PEBakery.Helper
 
             return length;
         }
-        #endregion
+#endregion
 
-        #region IsText
+#region IsText
         public static bool IsText(string filePath, int peekSize)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -303,7 +272,7 @@ namespace PEBakery.Helper
             // To counter these issue, if file is seems to be text, check again with AutoIt.Common.TextEncodingDetect
             if (isText)
             {
-                TextEncodingDetect detect = new TextEncodingDetect();
+                AdvTextEncDetect detect = new AdvTextEncDetect();
                 byte[] idxZeroBuffer;
                 if (offset == 0)
                 {
@@ -335,6 +304,6 @@ namespace PEBakery.Helper
 
             return isText;
         }
-        #endregion
+#endregion
     }
 }

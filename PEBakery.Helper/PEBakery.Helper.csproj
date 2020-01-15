@@ -71,7 +71,7 @@
     <Compile Include="RegistryHelper.cs" />
     <Compile Include="StringHelper.cs" />
     <Compile Include="SystemHelper.cs" />
-    <Compile Include="ThirdParty\TextEncodingDetect.cs" />
+    <Compile Include="ThirdParty\AdvTextEncDetect.cs" />
     <Compile Include="VersionEx.cs" />
   </ItemGroup>
   <ItemGroup>
