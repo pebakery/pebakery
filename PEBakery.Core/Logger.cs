@@ -917,11 +917,11 @@ namespace PEBakery.Core
             if (type == LogExportType.Html && MinifyHtmlExport)
             {
                 string rawHtml;
-                using (StringWriter w = new StringWriter())
+                using (StringWriter sw = new StringWriter())
                 {
-                    LogExporter exporter = new LogExporter(Db, type, w);
+                    LogExporter exporter = new LogExporter(Db, type, sw);
                     exporter.ExportSystemLog();
-                    rawHtml = w.ToString();
+                    rawHtml = sw.ToString();
                 }
 
                 // Do not collapse CRLF in td, th
@@ -950,9 +950,9 @@ namespace PEBakery.Core
             }
             else
             {
-                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                using (StreamWriter sw = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
-                    LogExporter exporter = new LogExporter(Db, type, w);
+                    LogExporter exporter = new LogExporter(Db, type, sw);
                     exporter.ExportSystemLog();
                 }
             }

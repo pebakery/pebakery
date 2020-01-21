@@ -25,17 +25,14 @@
     not derived from or based on this program. 
 */
 
-using Newtonsoft.Json;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -357,7 +354,7 @@ namespace PEBakery.Core
                     remoteScript = _p.RefreshScript(remoteScript);
                     if (remoteScript == null)
                         return new ResultReport<Script>(false, null, $"Internal error at {nameof(FileUpdater)}.{nameof(RestoreScriptState)}");
-                }                
+                }
 
                 // Copy downloaded remote script into new script
                 File.Copy(tempScriptFile, sc.DirectRealPath, true);

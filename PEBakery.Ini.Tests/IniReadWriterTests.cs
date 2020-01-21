@@ -2853,7 +2853,7 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄷ = 丙 ");
             b.AppendLine(" ㄹ = 丁 ");
             b.AppendLine();
-            src2 = b.ToString(); 
+            src2 = b.ToString();
             // Result
             b.Clear();
             b.AppendLine("  [Section1]");
@@ -3104,7 +3104,7 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("ㄷ = 丙 ");
             b.AppendLine(" ㄹ = 丁 ");
             b.AppendLine();
-            string src2 = b.ToString(); 
+            string src2 = b.ToString();
 
             // Result
             b.Clear();

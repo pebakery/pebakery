@@ -1,0 +1,114 @@
+﻿@model PEBakery.Core.Razor.ViewModelBase
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+        <title>@Model.HeadTitle</title>
+
+        <!-- Bootstrap CSS -->
+        @if (@Model.EmbedBootstrapCss != null)
+        {
+            <style>@Raw(@Model.EmbedBootstrapCss)</style>
+        }
+        else
+        {
+            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        }
+
+        <!-- Custom CSS -->
+        <style>
+            .pb-table-content {
+                font-family: monospace;
+            }
+
+            table.pb-table-content td {
+                padding: .15rem;
+            }
+
+            table.pb-table-content th {
+                padding: .15rem;
+            }
+
+            .pb-table-codes {
+                font-family: monospace;
+                font-size: 14px;
+            }
+
+            table.pb-table-codes td {
+                padding: .10rem;
+            }
+
+            table.pb-table-codes th {
+                padding: .10rem;
+            }
+
+            .pb-whitespace {
+                white-space: pre-wrap;
+            }
+
+            .pb-monospace {
+                font-family: monospace;
+            }
+
+            .pb-footer {
+                font-family: 'D2Coding', monospace;
+                text-align: center;
+            }
+
+            .text-overwrite {
+                color: #ff6600;
+            }
+
+            .table-nonfluid {
+                width: auto !important;
+                word-wrap: break-word;
+            }
+        </style>
+
+        <!-- Font Awesome -->
+        <!-- Always use CDN to avoid file size explosion. -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-1/css/all.min.css" integrity="sha256-4w9DunooKSr3MFXHXWyFER38WmPdm361bQS/2KUWZbU=" crossorigin="anonymous" />
+    </head>
+    <body id="page-top" data-spy="scroll">
+        @RenderBody()
+
+        <!-- Footer -->
+        <hr>
+        <footer class="pb-footer">
+            PEBakery @Model.ExportEngineVersion<br>
+            <a href="https://github.com/pebakery/pebakery"><i class="fab fa-github"></i> GitHub</a>
+        </footer>
+        <br>
+
+        <!-- JS: jQuery, Popper, Bootstrap -->
+        @if (@Model.EmbedJQuerySlim != null)
+        {
+            <script>@Raw(@Model.EmbedJQuerySlim)</script>
+        }
+        else
+        {
+            <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        }
+        @if (@Model.EmbedBootstrapJs != null)
+        {
+            <script>@Raw(@Model.EmbedBootstrapJs)</script>
+        }
+        else
+        {
+            <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+        }
+
+        <!-- Enable Bootstrap Tooltip of [Ref] flags-->
+        <script>
+            $(function () {
+                $('[data-toggle="tooltip"]').tooltip()
+            })
+        </script>
+    </body>
+</html>

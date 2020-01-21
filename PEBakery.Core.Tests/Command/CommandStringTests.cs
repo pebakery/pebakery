@@ -58,8 +58,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region BytesToInt
         [TestMethod]
-        
-        
+
+
         public void BytesToInt()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -76,8 +76,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region Hex
         [TestMethod]
-        
-        
+
+
         public void Hex()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -89,8 +89,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Ceil
-        
-        
+
+
         [TestMethod]
         public void Ceil()
         {
@@ -108,8 +108,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Floor
-        
-        
+
+
         [TestMethod]
         public void Floor()
         {
@@ -127,8 +127,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Round
-        
-        
+
+
         [TestMethod]
         public void Round()
         {
@@ -220,8 +220,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region FileName
-        
-        
+
+
         [TestMethod]
         public void FileName()
         {
@@ -235,8 +235,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region DirPath, Path
-        
-        
+
+
         [TestMethod]
         public void DirPath()
         {
@@ -255,8 +255,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Ext
-        
-        
+
+
         [TestMethod]
         public void Ext()
         {
@@ -271,8 +271,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region PathCombine
-        
-        
+
+
         [TestMethod]
         public void PathCombine()
         {
@@ -287,8 +287,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Inc
-        
-        
+
+
         [TestMethod]
         public void Inc()
         {
@@ -305,8 +305,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Dec
-        
-        
+
+
         [TestMethod]
         public void Dec()
         {
@@ -324,8 +324,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Mult
-        
-        
+
+
         [TestMethod]
         public void Mult()
         {
@@ -342,8 +342,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Div
-        
-        
+
+
         [TestMethod]
         public void Div()
         {
@@ -360,8 +360,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Left
-        
-        
+
+
         [TestMethod]
         public void Left()
         {
@@ -375,8 +375,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Right
-        
-        
+
+
         [TestMethod]
         public void Right()
         {
@@ -405,8 +405,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Len
-        
-        
+
+
         [TestMethod]
         public void Len()
         {
@@ -418,8 +418,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region LTrim
-        
-        
+
+
         [TestMethod]
         public void LTrim()
         {
@@ -433,8 +433,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region RTrim
-        
-        
+
+
         [TestMethod]
         public void RTrim()
         {
@@ -448,8 +448,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region CTrim
-        
-        
+
+
         [TestMethod]
         public void CTrim()
         {
@@ -464,8 +464,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region NTrim
-        
-        
+
+
         [TestMethod]
         public void NTrim()
         {
@@ -478,8 +478,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region UCase
         [TestMethod]
-        
-        
+
+
         public void UCase()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -492,8 +492,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region LCase
         [TestMethod]
-        
-        
+
+
         public void LCase()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -505,8 +505,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Pos
-        
-        
+
+
         [TestMethod]
         public void Pos()
         {
@@ -520,8 +520,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region PosX
-        
-        
+
+
         [TestMethod]
         public void PosX()
         {
@@ -535,8 +535,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Replace
-        
-        
+
+
         [TestMethod]
         public void Replace()
         {
@@ -550,8 +550,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region ReplaceX
-        
-        
+
+
         [TestMethod]
         public void ReplaceX()
         {
@@ -565,8 +565,8 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Split
-        
-        
+
+
         [TestMethod]
         public void Split()
         {
@@ -581,8 +581,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PadLeft
         [TestMethod]
-        
-        
+
+
         public void PadLeft()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -596,8 +596,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PadRight
         [TestMethod]
-        
-        
+
+
         public void PadRight()
         {
             EngineState s = EngineTests.CreateEngineState();

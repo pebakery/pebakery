@@ -1137,7 +1137,7 @@ namespace PEBakery.Core.Tests
                     string usageStr = NumberHelper.ByteSizeToSIUnit((long)usage, 1);
                     Console.WriteLine($"Memory usage of {level}, Threads {th} = {usageStr} ({usage})");
                 }
-            }    
+            }
         }
         #endregion
     }

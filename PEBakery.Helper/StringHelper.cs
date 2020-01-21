@@ -25,7 +25,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -33,7 +32,6 @@ using System.Text.RegularExpressions;
 
 namespace PEBakery.Helper
 {
-    #region StringHelper
     public static class StringHelper
     {
         #region RemoveLastLine
@@ -189,10 +187,45 @@ namespace PEBakery.Helper
                     b.Append(str.Substring(idx));
                     break;
                 }
+                else
+                {
+                    b.Append(str.Substring(idx, vIdx - idx));
+                    b.Append(newValue);
+                    idx = vIdx + oldValue.Length;
+                }
+            }
+            return b.ToString();
+        }
 
-                b.Append(str.Substring(idx, vIdx - idx));
-                b.Append(newValue);
-                idx = vIdx + oldValue.Length;
+        public static string ReplaceEx(string str, IReadOnlyList<(string OldValue, string NewValue)> replaceValues, StringComparison comp)
+        {
+            StringBuilder b = new StringBuilder();
+            int[] vIndices = new int[replaceValues.Count];
+
+            int idx = 0;
+            while (idx < str.Length)
+            {
+                for (int i = 0; i < replaceValues.Count; i++)
+                {
+                    (string oldValue, _) = replaceValues[i];
+                    vIndices[i] = str.IndexOf(oldValue, idx, comp);
+                }
+
+                int matchIdx = Array.FindIndex(vIndices, x => x != -1);
+                if (matchIdx == -1)
+                {
+                    b.Append(str.Substring(idx));
+                    break;
+                }
+                else
+                {
+                    int vIdx = vIndices[matchIdx];
+                    (string oldValue, string newValue) = replaceValues[matchIdx];
+
+                    b.Append(str.Substring(idx, vIdx - idx));
+                    b.Append(newValue);
+                    idx = vIdx + oldValue.Length;
+                }
             }
             return b.ToString();
         }
@@ -309,5 +342,4 @@ namespace PEBakery.Helper
         }
         #endregion
     }
-    #endregion
 }

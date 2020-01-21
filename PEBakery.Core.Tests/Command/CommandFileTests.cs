@@ -341,8 +341,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileSize
         [TestMethod]
-       
-       
+
+
         public void FileSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -368,8 +368,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileVersion
         [TestMethod]
-       
-       
+
+
         public void FileVersion()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -394,8 +394,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirCopy
         [TestMethod]
-       
-       
+
+
         public void DirCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -482,8 +482,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirDelete
         [TestMethod]
-       
-       
+
+
         public void DirDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -541,8 +541,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMove
         [TestMethod]
-       
-       
+
+
         public void DirMove()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -586,8 +586,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMake
         [TestMethod]
-       
-       
+
+
         public void DirMake()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -632,8 +632,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirSize
         [TestMethod]
-       
-       
+
+
         public void DirSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -661,8 +661,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PathMove
         [TestMethod]
-       
-       
+
+
         public void PathMove()
         {
             EngineState s = EngineTests.CreateEngineState();

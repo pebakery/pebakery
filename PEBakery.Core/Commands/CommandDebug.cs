@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Core.ViewModels;
 using System.Collections.Generic;
 
 namespace PEBakery.Core.Commands

@@ -34,6 +34,15 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- This group contains project properties for RazorLight on .NET Core -->
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
+    <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Build.Framework" />
@@ -72,6 +81,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Razor\RazorModel.cs" />
+    <Compile Include="Razor\RazorRenderer.cs" />
     <Compile Include="ResultReport.cs" />
     <Compile Include="ScriptSection.cs" />
     <Compile Include="SyntaxChecker.cs" />
@@ -151,8 +162,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Resources\BuildLogHtmlTemplate.cshtml" />
-    <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
+    <EmbeddedResource Include="Razor\_LogLayout.cshtml" />
+    <EmbeddedResource Include="Razor\_BuildLogView.cshtml" />
+    <EmbeddedResource Include="Razor\_SystemLogView.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="WpfControls\CustomMessageBox.xaml">
@@ -171,13 +183,13 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\bootstrap.bundle.min.js" />
+    <EmbeddedResource Include="Razor\bootstrap.bundle.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\bootstrap.min.css" />
+    <EmbeddedResource Include="Razor\bootstrap.min.css" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\jquery.slim.min.js" />
+    <EmbeddedResource Include="Razor\jquery.slim.min.js" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BetterWin32Errors">
@@ -197,9 +209,6 @@
     </PackageReference>
     <PackageReference Include="ManagedWimLib">
       <Version>1.4.3</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.AspNet.Razor">
-      <Version>3.2.7</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.DotNet.Analyzers.Compatibility">
       <Version>0.2.12-alpha</Version>
@@ -221,8 +230,8 @@
     <PackageReference Include="NUglify">
       <Version>1.5.13</Version>
     </PackageReference>
-    <PackageReference Include="RazorEngine">
-      <Version>3.10.0</Version>
+    <PackageReference Include="RazorLight">
+      <Version>2.0.0-beta4</Version>
     </PackageReference>
     <PackageReference Include="sqlite-net-pcl">
       <Version>1.6.292</Version>
@@ -238,6 +247,9 @@
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
       <Version>4.5.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.Serialization.Primitives">
+      <Version>4.3.0</Version>
     </PackageReference>
     <PackageReference Include="TaskScheduler">
       <Version>2.8.11</Version>

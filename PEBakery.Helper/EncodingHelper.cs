@@ -144,9 +144,9 @@ namespace PEBakery.Helper
             TextEncoding textEnc = AdvDetect.DetectEncoding(span);
             return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
         }
-#endregion
+        #endregion
 
-#region WriteTextBom
+        #region WriteTextBom
         public static void WriteTextBom(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -173,9 +173,9 @@ namespace PEBakery.Helper
             else if (encoding.CodePage != DefaultAnsi.CodePage) // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
         }
-#endregion
+        #endregion
 
-#region TextBomLength
+        #region TextBomLength
         public static int TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -212,9 +212,9 @@ namespace PEBakery.Helper
 
             return length;
         }
-#endregion
+        #endregion
 
-#region IsText
+        #region IsText
         public static bool IsText(string filePath, int peekSize)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -304,6 +304,6 @@ namespace PEBakery.Helper
 
             return isText;
         }
-#endregion
+        #endregion
     }
 }

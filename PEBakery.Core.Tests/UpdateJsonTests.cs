@@ -29,7 +29,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace PEBakery.Core.Tests

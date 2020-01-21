@@ -366,7 +366,7 @@ namespace PEBakery.Core
                             Kind = IndexEntryKind.Folder,
                             Name = subDir.Name,
                             Children = new List<FileIndex>(),
-                        }; 
+                        };
                         dirIndex.Children.Add(subIndex);
                         dirQueue.Enqueue((subIndex, subDir));
                     }

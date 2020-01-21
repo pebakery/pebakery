@@ -122,7 +122,7 @@ namespace PEBakery.Helper.Tests
                 Assert.AreEqual(Encoding.Unicode, EncodingHelper.DetectEncoding(tempFile));
                 srcFile = Path.Combine(srcDir, "UTF16LE.txt");
                 Assert.AreEqual(Encoding.Unicode, EncodingHelper.DetectEncoding(srcFile));
-                    
+
                 // UTF-16 BE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
                 Assert.AreEqual(Encoding.BigEndianUnicode, EncodingHelper.DetectEncoding(tempFile));
