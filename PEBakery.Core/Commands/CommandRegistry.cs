@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
             }
 
             int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
-            if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+            if (result == WindowsErrorCode.ERROR_SUCCESS)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Loaded [{hiveFile}] into [HKLM\\{keyPath}]"));
             }
@@ -88,7 +88,7 @@ namespace PEBakery.Core.Commands
             }
 
             int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
-            if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+            if (result == WindowsErrorCode.ERROR_SUCCESS)
             {
                 logs.Add(new LogInfo(LogState.Success, $"[HKLM\\{keyPath}] Unloaded"));
             }

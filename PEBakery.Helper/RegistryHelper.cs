@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -69,20 +70,20 @@ namespace PEBakery.Helper
 
                 if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
                 {
-                    BetterWin32Errors.Win32Error ret = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                    if (ret == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    int ret = Marshal.GetLastWin32Error();
+                    if (ret == WindowsErrorCode.ERROR_NOT_ALL_ASSIGNED)
+                        throw new Win32Exception(ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                     else
-                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed");
+                        throw new Win32Exception(ret, "AdjustTokenPrivileges failed");
                 }
 
                 if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
                 {
-                    BetterWin32Errors.Win32Error ret = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                    if (ret == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    int ret = Marshal.GetLastWin32Error();
+                    if (ret == WindowsErrorCode.ERROR_NOT_ALL_ASSIGNED)
+                        throw new Win32Exception(ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                     else
-                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed");
+                        throw new Win32Exception(ret, "AdjustTokenPrivileges failed");
                 }
             }
             finally
@@ -195,7 +196,7 @@ namespace PEBakery.Helper
                     throw new ArgumentException($"Unable to create dest subkey [{destSubKeyPath}]");
 
                 int ret = NativeMethods.SHCopyKey(srcKey.Handle, srcSubKeyPath, destSubKey.Handle, 0);
-                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                if (ret != WindowsErrorCode.ERROR_SUCCESS)
                     throw new Win32Exception(ret, "SHCopyKey failed");
             }
         }
@@ -214,7 +215,7 @@ namespace PEBakery.Helper
 
                 uint dataSize = 0;
                 int ret = NativeMethods.RegQueryValueEx(subKey.Handle, valueName, null, null, null, &dataSize);
-                return ret != (int)BetterWin32Errors.Win32Error.ERROR_FILE_NOT_FOUND;
+                return ret != WindowsErrorCode.ERROR_FILE_NOT_FOUND;
             }
         }
         #endregion
@@ -236,7 +237,7 @@ namespace PEBakery.Helper
         {
             void CheckReturnValue(int ret)
             {
-                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                if (ret != WindowsErrorCode.ERROR_SUCCESS)
                     throw new Win32Exception(ret, "RegQueryValueEx failed");
             }
 
@@ -291,7 +292,7 @@ namespace PEBakery.Helper
         {
             void CheckReturnValue(int ret)
             {
-                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                if (ret != WindowsErrorCode.ERROR_SUCCESS)
                     throw new Win32Exception(ret, "RegSetValueEx failed");
             }
 
