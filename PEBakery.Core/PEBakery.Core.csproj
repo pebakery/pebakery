@@ -6,6 +6,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <PropertyGroup>
+    <RootNamespace>PEBakery.Core</RootNamespace>
+    <AssemblyName>PEBakery.Core</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
     <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
@@ -15,6 +19,7 @@
     <Copyright>Copyright © 2016-2020</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj" />

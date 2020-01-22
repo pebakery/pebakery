@@ -6,6 +6,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <PropertyGroup>
+    <RootNamespace>PEBakery</RootNamespace>
+    <AssemblyName>PEBakery</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup>
     <StartupObject>PEBakery.App</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
