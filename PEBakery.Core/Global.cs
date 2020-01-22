@@ -35,6 +35,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 
 namespace PEBakery.Core
@@ -89,6 +90,9 @@ namespace PEBakery.Core
         /// <param name="initMainViewModel">Set this to true when PEBakery.Core is used outside of PEBakery</param>
         public static void PreInit(string[] args, bool initMainViewModel)
         {
+            // Regsiter Non-Unicode Encodings
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             // Process arguments
             Args = args;
 

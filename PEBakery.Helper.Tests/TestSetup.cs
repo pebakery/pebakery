@@ -25,6 +25,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
+using System.Text;
 
 namespace PEBakery.Helper.Tests
 {
@@ -37,8 +38,11 @@ namespace PEBakery.Helper.Tests
         [AssemblyInitialize]
         public static void Init(TestContext context)
         {
-            BaseDir = Path.GetFullPath(Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", ".."));
+            BaseDir = Path.GetFullPath(Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", "..", ".."));
             SampleDir = Path.Combine(BaseDir, "Samples");
+
+            // Regsiter Non-Unicode Encodings
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
         [AssemblyCleanup]
