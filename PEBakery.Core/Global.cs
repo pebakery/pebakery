@@ -184,7 +184,8 @@ namespace PEBakery.Core
                 try
                 {
                     ScriptCache = new ScriptCache(cacheDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {ScriptCache.Table<CacheModel.ScriptCache>().Count()} cached scripts found"));
+                    int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
                 }
                 catch (SQLiteException e)
                 { // Load failure
