@@ -35,34 +35,23 @@ namespace PEBakery.Core.Razor
     #region RazorRenderer
     internal class RazorRenderer
     {
-        private readonly object _engineLock = new object();
-        private RazorLightEngine _engine = null;
+        private readonly RazorLightEngine _engine = null;
         private readonly bool _isCachingEnabled;
 
         public RazorRenderer(bool isCachingEnabled)
         {
             _isCachingEnabled = isCachingEnabled;
-        }
 
-        private RazorLightEngine GetRazorLightEngine()
-        {
-            lock (_engineLock)
-            {
-                if (_engine == null)
-                {
-                    RazorLightEngineBuilder builder = new RazorLightEngineBuilder().UseEmbeddedResourcesProject(typeof(Global));
+            RazorLightEngineBuilder builder = new RazorLightEngineBuilder().UseEmbeddedResourcesProject(typeof(Global));
 
-                    if (_isCachingEnabled)
-                        builder = builder.UseMemoryCachingProvider();
+            if (_isCachingEnabled)
+                builder = builder.UseMemoryCachingProvider();
 
-                    _engine = builder.Build();
-                }
-                return _engine;
-            }
+            _engine = builder.Build();
         }
 
         /// <summary>
-        /// Caches 
+        /// Render the HTML page using a Razor Core template and a model instance.
         /// </summary>
         /// <typeparam name="TModel">Type of the model.</typeparam>
         /// <param name="templateKey"></param>
@@ -70,20 +59,18 @@ namespace PEBakery.Core.Razor
         /// <param name="textWriter"></param>
         public async Task RenderHtmlAsync<TModel>(string templateKey, TModel model, TextWriter textWriter)
         {
-            RazorLightEngine engine = GetRazorLightEngine();
-
             ITemplatePage templatePage = null;
-            if (engine.Handler.IsCachingEnabled)
+            if (_engine.Handler.IsCachingEnabled)
             {
-                TemplateCacheLookupResult cacheResult = engine.Handler.Cache.RetrieveTemplate(templateKey);
+                TemplateCacheLookupResult cacheResult = _engine.Handler.Cache.RetrieveTemplate(templateKey);
                 if (cacheResult.Success)
                     templatePage = cacheResult.Template.TemplatePageFactory();
             }
 
             if (templatePage == null)
-                templatePage = await engine.CompileTemplateAsync(templateKey);
+                templatePage = await _engine.CompileTemplateAsync(templateKey);
 
-            await engine.RenderTemplateAsync(templatePage, model, textWriter);
+            await _engine.RenderTemplateAsync(templatePage, model, textWriter);
         }
     }
     #endregion

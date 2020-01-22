@@ -30,8 +30,8 @@ using System.Collections.Generic;
 
 namespace PEBakery.Core.Razor
 {
-    #region ViewModelBase
-    public class ViewModelBase
+    #region LogLayoutModel
+    public class LogLayoutModel
     {
         // Information
         public string HeadTitle { get; set; }
@@ -45,9 +45,8 @@ namespace PEBakery.Core.Razor
     #endregion
 
     #region SystemLogModel
-    public class SystemLogModel : ViewModelBase
+    public class SystemLogModel : LogLayoutModel
     {
-
         // Data
         public List<SystemLogItem> SysLogs { get; set; }
     }
@@ -61,7 +60,7 @@ namespace PEBakery.Core.Razor
     #endregion
 
     #region BuildLogModel
-    public class BuildLogModel : ViewModelBase
+    public class BuildLogModel : LogLayoutModel
     {
         // Information
         public string BuiltEngineVersion { get; set; }
