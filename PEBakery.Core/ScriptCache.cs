@@ -71,6 +71,15 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region LoadCachePool
+        internal Dictionary<string, CacheModel.ScriptCache> LoadCachePool()
+        {
+            return Table<CacheModel.ScriptCache>()
+                .Distinct(CacheModel.ScriptCacheComparer.Instance)
+                .ToDictionary(x => x.DirectRealPath, StringComparer.OrdinalIgnoreCase);
+        }
+        #endregion
+
         #region CacheScripts
         public (int CachedCount, int UpdatedCount) CacheScripts(ProjectCollection projects, string baseDir)
         {
@@ -88,7 +97,7 @@ namespace PEBakery.Core
                         .Distinct(new ScriptComparer())
                         .ToArray();
 
-                    CacheModel.ScriptCache[] cachePool = Table<CacheModel.ScriptCache>().ToArray();
+                    Dictionary<string, CacheModel.ScriptCache> cachePool = LoadCachePool();
                     List<CacheModel.ScriptCache> updatePool = new List<CacheModel.ScriptCache>();
                     Parallel.ForEach(uniqueScripts, sc =>
                     {
@@ -119,7 +128,7 @@ namespace PEBakery.Core
 
         #region SerializeScript, DeserializeScript
         /// <returns>Return true if cache is updated</returns>
-        private bool SerializeScript(Script sc, CacheModel.ScriptCache[] cachePool, List<CacheModel.ScriptCache> updatePool)
+        private bool SerializeScript(Script sc, Dictionary<string, CacheModel.ScriptCache> cachePool, List<CacheModel.ScriptCache> updatePool)
         {
             if (cachePool == null)
                 throw new ArgumentNullException(nameof(cachePool));
@@ -134,14 +143,15 @@ namespace PEBakery.Core
 
             // Retrieve Cache
             bool updated = false;
-            CacheModel.ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == sc.DirectRealPath.GetHashCode());
+            CacheModel.ScriptCache scCache = null;
+            if (cachePool.ContainsKey(sc.DirectRealPath))
+                scCache = cachePool[sc.DirectRealPath];
 
             // Update Cache into updateDB
             if (scCache == null)
             { // Cache not exists
                 scCache = new CacheModel.ScriptCache
                 {
-                    Hash = sc.DirectRealPath.GetHashCode(),
                     DirectRealPath = sc.DirectRealPath,
                     LastWriteTimeUtc = f.LastWriteTimeUtc,
                     FileSize = f.Length,
@@ -188,15 +198,18 @@ namespace PEBakery.Core
             return updated;
         }
 
-        public static (Script sc, bool cacheValid) DeserializeScript(string realPath, CacheModel.ScriptCache[] cachePool)
+        internal static (Script sc, bool cacheValid) DeserializeScript(string directRealPath, Dictionary<string, CacheModel.ScriptCache> cachePool)
         {
             Script sc = null;
             bool cacheValid = true;
+            
+            if (!cachePool.ContainsKey(directRealPath))
+                return (sc, cacheValid);
 
-            FileInfo f = new FileInfo(realPath);
-            CacheModel.ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == realPath.GetHashCode());
+            FileInfo f = new FileInfo(directRealPath);
+            CacheModel.ScriptCache scCache = cachePool[directRealPath];
             if (scCache != null &&
-                scCache.DirectRealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase) &&
+                scCache.DirectRealPath.Equals(directRealPath, StringComparison.OrdinalIgnoreCase) &&
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
                 scCache.FileSize == f.Length)
             { // Cache Hit
@@ -270,7 +283,7 @@ namespace PEBakery.Core
             return true;
         }
 
-        public string SerializeAsteriskBugDirLink()
+        public static string SerializeAsteriskBugDirLink()
         {
             StringBuilder b = new StringBuilder();
             if (Global.Projects.FullyLoaded)
@@ -348,21 +361,48 @@ namespace PEBakery.Core
         public class ScriptCache
         {
             /// <summary>
-            /// DirectRealPath.GetHashCode()
-            /// </summary>
-            [PrimaryKey]
-            public int Hash { get; set; }
-            /// <summary>
             /// Equivalent to Script.DirectRealPath
             /// </summary>
+            [PrimaryKey]
+            [Indexed]
             [MaxLength(32768)]
             public string DirectRealPath { get; set; }
             public DateTime LastWriteTimeUtc { get; set; }
             public long FileSize { get; set; }
             public byte[] Serialized { get; set; }
 
-            public override string ToString() => $"[{Hash}] {DirectRealPath}";
+            public override string ToString() => $"[{FileSize}] {DirectRealPath}";
         }
+
+        #region Comaparer
+        public class ScriptCacheComparer : IEqualityComparer<ScriptCache>
+        {
+            public static ScriptCacheComparer Instance = new ScriptCacheComparer();
+
+            public bool Equals(ScriptCache x, ScriptCache y)
+            {
+                if (x == null)
+                {
+                    if (y == null)
+                        return true;
+                    else
+                        return false;
+                }
+                else
+                {
+                    if (y == null)
+                        return false;
+                    else
+                        return x.DirectRealPath.Equals(y.DirectRealPath);
+                }
+            }
+
+            public int GetHashCode(ScriptCache x)
+            {
+                return x.DirectRealPath.GetHashCode();
+            }
+        }
+        #endregion
     }
     #endregion
 }

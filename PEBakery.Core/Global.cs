@@ -47,7 +47,7 @@ namespace PEBakery.Core
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r16";
+            public const string ScriptCacheRevision = "r17";
             public const string ProgramVersionStr = "0.9.7";
             public const string ProgramVersionStrFull = "0.9.7 beta7";
 
@@ -159,14 +159,23 @@ namespace PEBakery.Core
                 Logger = new Logger(logDbFile);
                 Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
             }
-            catch (SQLiteException e)
-            { // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted.\r\nPlease delete PEBakeryLog.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                if (Application.Current != null)
-                    Application.Current.Shutdown(1);
-                else
-                    Environment.Exit(1);
+            catch (SQLiteException)
+            { // Update failure -> retry with clearing existing log db
+                File.Delete(logDbFile);
+                try
+                {
+                    Logger = new Logger(logDbFile);
+                    Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched, log cleared due to an error"));
+                }
+                catch (SQLiteException e)
+                { // Unable to continue -> raise an error message
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted and not repairable.\r\nPlease delete PEBakeryLog.db and restart.";
+                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (Application.Current != null)
+                        Application.Current.Shutdown(1);
+                    else
+                        Environment.Exit(1);
+                }
             }
 
             // Init ProjectCollection
@@ -191,14 +200,23 @@ namespace PEBakery.Core
                     int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
                     Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
                 }
-                catch (SQLiteException e)
-                { // Load failure
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted.\r\nPlease delete PEBakeryCache.db and restart.";
-                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    if (Application.Current != null)
-                        Application.Current.Shutdown(1);
-                    else
-                        Environment.Exit(1);
+                catch (SQLiteException)
+                { // Load failure -> Fallback, delete and remake database
+                    File.Delete(cacheDbFile);
+                    try
+                    {
+                        ScriptCache = new ScriptCache(cacheDbFile);
+                        Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, cache cleared due to an error"));
+                    }
+                    catch (SQLiteException e)
+                    { // Unable to continue -> raise an error message
+                        string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
+                        MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                        if (Application.Current != null)
+                            Application.Current.Shutdown(1);
+                        else
+                            Environment.Exit(1);
+                    }
                 }
             }
             else

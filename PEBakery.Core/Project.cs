@@ -107,19 +107,13 @@ namespace PEBakery.Core
         /// <param name="scriptCache">ScriptCache instance. Set to null if cache is disabled.</param>
         /// <param name="progress">Delegate for reporting progress</param>
         /// <returns></returns>
-        public List<LogInfo> Load(IList<ScriptParseInfo> spis, ScriptCache scriptCache, IProgress<(LoadReport Type, string Path)> progress)
+        internal List<LogInfo> Load(IList<ScriptParseInfo> spis, Dictionary<string, CacheModel.ScriptCache> cachePool, 
+            IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
             string mainScriptPath = Path.Combine(ProjectDir, Names.MainScriptFile);
             AllScripts = new List<Script>();
-
-            CacheModel.ScriptCache[] cachePool = null;
-            if (scriptCache != null)
-            {
-                progress?.Report((LoadReport.LoadingCache, null));
-                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
-            }
 
             // Load scripts from disk or cache
             bool cacheValid = true;
@@ -164,7 +158,8 @@ namespace PEBakery.Core
                         AllScripts.Add(sc);
 
                         // Loading a project without script cache generates a lot of Gen 2 heap object
-                        if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
+                        // TODO: Remove this part of code?
+                        if (cachePool == null && AllScripts.Count % LoadGCInterval == 0)
                             GC.Collect();
                     }
 

@@ -1076,6 +1076,8 @@ namespace PEBakery.Core
     #region Comaparer
     public class ScriptComparer : IEqualityComparer<Script>
     {
+        public static ScriptComparer Instance = new ScriptComparer();
+
         public bool Equals(Script x, Script y)
         {
             Debug.Assert(x != null, "Script must not be null");

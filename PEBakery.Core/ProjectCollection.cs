@@ -370,7 +370,15 @@ namespace PEBakery.Core
                 };
             }
 
-            List<LogInfo> logs = new List<LogInfo>(32);
+            // Load caches
+            Dictionary<string, CacheModel.ScriptCache> cachePool = null;
+            if (scriptCache != null)
+            {
+                progress?.Report((Project.LoadReport.LoadingCache, null));
+                cachePool = scriptCache.LoadCachePool();
+            }
+
+            List<LogInfo> logs = new List<LogInfo>(16);
             try
             {
                 foreach (string key in _projectNames)
@@ -382,7 +390,7 @@ namespace PEBakery.Core
                     };
 
                     // Load scripts
-                    List<LogInfo> errLogs = project.Load(_spiDict[key], scriptCache, progress);
+                    List<LogInfo> errLogs = project.Load(_spiDict[key], cachePool, progress);
                     logs.AddRange(errLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -396,7 +404,7 @@ namespace PEBakery.Core
                     string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
 
                 // Populate *.link scripts
-                List<LogInfo> linkLogs = LoadLinks(scriptCache, progress);
+                List<LogInfo> linkLogs = LoadLinks(cachePool, progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
@@ -419,19 +427,10 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
+        private List<LogInfo> LoadLinks(Dictionary<string, CacheModel.ScriptCache> cachePool, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
-
-            // Doing this will consume some memory, but also greatly increase performance.
-            // -> Actually, using a cache relieves GC pressure a lot, so it is effective even for memory consumption.
-            CacheModel.ScriptCache[] cachePool = null;
-            if (scriptCache != null)
-            {
-                progress?.Report((Project.LoadReport.LoadingCache, null));
-                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
-            }
 
             string CheckLinkPath(Script sc, string linkRawPath)
             {
@@ -527,9 +526,10 @@ namespace PEBakery.Core
                     progress?.Report((cached, null));
                 }
 
-                if (scriptCache == null)
+                if (cachePool == null)
                 {
                     // Loading a project without a script cache generates a lot of Gen 2 heap object
+                    // TODO: Remove this part of code?
                     int thisCount = Interlocked.Increment(ref loadCount);
                     if (thisCount % Project.LoadGCInterval == 0)
                         GC.Collect();
