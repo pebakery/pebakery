@@ -44,8 +44,13 @@ namespace PEBakery.Core
     #region ScriptCache
     public class ScriptCache : SQLiteConnection
     {
-        #region Fields
+        #region Fields, Properties
         public static int DbLock = 0;
+        private readonly BinaryFormatter _formatter = new BinaryFormatter();
+        private readonly object _cachePoolLock = new object();
+        private Dictionary<string, CacheModel.ScriptCache> _cachePool;
+
+        public int CacheCount => Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
         #endregion
 
         #region Constructor
@@ -71,12 +76,26 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region LoadCachePool
-        internal Dictionary<string, CacheModel.ScriptCache> LoadCachePool()
+        #region CachePool
+        public void LoadCachePool()
         {
-            return Table<CacheModel.ScriptCache>()
-                .Distinct(CacheModel.ScriptCacheComparer.Instance)
-                .ToDictionary(x => x.DirectRealPath, StringComparer.OrdinalIgnoreCase);
+            lock (_cachePoolLock)
+            {
+                if (_cachePool == null)
+                {
+                    _cachePool = Table<CacheModel.ScriptCache>()
+                        .Distinct(CacheModel.ScriptCacheComparer.Instance)
+                        .ToDictionary(x => x.DirectRealPath, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        public void UnloadCachePool()
+        {
+            lock (_cachePoolLock)
+            {
+                _cachePool = null;
+            }
         }
         #endregion
 
@@ -85,7 +104,8 @@ namespace PEBakery.Core
         {
             try
             {
-                SaveCacheRevision(baseDir);
+                LoadCachePool();
+                SaveCacheRevision(baseDir, projects);
 
                 int cachedCount = 0;
                 int updatedCount = 0;
@@ -94,14 +114,13 @@ namespace PEBakery.Core
                     // Remove duplicate
                     Script[] uniqueScripts = project.AllScripts
                         .Where(x => x.Type != ScriptType.Directory)
-                        .Distinct(new ScriptComparer())
+                        .Distinct(ScriptComparer.Instance)
                         .ToArray();
 
-                    Dictionary<string, CacheModel.ScriptCache> cachePool = LoadCachePool();
                     List<CacheModel.ScriptCache> updatePool = new List<CacheModel.ScriptCache>();
                     Parallel.ForEach(uniqueScripts, sc =>
                     {
-                        bool updated = SerializeScript(sc, cachePool, updatePool);
+                        bool updated = SerializeScript(sc, updatePool);
 
                         // Q) Can this value measured by updatePool.Count?
                         // A) Even if two scripts were serialized (e.g. .link), they should be counted as one script.
@@ -127,11 +146,9 @@ namespace PEBakery.Core
         #endregion
 
         #region SerializeScript, DeserializeScript
-        /// <returns>Return true if cache is updated</returns>
-        private bool SerializeScript(Script sc, Dictionary<string, CacheModel.ScriptCache> cachePool, List<CacheModel.ScriptCache> updatePool)
+        /// <returns>Return true if cache was updated</returns>
+        private bool SerializeScript(Script sc, List<CacheModel.ScriptCache> updatePool)
         {
-            if (cachePool == null)
-                throw new ArgumentNullException(nameof(cachePool));
             if (updatePool == null)
                 throw new ArgumentNullException(nameof(updatePool));
             Debug.Assert(sc.Type != ScriptType.Directory);
@@ -144,8 +161,8 @@ namespace PEBakery.Core
             // Retrieve Cache
             bool updated = false;
             CacheModel.ScriptCache scCache = null;
-            if (cachePool.ContainsKey(sc.DirectRealPath))
-                scCache = cachePool[sc.DirectRealPath];
+            if (_cachePool.ContainsKey(sc.DirectRealPath))
+                scCache = _cachePool[sc.DirectRealPath];
 
             // Update Cache into updateDB
             if (scCache == null)
@@ -157,10 +174,9 @@ namespace PEBakery.Core
                     FileSize = f.Length,
                 };
 
-                BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, sc);
+                    _formatter.Serialize(ms, sc);
                     scCache.Serialized = ms.ToArray();
                 }
 
@@ -173,10 +189,9 @@ namespace PEBakery.Core
             else if (scCache.DirectRealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
-                BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, sc);
+                    _formatter.Serialize(ms, sc);
                     scCache.Serialized = ms.ToArray();
                     scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
                     scCache.FileSize = f.Length;
@@ -189,25 +204,28 @@ namespace PEBakery.Core
                 }
             }
 
+            // Serialize also linked scripts
             if (sc.Type == ScriptType.Link && sc.LinkLoaded)
             {
-                bool linkUpdated = SerializeScript(sc.Link, cachePool, updatePool);
+                bool linkUpdated = SerializeScript(sc.Link, updatePool);
                 updated = updated || linkUpdated;
             }
 
             return updated;
         }
 
-        internal static (Script sc, bool cacheValid) DeserializeScript(string directRealPath, Dictionary<string, CacheModel.ScriptCache> cachePool)
+        internal Script DeserializeScript(string directRealPath, out bool isCacheValid)
         {
+            LoadCachePool();
+
             Script sc = null;
-            bool cacheValid = true;
-            
-            if (!cachePool.ContainsKey(directRealPath))
-                return (sc, cacheValid);
+            isCacheValid = true;
+
+            if (!_cachePool.ContainsKey(directRealPath))
+                return null;
 
             FileInfo f = new FileInfo(directRealPath);
-            CacheModel.ScriptCache scCache = cachePool[directRealPath];
+            CacheModel.ScriptCache scCache = _cachePool[directRealPath];
             if (scCache != null &&
                 scCache.DirectRealPath.Equals(directRealPath, StringComparison.OrdinalIgnoreCase) &&
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
@@ -217,25 +235,24 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        BinaryFormatter formatter = new BinaryFormatter();
-                        sc = formatter.Deserialize(ms) as Script;
+                        sc = _formatter.Deserialize(ms) as Script;
+
+                        // Deserialization failed (Casting failure)
+                        // Ex) Field of the `Script` class have changed without revision update
+                        if (sc == null)
+                            isCacheValid = false;
                     }
                     catch (SerializationException)
                     { // Exception from BinaryFormatter.Deserialize()
                         // Cache is inconsistent, turn off script cache.
                         // Ex) `Script` class moved to different assembly
                         sc = null;
-                        cacheValid = false;
+                        isCacheValid = false;
                     }
-
-                    // Deserialization failed (Casting failure)
-                    // Ex) Field of the `Script` class changed without revision update
-                    if (sc == null)
-                        cacheValid = false;
                 }
             }
 
-            return (sc, cacheValid);
+            return sc;
         }
         #endregion
 
@@ -244,19 +261,20 @@ namespace PEBakery.Core
         private const string BaseDir = "BaseDir";
         private const string CacheRevision = "CacheRevision";
         private const string AsteriskBugDirLink = "AsteriskBugDirLink";
-        public void SaveCacheRevision(string baseDir)
+
+        public void SaveCacheRevision(string baseDir, ProjectCollection projects)
         {
             CacheModel.CacheRevision[] infos =
             {
                 new CacheModel.CacheRevision { Key = EngineVersion, Value = Global.Const.EngineVersion.ToString("000") },
                 new CacheModel.CacheRevision { Key = BaseDir, Value = baseDir },
                 new CacheModel.CacheRevision { Key = CacheRevision, Value = Global.Const.ScriptCacheRevision },
-                new CacheModel.CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink() },
+                new CacheModel.CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink(projects) },
             };
             InsertOrReplaceAll(infos);
         }
 
-        public bool CheckCacheRevision(string baseDir)
+        public bool CheckCacheRevision(string baseDir, ProjectCollection projects)
         {
             Dictionary<string, string> infoDict = Table<CacheModel.CacheRevision>().ToDictionary(x => x.Key, x => x.Value);
 
@@ -277,16 +295,16 @@ namespace PEBakery.Core
                 return false;
             if (!infoDict[CacheRevision].Equals(Global.Const.ScriptCacheRevision, StringComparison.Ordinal))
                 return false;
-            if (!infoDict[AsteriskBugDirLink].Equals(SerializeAsteriskBugDirLink(), StringComparison.Ordinal))
+            if (!infoDict[AsteriskBugDirLink].Equals(SerializeAsteriskBugDirLink(projects), StringComparison.Ordinal))
                 return false;
 
             return true;
         }
 
-        public static string SerializeAsteriskBugDirLink()
+        public static string SerializeAsteriskBugDirLink(ProjectCollection projects)
         {
             StringBuilder b = new StringBuilder();
-            if (Global.Projects.FullyLoaded)
+            if (projects.FullyLoaded)
             { // Called by project refresh button
                 foreach (Project p in Global.Projects)
                 {
@@ -297,10 +315,10 @@ namespace PEBakery.Core
             }
             else
             { // Called by Global.Init()
-                foreach (string projectName in Global.Projects.ProjectNames)
+                foreach (string projectName in projects.ProjectNames)
                 {
-                    Debug.Assert(Global.Projects.CompatOptions.ContainsKey(projectName), "ProjectCollection error at ScriptCache.SerializeAsteriskBugDirLink");
-                    CompatOption compat = Global.Projects.CompatOptions[projectName];
+                    Debug.Assert(projects.CompatOptions.ContainsKey(projectName), "ProjectCollection error at ScriptCache.SerializeAsteriskBugDirLink");
+                    CompatOption compat = projects.CompatOptions[projectName];
 
                     string key = projectName;
                     bool value = compat.AsteriskBugDirLink;
@@ -328,12 +346,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ClearTable
-        public struct ClearTableOptions
-        {
-            public bool CacheInfo;
-            public bool ScriptCache;
-        }
-
         public void ClearTable(ClearTableOptions opts)
         {
             if (opts.CacheInfo)
@@ -346,8 +358,16 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region ClearTableOptions
+    public class ClearTableOptions
+    {
+        public bool CacheInfo;
+        public bool ScriptCache;
+    }
+    #endregion
+
     #region Model
-    public class CacheModel
+    internal class CacheModel
     {
         public class CacheRevision
         {

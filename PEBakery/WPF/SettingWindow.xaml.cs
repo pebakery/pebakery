@@ -1593,7 +1593,7 @@ namespace PEBakery.WPF
             if (Global.ScriptCache == null)
                 return;
 
-            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
+            Global.ScriptCache.ClearTable(new ClearTableOptions
             {
                 ScriptCache = true,
             });
@@ -1615,7 +1615,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                int cacheCount = Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
+                int cacheCount = Global.ScriptCache.CacheCount;
                 ScriptCacheState = $"{cacheCount} scripts cached";
             }
         }

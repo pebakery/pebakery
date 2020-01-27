@@ -27,7 +27,6 @@
 
 using PEBakery.Helper;
 using PEBakery.Ini;
-using SQLite;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,7 +35,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -370,17 +368,17 @@ namespace PEBakery.Core
                 };
             }
 
-            // Load caches
-            Dictionary<string, CacheModel.ScriptCache> cachePool = null;
-            if (scriptCache != null)
-            {
-                progress?.Report((Project.LoadReport.LoadingCache, null));
-                cachePool = scriptCache.LoadCachePool();
-            }
-
             List<LogInfo> logs = new List<LogInfo>(16);
             try
             {
+                // Load caches
+                if (scriptCache != null)
+                {
+                    progress?.Report((Project.LoadReport.LoadingCache, null));
+                    scriptCache.LoadCachePool();
+                }
+
+                // Load projects
                 foreach (string key in _projectNames)
                 {
                     Project project = new Project(_baseDir, key, _compatDict[key])
@@ -390,7 +388,7 @@ namespace PEBakery.Core
                     };
 
                     // Load scripts
-                    List<LogInfo> errLogs = project.Load(_spiDict[key], cachePool, progress);
+                    List<LogInfo> errLogs = project.Load(scriptCache, _spiDict[key], progress);
                     logs.AddRange(errLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -400,26 +398,23 @@ namespace PEBakery.Core
                 }
 
                 // Sort ProjectList
-                ProjectList.Sort((x, y) =>
-                    string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
+                ProjectList.Sort((x, y) => string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
 
                 // Populate *.link scripts
-                List<LogInfo> linkLogs = LoadLinks(cachePool, progress);
+                List<LogInfo> linkLogs = LoadLinks(scriptCache, progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
                 foreach (Project p in ProjectList)
                     p.PostLoad();
-
-                FullyLoaded = true;
             }
-            catch (SQLiteException e)
+            finally
             {
-                // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                Application.Current.Shutdown(1);
+                if (scriptCache != null)
+                    scriptCache.UnloadCachePool();
             }
+
+            FullyLoaded = true;
 
             // Loading a project without script cache generates a lot of Gen 2 heap object
             GC.Collect();
@@ -427,7 +422,7 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(Dictionary<string, CacheModel.ScriptCache> cachePool, IProgress<(Project.LoadReport Type, string Path)> progress)
+        private List<LogInfo> LoadLinks(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
@@ -455,7 +450,7 @@ namespace PEBakery.Core
             }
 
             int loadCount = 0;
-            bool cacheValid = true;
+            bool isCacheValid = true;
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Parallel.ForEach(linkSources, sc =>
             {
@@ -472,14 +467,12 @@ namespace PEBakery.Core
                             return;
 
                         // Load .link's linked scripts with cache
-                        if (cachePool != null && cacheValid)
+                        if (scriptCache != null && isCacheValid)
                         { // Case of ScriptCache enabled
-                            (linkTarget, cacheValid) = ScriptCache.DeserializeScript(linkRealPath, cachePool);
+                            linkTarget = scriptCache.DeserializeScript(linkRealPath, out isCacheValid);
                             if (linkTarget != null)
                             {
-                                linkTarget.TreePath = string.Empty;
-                                linkTarget.Project = sc.Project;
-                                linkTarget.IsDirLink = sc.IsDirLink;
+                                linkTarget.FinishDeserialization(string.Empty, sc.Project, sc.IsDirLink);
                                 cached = Project.LoadReport.Stage2Cached;
                             }
                         }
@@ -506,17 +499,14 @@ namespace PEBakery.Core
                     }
                     while (linkTarget.Type != ScriptType.Script);
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 { // Parser Error
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
 
                 if (valid)
                 {
-                    sc.LinkLoaded = true;
-                    sc.Link = linkTarget;
+                    sc.SetLink(linkTarget);
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 else // Error
@@ -526,7 +516,7 @@ namespace PEBakery.Core
                     progress?.Report((cached, null));
                 }
 
-                if (cachePool == null)
+                if (scriptCache == null)
                 {
                     // Loading a project without a script cache generates a lot of Gen 2 heap object
                     // TODO: Remove this part of code?

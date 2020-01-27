@@ -1,4 +1,7 @@
 ﻿[*.cs]
 
+# IDE0063: 간단한 'using' 문 사용
+csharp_prefer_simple_using_statement = true:silent
+
 # CA1031: Do not catch general exception types
 dotnet_diagnostic.CA1031.severity = silent

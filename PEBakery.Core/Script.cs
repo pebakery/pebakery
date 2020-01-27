@@ -121,13 +121,7 @@ namespace PEBakery.Core
         /// <summary>
         /// The location script should be displayed in project script tree. It determines the build order. TreePath is empty in linked script.
         /// </summary>
-        public string TreePath
-        {
-            get => _treePath;
-            // _treePath can be changed only right after deserialized from cache.
-            // No readonly for _treePath because of script caching.
-            set => _treePath = value;
-        }
+        public string TreePath => _treePath;
         public Dictionary<string, ScriptSection> Sections
         {
             get
@@ -154,9 +148,9 @@ namespace PEBakery.Core
         public bool IsMainScript => _isMainScript;
         public bool IgnoreMain => _ignoreMain;
         public ScriptType Type => _type;
-        public Script Link { get => _link; set => _link = value; }
-        public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
-        public bool IsDirLink { get => _isDirLink; set => _isDirLink = value; }
+        public Script Link => _link;
+        public bool LinkLoaded => _linkLoaded; 
+        public bool IsDirLink => _isDirLink;
         public Project Project
         {
             get
@@ -165,7 +159,6 @@ namespace PEBakery.Core
                     return _link.Project;
                 return _project;
             }
-            set => _project = value;
         }
         /// <summary>
         /// Title of the script, displayed in the PEBakery UI.
@@ -812,7 +805,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Interface Methods - Get, Apply
+        #region User Interface Methods - Get, Apply
         public ScriptSection GetInterfaceSection(out string sectionName)
         {
             sectionName = ScriptSection.Names.Interface;
@@ -995,19 +988,37 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Script Caching - Deserialization
+        internal void FinishDeserialization(string treePath, Project project, bool isDirLink)
+        {
+            // Overwrite non-serialized fields
+            _treePath = treePath;
+            _project = project;
+            _isDirLink = isDirLink;
+        }
+        #endregion
+
+        #region SetLink
+        public void SetLink(Script linkTarget)
+        {
+            if (linkTarget.Type != ScriptType.Link)
+                throw new ArgumentException($"linkTarget [{nameof(linkTarget)}] is not a Link typed script.");
+
+            _link = linkTarget;
+            _linkLoaded = true;
+        }
+        #endregion
+
         #region Virtual, Overriden Methods
         public override string ToString()
         {
-            switch (_type)
+            return _type switch
             {
-                case ScriptType.Script:
-                    return $"[S_{_level}] {_title}";
-                case ScriptType.Link:
-                    return $"[L_{_level}] {MainInfo["Link"]}";
-                case ScriptType.Directory:
-                    return $"[D_{_level}] {_title}";
-            }
-            return _title;
+                ScriptType.Script => $"[S_{_level}] {_title}",
+                ScriptType.Link => $"[L_{_level}] {MainInfo["Link"]}",
+                ScriptType.Directory => $"[D_{_level}] {_title}",
+                _ => _title,
+            };
         }
 
         public override bool Equals(object obj)

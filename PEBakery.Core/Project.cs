@@ -107,8 +107,7 @@ namespace PEBakery.Core
         /// <param name="scriptCache">ScriptCache instance. Set to null if cache is disabled.</param>
         /// <param name="progress">Delegate for reporting progress</param>
         /// <returns></returns>
-        internal List<LogInfo> Load(IList<ScriptParseInfo> spis, Dictionary<string, CacheModel.ScriptCache> cachePool, 
-            IProgress<(LoadReport Type, string Path)> progress)
+        internal List<LogInfo> Load(ScriptCache scriptCache, IList<ScriptParseInfo> spis, IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -128,14 +127,12 @@ namespace PEBakery.Core
                 Script sc = null;
                 try
                 {
-                    if (cachePool != null && cacheValid)
+                    if (scriptCache != null && cacheValid)
                     { // ScriptCache enabled (disabled in Directory script)
-                        (sc, cacheValid) = ScriptCache.DeserializeScript(spi.RealPath, cachePool);
+                        sc = scriptCache.DeserializeScript(spi.RealPath, out cacheValid);
                         if (sc != null)
                         {
-                            sc.TreePath = spi.TreePath;
-                            sc.Project = this;
-                            sc.IsDirLink = spi.IsDirLink;
+                            sc.FinishDeserialization(spi.TreePath, this, spi.IsDirLink);
                             cached = LoadReport.Stage1Cached;
                         }
                     }
@@ -159,19 +156,17 @@ namespace PEBakery.Core
 
                         // Loading a project without script cache generates a lot of Gen 2 heap object
                         // TODO: Remove this part of code?
-                        if (cachePool == null && AllScripts.Count % LoadGCInterval == 0)
+                        if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
                             GC.Collect();
                     }
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                     progress?.Report((cached, null));
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
             });
 
             // mainScriptIdx
@@ -433,17 +428,15 @@ namespace PEBakery.Core
                     while (link.Type != ScriptType.Script);
 
                     if (valid)
-                        sc.Link = link;
+                        sc.SetLink(link);
                     else
                         return null;
                 }
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch
             { // Do nothing - intentionally left blank
                 return null;
             }
-#pragma warning restore CA1031 // Do not catch general exception types
 
             return sc;
         }
@@ -702,8 +695,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct LoadScriptRuntimeOptions
-    public struct LoadScriptRuntimeOptions
+    #region LoadScriptRuntimeOptions
+    public class LoadScriptRuntimeOptions
     {
         /// <summary>
         /// Do not check integrity of [Main] section
