@@ -472,7 +472,7 @@ namespace PEBakery.Core
                             linkTarget = scriptCache.DeserializeScript(linkRealPath, out isCacheValid);
                             if (linkTarget != null)
                             {
-                                linkTarget.FinishDeserialization(string.Empty, sc.Project, sc.IsDirLink);
+                                linkTarget.PostDeserialization(string.Empty, sc.Project, sc.IsDirLink);
                                 cached = Project.LoadReport.Stage2Cached;
                             }
                         }

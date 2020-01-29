@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using MessagePack;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
@@ -33,8 +34,33 @@ using System.Runtime.CompilerServices;
 
 namespace PEBakery.Core
 {
+    #region (enum) SectionType
+    public enum SectionType
+    {
+        None = 0,
+        // [Main]
+        Main = 10,
+        // [Variables]
+        Variables = 20,
+        // [Interface]
+        Interface = 30,
+        // [Process], ...
+        Code = 40,
+        // Code or AttachFileList
+        NonInspected = 90,
+        // [EncodedFolders]
+        AttachFolderList = 100,
+        // [AuthorEncoded], [InterfaceEncoded], and other folders
+        AttachFileList = 101,
+        // [EncodedFile-InterfaceEncoded-*], [EncodedFile-AuthorEncoded-*]
+        AttachEncodeNow = 102,
+        // [EncodedFile-*]
+        AttachEncodeLazy = 103,
+    }
+    #endregion
+
     #region ScriptSection
-    [Serializable]
+    [MessagePackObject]
     public class ScriptSection : IEquatable<ScriptSection>
     {
         #region (Const) Known Section Names
@@ -57,16 +83,36 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields and Properties
-        public Script Script { get; }
+        [IgnoreMember]
+        public Script Script { get; private set; }
+        [IgnoreMember]
         public Project Project => Script.Project;
+        [Key(0)]
         public string Name { get; }
-        public SectionType Type { get; set; }
+        [Key(1)]
+        public SectionType _type;
+        [IgnoreMember]
+        public SectionType Type 
+        {
+            get => _type;
+            set
+            {
+                _type = Type switch
+                {
+                    SectionType.NonInspected => value,
+                    _ => throw new InvalidOperationException($"Overwriting a type of a ScriptSection is only allowed to SectionType.NonInstpected."),
+                };
+            }
+        }
+        [Key(2)]
         public int LineIdx { get; }
-        private string[] _lines;
 
         /// <summary>
         /// Get lines of this section (Cached)
         /// </summary>
+        [Key(3)]
+        private string[] _lines;
+        [IgnoreMember]
         public string[] Lines
         {
             get
@@ -90,7 +136,9 @@ namespace PEBakery.Core
             }
         }
 
+        [IgnoreMember]
         private Dictionary<string, string> _iniDict;
+        [IgnoreMember]
         public Dictionary<string, string> IniDict
         {
             get
@@ -116,7 +164,7 @@ namespace PEBakery.Core
         {
             Script = script;
             Name = sectionName;
-            Type = type;
+            _type = type;
             LineIdx = lineIdx;
             if (load)
                 LoadLines();
@@ -126,10 +174,13 @@ namespace PEBakery.Core
         {
             Script = script;
             Name = sectionName;
-            Type = type;
+            _type = type;
             LineIdx = lineIdx;
             _lines = lines;
         }
+
+        [SerializationConstructor]
+        private ScriptSection() { /* Do Nothing */ }
         #endregion
 
         #region Load, Unload, Reload
@@ -272,6 +323,33 @@ namespace PEBakery.Core
             }
 
             return true;
+        }
+        #endregion
+
+        #region Script Caching - PostDeserialization
+        public void PostDeserialization(Script parent)
+        {
+            Script = parent;
+        }
+        #endregion
+
+        #region LoadSectionAtScriptLoadTime
+        public static bool LoadSectionAtScriptLoadTime(SectionType type)
+        {
+            switch (type)
+            {
+                case SectionType.Main:
+                case SectionType.Variables:
+                case SectionType.Interface:
+                case SectionType.Code:
+                case SectionType.NonInspected:
+                case SectionType.AttachFolderList:
+                case SectionType.AttachFileList:
+                case SectionType.AttachEncodeNow:
+                    return true;
+                default:
+                    return false;
+            }
         }
         #endregion
 

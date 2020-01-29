@@ -132,7 +132,7 @@ namespace PEBakery.Core
                         sc = scriptCache.DeserializeScript(spi.RealPath, out cacheValid);
                         if (sc != null)
                         {
-                            sc.FinishDeserialization(spi.TreePath, this, spi.IsDirLink);
+                            sc.PostDeserialization(spi.TreePath, this, spi.IsDirLink);
                             cached = LoadReport.Stage1Cached;
                         }
                     }

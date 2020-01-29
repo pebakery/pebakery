@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 namespace PEBakery.Core.Tests
 {
     [TestClass]
+    [TestCategory(nameof(TestSetup))]
     public class TestSetup
     {
         #region AssemblyInitalize, AssemblyCleanup

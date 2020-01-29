@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+using MessagePack;
+using MessagePack.Resolvers;
 using SQLite;
 using System;
 using System.Collections;
@@ -32,8 +34,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,9 +46,9 @@ namespace PEBakery.Core
     {
         #region Fields, Properties
         public static int DbLock = 0;
-        private readonly BinaryFormatter _formatter = new BinaryFormatter();
         private readonly object _cachePoolLock = new object();
         private Dictionary<string, CacheModel.ScriptCache> _cachePool;
+        private readonly MessagePackSerializerOptions _msgPackOpts;
 
         public int CacheCount => Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
         #endregion
@@ -56,8 +56,20 @@ namespace PEBakery.Core
         #region Constructor
         public ScriptCache(string path) : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
+            // Create SQLite Tables
             CreateTable<CacheModel.CacheRevision>();
             CreateTable<CacheModel.ScriptCache>();
+
+            // Prepare MessagePack resolvers
+            IFormatterResolver[] resolvers = new IFormatterResolver[]
+            {
+                DynamicObjectResolverAllowPrivate.Instance,
+                BuiltinResolver.Instance,
+                DynamicEnumResolver.Instance,
+                DynamicGenericResolver.Instance,
+            };
+            IFormatterResolver compositeResolver = CompositeResolver.Create(resolvers);
+            _msgPackOpts = MessagePackSerializerOptions.Standard.WithResolver(compositeResolver);
         }
         #endregion
 
@@ -170,15 +182,10 @@ namespace PEBakery.Core
                 scCache = new CacheModel.ScriptCache
                 {
                     DirectRealPath = sc.DirectRealPath,
+                    Serialized = MessagePackSerializer.Serialize(sc, _msgPackOpts),
                     LastWriteTimeUtc = f.LastWriteTimeUtc,
                     FileSize = f.Length,
                 };
-
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    _formatter.Serialize(ms, sc);
-                    scCache.Serialized = ms.ToArray();
-                }
 
                 lock (updatePool)
                 {
@@ -189,13 +196,9 @@ namespace PEBakery.Core
             else if (scCache.DirectRealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    _formatter.Serialize(ms, sc);
-                    scCache.Serialized = ms.ToArray();
-                    scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
-                    scCache.FileSize = f.Length;
-                }
+                scCache.Serialized = MessagePackSerializer.Serialize(sc, _msgPackOpts);
+                scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
+                scCache.FileSize = f.Length;
 
                 lock (updatePool)
                 {
@@ -231,24 +234,21 @@ namespace PEBakery.Core
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
                 scCache.FileSize == f.Length)
             { // Cache Hit
-                using (MemoryStream ms = new MemoryStream(scCache.Serialized))
+                try
                 {
-                    try
-                    {
-                        sc = _formatter.Deserialize(ms) as Script;
+                    sc = MessagePackSerializer.Deserialize<Script>(scCache.Serialized, _msgPackOpts);
 
-                        // Deserialization failed (Casting failure)
-                        // Ex) Field of the `Script` class have changed without revision update
-                        if (sc == null)
-                            isCacheValid = false;
-                    }
-                    catch (SerializationException)
-                    { // Exception from BinaryFormatter.Deserialize()
-                        // Cache is inconsistent, turn off script cache.
-                        // Ex) `Script` class moved to different assembly
-                        sc = null;
+                    // Deserialization failed (Casting failure)
+                    // Ex) Field of the `Script` class have changed without revision update
+                    if (sc == null)
                         isCacheValid = false;
-                    }
+                }
+                catch (MessagePackSerializationException)
+                { // Exception from MessagePackSerializer.Deserialize
+                  // Cache is inconsistent, turn off script cache.
+                  // Ex) `Script` class moved to different assembly
+                    sc = null;
+                    isCacheValid = false;
                 }
             }
 
