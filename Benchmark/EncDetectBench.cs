@@ -10,6 +10,8 @@ namespace Benchmark
 {
     public class EncDetectBench
     {
+        private string _binaryDir;
+        private string _sampleBaseDir;
         private string _sampleDir;
         private string _magicFile;
         private Magic _magic;
@@ -51,10 +53,11 @@ namespace Benchmark
         public void GlobalSetup()
         {
             Program.NativeGlobalInit();
+            _binaryDir = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            _sampleBaseDir = Path.GetFullPath(Path.Combine(_binaryDir, "..", "..", "..", "..", "..", "..", "..", "Samples"));
 
-            string binaryDir = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
-            _sampleDir = Path.GetFullPath(Path.Combine(binaryDir, "..", "..", "Samples"));
-            _magicFile = Path.Combine(binaryDir, "magic.mgc");
+            _sampleDir = Path.Combine(_sampleBaseDir, "EncDetect");
+            _magicFile = Path.Combine(_binaryDir, "magic.mgc");
             _magic = Magic.Open(_magicFile);
             _autoitDetect = new AdvTextEncDetect();
 
@@ -145,7 +148,7 @@ namespace Benchmark
 
         public DetectionResult DetectUtfUnknown(byte[] rawData, int sizeLimit)
         {
-            using (MemoryStream ms = new MemoryStream(rawData, 0, sizeLimit))
+            using (MemoryStream ms = new MemoryStream(rawData, 0, Math.Min(sizeLimit, rawData.Length)))
             {
                 return CharsetDetector.DetectFromStream(ms);
             }

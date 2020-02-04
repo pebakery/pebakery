@@ -1,5 +1,9 @@
-﻿using BenchmarkDotNet.Running;
+﻿using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Running;
 using CommandLine;
+using Joveler.Compression.LZ4;
+using Joveler.Compression.XZ;
+using Joveler.Compression.ZLib;
 using Joveler.FileMagician;
 using System;
 using System.Collections.Generic;
@@ -33,6 +37,9 @@ namespace Benchmark
 
     [Verb("enc-detect", HelpText = "Benchmark encoding detection")]
     public class EncDetectBenchOptions : ParamOptions { }
+
+    [Verb("decomp-mgc", HelpText = "Benchmark magic.mgc decompression")]
+    public class DecompMgcBenchOptions : ParamOptions { }
     #endregion
 
     #region Program
@@ -67,21 +74,42 @@ namespace Benchmark
                     break;
             }
 
-            string libPath = null;
+            string magicLibPath, gzipLibPath, xzLibPath, lz4LibPath;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                libPath = Path.Combine(arch, "libmagic-1.dll");
+            {
+                magicLibPath = Path.Combine(arch, "libmagic-1.dll");
+                gzipLibPath = Path.Combine(arch, "zlibwapi.dll");
+                xzLibPath = Path.Combine(arch, "liblzma.dll");
+                lz4LibPath = Path.Combine(arch, "liblz4.dll");
+            }
             else
+            {
                 throw new PlatformNotSupportedException();
+            }
 
-            if (libPath == null || !File.Exists(libPath))
-                throw new PlatformNotSupportedException();
+            void CheckLibPath(string libPath)
+            {
+                if (libPath == null || !File.Exists(libPath))
+                    throw new PlatformNotSupportedException();
+            }
 
-            Magic.GlobalInit(libPath);
+            CheckLibPath(magicLibPath);
+            CheckLibPath(gzipLibPath);
+            CheckLibPath(xzLibPath);
+            CheckLibPath(lz4LibPath);
+
+            Magic.GlobalInit(magicLibPath);
+            ZLibInit.GlobalInit(gzipLibPath);
+            XZInit.GlobalInit(xzLibPath);
+            LZ4Init.GlobalInit(lz4LibPath);
         }
 
         public static void NativeGlobalCleanup()
         {
             Magic.GlobalCleanup();
+            ZLibInit.GlobalCleanup();
+            XZInit.GlobalCleanup();
+            LZ4Init.GlobalCleanup();
         }
         #endregion
 
@@ -97,21 +125,41 @@ namespace Benchmark
             });
 
             argParser.ParseArguments<AllBenchOptions,
-                EncDetectBenchOptions>(args)
+                EncDetectBenchOptions, DecompMgcBenchOptions>(args)
                 .WithParsed<AllBenchOptions>(x => opts = x)
                 .WithParsed<EncDetectBenchOptions>(x => opts = x)
+                .WithParsed<DecompMgcBenchOptions>(x => opts = x)
                 .WithNotParsed(PrintErrorAndExit);
             Debug.Assert(opts != null, $"{nameof(opts)} != null");
 
+            bool encDetectBench = false;
+            bool decompMgcBench = false;
             switch (opts)
             {
-                case AllBenchOptions _:
-                    BenchmarkRunner.Run<EncDetectBench>();
-                    break;
                 case EncDetectBenchOptions _:
-                    BenchmarkRunner.Run<EncDetectBench>();
+                    Console.WriteLine("EncDetect");
+                    encDetectBench = true;
+                    break;
+                case DecompMgcBenchOptions _:
+                    Console.WriteLine("DecompMgc");
+                    decompMgcBench = true;
+                    break;
+                case AllBenchOptions _:
+                    encDetectBench = true;
+                    decompMgcBench = true;
+                    break;
+                default:
+                    Console.WriteLine("Please specify proper benchmarks.");
+                    Environment.Exit(1);
                     break;
             }
+
+            // IConfig config = DefaultConfig.Instance.With(ConfigOptions.DisableOptimizationsValidator);
+            IConfig config = DefaultConfig.Instance;
+            if (decompMgcBench)
+                BenchmarkRunner.Run<DecompMgcBench>(config);
+            if (encDetectBench)
+                BenchmarkRunner.Run<EncDetectBench>(config);
         }
         #endregion
     }
