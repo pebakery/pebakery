@@ -125,6 +125,8 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
+                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
                 if (0 < _m.ProjectSourceDirs.Count)
                     dialog.SelectedPath = _m.ProjectSourceDirs[_m.ProjectSourceDirIndex];
@@ -180,6 +182,8 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
+                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                 {
                     SelectedPath = _m.ProjectTargetDir,

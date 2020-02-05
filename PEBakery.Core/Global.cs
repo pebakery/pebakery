@@ -190,38 +190,35 @@ namespace PEBakery.Core
             if (Setting.Interface.UseCustomTitle)
                 MainViewModel.TitleBar = Setting.Interface.CustomTitle;
 
-            // Load script cache
-            if (Setting.Script.EnableCache)
+            // Init script cache DB, regardless of Setting.Script.EnableCache
+            string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
+            try
             {
-                string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
+                ScriptCache = new ScriptCache(cacheDbFile);
+                int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
+
+                if (Setting.Script.EnableCache)
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
+                else
+                    Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
+            }
+            catch (SQLiteException)
+            { // Load failure -> Fallback, delete and remake database
+                File.Delete(cacheDbFile);
                 try
                 {
                     ScriptCache = new ScriptCache(cacheDbFile);
-                    int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, cache cleared due to an error"));
                 }
-                catch (SQLiteException)
-                { // Load failure -> Fallback, delete and remake database
-                    File.Delete(cacheDbFile);
-                    try
-                    {
-                        ScriptCache = new ScriptCache(cacheDbFile);
-                        Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, cache cleared due to an error"));
-                    }
-                    catch (SQLiteException e)
-                    { // Unable to continue -> raise an error message
-                        string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
-                        MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                        if (Application.Current != null)
-                            Application.Current.Shutdown(1);
-                        else
-                            Environment.Exit(1);
-                    }
+                catch (SQLiteException e)
+                { // Unable to continue -> raise an error message
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
+                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (Application.Current != null)
+                        Application.Current.Shutdown(1);
+                    else
+                        Environment.Exit(1);
                 }
-            }
-            else
-            {
-                Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
         }
         #endregion

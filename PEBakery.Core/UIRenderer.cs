@@ -657,15 +657,11 @@ namespace PEBakery.Core
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
                 using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                 {
-                    switch (imgType)
+                    brush = imgType switch
                     {
-                        case ImageHelper.ImageFormat.Svg:
-                            brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
-                            break;
-                        default:
-                            brush = ImageHelper.ImageToImageBrush(ms);
-                            break;
-                    }
+                        ImageHelper.ImageFormat.Svg => new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) },
+                        _ => ImageHelper.ImageToImageBrush(ms),
+                    };
                 }
 
                 Style imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
@@ -1348,7 +1344,8 @@ namespace PEBakery.Core
             }
             else
             { // Directory
-                // TODO: Someone reports that native FolderBrowserDialog of .Net Core 3.0 is Vista-style by default.
+                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
