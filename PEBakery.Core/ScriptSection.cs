@@ -87,12 +87,12 @@ namespace PEBakery.Core
         public Script Script { get; private set; }
         [IgnoreMember]
         public Project Project => Script.Project;
-        [Key(0)]
-        public string Name { get; }
+        [Key(0)] // "private set" for Deserialization
+        public string Name { get; private set; }
         [Key(1)]
-        public SectionType _type;
+        private SectionType _type;
         [IgnoreMember]
-        public SectionType Type 
+        public SectionType Type
         {
             get => _type;
             set
@@ -104,8 +104,8 @@ namespace PEBakery.Core
                 };
             }
         }
-        [Key(2)]
-        public int LineIdx { get; }
+        [Key(2)] // "private set" for Deserialization
+        public int LineIdx { get; private set; }
 
         /// <summary>
         /// Get lines of this section (Cached)
@@ -113,7 +113,9 @@ namespace PEBakery.Core
         [Key(3)]
         private string[] _lines;
         [IgnoreMember]
+#pragma warning disable CA1819 // Properties should not return arrays
         public string[] Lines
+#pragma warning restore CA1819 // Properties should not return arrays
         {
             get
             {
@@ -282,7 +284,7 @@ namespace PEBakery.Core
             if (!updated)
             { // Append to last line
                 Array.Resize(ref _lines, _lines.Length + 1);
-                _lines[_lines.Length - 1] = $"{key}={value}";
+                _lines[^1] = $"{key}={value}";
             }
 
             return true;

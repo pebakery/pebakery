@@ -64,6 +64,7 @@ namespace PEBakery.Core
             IFormatterResolver[] resolvers = new IFormatterResolver[]
             {
                 DynamicObjectResolverAllowPrivate.Instance,
+                // StandardResolver.Instance,
                 BuiltinResolver.Instance,
                 DynamicEnumResolver.Instance,
                 DynamicGenericResolver.Instance,
@@ -195,7 +196,7 @@ namespace PEBakery.Core
             }
             else if (scCache.DirectRealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
-            { // Cache is outdated
+            { // Cache entry is outdated, update the entry.
                 scCache.Serialized = MessagePackSerializer.Serialize(sc, _msgPackOpts);
                 scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
                 scCache.FileSize = f.Length;
