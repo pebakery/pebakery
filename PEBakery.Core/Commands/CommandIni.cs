@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -164,6 +165,10 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
+
             bool result;
             if (s.CompatAutoCompactIniWriteCommand)
                 result = IniReadWriter.WriteCompactKey(fileName, sectionName, key, value);
@@ -212,6 +217,10 @@ namespace PEBakery.Core.Commands
                 throw new InternalException("Internal Logic Error at IniWriteOp");
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
+
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
 
             bool result;
             if (s.CompatAutoCompactIniWriteCommand)
@@ -628,6 +637,10 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
+
             bool result = IniReadWriter.WriteRawLine(fileName, section, line, info.Append);
 
             if (result)
@@ -671,6 +684,10 @@ namespace PEBakery.Core.Commands
                 throw new InternalException("Internal Logic Error at IniWriteTextLineOp");
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
+
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
 
             bool result = IniReadWriter.WriteRawLines(fileName, keyList, append);
 
