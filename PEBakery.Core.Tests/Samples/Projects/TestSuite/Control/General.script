@@ -66,3 +66,14 @@ If,%Result%,Equal,#2,Set,%Dest%,T
 
 [ReadParam]
 GetParam,%Index%,%Result%
+
+[Process-Exit01]
+Set,#r,T
+Exit,"##r must be T"
+Set,#r,F
+
+[Process-Exit02]
+System,SetLocal
+Set,#r,T
+Exit,"##r must be T"
+Set,#r,F

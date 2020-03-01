@@ -6,7 +6,7 @@ ECHO Pack Release Binary of PEBakery
 REM Get Directory Pathes
 SET BaseDir=%~dp0
 IF %BaseDir:~-1%==\ SET BaseDir=%BaseDir:~0,-1%
-REM SET BaseDir=%BaseDir%\..\..
+SET SrcDir=%BaseDir%\PEBakery\bin\Release\netcoreapp3.1
 SET DestDir=%~dp0\BinaryRelease
 
 REM Build PEBakery solution
@@ -17,15 +17,21 @@ ECHO.
 
 REM Build PEBakery Binaries
 %MSBUILD% -t:restore %BaseDir%\LauncherNative /p:Configuration=Release /property:Platform=Win32 /target:Rebuild
-%MSBUILD% -t:restore %BaseDir% /p:Configuration=Release /property:Platform="Any CPU" /target:Rebuild
+dotnet clean -c Release 
+dotnet build -c Release --force PEBakery 
 
 REM Copy Files
 RD /S /Q %DestDir%
 MKDIR %DestDir%
 COPY %BaseDir%\LauncherNative\Release\PEBakeryLauncher.exe %DestDir%\PEBakeryLauncher.exe
-XCOPY /S /E /C /I %BaseDir%\PEBakery\bin\Release %DestDir%\Binary
+XCOPY /S /E /C /I %SrcDir% %DestDir%\Binary
 COPY %BaseDir%\LICENSE %DestDir%\Binary
 COPY %BaseDir%\LICENSE.GPLv3 %DestDir%\Binary
+
+REM Filter Runtime Files
+IF EXIST %DestDir%\Binary\runtimes RD /S /Q %DestDir%\Binary\runtimes
+XCOPY /S /E /C /I %SrcDir%\runtimes\win-x86 %DestDir%\Binary\runtimes\win-x86
+XCOPY /S /E /C /I %SrcDir%\runtimes\win-x64 %DestDir%\Binary\runtimes\win-x64
 
 REM Delete Unnecessary Files
 IF EXIST %DestDir%\Binary\*.pdb DEL %DestDir%\Binary\*.pdb

@@ -1,259 +1,63 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5074499A-1310-4DF0-BBBC-F5178A480F14}</ProjectGuid>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <PropertyGroup>
     <RootNamespace>PEBakery.Core</RootNamespace>
     <AssemblyName>PEBakery.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- This group contains project properties for RazorLight on .NET Core -->
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
     <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
+    <Authors>Team PEBakery</Authors>
+    <Version>0.9.7.0</Version>
+    <Company>Team PEBakery</Company>
+    <Copyright>Copyright © 2016-2020</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;CA2235</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;CA2235</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Build" />
-    <Reference Include="Microsoft.Build.Framework" />
-    <Reference Include="Microsoft.Build.Tasks.v4.0" />
-    <Reference Include="Microsoft.Build.Utilities.v4.0" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Windows" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Windows.Presentation" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-    <Reference Include="WindowsBase" />
+    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj" />
+    <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj" />
+    <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
+    <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
+    <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ArchiveFile.cs" />
-    <Compile Include="CodeCommand.cs" />
-    <Compile Include="CodeOptimizer.cs" />
-    <Compile Include="CodeParser.cs" />
-    <Compile Include="Commands\CommandDebug.cs" />
-    <Compile Include="HttpFileDownloader.cs" />
-    <Compile Include="LogInfo.cs" />
-    <Compile Include="ProjectCollection.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Razor\RazorModel.cs" />
-    <Compile Include="Razor\RazorRenderer.cs" />
-    <Compile Include="ResultReport.cs" />
-    <Compile Include="ScriptSection.cs" />
-    <Compile Include="SyntaxChecker.cs" />
-    <Compile Include="Commands\CommandArchive.cs" />
-    <Compile Include="Commands\CommandBranch.cs" />
-    <Compile Include="Commands\CommandControl.cs" />
-    <Compile Include="Commands\CommandFile.cs" />
-    <Compile Include="Commands\CommandHash.cs" />
-    <Compile Include="Commands\CommandIni.cs" />
-    <Compile Include="Commands\CommandInterface.cs" />
-    <Compile Include="Commands\CommandList.cs" />
-    <Compile Include="Commands\CommandMacro.cs" />
-    <Compile Include="Commands\CommandMath.cs" />
-    <Compile Include="Commands\CommandNetwork.cs" />
-    <Compile Include="Commands\CommandRegistry.cs" />
-    <Compile Include="Commands\CommandScript.cs" />
-    <Compile Include="Commands\CommandString.cs" />
-    <Compile Include="Commands\CommandSystem.cs" />
-    <Compile Include="Commands\CommandText.cs" />
-    <Compile Include="Commands\CommandWim.cs" />
-    <Compile Include="CompatOption.cs" />
-    <Compile Include="FileTypeDetector.cs" />
-    <Compile Include="JsonConverters.cs" />
-    <Compile Include="UpdateJson.cs" />
-    <Compile Include="ViewModels\DebugViewModel.cs" />
-    <Compile Include="WpfControls\CustomMessageBox.xaml.cs">
-      <DependentUpon>CustomMessageBox.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="WpfControls\NumberBox.xaml.cs">
-      <DependentUpon>NumberBox.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="EncodedFile.cs" />
-    <Compile Include="Engine.cs" />
-    <Compile Include="Exception.cs" />
-    <Compile Include="FileUpdater.cs" />
-    <Compile Include="Global.cs" />
-    <Compile Include="LogExporter.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="Macro.cs" />
-    <Compile Include="Project.cs" />
-    <Compile Include="Script.cs" />
-    <Compile Include="ScriptCache.cs" />
-    <Compile Include="Setting.cs" />
-    <Compile Include="StringEscaper.cs" />
-    <Compile Include="UIControl.cs" />
-    <Compile Include="UIParser.cs" />
-    <Compile Include="UIRenderer.cs" />
-    <Compile Include="Variables.cs" />
-    <Compile Include="ViewModels\MainViewModel.cs" />
-    <Compile Include="ViewModels\ProjectTreeViewModel.cs" />
-    <Compile Include="ViewModels\RelayCommand.cs" />
-    <Compile Include="ViewModels\ViewModelBase.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WpfControls\SelectTextOnFocus.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">
-      <Project>{0ee27887-e06a-4c64-82a0-7c496eced946}</Project>
-      <Name>NativeLibraries</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj">
-      <Project>{d01b1d20-8f5b-4834-8e5c-c7ec6dd587d4}</Project>
-      <Name>Ookii.Dialogs.Wpf</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj">
-      <Project>{3e7bbc76-70c7-4514-8750-968981267738}</Project>
-      <Name>PEBakery.Helper</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
-      <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
-      <Name>PEBakery.Ini</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj">
-      <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>
-      <Name>PEBakery.Tree</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
     <EmbeddedResource Include="Razor\_LogLayout.cshtml" />
     <EmbeddedResource Include="Razor\_BuildLogView.cshtml" />
     <EmbeddedResource Include="Razor\_SystemLogView.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="WpfControls\CustomMessageBox.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="WpfControls\NumberBox.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Razor\bootstrap.bundle.min.js" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Razor\bootstrap.min.css" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Razor\jquery.slim.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Joveler.Compression.XZ">
-      <Version>3.1.1</Version>
-    </PackageReference>
-    <PackageReference Include="Joveler.Compression.ZLib">
-      <Version>3.1.1</Version>
-    </PackageReference>
-    <PackageReference Include="Joveler.FileMagician">
-      <Version>1.3.1</Version>
-    </PackageReference>
-    <PackageReference Include="MahApps.Metro.IconPacks.Material">
-      <Version>3.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="ManagedWimLib">
-      <Version>1.4.3</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.Analyzers.Compatibility">
-      <Version>0.2.12-alpha</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream">
-      <Version>1.3.2</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Wim">
-      <Version>1.2.11</Version>
-    </PackageReference>
-    <PackageReference Include="NaturalSort.Extension">
-      <Version>2.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.3</Version>
-    </PackageReference>
-    <PackageReference Include="NUglify">
-      <Version>1.5.13</Version>
-    </PackageReference>
-    <PackageReference Include="RazorLight">
-      <Version>2.0.0-beta4</Version>
-    </PackageReference>
-    <PackageReference Include="sqlite-net-pcl">
-      <Version>1.6.292</Version>
-    </PackageReference>
-    <PackageReference Include="Squid-Box.SevenZipSharp">
-      <Version>1.2.242</Version>
-    </PackageReference>
-    <PackageReference Include="System.Buffers">
-      <Version>4.5.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Numerics.Vectors">
-      <Version>4.5.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.Serialization.Primitives">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="TaskScheduler">
-      <Version>2.8.11</Version>
-    </PackageReference>
-    <PackageReference Include="Timestamp">
-      <Version>1.0.2</Version>
-    </PackageReference>
-    <PackageReference Include="UACHelper">
-      <Version>1.3.0.5</Version>
-    </PackageReference>
+    <PackageReference Include="Joveler.Compression.XZ" Version="3.1.1" />
+    <PackageReference Include="Joveler.Compression.ZLib" Version="3.1.1" />
+    <PackageReference Include="Joveler.FileMagician" Version="1.3.1" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.2.0" />
+    <PackageReference Include="ManagedWimLib" Version="1.4.3" />
+    <PackageReference Include="MessagePack" Version="2.0.335" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.2" />
+    <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
+    <PackageReference Include="NaturalSort.Extension" Version="2.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="NUglify" Version="1.5.13" />
+    <PackageReference Include="RazorLight" Version="2.0.0-beta4" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.6.292" />
+    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.2.242" />
+    <PackageReference Include="Timestamp" Version="1.0.2" />
+    <PackageReference Include="UACHelper" Version="1.3.0.5" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

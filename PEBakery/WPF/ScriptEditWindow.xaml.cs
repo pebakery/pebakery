@@ -3600,6 +3600,8 @@ namespace PEBakery.WPF
                 }
                 else if (1 < SelectedAttachedFiles.Length)
                 {
+                    // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                    // But it requires HWND to be displayed properly.
                     VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                     {
                         UseDescriptionForTitle = true,

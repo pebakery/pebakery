@@ -325,17 +325,17 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", Encoding.Default, false);
+            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, false);
             Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
             Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
             Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", Encoding.Default, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", Encoding.Default, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, false);
+            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, false);
+            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
         }
         #endregion
 

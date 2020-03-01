@@ -8,6 +8,9 @@ PEBakery/Core/Parser/.antlr
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
 
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts
+
 # User-specific files
 *.suo
 *.user
@@ -30,10 +33,6 @@ bld/
 # Do not ignore Precompiled directory
 !/ManagedWimLib/Precompiled/x86/
 !/ManagedWimLib/Precompiled/x64/
-!/PEBakery.XZLib/Precompiled/x86/
-!/PEBakery.XZLib/Precompiled/x64/
-!/PEBakery.LZ4Lib/Precompiled/x86/
-!/PEBakery.LZ4Lib/Precompiled/x64/
 
 # Visual Studio 2015 cache/options directory
 .vs/
