@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
@@ -321,9 +322,10 @@ namespace PEBakery.Core.Tests.Command
             }
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
-            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check)
+            static void ScriptTemplate(string treePath, string entrySection, int warnLogCount, ErrorCheck check)
             {
-                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                (EngineState s, List<LogInfo> logs) = EngineTests.EvalScript(treePath, check, entrySection);
+                Assert.AreEqual(warnLogCount, logs.Count(l => l.State == LogState.Warning));
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string destStr = s.ReturnValue;
@@ -333,7 +335,8 @@ namespace PEBakery.Core.Tests.Command
 
             LineTemplate("Exit,UnitTest", ErrorCheck.Warning);
             LineTemplate("Exit,UnitTest,NOWARN", ErrorCheck.Success);        
-            ScriptTemplate(scPath, "Process-Exit", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-Exit01", 2, ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-Exit02", 2, ErrorCheck.Warning);
         }
         #endregion
 
