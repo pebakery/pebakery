@@ -32,8 +32,16 @@ A nightly build is provided for testing purposes.
 
 ## Prerequisites
 
+### Beta 6 Release
+
 If you are using Windows 10 v1803 or later, no action is necessary.  
 If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?LinkId=863262).
+
+### Nightly Builds
+
+Starting from beta 7, PEBakery runs on .Net Core 3. Please install [.Net Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1).
+
+We are preparing [self-contained](https://docs.microsoft.com/en-US/dotnet/core/deploying/#publish-self-contained) distribution, so users do not have to install runtime themselves.
 
 ## License
 
@@ -49,9 +57,8 @@ Visual Studio, .Net Framework, and .Net Core are required to compile PEBakery fr
 
 ### Requirement
 
-- [Visual Studio 2019 16.3](https://visualstudio.microsoft.com/en/thank-you-downloading-visual-studio/?sku=community&rel=16) or higher.
-- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) for C# application projects.
-- [.Net Core 2.1 SDK](https://dotnet.microsoft.com/download) or higher for C# libraries.
+- [Visual Studio 2019 16.4](https://visualstudio.microsoft.com/vs/) or higher.
+- [.Net Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) for C# application projects.
 - [Windows 10 SDK (10.0.18362.0)](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) for compiling [LauncherNative](./LauncherNative).
   - [LauncherNative](./LauncherNative) can be compiled with virtually any supported version of Windows SDK.
   - If you do not want to install Windows SDK, use [LauncherSharp](./LauncherSharp) instead.
