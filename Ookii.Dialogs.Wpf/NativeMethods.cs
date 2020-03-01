@@ -4,8 +4,6 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#pragma warning disable CA1712 // Do not prefix enum values with type name -> Keep original name of Win32 C enum names
-
 namespace Ookii.Dialogs.Wpf
 {
     static class NativeMethods
@@ -647,5 +645,3 @@ namespace Ookii.Dialogs.Wpf
         #endregion
     }
 }
-
-#pragma warning restore CA1712 // Do not prefix enum values with type name

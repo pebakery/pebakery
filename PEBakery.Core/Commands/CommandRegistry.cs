@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
             }
 
             int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
-            if (result == WindowsErrorCode.ERROR_SUCCESS)
+            if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Loaded [{hiveFile}] into [HKLM\\{keyPath}]"));
             }
@@ -88,7 +88,7 @@ namespace PEBakery.Core.Commands
             }
 
             int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
-            if (result == WindowsErrorCode.ERROR_SUCCESS)
+            if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
             {
                 logs.Add(new LogInfo(LogState.Success, $"[HKLM\\{keyPath}] Unloaded"));
             }

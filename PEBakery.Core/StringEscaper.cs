@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ namespace PEBakery.Core
 
         #region PathSecurityCheck
         /// <summary>
-        /// Check if a path is safe to write. Allows wildcard.
+        /// 
         /// </summary>
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
@@ -64,21 +64,10 @@ namespace PEBakery.Core
             // So remove filename if necessary.
             string fullPath;
             int lastWildcardIdx = path.IndexOfAny(new char[] { '*', '?' });
-            if (lastWildcardIdx != -1)
-            { // With wildcard
-                fullPath = FileHelper.GetDirNameEx(path);
-
-                // If the directory path contains wildcard, the path is invalid.
-                if (fullPath.IndexOfAny(new char[] { '*', '?' }) != -1)
-                {
-                    errorMsg = $"Directory path [{fullPath}] contains one or more wildcards";
-                    return false;
-                }
-            }
+            if (lastWildcardIdx != -1 && path.LastIndexOf('\\') < lastWildcardIdx)
+                fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
             else
-            { // Without wildcard
                 fullPath = Path.GetFullPath(path);
-            }
 
             foreach (string f in ForbiddenPaths)
             {

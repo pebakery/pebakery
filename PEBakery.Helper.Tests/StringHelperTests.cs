@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2020 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
  
     MIT License
 
@@ -28,12 +28,13 @@ using System.Collections.Generic;
 
 namespace PEBakery.Helper.Tests
 {
+    #region StringHelper
     [TestClass]
-    [TestCategory(nameof(Helper))]
-    [TestCategory(nameof(StringHelper))]
     public class StringHelperTests
     {
         [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("StringHelper")]
         public void SplitEx()
         {
             List<string> strs = StringHelper.SplitEx(@"1|2|3|4|5", "|", StringComparison.Ordinal);
@@ -60,9 +61,10 @@ namespace PEBakery.Helper.Tests
         }
 
         [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("StringHelper")]
         public void ReplaceEx()
         {
-            // Single replace test
             string str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
             Assert.IsTrue(str.Equals("XYZCD", StringComparison.Ordinal));
 
@@ -74,16 +76,7 @@ namespace PEBakery.Helper.Tests
 
             str = StringHelper.ReplaceEx(@"abcd", "ab", "XYZ", StringComparison.OrdinalIgnoreCase);
             Assert.IsTrue(str.Equals("XYZcd", StringComparison.Ordinal));
-
-            // Multiple replace test
-            (string, string)[] replaceMap = new (string, string)[]
-            {
-                ("bc", "BC"),
-                ("ef", "EF"),
-                ("fg", "FG"),
-            };
-            str = StringHelper.ReplaceEx(@"abcdefg", replaceMap, StringComparison.Ordinal);
-            Assert.IsTrue(str.Equals("aBCdEFg", StringComparison.Ordinal));
         }
     }
+    #endregion
 }

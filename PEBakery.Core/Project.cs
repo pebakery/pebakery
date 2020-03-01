@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -107,12 +107,19 @@ namespace PEBakery.Core
         /// <param name="scriptCache">ScriptCache instance. Set to null if cache is disabled.</param>
         /// <param name="progress">Delegate for reporting progress</param>
         /// <returns></returns>
-        internal List<LogInfo> Load(ScriptCache scriptCache, IList<ScriptParseInfo> spis, IProgress<(LoadReport Type, string Path)> progress)
+        public List<LogInfo> Load(IList<ScriptParseInfo> spis, ScriptCache scriptCache, IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
             string mainScriptPath = Path.Combine(ProjectDir, Names.MainScriptFile);
             AllScripts = new List<Script>();
+
+            CacheModel.ScriptCache[] cachePool = null;
+            if (scriptCache != null)
+            {
+                progress?.Report((LoadReport.LoadingCache, null));
+                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
+            }
 
             // Load scripts from disk or cache
             bool cacheValid = true;
@@ -127,12 +134,14 @@ namespace PEBakery.Core
                 Script sc = null;
                 try
                 {
-                    if (scriptCache != null && cacheValid)
+                    if (cachePool != null && cacheValid)
                     { // ScriptCache enabled (disabled in Directory script)
-                        sc = scriptCache.DeserializeScript(spi.RealPath, out cacheValid);
+                        (sc, cacheValid) = ScriptCache.DeserializeScript(spi.RealPath, cachePool);
                         if (sc != null)
                         {
-                            sc.PostDeserialization(spi.TreePath, this, spi.IsDirLink);
+                            sc.TreePath = spi.TreePath;
+                            sc.Project = this;
+                            sc.IsDirLink = spi.IsDirLink;
                             cached = LoadReport.Stage1Cached;
                         }
                     }
@@ -155,18 +164,19 @@ namespace PEBakery.Core
                         AllScripts.Add(sc);
 
                         // Loading a project without script cache generates a lot of Gen 2 heap object
-                        // TODO: Remove this part of code?
                         if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
                             GC.Collect();
                     }
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                     progress?.Report((cached, null));
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             });
 
             // mainScriptIdx
@@ -428,15 +438,17 @@ namespace PEBakery.Core
                     while (link.Type != ScriptType.Script);
 
                     if (valid)
-                        sc.SetLink(link);
+                        sc.Link = link;
                     else
                         return null;
                 }
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch
             { // Do nothing - intentionally left blank
                 return null;
             }
+#pragma warning restore CA1031 // Do not catch general exception types
 
             return sc;
         }
@@ -695,8 +707,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region LoadScriptRuntimeOptions
-    public class LoadScriptRuntimeOptions
+    #region struct LoadScriptRuntimeOptions
+    public struct LoadScriptRuntimeOptions
     {
         /// <summary>
         /// Do not check integrity of [Main] section

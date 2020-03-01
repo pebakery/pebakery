@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2020 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -761,7 +761,7 @@ namespace PEBakery.Core.Commands
                 List<string> extractGlobPaths = new List<string>();
 
                 // Read listfile
-                Encoding encoding = EncodingHelper.DetectEncoding(listFilePath);
+                Encoding encoding = EncodingHelper.DetectBom(listFilePath);
                 using (StreamReader r = new StreamReader(listFilePath, encoding, false))
                 {
                     var extractPaths = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim());

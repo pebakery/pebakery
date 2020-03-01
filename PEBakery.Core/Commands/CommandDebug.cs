@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2020 Hajin Jang
+    Copyright (C) 2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -50,10 +50,7 @@ namespace PEBakery.Core.Commands
                         {
                             logs.Add(new LogInfo(LogState.Info, "Breakpoint triggered"));
 
-                            // Activate debugger window
-                            // DebugViewModel
-
-                            // Wait until user closes debugger window 
+                            // TODO: (Before v1.0) Activate debugger window
                         }
                     }
                     break;

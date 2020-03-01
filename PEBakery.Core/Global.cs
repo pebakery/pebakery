@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2020 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -35,7 +35,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 
 namespace PEBakery.Core
@@ -47,9 +46,9 @@ namespace PEBakery.Core
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r19";
-            public const string ProgramVersionStr = "0.9.7";
-            public const string ProgramVersionStrFull = "0.9.7 beta7";
+            public const string ScriptCacheRevision = "r15";
+            public const string ProgramVersionStr = "0.9.6";
+            public const string ProgramVersionStrFull = "0.9.6 beta6";
 
             public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
 
@@ -90,9 +89,6 @@ namespace PEBakery.Core
         /// <param name="initMainViewModel">Set this to true when PEBakery.Core is used outside of PEBakery</param>
         public static void PreInit(string[] args, bool initMainViewModel)
         {
-            // Regsiter Non-Unicode Encodings
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
             // Process arguments
             Args = args;
 
@@ -159,23 +155,14 @@ namespace PEBakery.Core
                 Logger = new Logger(logDbFile);
                 Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
             }
-            catch (SQLiteException)
-            { // Update failure -> retry with clearing existing log db
-                File.Delete(logDbFile);
-                try
-                {
-                    Logger = new Logger(logDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched, log cleared due to an error"));
-                }
-                catch (SQLiteException e)
-                { // Unable to continue -> raise an error message
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted and not repairable.\r\nPlease delete PEBakeryLog.db and restart.";
-                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    if (Application.Current != null)
-                        Application.Current.Shutdown(1);
-                    else
-                        Environment.Exit(1);
-                }
+            catch (SQLiteException e)
+            { // Update failure
+                string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted.\r\nPlease delete PEBakeryLog.db and restart.";
+                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (Application.Current != null)
+                    Application.Current.Shutdown(1);
+                else
+                    Environment.Exit(1);
             }
 
             // Init ProjectCollection
@@ -190,35 +177,28 @@ namespace PEBakery.Core
             if (Setting.Interface.UseCustomTitle)
                 MainViewModel.TitleBar = Setting.Interface.CustomTitle;
 
-            // Init script cache DB, regardless of Setting.Script.EnableCache
-            string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
-            try
+            // Load script cache
+            if (Setting.Script.EnableCache)
             {
-                ScriptCache = new ScriptCache(cacheDbFile);
-                int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
-
-                if (Setting.Script.EnableCache)
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
-                else
-                    Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
-            }
-            catch (SQLiteException)
-            { // Load failure -> Fallback, delete and remake database
-                File.Delete(cacheDbFile);
+                string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
                 try
                 {
                     ScriptCache = new ScriptCache(cacheDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, cache cleared due to an error"));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {ScriptCache.Table<CacheModel.ScriptCache>().Count()} cached scripts found"));
                 }
                 catch (SQLiteException e)
-                { // Unable to continue -> raise an error message
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
+                { // Load failure
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted.\r\nPlease delete PEBakeryCache.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     if (Application.Current != null)
                         Application.Current.Shutdown(1);
                     else
                         Environment.Exit(1);
                 }
+            }
+            else
+            {
+                Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
         }
         #endregion

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -32,6 +32,7 @@ using System.Text.RegularExpressions;
 
 namespace PEBakery.Helper
 {
+    #region StringHelper
     public static class StringHelper
     {
         #region RemoveLastLine
@@ -119,7 +120,7 @@ namespace PEBakery.Helper
             return '0' <= ch && ch <= '9';
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
         public static bool IsWildcard(string str)
         {
             return str.IndexOfAny(new[] { '*', '?' }) != -1;
@@ -187,45 +188,10 @@ namespace PEBakery.Helper
                     b.Append(str.Substring(idx));
                     break;
                 }
-                else
-                {
-                    b.Append(str.Substring(idx, vIdx - idx));
-                    b.Append(newValue);
-                    idx = vIdx + oldValue.Length;
-                }
-            }
-            return b.ToString();
-        }
 
-        public static string ReplaceEx(string str, IReadOnlyList<(string OldValue, string NewValue)> replaceValues, StringComparison comp)
-        {
-            StringBuilder b = new StringBuilder();
-            int[] vIndices = new int[replaceValues.Count];
-
-            int idx = 0;
-            while (idx < str.Length)
-            {
-                for (int i = 0; i < replaceValues.Count; i++)
-                {
-                    (string oldValue, _) = replaceValues[i];
-                    vIndices[i] = str.IndexOf(oldValue, idx, comp);
-                }
-
-                int matchIdx = Array.FindIndex(vIndices, x => x != -1);
-                if (matchIdx == -1)
-                {
-                    b.Append(str.Substring(idx));
-                    break;
-                }
-                else
-                {
-                    int vIdx = vIndices[matchIdx];
-                    (string oldValue, string newValue) = replaceValues[matchIdx];
-
-                    b.Append(str.Substring(idx, vIdx - idx));
-                    b.Append(newValue);
-                    idx = vIdx + oldValue.Length;
-                }
+                b.Append(str.Substring(idx, vIdx - idx));
+                b.Append(newValue);
+                idx = vIdx + oldValue.Length;
             }
             return b.ToString();
         }
@@ -342,4 +308,5 @@ namespace PEBakery.Helper
         }
         #endregion
     }
+    #endregion
 }

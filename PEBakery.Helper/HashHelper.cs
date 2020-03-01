@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -248,25 +248,6 @@ namespace PEBakery.Helper
             else
                 throw new ArgumentException($"Wrong HashType [{str}]");
             return hashType;
-        }
-        #endregion
-
-        #region IsHashBytesEqual
-        public static bool IsHashBytesEqual(ReadOnlySpan<byte> d1, ReadOnlySpan<byte> d2)
-        {
-            // Fast exit if the length is different (which means different hash type)
-            if (d1.Length != d2.Length)
-                return false;
-
-            // Using for statement is much faster than SequenceEqual (about 30%)
-            for (int i = 0; i < d1.Length; i++)
-            {
-                if (d1[i] != d2[i])
-                    return false;
-            }
-
-            // Passed all of checks, return true
-            return true;
         }
         #endregion
     }

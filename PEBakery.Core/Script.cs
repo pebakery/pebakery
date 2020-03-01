@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using MessagePack;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
@@ -47,7 +46,7 @@ namespace PEBakery.Core
     #endregion
 
     #region Script
-    [MessagePackObject]
+    [Serializable]
     public class Script : IEquatable<Script>
     {
         #region Const
@@ -71,61 +70,41 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields
-        [IgnoreMember]
         private bool _fullyParsed;
-        [Key(0)]
         private readonly ScriptType _type;
-        [Key(1)]
         private readonly string _realPath;
-        [IgnoreMember]
-        private string _treePath;
-        [Key(2)]
+        [NonSerialized]
+        private string _treePath; // _treePath should bypass serialization
         private readonly bool _isMainScript;
-        [Key(3)]
         private readonly bool _ignoreMain;
-        [Key(4)]
         private Dictionary<string, ScriptSection> _sections;
-        [Key(5)]
-        private readonly List<string> _interfaceList = new List<string>();
-        [IgnoreMember]
+        [NonSerialized]
         private Project _project;
-        [IgnoreMember]
+        [NonSerialized]
         private Script _link;
-        [IgnoreMember]
+        [NonSerialized]
         private bool _linkLoaded;
-        [IgnoreMember]
+        [NonSerialized]
         private bool _isDirLink; // No readonly for script caching
-        [Key(6)]
         private string _title = string.Empty;
-        [Key(7)]
         private string _author = string.Empty;
-        [Key(8)]
         private string _description = string.Empty;
-        [Key(9)]
         private string _version = "0";
-        [Key(10)]
         private VersionEx _parsedVersion = new VersionEx(0);
-        [Key(11)]
         private int _level;
-        [Key(12)]
         private SelectedState _selected = SelectedState.None;
-        [Key(13)]
         private bool _mandatory = false;
-        [Key(14)]
+        private readonly List<string> _interfaceList = new List<string>();
         private string _updateUrl;
         #endregion
 
         #region Properties
-        [IgnoreMember]
         public string FullIdentifier => $"{_level}_{_realPath}_{_treePath}";
-        [IgnoreMember]
         public string RealIdentifier => $"{_level}_{_realPath}";
-        [IgnoreMember]
         public string TreeIdentifier => $"{_level}_{_treePath}";
         /// <summary>
         /// Full path of the script file. In case of the linked script, this property return the real path of the linked .script file.
         /// </summary>
-        [IgnoreMember]
         public string RealPath
         {
             get
@@ -138,14 +117,17 @@ namespace PEBakery.Core
         /// <summary>
         /// 'Direct' full path of the script file. In case of the linked script, this property return the real path of the .link file.
         /// </summary>
-        [IgnoreMember]
         public string DirectRealPath => _realPath;
         /// <summary>
         /// The location script should be displayed in project script tree. It determines the build order. TreePath is empty in linked script.
         /// </summary>
-        [IgnoreMember]
-        public string TreePath => _treePath;
-        [IgnoreMember]
+        public string TreePath
+        {
+            get => _treePath;
+            // _treePath can be changed only right after deserialized from cache.
+            // No readonly for _treePath because of script caching.
+            set => _treePath = value;
+        }
         public Dictionary<string, ScriptSection> Sections
         {
             get
@@ -155,7 +137,6 @@ namespace PEBakery.Core
                 return _sections;
             }
         }
-        [IgnoreMember]
         public Dictionary<string, string> MainInfo
         {
             get
@@ -169,19 +150,13 @@ namespace PEBakery.Core
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
-        [IgnoreMember]
+
         public bool IsMainScript => _isMainScript;
-        [IgnoreMember]
         public bool IgnoreMain => _ignoreMain;
-        [IgnoreMember]
         public ScriptType Type => _type;
-        [IgnoreMember]
-        public Script Link => _link;
-        [IgnoreMember]
-        public bool LinkLoaded => _linkLoaded;
-        [IgnoreMember]
-        public bool IsDirLink => _isDirLink;
-        [IgnoreMember]
+        public Script Link { get => _link; set => _link = value; }
+        public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
+        public bool IsDirLink { get => _isDirLink; set => _isDirLink = value; }
         public Project Project
         {
             get
@@ -190,11 +165,11 @@ namespace PEBakery.Core
                     return _link.Project;
                 return _project;
             }
+            set => _project = value;
         }
         /// <summary>
         /// Title of the script, displayed in the PEBakery UI.
         /// </summary>
-        [IgnoreMember]
         public string Title
         {
             get
@@ -204,7 +179,6 @@ namespace PEBakery.Core
                 return _title;
             }
         }
-        [IgnoreMember]
         public string Author
         {
             get
@@ -214,7 +188,6 @@ namespace PEBakery.Core
                 return _author;
             }
         }
-        [IgnoreMember]
         public string Description
         {
             get
@@ -224,7 +197,6 @@ namespace PEBakery.Core
                 return _description;
             }
         }
-        [IgnoreMember]
         public string RawVersion
         {
             get
@@ -235,11 +207,8 @@ namespace PEBakery.Core
             }
         }
 
-        [IgnoreMember]
         public string TidyVersion => StringEscaper.ProcessVersionString(RawVersion) ?? RawVersion;
-        [IgnoreMember]
         public VersionEx ParsedVersion => _parsedVersion;
-        [IgnoreMember]
         public int Level
         {
             get
@@ -249,7 +218,6 @@ namespace PEBakery.Core
                 return _level;
             }
         }
-        [IgnoreMember]
         public bool Mandatory
         {
             get
@@ -259,7 +227,6 @@ namespace PEBakery.Core
                 return _mandatory;
             }
         }
-        [IgnoreMember]
         public SelectedState Selected
         {
             get => _selected;
@@ -278,10 +245,8 @@ namespace PEBakery.Core
             }
         }
 
-        [IgnoreMember]
         public ScriptSection this[string key] => Sections[key];
 
-        [IgnoreMember]
         public string InterfaceSectionName
         {
             get
@@ -293,16 +258,11 @@ namespace PEBakery.Core
             }
         }
 
-        [IgnoreMember]
         public string UpdateUrl => _updateUrl;
-        [IgnoreMember]
         public bool IsUpdateable => _updateUrl != null || Type == ScriptType.Directory;
         #endregion
 
         #region Constructor
-        [SerializationConstructor]
-        private Script() { /* Do Nothing */ }
-
         public Script(ScriptType type, string realPath, string treePath, Project project,
                       int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
@@ -363,7 +323,7 @@ namespace PEBakery.Core
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = EncodingHelper.DetectEncoding(_realPath);
+            Encoding encoding = EncodingHelper.DetectBom(_realPath);
             using (StreamReader r = new StreamReader(_realPath, encoding))
             {
                 int idx = 0;
@@ -396,8 +356,8 @@ namespace PEBakery.Core
 
                         sectionIdx = idx;
                         currentSection = line.Slice(1, line.Length - 2).ToString();
-                        type = DetectSectionType(currentSection, false);
-                        if (ScriptSection.LoadSectionAtScriptLoadTime(type))
+                        type = DetectTypeOfSection(currentSection, false);
+                        if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
                         inSection = true;
                     }
@@ -418,7 +378,27 @@ namespace PEBakery.Core
         #endregion
 
         #region Detect Section Type
-        private SectionType DetectSectionType(string sectionName, bool inspectCode)
+        private bool IsSectionEncodedFolders(string sectionName)
+        {
+            IList<string> encodedFolders;
+            if (_fullyParsed)
+            {
+                if (_sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                    encodedFolders = _sections[ScriptSection.Names.EncodedFolders].Lines;
+                else
+                    return false;
+            }
+            else
+            {
+                encodedFolders = IniReadWriter.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
+                if (encodedFolders == null)  // No EncodedFolders section, exit
+                    return false;
+            }
+
+            return encodedFolders.Any(folder => folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
             SectionType type;
             if (sectionName.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase))
@@ -438,20 +418,20 @@ namespace PEBakery.Core
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
             else // Can be SectionType.Code, SectionType.Interface or SectionType.AttachFileList
-                type = inspectCode ? DetectNonInspectedSectionType(sectionName) : SectionType.NonInspected;
+                type = inspectCode ? DetectTypeOfNotInspectedSection(sectionName) : SectionType.NotInspected;
             return type;
         }
 
-        private void DetectNonInspectedCodeSectionsType()
+        private void DetectTypeFromNotInspectedCodeSection()
         {
-            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NonInspected))
+            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NotInspected))
             {
                 ScriptSection section = kv.Value;
-                section.Type = DetectNonInspectedSectionType(section.Name);
+                section.Type = DetectTypeOfNotInspectedSection(section.Name);
             }
         }
 
-        private SectionType DetectNonInspectedSectionType(string sectionName)
+        private SectionType DetectTypeOfNotInspectedSection(string sectionName)
         {
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
@@ -463,24 +443,22 @@ namespace PEBakery.Core
             return type;
         }
 
-        private bool IsSectionEncodedFolders(string sectionName)
+        private static bool LoadSectionAtScriptLoadTime(SectionType type)
         {
-            IReadOnlyList<string> encodedFolders;
-            if (_fullyParsed)
+            switch (type)
             {
-                if (_sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                    encodedFolders = _sections[ScriptSection.Names.EncodedFolders].Lines;
-                else
+                case SectionType.Main:
+                case SectionType.Variables:
+                case SectionType.Interface:
+                case SectionType.Code:
+                case SectionType.NotInspected:
+                case SectionType.AttachFolderList:
+                case SectionType.AttachFileList:
+                case SectionType.AttachEncodeNow:
+                    return true;
+                default:
                     return false;
             }
-            else
-            {
-                encodedFolders = IniReadWriter.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
-                if (encodedFolders == null)  // No EncodedFolders section, exit
-                    return false;
-            }
-
-            return encodedFolders.Any(folder => folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
         }
         #endregion
 
@@ -493,7 +471,7 @@ namespace PEBakery.Core
                 case SectionType.Variables:
                 case SectionType.Interface:
                 case SectionType.Code:
-                case SectionType.NonInspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
@@ -520,7 +498,7 @@ namespace PEBakery.Core
                 if (lineList == null)
                     return null;
 
-                SectionType type = DetectSectionType(sectionName, true);
+                SectionType type = DetectTypeOfSection(sectionName, true);
                 // lineIdx information is not provided, use with caution!
                 section = CreateScriptSectionInstance(sectionName, type, lineList.ToArray(), 0);
                 Sections[sectionName] = section;
@@ -685,7 +663,7 @@ namespace PEBakery.Core
                             _interfaceList.Add(InterfaceSectionName);
 
                         // Inspect previously not inspected sections
-                        DetectNonInspectedCodeSectionsType();
+                        DetectTypeFromNotInspectedCodeSection();
                     }
                     break;
                 default:
@@ -834,7 +812,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region User Interface Methods - Get, Apply
+        #region Interface Methods - Get, Apply
         public ScriptSection GetInterfaceSection(out string sectionName)
         {
             sectionName = ScriptSection.Names.Interface;
@@ -1017,52 +995,19 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Script Caching - PostDeserialization
-        /// <summary>
-        /// Must run the method after deserializing cached script.
-        /// </summary>
-        /// <param name="treePath">New treePath of the script.</param>
-        /// <param name="project">New project of the script.</param>
-        /// <param name="isDirLink">New isDirLink of the script.</param>
-        internal void PostDeserialization(string treePath, Project project, bool isDirLink)
-        {
-            // Overwrite non-serialized fields.
-            // Link have to be settled with SetLink().
-            _fullyParsed = true;
-            _treePath = treePath;
-            _project = project;
-            _isDirLink = isDirLink;
-
-            // Currently MessagePack-CSharp does not support cyclic reference.
-            // As a workaround, give a reference to the Script instance after the deserialization.
-            foreach (ScriptSection section in _sections.Values)
-                section.PostDeserialization(this);
-        }
-        #endregion
-
-        #region SetLink
-        public void SetLink(Script linkTarget)
-        {
-            if (Type == ScriptType.Directory)
-                throw new InvalidOperationException($"Directory script cannot have a Link");
-            if (linkTarget.Type == ScriptType.Directory)
-                throw new ArgumentException($"linkTarget [{nameof(linkTarget)}] cannot be a Directory script");
-
-            _link = linkTarget;
-            _linkLoaded = true;
-        }
-        #endregion
-
         #region Virtual, Overriden Methods
         public override string ToString()
         {
-            return _type switch
+            switch (_type)
             {
-                ScriptType.Script => $"[S_{_level}] {_title}",
-                ScriptType.Link => $"[L_{_level}] {MainInfo["Link"]}",
-                ScriptType.Directory => $"[D_{_level}] {_title}",
-                _ => _title,
-            };
+                case ScriptType.Script:
+                    return $"[S_{_level}] {_title}";
+                case ScriptType.Link:
+                    return $"[L_{_level}] {MainInfo["Link"]}";
+                case ScriptType.Directory:
+                    return $"[D_{_level}] {_title}";
+            }
+            return _title;
         }
 
         public override bool Equals(object obj)
@@ -1103,13 +1048,34 @@ namespace PEBakery.Core
     {
         True, False, None
     }
+
+    public enum SectionType
+    {
+        None = 0,
+        // [Main]
+        Main = 10,
+        // [Variables]
+        Variables = 20,
+        // [Interface]
+        Interface = 30,
+        // [Process], ...
+        Code = 40,
+        // Code or AttachFileList
+        NotInspected = 90,
+        // [EncodedFolders]
+        AttachFolderList = 100,
+        // [AuthorEncoded], [InterfaceEncoded], and other folders
+        AttachFileList = 101,
+        // [EncodedFile-InterfaceEncoded-*], [EncodedFile-AuthorEncoded-*]
+        AttachEncodeNow = 102,
+        // [EncodedFile-*]
+        AttachEncodeLazy = 103,
+    }
     #endregion
 
-    #region ScriptComaparer
+    #region Comaparer
     public class ScriptComparer : IEqualityComparer<Script>
     {
-        public static ScriptComparer Instance = new ScriptComparer();
-
         public bool Equals(Script x, Script y)
         {
             Debug.Assert(x != null, "Script must not be null");

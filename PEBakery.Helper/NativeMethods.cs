@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -338,13 +338,4 @@ namespace PEBakery.Helper
         }
         #endregion
     }
-
-    #region Win32 System Error Codes
-    public static class WindowsErrorCode
-    {
-        public const int ERROR_SUCCESS = 0;
-        public const int ERROR_FILE_NOT_FOUND = 2;
-        public const int ERROR_NOT_ALL_ASSIGNED = 1300;
-    }
-    #endregion
 }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2020 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -26,19 +26,17 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core.Commands;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [TestCategory(nameof(CommandControl))]
+    [TestCategory("CommandControl")]
     public class CommandControlTests
     {
         #region Set
@@ -58,7 +56,7 @@ namespace PEBakery.Core.Tests.Command
             DelLoopCounter(s);
         }
 
-        public static void SetLocal(EngineState s)
+        public void SetLocal(EngineState s)
         {
             const string rawCode = "Set,%Dest%,PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
@@ -68,7 +66,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public static void DelLocal(EngineState s)
+        public void DelLocal(EngineState s)
         {
             s.Variables["Dest"] = "PEBakery";
 
@@ -79,7 +77,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public static void SetGlobal(EngineState s)
+        public void SetGlobal(EngineState s)
         {
             EngineTests.Eval(s, "Set,%Dest%,PEBakery,GLOBAL", CodeType.Set, ErrorCheck.Success);
 
@@ -90,7 +88,7 @@ namespace PEBakery.Core.Tests.Command
             s.Variables.GetVarDict(VarsType.Global).Remove("PEBakery");
         }
 
-        public static void DelGlobal(EngineState s)
+        public void DelGlobal(EngineState s)
         {
             s.Variables.SetValue(VarsType.Global, "Dest", "PEBakery");
 
@@ -101,7 +99,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public static void SetDelPermanent(EngineState s)
+        public void SetDelPermanent(EngineState s)
         {
             string scPath = s.Project.MainScript.RealPath;
             IniReadWriter.DeleteKey(scPath, "Variables", "%PermDest%");
@@ -139,7 +137,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void SetReturnValue(EngineState s)
+        public void SetReturnValue(EngineState s)
         {
             const string rawCode = "Set,#r,PEBakery";
 
@@ -156,7 +154,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(s.ReturnValue.Length == 0);
         }
 
-        public static void DelReturnValue(EngineState s)
+        public void DelReturnValue(EngineState s)
         {
             const string rawCode = "Set,#r,NIL";
 
@@ -173,7 +171,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
         }
 
-        public static void SetLoopCounter(EngineState s)
+        public void SetLoopCounter(EngineState s)
         {
             s.LoopStateStack.Clear();
 
@@ -225,7 +223,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.AreEqual(0, s.LoopStateStack.Count);
         }
 
-        public static void DelLoopCounter(EngineState s)
+        public void DelLoopCounter(EngineState s)
         {
             const string rawCode = "Set,#c,NIL";
 
@@ -287,7 +285,7 @@ namespace PEBakery.Core.Tests.Command
 
             // Add macro
             {
-                static void ScriptTemplate(string treePath, string entrySection, MacroType type, ErrorCheck check = ErrorCheck.Success)
+                void ScriptTemplate(string treePath, string entrySection, MacroType type, ErrorCheck check = ErrorCheck.Success)
                 {
                     (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
@@ -311,9 +309,10 @@ namespace PEBakery.Core.Tests.Command
 
         #region Exit
         [TestMethod]
+        [TestCategory("CommandControl")]
         public void Exit()
         {
-            static void LineTemplate(string rawCode, ErrorCheck check)
+            void Template(string rawCode, ErrorCheck check)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 EngineTests.Eval(s, rawCode, CodeType.Exit, check);
@@ -321,27 +320,14 @@ namespace PEBakery.Core.Tests.Command
                 Assert.IsTrue(s.HaltFlags.ScriptHalt);
             }
 
-            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
-            static void ScriptTemplate(string treePath, string entrySection, int warnLogCount, ErrorCheck check)
-            {
-                (EngineState s, List<LogInfo> logs) = EngineTests.EvalScript(treePath, check, entrySection);
-                Assert.AreEqual(warnLogCount, logs.Count(l => l.State == LogState.Warning));
-                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
-                {
-                    string destStr = s.ReturnValue;
-                    Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
-                }
-            }
-
-            LineTemplate("Exit,UnitTest", ErrorCheck.Warning);
-            LineTemplate("Exit,UnitTest,NOWARN", ErrorCheck.Success);        
-            ScriptTemplate(scPath, "Process-Exit01", 2, ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-Exit02", 2, ErrorCheck.Warning);
+            Template("Exit,UnitTest", ErrorCheck.Warning);
+            Template("Exit,UnitTest,NOWARN", ErrorCheck.Success);
         }
         #endregion
 
         #region Halt
         [TestMethod]
+        [TestCategory("CommandControl")]
         public void Halt()
         {
             const string rawCode = "Halt,UnitTest";
@@ -354,6 +340,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region Wait
         [TestMethod]
+        [TestCategory("CommandControl")]
         public void Wait()
         {
             Stopwatch w = Stopwatch.StartNew();
@@ -369,9 +356,10 @@ namespace PEBakery.Core.Tests.Command
 
         #region Beep
         [TestMethod]
+        [TestCategory("CommandControl")]
         public void Beep()
         {
-            static void Template(string rawCode, BeepType beepType)
+            void Template(string rawCode, BeepType beepType)
             {
                 CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
                 CodeCommand cmd = parser.ParseStatement(rawCode);
@@ -389,11 +377,12 @@ namespace PEBakery.Core.Tests.Command
 
         #region GetParam
         [TestMethod]
+        [TestCategory("CommandControl")]
         public void GetParam()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
 
-            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)

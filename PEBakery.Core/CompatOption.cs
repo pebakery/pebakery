@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2020 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -40,10 +40,10 @@ namespace PEBakery.Core
         public const string SectionName = "PEBakeryCompat";
         private readonly string _compatFile;
 
-        // Script Tree
+        // Asterisk
+        public bool AsteriskBugDirCopy = false;
         public bool AsteriskBugDirLink = false;
         // Command
-        public bool AsteriskBugDirCopy = false;
         public bool FileRenameCanMoveDir = false;
         public bool AllowLetterInLoop = false;
         public bool LegacyBranchCondition = false;
@@ -51,7 +51,6 @@ namespace PEBakery.Core
         public bool AllowSetModifyInterface = false;
         public bool LegacyInterfaceCommand = false;
         public bool LegacySectionParamCommand = false;
-        public bool AutoCompactIniWriteCommand = false;
         // Script Interface
         public bool IgnoreWidthOfWebLabel = false;
         // Variable
@@ -99,10 +98,10 @@ namespace PEBakery.Core
         #region SetToDefault
         public void SetToDefault()
         {
-            // Script Tree
+            // Asterisk
+            AsteriskBugDirCopy = false;
             AsteriskBugDirLink = false;
             // Command
-            AsteriskBugDirCopy = false;
             FileRenameCanMoveDir = false;
             AllowLetterInLoop = false;
             LegacyBranchCondition = false;
@@ -110,7 +109,6 @@ namespace PEBakery.Core
             AllowSetModifyInterface = false;
             LegacyInterfaceCommand = false;
             LegacySectionParamCommand = false;
-            AutoCompactIniWriteCommand = false;
             // Script Interface
             IgnoreWidthOfWebLabel = false;
             // Variable
@@ -133,8 +131,8 @@ namespace PEBakery.Core
 
             IniKey[] keys =
             {
-                new IniKey(SectionName, nameof(AsteriskBugDirLink)), // Boolean
                 new IniKey(SectionName, nameof(AsteriskBugDirCopy)), // Boolean
+                new IniKey(SectionName, nameof(AsteriskBugDirLink)), // Boolean
                 new IniKey(SectionName, nameof(FileRenameCanMoveDir)), // Boolean
                 new IniKey(SectionName, nameof(AllowLetterInLoop)), // Boolean
                 new IniKey(SectionName, nameof(LegacyBranchCondition)), // Boolean
@@ -142,7 +140,6 @@ namespace PEBakery.Core
                 new IniKey(SectionName, nameof(AllowSetModifyInterface)), // Boolean
                 new IniKey(SectionName, nameof(LegacyInterfaceCommand)), // Boolean
                 new IniKey(SectionName, nameof(LegacySectionParamCommand)), // Boolean
-                new IniKey(SectionName, nameof(AutoCompactIniWriteCommand)), // Boolean
                 new IniKey(SectionName, nameof(IgnoreWidthOfWebLabel)), // Boolean
                 new IniKey(SectionName, nameof(OverridableFixedVariables)), // Boolean
                 new IniKey(SectionName, nameof(OverridableLoopCounter)), // Boolean
@@ -156,10 +153,10 @@ namespace PEBakery.Core
                 x => x.Value,
                 StringComparer.OrdinalIgnoreCase);
 
-            // Script Tree
+            // Asterisk
+            AsteriskBugDirCopy = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy);
             AsteriskBugDirLink = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink);
             // Command
-            AsteriskBugDirCopy = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy);
             FileRenameCanMoveDir = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(FileRenameCanMoveDir), FileRenameCanMoveDir);
             AllowLetterInLoop = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AllowLetterInLoop), AllowLetterInLoop);
             LegacyBranchCondition = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyBranchCondition), LegacyBranchCondition);
@@ -167,7 +164,6 @@ namespace PEBakery.Core
             AllowSetModifyInterface = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AllowSetModifyInterface), AllowSetModifyInterface);
             LegacyInterfaceCommand = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyInterfaceCommand), LegacyInterfaceCommand);
             LegacySectionParamCommand = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacySectionParamCommand), LegacySectionParamCommand);
-            AutoCompactIniWriteCommand = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AutoCompactIniWriteCommand), AutoCompactIniWriteCommand);
             // Script Interface
             IgnoreWidthOfWebLabel = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(IgnoreWidthOfWebLabel), IgnoreWidthOfWebLabel);
             // Variable
@@ -181,8 +177,8 @@ namespace PEBakery.Core
         {
             IniKey[] keys =
             {
-                new IniKey(SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy.ToString()), // Boolean
+                new IniKey(SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(SectionName, nameof(FileRenameCanMoveDir), FileRenameCanMoveDir.ToString()), // Boolean
                 new IniKey(SectionName, nameof(AllowLetterInLoop), AllowLetterInLoop.ToString()), // Boolean
                 new IniKey(SectionName, nameof(LegacyBranchCondition), LegacyBranchCondition.ToString()), // Boolean
@@ -190,7 +186,6 @@ namespace PEBakery.Core
                 new IniKey(SectionName, nameof(AllowSetModifyInterface), AllowSetModifyInterface.ToString()), // Boolean
                 new IniKey(SectionName, nameof(LegacyInterfaceCommand), LegacyInterfaceCommand.ToString()), // Boolean
                 new IniKey(SectionName, nameof(LegacySectionParamCommand), LegacySectionParamCommand.ToString()), // Boolean
-                new IniKey(SectionName, nameof(AutoCompactIniWriteCommand), AutoCompactIniWriteCommand.ToString()), // Boolean
                 new IniKey(SectionName, nameof(IgnoreWidthOfWebLabel), IgnoreWidthOfWebLabel.ToString()), // Boolean
                 new IniKey(SectionName, nameof(OverridableFixedVariables), OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(SectionName, nameof(OverridableLoopCounter), OverridableLoopCounter.ToString()), // Boolean
@@ -204,10 +199,10 @@ namespace PEBakery.Core
         #region CopyFrom
         public void CopyTo(CompatOption dest)
         {
-            // Script Tree
+            // Asterisk
+            dest.AsteriskBugDirCopy = AsteriskBugDirCopy;
             dest.AsteriskBugDirLink = AsteriskBugDirLink;
             // Command
-            dest.AsteriskBugDirCopy = AsteriskBugDirCopy;
             dest.FileRenameCanMoveDir = FileRenameCanMoveDir;
             dest.AllowLetterInLoop = AllowLetterInLoop;
             dest.LegacyBranchCondition = LegacyBranchCondition;
@@ -215,7 +210,6 @@ namespace PEBakery.Core
             dest.AllowSetModifyInterface = AllowSetModifyInterface;
             dest.LegacyInterfaceCommand = LegacyInterfaceCommand;
             dest.LegacySectionParamCommand = LegacySectionParamCommand;
-            dest.AutoCompactIniWriteCommand = AutoCompactIniWriteCommand;
             // Script Interface
             dest.IgnoreWidthOfWebLabel = IgnoreWidthOfWebLabel;
             // Variable
@@ -238,10 +232,10 @@ namespace PEBakery.Core
         {
             return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
             {
-                // Script Tree
+                // Asterisk
+                [nameof(AsteriskBugDirCopy)] = AsteriskBugDirCopy != other.AsteriskBugDirCopy,
                 [nameof(AsteriskBugDirLink)] = AsteriskBugDirLink != other.AsteriskBugDirLink,
                 // Command
-                [nameof(AsteriskBugDirCopy)] = AsteriskBugDirCopy != other.AsteriskBugDirCopy,
                 [nameof(FileRenameCanMoveDir)] = FileRenameCanMoveDir != other.FileRenameCanMoveDir,
                 [nameof(AllowLetterInLoop)] = AllowLetterInLoop != other.AllowLetterInLoop,
                 [nameof(LegacyBranchCondition)] = LegacyBranchCondition != other.LegacyBranchCondition,
@@ -249,7 +243,6 @@ namespace PEBakery.Core
                 [nameof(AllowSetModifyInterface)] = AllowSetModifyInterface != other.AllowSetModifyInterface,
                 [nameof(LegacyInterfaceCommand)] = LegacyInterfaceCommand != other.LegacyInterfaceCommand,
                 [nameof(LegacySectionParamCommand)] = LegacySectionParamCommand != other.LegacySectionParamCommand,
-                [nameof(AutoCompactIniWriteCommand)] = AutoCompactIniWriteCommand != other.AutoCompactIniWriteCommand,
                 // Script Interface
                 [nameof(IgnoreWidthOfWebLabel)] = IgnoreWidthOfWebLabel != other.IgnoreWidthOfWebLabel,
                 // Variable

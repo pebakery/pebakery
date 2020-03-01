@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -419,7 +419,7 @@ namespace PEBakery.Core
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(section);
 
-                if (s.HaltFlags.CheckScriptHalt())
+                if (s.HaltFlags.CheckBuildHalt())
                     break;
             }
 
@@ -427,7 +427,7 @@ namespace PEBakery.Core
             if (DisableSetLocal(s))
             {
                 // If SetLocal is implicitly disabled due to the halt flags, do not log the warning.
-                if (!s.HaltFlags.CheckScriptHalt())
+                if (!s.HaltFlags.CheckBuildHalt())
                 {
                     int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
@@ -1271,7 +1271,6 @@ namespace PEBakery.Core
         public bool CompatAllowSetModifyInterface { get; set; } = false;
         public bool CompatDisableExtendedSectionParams { get; set; } = false;
         public bool CompatOverridableLoopCounter { get; set; } = false;
-        public bool CompatAutoCompactIniWriteCommand { get; set; } = false;
         #endregion
 
         #region Command State Fields and Properties
@@ -1406,7 +1405,6 @@ namespace PEBakery.Core
             CompatAllowSetModifyInterface = compat.AllowSetModifyInterface;
             CompatDisableExtendedSectionParams = compat.DisableExtendedSectionParams;
             CompatOverridableLoopCounter = compat.OverridableLoopCounter;
-            CompatAutoCompactIniWriteCommand = compat.AutoCompactIniWriteCommand;
         }
         #endregion
 

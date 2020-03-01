@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2020 Hajin Jang
+    Copyright (C) 2018-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -366,7 +366,7 @@ namespace PEBakery.Core
                             Kind = IndexEntryKind.Folder,
                             Name = subDir.Name,
                             Children = new List<FileIndex>(),
-                        };
+                        }; 
                         dirIndex.Children.Add(subIndex);
                         dirQueue.Enqueue((subIndex, subDir));
                     }

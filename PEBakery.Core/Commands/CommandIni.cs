@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
 using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -165,16 +164,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
-            if (!File.Exists(fileName))
-                File.Create(fileName).Dispose();
-
-            bool result;
-            if (s.CompatAutoCompactIniWriteCommand)
-                result = IniReadWriter.WriteCompactKey(fileName, sectionName, key, value);
-            else
-                result = IniReadWriter.WriteKey(fileName, sectionName, key, value);
-
+            bool result = IniReadWriter.WriteKey(fileName, sectionName, key, value);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and it's value [{value}] written to [{fileName}]", cmd));
             else
@@ -218,15 +208,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
-            if (!File.Exists(fileName))
-                File.Create(fileName).Dispose();
-
-            bool result;
-            if (s.CompatAutoCompactIniWriteCommand)
-                result = IniReadWriter.WriteCompactKeys(fileName, keys);
-            else
-                result = IniReadWriter.WriteKeys(fileName, keys);
+            bool result = IniReadWriter.WriteKeys(fileName, keys);
 
             if (result)
             {
@@ -272,12 +254,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result;
-            if (s.CompatAutoCompactIniWriteCommand)
-                result = IniReadWriter.DeleteCompactKey(fileName, sectionName, key);
-            else
-                result = IniReadWriter.DeleteKey(fileName, sectionName, key);
-
+            bool result = IniReadWriter.DeleteKey(fileName, sectionName, key);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
             else
@@ -315,11 +292,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            bool[] result;
-            if (s.CompatAutoCompactIniWriteCommand)
-                result = IniReadWriter.DeleteCompactKeys(fileName, keys);
-            else
-                result = IniReadWriter.DeleteKeys(fileName, keys);
+            bool[] result = IniReadWriter.DeleteKeys(fileName, keys);
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -637,10 +610,6 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
-            if (!File.Exists(fileName))
-                File.Create(fileName).Dispose();
-
             bool result = IniReadWriter.WriteRawLine(fileName, section, line, info.Append);
 
             if (result)
@@ -685,10 +654,6 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
-            if (!File.Exists(fileName))
-                File.Create(fileName).Dispose();
-
             bool result = IniReadWriter.WriteRawLines(fileName, keyList, append);
 
             if (result)
@@ -728,12 +693,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destFile, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result;
-            if (s.CompatAutoCompactIniWriteCommand)
-                result = IniReadWriter.MergeCompact(srcFile, destFile);
-            else
-                result = IniReadWriter.Merge(srcFile, destFile);
-
+            bool result = IniReadWriter.Merge(srcFile, destFile);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
             else

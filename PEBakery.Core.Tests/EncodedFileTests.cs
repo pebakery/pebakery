@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2020 Hajin Jang
+    Copyright (C) 2017-2019 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -438,9 +438,9 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
-        #region ReadFileInfo, ReadLogoInfo, ReadFolderInfo, ReadAllFilesInfo
+        #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
         [TestMethod]
-        public void ReadFileInfo()
+        public void GetFileInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -454,7 +454,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, folderExample, fileName, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
                 Assert.IsTrue(report.Success);
                 Assert.IsTrue(comp.Equals(report.Result));
             }
@@ -512,7 +512,8 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        public void ReadLogoInfo()
+        [TestCategory("EncodedFile")]
+        public void GetLogoInfo()
         {
             EngineState s = EngineTests.CreateEngineState();
             string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
@@ -526,7 +527,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.ReadLogoInfo(testScript, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(testScript, detail);
                 if (comp == null)
                 {
                     Assert.IsFalse(report.Success);
@@ -561,7 +562,8 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        public void ReadFolderInfo()
+        [TestCategory("EncodedFile")]
+        public void GetFolderInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -575,7 +577,7 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
-                ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(sc, FolderExample, detail);
+                ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
                 Assert.IsTrue(report.Success);
                 EncodedFileInfo[] infos = report.Result;
                 Assert.AreEqual(comps.Count, infos.Length);
@@ -625,7 +627,8 @@ namespace PEBakery.Core.Tests
         }
 
         [TestMethod]
-        public void ReadAllFilesInfo()
+        [TestCategory("EncodedFile")]
+        public void GetAllFilesInfo()
         {
             // ReSharper disable once InconsistentNaming
             const string FolderExample = "FolderExample";
@@ -639,11 +642,11 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool inspectEncodedSize, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                ReadFileInfoOptions opts = new ReadFileInfoOptions
+                EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
                 {
                     InspectEncodeMode = inspectEncodedSize,
                 };
-                ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(sc, opts);
+                ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(sc, opts);
                 Assert.IsTrue(report.Success);
                 Dictionary<string, List<EncodedFileInfo>> infoDict = report.Result;
                 Assert.AreEqual(compDict.Count, infoDict.Count);
@@ -1137,7 +1140,7 @@ namespace PEBakery.Core.Tests
                     string usageStr = NumberHelper.ByteSizeToSIUnit((long)usage, 1);
                     Console.WriteLine($"Memory usage of {level}, Threads {th} = {usageStr} ({usage})");
                 }
-            }
+            }    
         }
         #endregion
     }
