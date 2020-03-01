@@ -1675,6 +1675,7 @@ namespace PEBakery.Core.ViewModels
             using (Process proc = new Process())
             {
                 proc.StartInfo = new ProcessStartInfo(filePath);
+                proc.StartInfo.UseShellExecute = true;
                 proc.Start();
             }
         }
