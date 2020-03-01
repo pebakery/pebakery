@@ -36,8 +36,8 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [TestCategory("Command")]
-    [TestCategory("CommandIni")]
+    [TestCategory(nameof(Command))]
+    [TestCategory(nameof(Commands.CommandIni))]
     public class CommandIniTests
     {
         #region SampleStr

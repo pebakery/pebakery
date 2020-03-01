@@ -170,8 +170,6 @@ namespace PEBakery.Helper
                 stream.Write(Utf16LeBom, 0, Utf16LeBom.Length);
             else if (encoding.CodePage == Encoding.BigEndianUnicode.CodePage)
                 stream.Write(Utf16BeBom, 0, Utf16BeBom.Length);
-            else if (encoding.CodePage != DefaultAnsi.CodePage) // Unsupported Encoding
-                throw new ArgumentException($"[{encoding}] is not supported");
         }
         #endregion
 

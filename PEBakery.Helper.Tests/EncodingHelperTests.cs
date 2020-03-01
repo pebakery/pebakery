@@ -27,11 +27,12 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace PEBakery.Helper.Tests
 {
     [TestClass]
-    [TestCategory(nameof(PEBakery.Helper))]
+    [TestCategory(nameof(Helper))]
     [TestCategory(nameof(EncodingHelper))]
     public class EncodingHelperTests
     {
@@ -141,6 +142,48 @@ namespace PEBakery.Helper.Tests
             {
                 Directory.Delete(tempDir, true);
             }
+        }
+        #endregion
+
+        #region WriteTextBom
+        [TestMethod]
+        public void WriteTextBom()
+        {
+            string tempDir = FileHelper.GetTempDir();
+            CultureInfo bak = Thread.CurrentThread.CurrentCulture;
+            try
+            {
+                string ansiText = Path.Combine(tempDir, "ANSI.txt");
+                string utf16leText = Path.Combine(tempDir, "UTF16LE.txt");
+                string utf16beText = Path.Combine(tempDir, "UTF16BE.txt");
+                string utf8bomText = Path.Combine(tempDir, "UTF8wBOM.txt");
+
+                void Template()
+                {
+                    Console.WriteLine($"OEM  Code Page = {Thread.CurrentThread.CurrentCulture.TextInfo.OEMCodePage}");
+                    Console.WriteLine($"ANSI Code Page = {Thread.CurrentThread.CurrentCulture.TextInfo.ANSICodePage}");
+                    Console.WriteLine($"DefaultAnsi    = {EncodingHelper.DefaultAnsi.CodePage}");
+
+                    EncodingHelper.WriteTextBom(ansiText, EncodingHelper.DefaultAnsi);
+                    EncodingHelper.WriteTextBom(utf16leText, Encoding.Unicode);
+                    EncodingHelper.WriteTextBom(utf16beText, Encoding.BigEndianUnicode);
+                    EncodingHelper.WriteTextBom(utf8bomText, Encoding.UTF8);
+
+                    Console.WriteLine();
+                }
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("ko-KR");
+                Template();
+                
+                Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
+                Template();
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = bak;
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }            
         }
         #endregion
 
