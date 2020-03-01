@@ -419,7 +419,7 @@ namespace PEBakery.Core
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(section);
 
-                if (s.HaltFlags.CheckBuildHalt())
+                if (s.HaltFlags.CheckScriptHalt())
                     break;
             }
 
