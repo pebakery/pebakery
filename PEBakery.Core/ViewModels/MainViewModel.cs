@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -918,7 +918,7 @@ namespace PEBakery.Core.ViewModels
                     ScriptCache scriptCache;
                     if (Global.Setting.Script.EnableCache && Global.ScriptCache != null)
                     { // Use ScriptCache
-                        if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir))
+                        if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir, Global.Projects))
                         {
                             // Enable scriptCache
                             scriptCache = Global.ScriptCache;
@@ -926,7 +926,7 @@ namespace PEBakery.Core.ViewModels
                         else
                         { // Cache is invalid
                             // Invalidate cache database for integrity
-                            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
+                            Global.ScriptCache.ClearTable(new ClearTableOptions
                             {
                                 CacheInfo = false,
                                 ScriptCache = true,
@@ -1675,6 +1675,7 @@ namespace PEBakery.Core.ViewModels
             using (Process proc = new Process())
             {
                 proc.StartInfo = new ProcessStartInfo(filePath);
+                proc.StartInfo.UseShellExecute = true;
                 proc.Start();
             }
         }

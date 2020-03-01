@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PEBakery": {
+      "commandName": "Project",
+      "commandLineArgs": "/baseDir D:\\WinPE_dev\\Win10XPE"
+    }
+  }
+}

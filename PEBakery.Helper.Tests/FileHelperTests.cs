@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2019 Hajin Jang
+    Copyright (C) 2017-2020 Hajin Jang
  
     MIT License
 
@@ -31,12 +31,12 @@ using System.Linq;
 namespace PEBakery.Helper.Tests
 {
     [TestClass]
+    [TestCategory(nameof(PEBakery.Helper))]
+    [TestCategory(nameof(FileHelper))]
     public class FileHelperTests
     {
         #region Temp Path
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void BaseTempDir()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -50,8 +50,6 @@ namespace PEBakery.Helper.Tests
         }
 
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetTempDir()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -68,8 +66,6 @@ namespace PEBakery.Helper.Tests
         }
 
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetTempFile()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -100,8 +96,6 @@ namespace PEBakery.Helper.Tests
 
         #region GetFilesEx
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetFilesEx()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
@@ -127,8 +121,6 @@ namespace PEBakery.Helper.Tests
 
         #region GetFilesExWithDir
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetFilesExWithDir()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
@@ -187,8 +179,6 @@ namespace PEBakery.Helper.Tests
 
         #region DirectoryCopy
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void DirectoryCopy()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
@@ -278,6 +268,57 @@ namespace PEBakery.Helper.Tests
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
             });
+        }
+        #endregion
+
+        #region IsPathNonExistDir
+        [TestMethod]
+        public void IsPathNonExistDir()
+        {
+            string destDir = FileHelper.GetTempDir();
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                string destRoot = Path.GetPathRoot(destDir);
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(destRoot));
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(destDir));
+
+                // Test non-existing directory path
+                string targetPath = Path.Combine(destDir, "Dummy");
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                Assert.IsTrue(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+
+                // Test existing directory path
+                Directory.CreateDirectory(targetPath);
+                try
+                {
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+                }
+                finally
+                {
+                    if (Directory.Exists(targetPath))
+                        Directory.Delete(targetPath, true);
+                }
+
+                // Test existing file path
+                try
+                {
+                    File.Create(targetPath).Dispose();
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                    Assert.IsTrue(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+                }
+                finally
+                {
+                    if (File.Exists(targetPath))
+                        File.Delete(targetPath);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
         }
         #endregion
     }

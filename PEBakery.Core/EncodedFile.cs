@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -105,10 +105,6 @@ namespace PEBakery.Core
         Error Message = $"The archive was created with a different version of ZLBArchive v{value}"
     0x18 : Decompress by WB082 is unaffected by this value
     0x1C : When changed, WB082 thinks the encoded file is corrupted
-    
-    [Improvement Points]
-    - Zopfli support in place of zlib, for better compression rate while keeping compability with WB082
-    - Design more robust script format. 
     */
     #endregion
 
@@ -777,13 +773,13 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
-        public static Task<ResultReport<EncodedFileInfo>> GetFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
+        #region ReadFileInfo, ReadLogoInfo, ReadFolderInfo, ReadAllFilesInfo
+        public static Task<ResultReport<EncodedFileInfo>> ReadFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetFileInfo(sc, folderName, fileName, inspectEncodeMode));
+            return Task.Run(() => ReadFileInfo(sc, folderName, fileName, inspectEncodeMode));
         }
 
-        public static ResultReport<EncodedFileInfo> GetFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo> ReadFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -817,12 +813,12 @@ namespace PEBakery.Core
             return new ResultReport<EncodedFileInfo>(true, info, null);
         }
 
-        public static Task<ResultReport<EncodedFileInfo>> GetLogoInfoAsync(Script sc, bool inspectEncodeMode = false)
+        public static Task<ResultReport<EncodedFileInfo>> ReadLogoInfoAsync(Script sc, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetLogoInfo(sc, inspectEncodeMode));
+            return Task.Run(() => ReadLogoInfo(sc, inspectEncodeMode));
         }
 
-        public static ResultReport<EncodedFileInfo> GetLogoInfo(Script sc, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo> ReadLogoInfo(Script sc, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -860,12 +856,12 @@ namespace PEBakery.Core
             return new ResultReport<EncodedFileInfo>(true, info, null);
         }
 
-        public static Task<ResultReport<EncodedFileInfo[]>> GetFolderInfoAsync(Script sc, string folderName, bool inspectEncodeMode = false)
+        public static Task<ResultReport<EncodedFileInfo[]>> ReadFolderInfoAsync(Script sc, string folderName, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetFolderInfo(sc, folderName, inspectEncodeMode));
+            return Task.Run(() => ReadFolderInfo(sc, folderName, inspectEncodeMode));
         }
 
-        public static ResultReport<EncodedFileInfo[]> GetFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo[]> ReadFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -905,44 +901,42 @@ namespace PEBakery.Core
             return new ResultReport<EncodedFileInfo[]>(true, infos.ToArray(), null);
         }
 
-        public struct GetFileInfoOptions
+        public static Task<ResultReport<Dictionary<string, List<EncodedFileInfo>>>> ReadAllFilesInfoAsync(Script sc, ReadFileInfoOptions opts)
         {
-            public bool IncludeAuthorEncoded;
-            public bool IncludeInterfaceEncoded;
-            public bool InspectEncodeMode;
+            return Task.Run(() => ReadAllFilesInfo(sc, opts));
         }
 
-        public static Task<ResultReport<Dictionary<string, List<EncodedFileInfo>>>> GetAllFilesInfoAsync(Script sc, GetFileInfoOptions opts)
-        {
-            return Task.Run(() => GetAllFilesInfo(sc, opts));
-        }
-
-        public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> GetAllFilesInfo(Script sc, GetFileInfoOptions opts)
+        public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> ReadAllFilesInfo(Script sc, ReadFileInfoOptions opts)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
-            if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null); // Return empty dict
 
-            List<string> folderNames = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
-            int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
-            if (aeIdx != -1)
+            // Encoded folders to check
+            List<string> folderNames = new List<string>();
+            // Check EncodedFolders (Must come first)
+            if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
-                folderNames.RemoveAt(aeIdx);
-            }
+                folderNames.AddRange(IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines));
+                int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
+                if (aeIdx != -1)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
+                    folderNames.RemoveAt(aeIdx);
+                }
 
-            int ieIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
-            if (ieIdx != -1)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
-                folderNames.RemoveAt(ieIdx);
+                int ieIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
+                if (ieIdx != -1)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
+                    folderNames.RemoveAt(ieIdx);
+                }
             }
-
+            // Check AuthorEncoded
             if (opts.IncludeAuthorEncoded && sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 folderNames.Add(ScriptSection.Names.AuthorEncoded);
+            // Check IterfaceEncoded
             if (opts.IncludeInterfaceEncoded && sc.Sections.ContainsKey(ScriptSection.Names.InterfaceEncoded))
                 folderNames.Add(ScriptSection.Names.InterfaceEncoded);
 
@@ -1001,12 +995,12 @@ namespace PEBakery.Core
             return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null);
         }
 
-        public static Task<EncodeMode> GetEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
+        public static Task<EncodeMode> ReadEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
         {
-            return Task.Run(() => GetEncodeMode(sc, folderName, fileName, inMem));
+            return Task.Run(() => ReadEncodeMode(sc, folderName, fileName, inMem));
         }
 
-        public static EncodeMode GetEncodeMode(Script sc, string folderName, string fileName, bool inMem = false)
+        public static EncodeMode ReadEncodeMode(Script sc, string folderName, string fileName, bool inMem = false)
         {
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (inMem)
@@ -1557,7 +1551,7 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     encodeStream.Position = 0;
 
-                    Encoding encoding = EncodingHelper.DetectBom(backupFile);
+                    Encoding encoding = EncodingHelper.DetectEncoding(backupFile);
                     using (StreamReader tr = new StreamReader(backupFile, encoding, false))
                     using (StreamWriter tw = new StreamWriter(sc.RealPath, false, encoding))
                     {
@@ -1645,7 +1639,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = EncodingHelper.DetectBom(scPath);
+                    Encoding encoding = EncodingHelper.DetectEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);
@@ -1890,7 +1884,7 @@ namespace PEBakery.Core
         private static MemoryStream DecodeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterNonIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -2054,7 +2048,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = EncodingHelper.DetectBom(scPath);
+                    Encoding encoding = EncodingHelper.DetectEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);
@@ -2144,7 +2138,7 @@ namespace PEBakery.Core
         private static EncodeMode ReadEncodeModeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterNonIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -2486,6 +2480,54 @@ namespace PEBakery.Core
             }
 
             return Convert.FromBase64String(b.ToString());
+        }
+        #endregion
+    }
+    #endregion
+
+    #region ReadFileInfoOptions
+    public class ReadFileInfoOptions : IEquatable<ReadFileInfoOptions>
+    {
+        public bool InspectEncodeMode;
+        public bool IncludeAuthorEncoded;
+        public bool IncludeInterfaceEncoded;
+
+        #region Interface and Override Methods
+        public override bool Equals(object obj)
+        {
+            if (obj is ReadFileInfoOptions other)
+                return Equals(other);
+            else
+                return false;
+        }
+
+        public bool Equals(ReadFileInfoOptions other)
+        {
+            return InspectEncodeMode == other.InspectEncodeMode &&
+                IncludeAuthorEncoded == other.IncludeAuthorEncoded &&
+                IncludeInterfaceEncoded == other.IncludeInterfaceEncoded;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 0;
+            if (InspectEncodeMode)
+                hashCode += 1;
+            if (IncludeAuthorEncoded)
+                hashCode += 2;
+            if (IncludeInterfaceEncoded)
+                hashCode += 4;
+            return hashCode;
+        }
+
+        public static bool operator ==(ReadFileInfoOptions left, ReadFileInfoOptions right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ReadFileInfoOptions left, ReadFileInfoOptions right)
+        {
+            return !(left == right);
         }
         #endregion
     }

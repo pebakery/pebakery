@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -52,25 +52,12 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            // Check destPath is directory
-            bool destPathExists = false;
-            bool destPathIsDir = false;
-            if (Directory.Exists(destPath))
-            {
-                destPathExists = true;
-                destPathIsDir = true;
-            }
-            else if (File.Exists(destPath))
-            {
-                destPathExists = true;
-            }
-
             // Check srcFileName contains wildcard
             string wildcard = Path.GetFileName(srcFile);
             if (!StringHelper.IsWildcard(wildcard))
             { // No Wildcard
-                if (destPathIsDir) // DestPath exists, and it is directory
-                {
+                if (Directory.Exists(destPath))
+                { // DestPath exists, and it is directory
                     Directory.CreateDirectory(destPath);
                     string destFullPath = Path.Combine(destPath, Path.GetFileName(srcFile));
                     if (File.Exists(destFullPath))
@@ -87,10 +74,15 @@ namespace PEBakery.Core.Commands
                     File.Copy(srcFile, destFullPath, true);
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]"));
                 }
-                else // DestPath not exist, or it is a file
-                {
-                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
-                    if (destPathExists)
+                else if (FileHelper.IsPathNonExistDir(destPath))
+                { // DestPath ends with \, warn user
+                    logs.Add(new LogInfo(LogState.Warning, $"Unable to copy a file, directory [{destPath}] does not exist"));
+                }
+                else
+                { // DestPath does not exist, or it is a file
+                    string destDir = FileHelper.GetDirNameEx(destPath);
+                    Directory.CreateDirectory(destDir);
+                    if (File.Exists(destPath))
                     {
                         if (info.Preserve)
                         {
@@ -117,55 +109,54 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                // One or more file will be copied
-                logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
-                if (destPathIsDir || !destPathExists)
+                if (!Directory.Exists(destPath) && File.Exists(destPath))
                 {
-                    s.MainViewModel.SetBuildCommandProgress("FileCopy Progress", files.Length);
-                    try
-                    {
-                        for (int i = 0; i < files.Length; i++)
-                        {
-                            string f = files[i];
-                            string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
-
-                            if (File.Exists(destFullPath))
-                            {
-                                if (info.Preserve)
-                                {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten"));
-                                    continue;
-                                }
-
-                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten"));
-                            }
-
-                            string destFullParent = Path.GetDirectoryName(destFullPath);
-                            if (destFullParent == null)
-                                throw new InternalException("Internal Logic Error at FileCopy");
-
-                            s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
-
-                            Directory.CreateDirectory(destFullParent);
-                            File.Copy(f, destFullPath, true);
-
-                            s.MainViewModel.BuildCommandProgressValue = i + 1;
-
-                            logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]"));
-                        }
-                    }
-                    finally
-                    {
-                        s.MainViewModel.ResetBuildCommandProgress();
-                    }
-
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
-                }
-                else
-                {
+                    logs.Add(new LogInfo(LogState.Success, $"Cannot copy [{srcFile}] into [{destPath}]"));
                     logs.Add(new LogInfo(LogState.Error, "The file destination must be directory when using wildcards (? *) in the <SrcFile> name"));
                     return logs;
                 }
+
+                // One or more file will be copied
+                logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
+                s.MainViewModel.SetBuildCommandProgress("FileCopy Progress", files.Length);
+                try
+                {
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        string f = files[i];
+                        string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
+
+                        if (File.Exists(destFullPath))
+                        {
+                            if (info.Preserve)
+                            {
+                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten"));
+                                continue;
+                            }
+
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten"));
+                        }
+
+                        string destFullParent = Path.GetDirectoryName(destFullPath);
+                        if (destFullParent == null)
+                            throw new InternalException("Internal Logic Error at FileCopy");
+
+                        s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
+
+                        Directory.CreateDirectory(destFullParent);
+                        File.Copy(f, destFullPath, true);
+
+                        s.MainViewModel.BuildCommandProgressValue = i + 1;
+
+                        logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]"));
+                    }
+                }
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
+
+                logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
             }
 
             return logs;

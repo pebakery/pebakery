@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019 Hajin Jang
+    Copyright (C) 2019-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,7 +29,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace PEBakery.Core.Tests

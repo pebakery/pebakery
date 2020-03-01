@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -30,6 +30,8 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -217,70 +219,77 @@ namespace PEBakery.Helper
         #region Path Operations
         /// <summary>
         /// Extends Path.GetDirectoryName().
-        /// If returned dir path is empty, change it to "."
+        /// Prevents returning of null, by calling Path.GetFullPath().
+        /// Also allows wildcard in filename.
         /// </summary>
-        /// <param name="path"></param>
         /// <returns></returns>
         public static string GetDirNameEx(string path)
         {
-            string dirName = Path.GetDirectoryName(path);
-            if (dirName == null)
-                return null;
-            if (dirName.Length == 0) // e.g. Hello.txt
-                return "."; // Consider path as [.\Hello.txt].
-            return dirName;
-        }
-
-        /// <summary>
-        /// Get Parent directory name, not full path.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static string GetParentDirName(string path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            string dirName = Path.GetDirectoryName(path);
-            if (dirName == null)
-                return string.Empty;
-
-            int idx = dirName.LastIndexOf(Path.DirectorySeparatorChar);
-            if (idx != -1)
-                dirName = dirName.Substring(idx + 1, dirName.Length - (idx + 1));
+            int lastDirSepIdx = path.LastIndexOf('\\');
+            if (lastDirSepIdx == -1)
+            { // Ex) ABC.*, ABC.so -> No directory separator
+                return ".";
+            }
             else
-                dirName = string.Empty;
-
-            return dirName;
+            { // Ex) AB\CD\EF.so, AB\?.exe
+                return path.Substring(0, lastDirSepIdx);
+            }
         }
 
         /// <summary>
         /// Replace src with dest. 
         /// </summary>
-        /// <param name="src"></param>
-        /// <param name="dest"></param>
-        public static void FileReplaceEx(string src, string dest)
+        /// <param name="srcPath"></param>
+        /// <param name="destPath"></param>
+        public static void FileReplaceEx(string srcPath, string destPath)
         {
-            try
+            // ile.Replace throws IOException if src and dest are located in different volume.
+            // To decreate amount of exception throwed, check drive by ourself and use File.Copy as fallback.
+            string fullSrcPath = Path.GetFullPath(srcPath);
+            string fullDestPath = Path.GetFullPath(destPath);
+
+            string srcDrive = Path.GetPathRoot(fullSrcPath);
+            string destDrive = Path.GetPathRoot(fullDestPath);
+            if (srcDrive.Equals(destDrive, StringComparison.Ordinal))
             {
-                // File.Copy removes ACL and ADS.
-                // Instead, use File.Replace.
-                File.Replace(src, dest, null);
+                try
+                {
+                    // File.Copy removes ACL and ADS.
+                    // Instead, use File.Replace.
+                    File.Replace(srcPath, destPath, null);
+                }
+                catch (IOException)
+                { // Failsafe
+                    // File.Replace throws IOException if src and dest files are in different volume.
+                    // In this case, try File.Copy as fallback.
+                    File.Copy(srcPath, destPath, true);
+                    File.Delete(srcPath);
+                }
             }
-            catch (IOException)
+            else
             {
-                // However, File.Replace throws IOException if src and dest files are in different volume.
-                // In this case, try File.Copy as fallback.
-                File.Copy(src, dest, true);
-                File.Delete(src);
+                File.Copy(srcPath, destPath, true);
+                File.Delete(srcPath);
             }
         }
         #endregion
 
         #region GetFileSize
-        public static long GetFileSize(string srcFile)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long GetFileSize(string srcFile) => new FileInfo(srcFile).Length;
+        #endregion
+
+        #region IsPathNonExistDir
+        /// <summary>
+        /// Is the given path is really non-existing directory path? 
+        /// Ex) D:\Test\
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPathNonExistDir(string path)
         {
-            FileInfo info = new FileInfo(srcFile);
-            return info.Length;
+            return !Directory.Exists(path) && path.EndsWith("\\", StringComparison.Ordinal) && Path.GetFileName(path).Length == 0;
         }
         #endregion
 
@@ -433,6 +442,10 @@ namespace PEBakery.Helper
         #endregion
 
         #region GetFilesEx
+        /// <summary>
+        /// Search for files while ignoring UnauthorizedAccessException
+        /// </summary>
+        /// <returns></returns>
         public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
@@ -531,6 +544,10 @@ namespace PEBakery.Helper
         #endregion
 
         #region DirectoryDeleteEx
+        /// <summary>
+        /// Delete a directory recursively, including readonly and hidden file/dirs.
+        /// </summary>
+        /// <param name="path"></param>
         public static void DirectoryDeleteEx(string path)
         {
             DirectoryInfo root = new DirectoryInfo(path);
@@ -699,16 +716,23 @@ namespace PEBakery.Helper
         /// </summary>
         public static Version WindowsVersion()
         {
-            // Environment.OSVersion is deprecated
-            // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
-            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-            string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
-            int major = fvi.FileMajorPart;
-            int minor = fvi.FileMinorPart;
-            int build = fvi.FileBuildPart;
-            int revision = fvi.FilePrivatePart;
-            return new Version(major, minor, build, revision);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Environment.OSVersion is deprecated
+                // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
+                int major = fvi.FileMajorPart;
+                int minor = fvi.FileMinorPart;
+                int build = fvi.FileBuildPart;
+                int revision = fvi.FilePrivatePart;
+                return new Version(major, minor, build, revision);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
         #endregion
 

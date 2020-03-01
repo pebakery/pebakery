@@ -1,5 +1,5 @@
 ﻿/*
-   Copyright (C) 2016-2019 Hajin Jang
+   Copyright (C) 2016-2020 Hajin Jang
    Licensed under GPL 3.0
 
    PEBakery is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ using System.Text;
 namespace PEBakery.Core
 {
     #region EventHandlers
-    public class SystemLogUpdateEventArgs : EventArgs
+    public sealed class SystemLogUpdateEventArgs : EventArgs
     {
         public LogModel.SystemLog Log { get; set; }
         public LogModel.SystemLog[] Logs { get; set; }
@@ -56,7 +56,7 @@ namespace PEBakery.Core
             Logs = logs;
         }
     }
-    public class BuildInfoUpdateEventArgs : EventArgs
+    public sealed class BuildInfoUpdateEventArgs : EventArgs
     {
         public LogModel.BuildInfo Log { get; set; }
         public BuildInfoUpdateEventArgs(LogModel.BuildInfo log)
@@ -64,7 +64,7 @@ namespace PEBakery.Core
             Log = log;
         }
     }
-    public class BuildLogUpdateEventArgs : EventArgs
+    public sealed class BuildLogUpdateEventArgs : EventArgs
     {
         public LogModel.BuildLog Log { get; set; }
         public BuildLogUpdateEventArgs(LogModel.BuildLog log)
@@ -72,7 +72,7 @@ namespace PEBakery.Core
             Log = log;
         }
     }
-    public class ScriptUpdateEventArgs : EventArgs
+    public sealed class ScriptUpdateEventArgs : EventArgs
     {
         public LogModel.Script Log { get; set; }
         public ScriptUpdateEventArgs(LogModel.Script log)
@@ -80,7 +80,7 @@ namespace PEBakery.Core
             Log = log;
         }
     }
-    public class VariableUpdateEventArgs : EventArgs
+    public sealed class VariableUpdateEventArgs : EventArgs
     {
         public LogModel.Variable Log { get; set; }
         public VariableUpdateEventArgs(LogModel.Variable log)
@@ -917,11 +917,11 @@ namespace PEBakery.Core
             if (type == LogExportType.Html && MinifyHtmlExport)
             {
                 string rawHtml;
-                using (StringWriter w = new StringWriter())
+                using (StringWriter sw = new StringWriter())
                 {
-                    LogExporter exporter = new LogExporter(Db, type, w);
+                    LogExporter exporter = new LogExporter(Db, type, sw);
                     exporter.ExportSystemLog();
-                    rawHtml = w.ToString();
+                    rawHtml = sw.ToString();
                 }
 
                 // Do not collapse CRLF in td, th
@@ -950,9 +950,9 @@ namespace PEBakery.Core
             }
             else
             {
-                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                using (StreamWriter sw = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
-                    LogExporter exporter = new LogExporter(Db, type, w);
+                    LogExporter exporter = new LogExporter(Db, type, sw);
                     exporter.ExportSystemLog();
                 }
             }
@@ -1077,7 +1077,7 @@ namespace PEBakery.Core
     #endregion
 
     #region SQLite Model
-    public class LogModel
+    public sealed class LogModel
     {
         public class SystemLog
         {

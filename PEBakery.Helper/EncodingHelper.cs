@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -32,6 +32,7 @@ namespace PEBakery.Helper
 {
     public static class EncodingHelper
     {
+        #region (private) Fields
         private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
         private static readonly byte[] Utf16LeBom = { 0xFF, 0xFE };
         private static readonly byte[] Utf16BeBom = { 0xFE, 0xFF };
@@ -60,6 +61,10 @@ namespace PEBakery.Helper
             }
         }
 
+        private readonly static AdvTextEncDetect AdvDetect = new AdvTextEncDetect();
+        #endregion
+
+        #region DetectBom
         public static Encoding DetectBom(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -77,26 +82,71 @@ namespace PEBakery.Helper
 
         public static Encoding DetectBom(byte[] buffer, int offset, int count)
         {
-            Encoding encoding = null;
             if (buffer.Length < offset + count)
                 throw new ArgumentOutOfRangeException(nameof(buffer));
 
-            if (3 <= offset + count &&
-                buffer[offset] == Utf8Bom[0] && buffer[offset + 1] == Utf8Bom[1] && buffer[offset + 2] == Utf8Bom[2])
+            return DetectBom(buffer.AsSpan(offset, count));
+        }
+
+        public static Encoding DetectBom(ReadOnlySpan<byte> span)
+        {
+            Encoding encoding = null;
+            if (3 <= span.Length && span[0] == Utf8Bom[0] && span[1] == Utf8Bom[1] && span[2] == Utf8Bom[2])
             {
                 encoding = Encoding.UTF8;
             }
-            else if (2 <= offset + count)
+            else if (2 <= span.Length)
             {
-                if (buffer[offset] == Utf16LeBom[0] && buffer[offset + 1] == Utf16LeBom[1])
+                if (span[0] == Utf16LeBom[0] && span[1] == Utf16LeBom[1])
                     encoding = Encoding.Unicode;
-                else if (buffer[offset] == Utf16BeBom[0] && buffer[offset + 1] == Utf16BeBom[1])
+                else if (span[0] == Utf16BeBom[0] && span[1] == Utf16BeBom[1])
                     encoding = Encoding.BigEndianUnicode;
             }
 
             return encoding ?? DefaultAnsi;
         }
+        #endregion
 
+        #region DetectEncoding
+        /// <summary>
+        /// Detect encoding with heuristics. Ex) Detect UTF-8 wo BOM as UTF-8, not ANSI.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="peekSize"></param>
+        /// <remarks>
+        /// 4KB is not enough. Use at least 16KB of buffer.
+        /// </remarks>
+        /// <returns>Encoding instance</returns>
+        public static Encoding DetectEncoding(string filePath, int peekSize = 16 * 1024)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return DetectEncoding(fs, peekSize);
+            }
+        }
+
+        public static Encoding DetectEncoding(Stream s, int peekSize = 16 * 1024)
+        {
+            byte[] buffer = new byte[peekSize];
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+
+            return DetectEncoding(buffer, 0, bytesRead);
+        }
+
+        public static Encoding DetectEncoding(byte[] buffer, int offset, int count)
+        {
+            TextEncoding textEnc = AdvDetect.DetectEncoding(buffer, offset, count);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+
+        public static Encoding DetectEncoding(ReadOnlySpan<byte> span)
+        {
+            TextEncoding textEnc = AdvDetect.DetectEncoding(span);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+        #endregion
+
+        #region WriteTextBom
         public static void WriteTextBom(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -115,23 +165,17 @@ namespace PEBakery.Helper
             // Encoding.Equals() checks equality of fallback as well as equality of codepage.
             // Ignore fallback here, only check codepage id.
             if (encoding.CodePage == Encoding.UTF8.CodePage)
-            {
                 stream.Write(Utf8Bom, 0, Utf8Bom.Length);
-            }
             else if (encoding.CodePage == Encoding.Unicode.CodePage)
-            {
                 stream.Write(Utf16LeBom, 0, Utf16LeBom.Length);
-            }
             else if (encoding.CodePage == Encoding.BigEndianUnicode.CodePage)
-            {
                 stream.Write(Utf16BeBom, 0, Utf16BeBom.Length);
-            }
-            else if (encoding.CodePage != DefaultAnsi.CodePage)
-            { // Unsupported Encoding
+            else if (encoding.CodePage != DefaultAnsi.CodePage) // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
-            }
         }
+        #endregion
 
+        #region TextBomLength
         public static int TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -168,7 +212,9 @@ namespace PEBakery.Helper
 
             return length;
         }
+        #endregion
 
+        #region IsText
         public static bool IsText(string filePath, int peekSize)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -226,7 +272,7 @@ namespace PEBakery.Helper
             // To counter these issue, if file is seems to be text, check again with AutoIt.Common.TextEncodingDetect
             if (isText)
             {
-                TextEncodingDetect detect = new TextEncodingDetect();
+                AdvTextEncDetect detect = new AdvTextEncDetect();
                 byte[] idxZeroBuffer;
                 if (offset == 0)
                 {
@@ -238,19 +284,19 @@ namespace PEBakery.Helper
                     Array.Copy(buffer, offset, idxZeroBuffer, 0, count);
                 }
 
-                switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
+                switch (detect.DetectEncoding(idxZeroBuffer, 0, idxZeroBuffer.Length))
                 {
                     // Binary
-                    case TextEncodingDetect.DetectedEncoding.None:
+                    case TextEncoding.None:
                     // PEBakery mandates unicode text to have BOM.
                     // They must have been filtered out in stage 1.
-                    case TextEncodingDetect.DetectedEncoding.Utf16LeBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf16BeBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf8Bom:
+                    case TextEncoding.Utf16LeBom:
+                    case TextEncoding.Utf16BeBom:
+                    case TextEncoding.Utf8Bom:
                     // Treat unicode text file without a BOM as a binary.
-                    case TextEncodingDetect.DetectedEncoding.Utf16LeNoBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf16BeNoBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf8NoBom:
+                    case TextEncoding.Utf16LeNoBom:
+                    case TextEncoding.Utf16BeNoBom:
+                    case TextEncoding.Utf8NoBom:
                         isText = false;
                         break;
                 }
@@ -258,5 +304,6 @@ namespace PEBakery.Helper
 
             return isText;
         }
+        #endregion
     }
 }

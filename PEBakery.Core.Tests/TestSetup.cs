@@ -10,20 +10,29 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
 {
     [TestClass]
+    [TestCategory(nameof(TestSetup))]
     public class TestSetup
     {
         #region AssemblyInitalize, AssemblyCleanup
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
-            // Set MainViewModel
-            Global.MainViewModel = new MainViewModel();
+            // Regsiter Non-Unicode Encodings
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+            EngineTests.RunSTAThread(() =>
+            {
+                // Set MainViewModel
+                Global.MainViewModel = new MainViewModel();
+            });
 
             // Instance of Setting
             string emptyTempFile = Path.GetTempFileName();
@@ -32,7 +41,7 @@ namespace PEBakery.Core.Tests
             Global.Setting = new Setting(emptyTempFile); // Set to default
 
             // Load Project "TestSuite" (ScriptCache disabled)
-            EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
+            EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(EngineTests.BaseDir);
             projects.PrepareLoad();
             projects.Load(null, null);

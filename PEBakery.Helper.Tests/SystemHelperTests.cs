@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019 Hajin Jang
+    Copyright (C) 2019-2020 Hajin Jang
  
     MIT License
 
@@ -24,7 +24,6 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
 
 namespace PEBakery.Helper.Tests
 {
@@ -33,7 +32,7 @@ namespace PEBakery.Helper.Tests
     [TestCategory("StringHelper")]
     public class SystemHelperTests
     {
-        [TestMethod]        
+        [TestMethod]
         public void PrintMemorySnapshot()
         {
             MemorySnapshot m = SystemHelper.GetMemorySnapshot();
