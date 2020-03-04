@@ -297,45 +297,73 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string destDir = FileHelper.GetTempDir();
-
-            void Template(string rawCode, string fileName, Encoding encoding, bool createDummy, ErrorCheck check = ErrorCheck.Success)
+            try
             {
-                string destFullPath = Path.Combine(destDir, fileName);
-
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
-                Directory.CreateDirectory(destDir);
-                try
+                void Template(string rawCode, string fileName, Encoding encoding, bool createDummy, ErrorCheck check = ErrorCheck.Success)
                 {
-                    if (createDummy)
-                        File.Create(destFullPath).Close();
+                    string destFullPath = Path.Combine(destDir, fileName);
 
-                    EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
-
-                    if (check == ErrorCheck.Success)
+                    if (File.Exists(destFullPath))
+                        File.Delete(destFullPath);
+                    try
                     {
-                        Assert.IsTrue(File.Exists(destFullPath));
-                        Assert.IsTrue(EncodingHelper.DetectEncoding(destFullPath).Equals(encoding));
+                        if (createDummy)
+                            File.Create(destFullPath).Close();
+
+                        EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
+
+                        if (check == ErrorCheck.Success)
+                        {
+                            Assert.IsTrue(File.Exists(destFullPath));
+                            Assert.IsTrue(EncodingHelper.DetectEncoding(destFullPath).Equals(encoding));
+                            switch (encoding)
+                            {
+                                case UTF8Encoding utf8Enc:
+                                    {
+                                        byte[] preamble = utf8Enc.GetPreamble();
+                                        Assert.AreEqual(3, preamble.Length);
+                                        Assert.IsTrue(preamble.SequenceEqual(Encoding.UTF8.GetPreamble()));
+                                    }
+                                    break;
+                                case UnicodeEncoding uniEnc:
+                                    {
+                                        byte[] preamble = uniEnc.GetPreamble();
+                                        Assert.AreEqual(2, preamble.Length);
+                                        if (encoding.Equals(Encoding.Unicode))
+                                            Assert.IsTrue(preamble.SequenceEqual(Encoding.Unicode.GetPreamble()));
+                                        else if (encoding.Equals(Encoding.BigEndianUnicode))
+                                            Assert.IsTrue(preamble.SequenceEqual(Encoding.BigEndianUnicode.GetPreamble()));
+                                        else
+                                            Assert.Fail();
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (File.Exists(destFullPath))
+                            File.Delete(destFullPath);
                     }
                 }
-                finally
-                {
-                    if (Directory.Exists(destDir))
-                        Directory.Delete(destDir, true);
-                }
-            }
 
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+                Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir);
+            }
         }
         #endregion
 

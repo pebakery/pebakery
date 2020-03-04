@@ -402,7 +402,7 @@ namespace PEBakery.Helper.ThirdParty
                 case TextEncoding.Utf16BeBom:
                     return new UnicodeEncoding(true, true);
                 case TextEncoding.Utf16BeNoBom:
-                    return new UnicodeEncoding(false, true);
+                    return new UnicodeEncoding(true, false);
                 case TextEncoding.None:
                 case TextEncoding.Ansi:
                 case TextEncoding.Ascii:

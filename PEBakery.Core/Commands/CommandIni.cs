@@ -482,6 +482,10 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
+
             bool result = IniReadWriter.AddSection(fileName, section);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{section}] added to [{fileName}]", cmd));
@@ -521,6 +525,10 @@ namespace PEBakery.Core.Commands
                 throw new InternalException("Internal Logic Error at IniAddSectionOp");
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
+
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(fileName))
+                File.Create(fileName).Dispose();
 
             bool result = IniReadWriter.AddSections(fileName, sections);
 
@@ -727,6 +735,10 @@ namespace PEBakery.Core.Commands
 
             if (!StringEscaper.PathSecurityCheck(destFile, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // If a dest file does not exist, create an empty file to force ANSI encoding as default in IniReadWriter.
+            if (!File.Exists(destFile))
+                File.Create(destFile).Dispose();
 
             bool result;
             if (s.CompatAutoCompactIniWriteCommand)

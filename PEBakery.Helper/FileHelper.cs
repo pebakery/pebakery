@@ -219,8 +219,7 @@ namespace PEBakery.Helper
         #region Path Operations
         /// <summary>
         /// Extends Path.GetDirectoryName().
-        /// Prevents returning of null, by calling Path.GetFullPath().
-        /// Also allows wildcard in filename.
+        /// Prevents returning of null, and also allows wildcard in filename.
         /// </summary>
         /// <returns></returns>
         public static string GetDirNameEx(string path)
