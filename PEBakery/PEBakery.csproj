@@ -36,11 +36,10 @@
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.2.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.3.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.6.292" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
   </ItemGroup>
-  <PropertyGroup />
   <PropertyGroup>
     <Version>0.9.7.0</Version>
     <Authors>Team PEBakery</Authors>
