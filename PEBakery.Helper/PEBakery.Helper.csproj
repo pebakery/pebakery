@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.0.335" />
+    <PackageReference Include="MessagePack" Version="2.1.90" />
     <PackageReference Include="SharpVectors.Reloaded" Version="1.5.0">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
