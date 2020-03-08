@@ -26,6 +26,7 @@
 using PEBakery.Helper.ThirdParty;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -162,6 +163,13 @@ namespace PEBakery.Helper
             if (encoding == null)
                 throw new ArgumentNullException(nameof(encoding));
 
+            // If encoding 
+            byte[] bom = encoding.GetPreamble();
+            if (bom.Length == 0)
+                return;
+            stream.Write(bom, 0, bom.Length);
+
+            /*
             // Encoding.Equals() checks equality of fallback as well as equality of codepage.
             // Ignore fallback here, only check codepage id.
             if (encoding.CodePage == Encoding.UTF8.CodePage)
@@ -170,6 +178,7 @@ namespace PEBakery.Helper
                 stream.Write(Utf16LeBom, 0, Utf16LeBom.Length);
             else if (encoding.CodePage == Encoding.BigEndianUnicode.CodePage)
                 stream.Write(Utf16BeBom, 0, Utf16BeBom.Length);
+            */
         }
         #endregion
 
@@ -209,6 +218,29 @@ namespace PEBakery.Helper
             }
 
             return length;
+        }
+        #endregion
+
+        #region EncodingEquals
+        public static bool EncodingEquals(Encoding e1, Encoding e2)
+        {
+            if (e1 == null)
+            {
+                return e2 == null;
+            }
+            else
+            {
+                if (e2 == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    byte[] bom1 = e1.GetPreamble();
+                    byte[] bom2 = e2.GetPreamble();
+                    return e1.CodePage == e2.CodePage && bom1.SequenceEqual(bom2);
+                }
+            }
         }
         #endregion
 

@@ -170,6 +170,11 @@ namespace PEBakery.Helper.Tests
                     EncodingHelper.WriteTextBom(utf8bomText, Encoding.UTF8);
 
                     Console.WriteLine();
+
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(EncodingHelper.DetectBom(ansiText), EncodingHelper.DefaultAnsi));
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(EncodingHelper.DetectBom(utf16leText), Encoding.Unicode));
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(EncodingHelper.DetectBom(utf16beText), Encoding.BigEndianUnicode));
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(EncodingHelper.DetectBom(utf8bomText), Encoding.UTF8));
                 }
 
                 Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("ko-KR");

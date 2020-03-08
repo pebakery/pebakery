@@ -37,6 +37,19 @@ namespace PEBakery.Ini.Tests
     [TestCategory("PEBakery.Ini")]
     public class IniReadWriterTests
     {
+        #region Encodings
+        private static readonly Encoding[] Encodings = 
+        {
+            // Wanted to include ANSI/DBCS encodings, but they does not support multilingial text.
+            // EncodingHelper.DefaultAnsi
+            // UTF-8 wo BOM text without any non-ASCII char is detected as DefaultAnsi.
+            // new UTF8Encoding(false),
+            Encoding.Unicode, 
+            Encoding.BigEndianUnicode, 
+            Encoding.UTF8,
+        };
+        #endregion
+
         #region ReadKey
         [TestMethod]
         public void ReadKey()
@@ -62,87 +75,104 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadKey_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Key=Value");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Key=Value");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
+                    Assert.IsFalse(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
                 }
-
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsFalse(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
-
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadKey_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("4=D");
-                    w.WriteLine("5=E");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("6=F");
-                    w.WriteLine("7=G");
-                    w.WriteLine("8=H");
-                }
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("4=D");
+                        w.WriteLine("5=E");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("6=F");
+                        w.WriteLine("7=G");
+                        w.WriteLine("8=H");
+                    }
 
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadKey_DoubleQuote()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("CUR_DIR       = \"Cursors\\Material Design Cursors\"");
-                    w.WriteLine("1     = \"ABC\\DEF\"");
-                    w.WriteLine("2=\"XY Z\"");
-                }
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("CUR_DIR       = \"Cursors\\Material Design Cursors\"");
+                        w.WriteLine("1     = \"ABC\\DEF\"");
+                        w.WriteLine("2=\"XY Z\"");
+                    }
 
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("\"XY Z\"", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR").Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("\"XY Z\"", StringComparison.Ordinal));
+                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR").Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
@@ -156,54 +186,60 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadKeys_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("4=D");
-                    w.WriteLine("5=E");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("6=F");
-                    w.WriteLine("7=G");
-                    w.WriteLine("8=H");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("4=D");
+                        w.WriteLine("5=E");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("6=F");
+                        w.WriteLine("7=G");
+                        w.WriteLine("8=H");
+                        w.Close();
+                    }
+
+                    IniKey[] keys = new IniKey[10];
+                    keys[0] = new IniKey("Section1", "3");
+                    keys[1] = new IniKey("Section3", "8");
+                    keys[2] = new IniKey("Section2", "5");
+                    keys[3] = new IniKey("Section3", "6");
+                    keys[4] = new IniKey("Section1", "4");
+                    keys[5] = new IniKey("Section2", "1");
+                    keys[6] = new IniKey("Section1", "2");
+                    keys[7] = new IniKey("Section3", "7");
+                    keys[8] = new IniKey("Section1", "1");
+                    keys[9] = new IniKey("Section2", "4");
+
+                    keys = IniReadWriter.ReadKeys(tempFile, keys);
+                    Assert.IsTrue(keys[0].Value.Equals("C", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("H", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[2].Value.Equals("E", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[3].Value.Equals("F", StringComparison.Ordinal));
+                    Assert.IsNull(keys[4].Value);
+                    Assert.IsNull(keys[5].Value);
+                    Assert.IsTrue(keys[6].Value.Equals("B", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[7].Value.Equals("G", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[8].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[9].Value.Equals("D", StringComparison.Ordinal));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
                 }
-
-                IniKey[] keys = new IniKey[10];
-                keys[0] = new IniKey("Section1", "3");
-                keys[1] = new IniKey("Section3", "8");
-                keys[2] = new IniKey("Section2", "5");
-                keys[3] = new IniKey("Section3", "6");
-                keys[4] = new IniKey("Section1", "4");
-                keys[5] = new IniKey("Section2", "1");
-                keys[6] = new IniKey("Section1", "2");
-                keys[7] = new IniKey("Section3", "7");
-                keys[8] = new IniKey("Section1", "1");
-                keys[9] = new IniKey("Section2", "4");
-
-                keys = IniReadWriter.ReadKeys(tempFile, keys);
-                Assert.IsTrue(keys[0].Value.Equals("C", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("H", StringComparison.Ordinal));
-                Assert.IsTrue(keys[2].Value.Equals("E", StringComparison.Ordinal));
-                Assert.IsTrue(keys[3].Value.Equals("F", StringComparison.Ordinal));
-                Assert.IsNull(keys[4].Value);
-                Assert.IsNull(keys[5].Value);
-                Assert.IsTrue(keys[6].Value.Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(keys[7].Value.Equals("G", StringComparison.Ordinal));
-                Assert.IsTrue(keys[8].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[9].Value.Equals("D", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
@@ -248,113 +284,128 @@ namespace PEBakery.Ini.Tests
 
         public static void WriteKey_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Key=A");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Key=A");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "B"));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("Key=B");
+                    b.AppendLine();
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "B"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("Key=B");
-                b.AppendLine();
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteKey_3()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Sect2");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Sect2");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("Sect2");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("Key=B");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("Sect2");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("Key=B");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteKey_4()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Section2");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Section2");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("Section2");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("Key=B");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "Key", "B"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("Section2");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("Key=B");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
@@ -366,7 +417,7 @@ namespace PEBakery.Ini.Tests
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "Value"));
 
                 string read;
-                using (StreamReader r = new StreamReader(tempFile))
+                using (StreamReader r = new StreamReader(tempFile, Encoding.UTF8))
                 {
                     read = r.ReadToEnd();
                 }
@@ -386,54 +437,58 @@ namespace PEBakery.Ini.Tests
 
         public static void WriteKey_6()
         { // https://github.com/pebakery/pebakery/issues/57
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Interface]");
-                    w.WriteLine("pTextBox1=\"Plugin Title and Script Name: \",1,0,93,1,158,21,SMplayer");
-                    w.WriteLine();
-                    w.WriteLine();
-                    w.WriteLine("FileBox2=,1,13,40,251,403,30,dir,\"__Output folder\"");
-                    w.WriteLine("FileBox3=,1,13,40,311,403,30,file,\"__Select .7z file\"");
-                    w.WriteLine();
-                    w.WriteLine("Button1=Go!,1,8,343,71,58,25,process,0,True");
-                    w.WriteLine("[Process]");
-                    w.WriteLine("// Hello World");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Interface]");
+                        w.WriteLine("pTextBox1=\"Plugin Title and Script Name: \",1,0,93,1,158,21,SMplayer");
+                        w.WriteLine();
+                        w.WriteLine();
+                        w.WriteLine("FileBox2=,1,13,40,251,403,30,dir,\"__Output folder\"");
+                        w.WriteLine("FileBox3=,1,13,40,311,403,30,file,\"__Select .7z file\"");
+                        w.WriteLine();
+                        w.WriteLine("Button1=Go!,1,8,343,71,58,25,process,0,True");
+                        w.WriteLine("[Process]");
+                        w.WriteLine("// Hello World");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Interface", "FileBox2", "Overwrite2"));
+                    Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Interface", "FileBox3", "Overwrite3"));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Interface]");
+                    b.AppendLine("pTextBox1=\"Plugin Title and Script Name: \",1,0,93,1,158,21,SMplayer");
+                    b.AppendLine();
+                    b.AppendLine();
+                    b.AppendLine("FileBox2=Overwrite2");
+                    b.AppendLine("FileBox3=Overwrite3");
+                    b.AppendLine();
+                    b.AppendLine("Button1=Go!,1,8,343,71,58,25,process,0,True");
+                    b.AppendLine();
+                    b.AppendLine("[Process]");
+                    b.AppendLine("// Hello World");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Interface", "FileBox2", "Overwrite2"));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Interface", "FileBox3", "Overwrite3"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Interface]");
-                b.AppendLine("pTextBox1=\"Plugin Title and Script Name: \",1,0,93,1,158,21,SMplayer");
-                b.AppendLine();
-                b.AppendLine();
-                b.AppendLine("FileBox2=Overwrite2");
-                b.AppendLine("FileBox3=Overwrite3");
-                b.AppendLine();
-                b.AppendLine("Button1=Go!,1,8,343,71,58,25,process,0,True");
-                b.AppendLine();
-                b.AppendLine("[Process]");
-                b.AppendLine("// Hello World");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
@@ -448,118 +503,126 @@ namespace PEBakery.Ini.Tests
 
         public static void WriteKeys_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-
-                IniKey[] keys = new IniKey[3];
-                keys[0] = new IniKey("Section2", "20", "English");
-                keys[1] = new IniKey("Section1", "10", "한국어");
-                keys[2] = new IniKey("Section3", "30", "Français");
-
-                Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    read = r.ReadToEnd();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+
+                    IniKey[] keys = new IniKey[3];
+                    keys[0] = new IniKey("Section2", "20", "English");
+                    keys[1] = new IniKey("Section1", "10", "한국어");
+                    keys[2] = new IniKey("Section3", "30", "Français");
+
+                    Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("20=English");
+                    b.AppendLine();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("10=한국어");
+                    b.AppendLine();
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("30=Français");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section2]");
-                b.AppendLine("20=English");
-                b.AppendLine();
-                b.AppendLine("[Section1]");
-                b.AppendLine("10=한국어");
-                b.AppendLine();
-                b.AppendLine("[Section3]");
-                b.AppendLine("30=Français");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void WriteKeys_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                        w.Close();
+                    }
+
+                    IniKey[] keys = new IniKey[5];
+                    keys[0] = new IniKey("Section1", "03", "D");
+                    keys[1] = new IniKey("Section3", "22", "語");
+                    keys[2] = new IniKey("Section2", "12", "어");
+                    keys[3] = new IniKey("Section1", "04", "Unicode");
+                    keys[4] = new IniKey("Section2", "13", "한글");
+
+                    Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
+
+                    string read;
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine("03=D");
+                    b.AppendLine("04=Unicode");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("12=어");
+                    b.AppendLine("13=한글");
+                    b.AppendLine();
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+                    b.AppendLine("22=語");
+                    b.AppendLine();
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys = new IniKey[5];
-                keys[0] = new IniKey("Section1", "03", "D");
-                keys[1] = new IniKey("Section3", "22", "語");
-                keys[2] = new IniKey("Section2", "12", "어");
-                keys[3] = new IniKey("Section1", "04", "Unicode");
-                keys[4] = new IniKey("Section2", "13", "한글");
-
-                Assert.IsTrue(IniReadWriter.WriteKeys(tempFile, keys));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine("03=D");
-                b.AppendLine("04=Unicode");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("12=어");
-                b.AppendLine("13=한글");
-                b.AppendLine();
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-                b.AppendLine("22=語");
-                b.AppendLine();
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
-        #region WriteCompactKey
+        #region WriteKeyCompact
         [TestMethod]
-        public void WriteCompactKey()
+        public void WriteKeyCompact()
         {
             IniKey iniKey;
-            bool TestWriteKey(string tempFile) => IniReadWriter.WriteCompactKey(tempFile, iniKey);
+            bool TestWriteKey(string tempFile) => IniReadWriter.WriteKeyCompact(tempFile, iniKey);
 
             StringBuilder b = new StringBuilder();
             b.AppendLine("[Section1] ");
@@ -675,178 +738,202 @@ namespace PEBakery.Ini.Tests
 
         public static void WriteRawLine_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-
-                Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "RawLine"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    read = r.ReadToEnd();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "RawLine"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("RawLine");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("RawLine");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void WriteRawLine_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LineAppend", true));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("LineAppend");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LineAppend", true));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("LineAppend");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteRawLine_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LinePrepend", false));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("LinePrepend");
+                    b.AppendLine("1=A");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section", "LinePrepend", false));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("LinePrepend");
-                b.AppendLine("1=A");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteRawLine_4()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Sect2");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Sect2");
+                        w.Close();
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("Sect2");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("Key");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("Sect2");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("Key");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteRawLine_5()
         { // Found while testing EncodedFile.EncodeFile()
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("Section2");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("Section2");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("Section2");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("Key");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.WriteRawLine(tempFile, "Section2", "Key"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("Section2");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("Key");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
@@ -861,133 +948,141 @@ namespace PEBakery.Ini.Tests
 
         public static void WriteRawLines_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("10=한국어");
-                    w.WriteLine("11=中文");
-                    w.WriteLine("12=にほんご");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("20=English");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("30=Français");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("10=한국어");
+                        w.WriteLine("11=中文");
+                        w.WriteLine("12=にほんご");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("20=English");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("30=Français");
+                    }
+
+                    IniKey[] keys = new IniKey[5];
+                    keys[0] = new IniKey("Section2", "영어");
+                    keys[1] = new IniKey("Section1", "한중일 (CJK)");
+                    keys[2] = new IniKey("Section3", "프랑스어");
+                    keys[3] = new IniKey("Section4", "עברית");
+                    keys[4] = new IniKey("Section4", "العربية");
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, false));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc, false))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("한중일 (CJK)");
+                    b.AppendLine("10=한국어");
+                    b.AppendLine("11=中文");
+                    b.AppendLine("12=にほんご");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("영어");
+                    b.AppendLine("20=English");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("프랑스어");
+                    b.AppendLine("30=Français");
+                    b.AppendLine();
+                    b.AppendLine("[Section4]");
+                    b.AppendLine("עברית");
+                    b.AppendLine("العربية");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys = new IniKey[5];
-                keys[0] = new IniKey("Section2", "영어");
-                keys[1] = new IniKey("Section1", "한중일 (CJK)");
-                keys[2] = new IniKey("Section3", "프랑스어");
-                keys[3] = new IniKey("Section4", "עברית");
-                keys[4] = new IniKey("Section4", "العربية");
-
-                Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, false));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("한중일 (CJK)");
-                b.AppendLine("10=한국어");
-                b.AppendLine("11=中文");
-                b.AppendLine("12=にほんご");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("영어");
-                b.AppendLine("20=English");
-                b.AppendLine("[Section3]");
-                b.AppendLine("프랑스어");
-                b.AppendLine("30=Français");
-                b.AppendLine();
-                b.AppendLine("[Section4]");
-                b.AppendLine("עברית");
-                b.AppendLine("العربية");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void WriteRawLines_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("10=한국어");
-                    w.WriteLine("11=中文");
-                    w.WriteLine("12=にほんご");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("20=English");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("30=Français");
-                    w.Close();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("10=한국어");
+                        w.WriteLine("11=中文");
+                        w.WriteLine("12=にほんご");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("20=English");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("30=Français");
+                        w.Close();
+                    }
+
+                    IniKey[] keys = new IniKey[5];
+                    keys[0] = new IniKey("Section2", "영어");
+                    keys[1] = new IniKey("Section1", "한중일 (CJK)");
+                    keys[2] = new IniKey("Section3", "프랑스어");
+                    keys[3] = new IniKey("Section4", "עברית");
+                    keys[4] = new IniKey("Section4", "العربية");
+
+                    Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, true));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("10=한국어");
+                    b.AppendLine("11=中文");
+                    b.AppendLine("12=にほんご");
+                    b.AppendLine("한중일 (CJK)");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("20=English");
+                    b.AppendLine("영어");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("30=Français");
+                    b.AppendLine("프랑스어");
+                    b.AppendLine();
+                    b.AppendLine("[Section4]");
+                    b.AppendLine("עברית");
+                    b.AppendLine("العربية");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys = new IniKey[5];
-                keys[0] = new IniKey("Section2", "영어");
-                keys[1] = new IniKey("Section1", "한중일 (CJK)");
-                keys[2] = new IniKey("Section3", "프랑스어");
-                keys[3] = new IniKey("Section4", "עברית");
-                keys[4] = new IniKey("Section4", "العربية");
-
-                Assert.IsTrue(IniReadWriter.WriteRawLines(tempFile, keys, true));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("10=한국어");
-                b.AppendLine("11=中文");
-                b.AppendLine("12=にほんご");
-                b.AppendLine("한중일 (CJK)");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("20=English");
-                b.AppendLine("영어");
-                b.AppendLine("[Section3]");
-                b.AppendLine("30=Français");
-                b.AppendLine("프랑스어");
-                b.AppendLine();
-                b.AppendLine("[Section4]");
-                b.AppendLine("עברית");
-                b.AppendLine("العربية");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region RenameKey
-
         [TestMethod]
         public void RenameKey()
         {
@@ -998,129 +1093,143 @@ namespace PEBakery.Ini.Tests
 
         public static void RenameKey_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "2", "0"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("0=B");
+                    b.AppendLine("3=C");
+                    b.AppendLine("4=D");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "2", "0"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("0=B");
-                b.AppendLine("3=C");
-                b.AppendLine("4=D");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void RenameKey_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    // Induce Error
+                    Assert.IsFalse(IniReadWriter.RenameKey(tempFile, "Section", "5", "0"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("2=B");
+                    b.AppendLine("3=C");
+                    b.AppendLine("4=D");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                // Induce Error
-                Assert.IsFalse(IniReadWriter.RenameKey(tempFile, "Section", "5", "0"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("2=B");
-                b.AppendLine("3=C");
-                b.AppendLine("4=D");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void RenameKey_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "1", "0"));
+                    Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "0", "9"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("9=A");
+                    b.AppendLine("2=B");
+                    b.AppendLine("3=C");
+                    b.AppendLine("4=D");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "1", "0"));
-                Assert.IsTrue(IniReadWriter.RenameKey(tempFile, "Section", "0", "9"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("9=A");
-                b.AppendLine("2=B");
-                b.AppendLine("3=C");
-                b.AppendLine("4=D");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region RenameKeys
-
         [TestMethod]
         public void RenameKeys()
         {
@@ -1129,67 +1238,71 @@ namespace PEBakery.Ini.Tests
 
         public static void RenameKeys_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    IniKey[] keys =
+                    {
+                        new IniKey("Section1", "02", "99"),
+                        new IniKey("Section3", "21", "99"),
+                        new IniKey("Section2", "10", "99"),
+                    };
+
+                    bool[] result = IniReadWriter.RenameKeys(tempFile, keys);
+                    Assert.IsTrue(result.All(x => x));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("99=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("99=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("99=國");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys =
+                finally
                 {
-                    new IniKey("Section1", "02", "99"),
-                    new IniKey("Section3", "21", "99"),
-                    new IniKey("Section2", "10", "99"),
-                };
-
-                bool[] result = IniReadWriter.RenameKeys(tempFile, keys);
-                Assert.IsTrue(result.All(x => x));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("99=C");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("99=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("99=國");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region DeleteKey
-
         [TestMethod]
         public void DeleteKey()
         {
@@ -1200,126 +1313,140 @@ namespace PEBakery.Ini.Tests
 
         public static void DeleteKey_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "2"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("3=C");
+                    b.AppendLine("4=D");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "2"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("3=C");
-                b.AppendLine("4=D");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void DeleteKey_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    // Induce Error
+                    Assert.IsFalse(IniReadWriter.DeleteKey(tempFile, "Section", "5"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("2=B");
+                    b.AppendLine("3=C");
+                    b.AppendLine("4=D");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                // Induce Error
-                Assert.IsFalse(IniReadWriter.DeleteKey(tempFile, "Section", "5"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("2=B");
-                b.AppendLine("3=C");
-                b.AppendLine("4=D");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void DeleteKey_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                    w.WriteLine("3=C");
-                    w.WriteLine("4=D");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                        w.WriteLine("3=C");
+                        w.WriteLine("4=D");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "2"));
+                    Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "4"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("3=C");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "2"));
-                Assert.IsTrue(IniReadWriter.DeleteKey(tempFile, "Section", "4"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("3=C");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region DeleteKeys
-
         [TestMethod]
         public void DeleteKeys()
         {
@@ -1328,65 +1455,69 @@ namespace PEBakery.Ini.Tests
 
         public static void DeleteKeys_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    IniKey[] keys =
+                    {
+                        new IniKey("Section1", "00"),
+                        new IniKey("Section3", "20"),
+                        new IniKey("Section2", "11"),
+                    };
+
+                    bool[] result = IniReadWriter.DeleteKeys(tempFile, keys);
+                    Assert.IsTrue(result.All(x => x));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("21=國");
+
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys =
+                finally
                 {
-                    new IniKey("Section1", "00"),
-                    new IniKey("Section3", "20"),
-                    new IniKey("Section2", "11"),
-                };
-
-                bool[] result = IniReadWriter.DeleteKeys(tempFile, keys);
-                Assert.IsTrue(result.All(x => x));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("[Section3]");
-                b.AppendLine("21=國");
-
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region ReadSection
-
         [TestMethod]
         public void ReadSection()
         {
@@ -1397,103 +1528,111 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadSection_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
+
+                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Section");
+
+                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
                 }
-
-                IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Section");
-
-                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadSection_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
 
-                IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Dummy");
-                // Assert.IsTrue(keys.Count() == 0);
-                Assert.IsTrue(keys == null);
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Dummy");
+                    // Assert.IsTrue(keys.Count() == 0);
+                    Assert.IsTrue(keys == null);
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadSection_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, new IniKey("Section1"));
+                    Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+
+                    keys = IniReadWriter.ReadSection(tempFile, "Section2");
+                    Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+
+                    keys = IniReadWriter.ReadSection(tempFile, "Section3");
+                    Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
                 }
-
-                IniKey[] keys = IniReadWriter.ReadSection(tempFile, new IniKey("Section1"));
-                Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
-                Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
-
-                keys = IniReadWriter.ReadSection(tempFile, "Section2");
-                Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
-
-                keys = IniReadWriter.ReadSection(tempFile, "Section3");
-                Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
 
         #region ReadSections
-
         [TestMethod]
         public void ReadSections()
         {
@@ -1504,114 +1643,122 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadSections_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
 
-                Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new IniKey[] { new IniKey("Section") });
-                IniKey[] keys = keyDict["Section"];
-                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new IniKey[] { new IniKey("Section") });
+                    IniKey[] keys = keyDict["Section"];
+                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadSections_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
+
+                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section", "Dummy" });
+                    IniKey[] keys = keyDict["Section"];
+                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+
+                    keys = keyDict["Dummy"];
+                    Assert.IsTrue(keys == null);
                 }
-
-                Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section", "Dummy" });
-                IniKey[] keys = keyDict["Section"];
-                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-
-                keys = keyDict["Dummy"];
-                Assert.IsTrue(keys == null);
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadSections_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section1", "Section2", "Section3" });
+
+                    Assert.IsTrue(keyDict.ContainsKey("Section1"));
+                    IniKey[] keys = keyDict["Section1"];
+                    Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+
+                    Assert.IsTrue(keyDict.ContainsKey("Section2"));
+                    keys = keyDict["Section2"];
+                    Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+
+                    Assert.IsTrue(keyDict.ContainsKey("Section3"));
+                    keys = keyDict["Section3"];
+                    Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
+                    Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
                 }
-
-                Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section1", "Section2", "Section3" });
-
-                Assert.IsTrue(keyDict.ContainsKey("Section1"));
-                IniKey[] keys = keyDict["Section1"];
-                Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
-                Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
-
-                Assert.IsTrue(keyDict.ContainsKey("Section2"));
-                keys = keyDict["Section2"];
-                Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
-
-                Assert.IsTrue(keyDict.ContainsKey("Section3"));
-                keys = keyDict["Section3"];
-                Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
-                Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
-                Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
 
         #region AddSection
-
         [TestMethod]
         public void AddSection()
         {
@@ -1622,127 +1769,141 @@ namespace PEBakery.Ini.Tests
 
         public static void AddSection_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    read = r.ReadToEnd();
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void AddSection_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("2=B");
+
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section]");
-                b.AppendLine("1=A");
-                b.AppendLine("2=B");
-
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void AddSection_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section4"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+                    b.AppendLine();
+                    b.AppendLine("[Section4]");
+
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.AddSection(tempFile, "Section4"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-                b.AppendLine();
-                b.AppendLine("[Section4]");
-
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region AddSections
-
         [TestMethod]
         public void AddSections()
         {
@@ -1752,196 +1913,220 @@ namespace PEBakery.Ini.Tests
 
         public static void AddSections_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-
-                List<string> sections = new List<string>
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    "Section1",
-                    "Section3",
-                    "Section2",
-                };
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
 
-                Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
+                    List<string> sections = new List<string>
+                    {
+                        "Section1",
+                        "Section3",
+                        "Section2",
+                    };
 
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, srcEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine();
+                    b.AppendLine("[Section3]");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine();
-                b.AppendLine("[Section3]");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void AddSections_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    List<string> sections = new List<string>()
+                    {
+                        "Section4",
+                        "Section2",
+                    };
+
+                    Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, srcEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+                    b.AppendLine();
+                    b.AppendLine("[Section4]");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                List<string> sections = new List<string>()
+                finally
                 {
-                    "Section4",
-                    "Section2",
-                };
-
-                Assert.IsTrue(IniReadWriter.AddSections(tempFile, sections));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-                b.AppendLine();
-                b.AppendLine("[Section4]");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region WriteSectionFast
-
         [TestMethod]
         public void WriteSectionFast()
         {
             #region Template
-            void MultiStrTemplate(string section, string[] strs, string before, string after)
+            static void MultiStrTemplate(string section, string[] strs, string before, string after)
             {
-                string tempFile = FileHelper.GetTempFile();
-                try
+                foreach (Encoding srcEnc in Encodings)
                 {
-                    EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                    string tempFile = FileHelper.GetTempFile();
+                    try
                     {
-                        w.WriteLine(before);
+                        EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                        using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                        {
+                            w.WriteLine(before);
+                        }
+
+                        Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, strs));
+
+                        Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                        Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                        using (StreamReader r = new StreamReader(tempFile, destEnc))
+                        {
+                            string result = r.ReadToEnd();
+                            Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        }
                     }
-
-                    Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, strs));
-
-                    Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                    using (StreamReader r = new StreamReader(tempFile, encoding))
+                    finally
                     {
-                        string result = r.ReadToEnd();
-                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        File.Delete(tempFile);
                     }
-                }
-                finally
-                {
-                    File.Delete(tempFile);
                 }
             }
 
-            void SingleStrTemplate(string section, string str, string before, string after)
+            static void SingleStrTemplate(string section, string str, string before, string after)
             {
-                string tempFile = FileHelper.GetTempFile();
-                try
+                foreach (Encoding srcEnc in Encodings)
                 {
-                    EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                    string tempFile = FileHelper.GetTempFile();
+                    try
                     {
-                        w.WriteLine(before);
+                        EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                        using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                        {
+                            w.WriteLine(before);
+                        }
+
+                        Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, str));
+
+                        Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                        Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                        using (StreamReader r = new StreamReader(tempFile, destEnc))
+                        {
+                            string result = r.ReadToEnd();
+                            Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        }
                     }
-
-                    Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, str));
-
-                    Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                    using (StreamReader r = new StreamReader(tempFile, encoding))
+                    finally
                     {
-                        string result = r.ReadToEnd();
-                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        File.Delete(tempFile);
                     }
-                }
-                finally
-                {
-                    File.Delete(tempFile);
                 }
             }
 
-            void TextReaderTemplate(string section, string str, string before, string after)
+            static void TextReaderTemplate(string section, string str, string before, string after)
             {
-                string tempSrcFile = FileHelper.GetTempFile();
-                string tempDestFile = FileHelper.GetTempFile();
-                try
+                foreach (Encoding srcEnc in Encodings)
                 {
-                    EncodingHelper.WriteTextBom(tempSrcFile, Encoding.UTF8);
-                    using (StreamWriter w = new StreamWriter(tempSrcFile, false, Encoding.UTF8))
+                    string tempSrcFile = FileHelper.GetTempFile();
+                    string tempDestFile = FileHelper.GetTempFile();
+                    try
                     {
-                        w.WriteLine(str);
-                    }
+                        EncodingHelper.WriteTextBom(tempSrcFile, srcEnc);
+                        using (StreamWriter w = new StreamWriter(tempSrcFile, false, srcEnc))
+                        {
+                            w.WriteLine(str);
+                        }
 
-                    EncodingHelper.WriteTextBom(tempDestFile, Encoding.UTF8);
-                    using (StreamWriter w = new StreamWriter(tempDestFile, false, Encoding.UTF8))
-                    {
-                        w.WriteLine(before);
-                    }
+                        EncodingHelper.WriteTextBom(tempDestFile, srcEnc);
+                        using (StreamWriter w = new StreamWriter(tempDestFile, false, srcEnc))
+                        {
+                            w.WriteLine(before);
+                        }
 
-                    using (StreamReader tr = new StreamReader(tempSrcFile, Encoding.UTF8))
-                    {
-                        Assert.IsTrue(IniReadWriter.WriteSectionFast(tempDestFile, section, tr));
-                    }
+                        using (StreamReader tr = new StreamReader(tempSrcFile, srcEnc))
+                        {
+                            Assert.IsTrue(IniReadWriter.WriteSectionFast(tempDestFile, section, tr));
+                        }
 
-                    Encoding encoding = EncodingHelper.DetectEncoding(tempDestFile);
-                    using (StreamReader r = new StreamReader(tempDestFile, encoding))
-                    {
-                        string result = r.ReadToEnd();
-                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        Encoding destEnc = EncodingHelper.DetectEncoding(tempDestFile);
+                        Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                        using (StreamReader r = new StreamReader(tempDestFile, destEnc))
+                        {
+                            string result = r.ReadToEnd();
+                            Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                        }
                     }
-                }
-                finally
-                {
-                    File.Delete(tempSrcFile);
-                    File.Delete(tempDestFile);
+                    finally
+                    {
+                        File.Delete(tempSrcFile);
+                        File.Delete(tempDestFile);
+                    }
                 }
             }
             #endregion
@@ -2005,7 +2190,6 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region RenameSection
-
         [TestMethod]
         public void RenameSection()
         {
@@ -2016,120 +2200,134 @@ namespace PEBakery.Ini.Tests
 
         public static void RenameSection_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-
-                // Induce Error
-                Assert.IsFalse(IniReadWriter.RenameSection(tempFile, "Sec1", "Sec2"));
-
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    string read = r.ReadToEnd();
-                    string comp = string.Empty;
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
 
-                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    // Induce Error
+                    Assert.IsFalse(IniReadWriter.RenameSection(tempFile, "Sec1", "Sec2"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        string read = r.ReadToEnd();
+                        string comp = string.Empty;
+
+                        Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    }
                 }
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void RenameSection_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section", "Another"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Another]");
+                    b.AppendLine("1=A");
+                    b.AppendLine("2=B");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section", "Another"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Another]");
-                b.AppendLine("1=A");
-                b.AppendLine("2=B");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void RenameSection_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section2", "SectionB"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[SectionB]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.RenameSection(tempFile, "Section2", "SectionB"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[SectionB]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region RenameSections
-
         [TestMethod]
         public void RenameSections()
         {
@@ -2139,122 +2337,131 @@ namespace PEBakery.Ini.Tests
 
         public static void RenameSections_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    IniKey[] keys =
+                    {
+                        new IniKey("Section1", "SectionA"),
+                        new IniKey("Section3", "SectionC"),
+                    };
+                    bool[] results = IniReadWriter.RenameSections(tempFile, keys);
+                    Assert.IsTrue(results.All(x => x));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[SectionA]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[SectionC]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys =
+                finally
                 {
-                    new IniKey("Section1", "SectionA"),
-                    new IniKey("Section3", "SectionC"),
-                };
-                bool[] results = IniReadWriter.RenameSections(tempFile, keys);
-                Assert.IsTrue(results.All(x => x));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[SectionA]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[SectionC]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void RenameSections_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    IniKey[] keys =
+                    {
+                        new IniKey("Section4", "SectionD"),
+                        new IniKey("Section2", "SectionB"),
+                    };
+                    bool[] results = IniReadWriter.RenameSections(tempFile, keys);
+                    Assert.IsTrue(results.Any(x => !x));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[SectionB]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                IniKey[] keys =
+                finally
                 {
-                    new IniKey("Section4", "SectionD"),
-                    new IniKey("Section2", "SectionB"),
-                };
-                bool[] results = IniReadWriter.RenameSections(tempFile, keys);
-                Assert.IsTrue(results.Any(x => !x));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[SectionB]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region DeleteSection
-
         [TestMethod]
         public void DeleteSection()
         {
@@ -2265,112 +2472,126 @@ namespace PEBakery.Ini.Tests
 
         public static void DeleteSection_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-
-                // Induce Error
-                Assert.IsFalse(IniReadWriter.DeleteSection(tempFile, "Section"));
-
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    string read = r.ReadToEnd();
-                    string comp = string.Empty;
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
 
-                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    // Induce Error
+                    Assert.IsFalse(IniReadWriter.DeleteSection(tempFile, "Section"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        string read = r.ReadToEnd();
+                        string comp = string.Empty;
+
+                        Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    }
                 }
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void DeleteSection_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine("2=B");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine("2=B");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        // Must be same
+                        string read = r.ReadToEnd();
+                        string comp = string.Empty;
+
+                        Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    }
                 }
-
-                Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section"));
-
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    // Must be same
-                    string read = r.ReadToEnd();
-                    string comp = string.Empty;
-
-                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                    File.Delete(tempFile);
                 }
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void DeleteSection_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section2"));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.DeleteSection(tempFile, "Section2"));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region DeleteSections
-
         [TestMethod]
         public void DeleteSections()
         {
@@ -2380,115 +2601,124 @@ namespace PEBakery.Ini.Tests
 
         public static void DeleteSections_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    List<string> sections = new List<string>
+                    {
+                        "Section1",
+                        "Section3",
+                    };
+
+                    bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
+                    Assert.IsTrue(results.All(x => x));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("10=한");
+                    b.AppendLine("11=국");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                List<string> sections = new List<string>
+                finally
                 {
-                    "Section1",
-                    "Section3",
-                };
-
-                bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
-                Assert.IsTrue(results.All(x => x));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         public static void DeleteSections_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("00=A");
-                    w.WriteLine("01=B");
-                    w.WriteLine("02=C");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("10=한");
-                    w.WriteLine("11=국");
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("20=韓");
-                    w.WriteLine("21=國");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("00=A");
+                        w.WriteLine("01=B");
+                        w.WriteLine("02=C");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("10=한");
+                        w.WriteLine("11=국");
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("20=韓");
+                        w.WriteLine("21=國");
+                    }
+
+                    List<string> sections = new List<string>
+                    {
+                        "Section4",
+                        "Section2",
+                    };
+
+                    bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
+                    Assert.IsFalse(results[0]);
+                    Assert.IsTrue(results[1]);
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(tempFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("00=A");
+                    b.AppendLine("01=B");
+                    b.AppendLine("02=C");
+                    b.AppendLine();
+                    b.AppendLine("[Section3]");
+                    b.AppendLine("20=韓");
+                    b.AppendLine("21=國");
+
+                    string comp = b.ToString();
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                List<string> sections = new List<string>
+                finally
                 {
-                    "Section4",
-                    "Section2",
-                };
-
-                bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
-                Assert.IsFalse(results[0]);
-                Assert.IsTrue(results[1]);
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(tempFile);
-                using (StreamReader r = new StreamReader(tempFile, encoding))
-                {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("00=A");
-                b.AppendLine("01=B");
-                b.AppendLine("02=C");
-                b.AppendLine();
-                b.AppendLine("[Section3]");
-                b.AppendLine("20=韓");
-                b.AppendLine("21=國");
-
-                string comp = b.ToString();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
 
         #region ReadRawSection
-
         [TestMethod]
         public void ReadRawSection()
         {
@@ -2500,156 +2730,167 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadRawSection_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                    }
+
+                    List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section", false);
+
+                    List<string> comps = new List<string>
+                    {
+                        "1=A",
+                        "유니코드",
+                        "ABXYZ"
+                    };
+
+                    Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
                 }
-
-                List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section", false);
-
-                List<string> comps = new List<string>
+                finally
                 {
-                    "1=A",
-                    "유니코드",
-                    "ABXYZ"
-                };
-
-                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadRawSection_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                    }
+
+                    List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section", true);
+
+                    List<string> comps = new List<string>
+                    {
+                        "1=A",
+                        string.Empty,
+                        "유니코드",
+                        string.Empty,
+                        "ABXYZ"
+                    };
+
+                    Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
                 }
-
-                List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section", true);
-
-                List<string> comps = new List<string>
+                finally
                 {
-                    "1=A",
-                    string.Empty,
-                    "유니코드",
-                    string.Empty,
-                    "ABXYZ"
-                };
-
-                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadRawSection_3()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine();
-                    w.WriteLine("1");
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
-                    w.WriteLine();
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("3");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine();
+                        w.WriteLine("1");
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                        w.WriteLine();
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("3");
+                    }
+
+                    List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section2", false);
+
+                    List<string> comps = new List<string>
+                    {
+                        "1=A",
+                        "유니코드",
+                        "ABXYZ"
+                    };
+
+                    Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
                 }
-
-                List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section2", false);
-
-                List<string> comps = new List<string>
+                finally
                 {
-                    "1=A",
-                    "유니코드",
-                    "ABXYZ"
-                };
-
-                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadRawSection_4()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine();
-                    w.WriteLine("1");
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
-                    w.WriteLine();
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("3");
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine();
+                        w.WriteLine("1");
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                        w.WriteLine();
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("3");
+                    }
+
+                    List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section2", true);
+
+                    List<string> comps = new List<string>
+                    {
+                        "1=A",
+                        string.Empty,
+                        "유니코드",
+                        string.Empty,
+                        "ABXYZ",
+                        string.Empty,
+                    };
+
+                    Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
                 }
-
-                List<string> lines = IniReadWriter.ReadRawSection(tempFile, "Section2", true);
-
-                List<string> comps = new List<string>
+                finally
                 {
-                    "1=A",
-                    string.Empty,
-                    "유니코드",
-                    string.Empty,
-                    "ABXYZ",
-                    string.Empty,
-                };
-
-                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
 
         #region ReadRawSections
-
         [TestMethod]
         public void ReadRawSections()
         {
@@ -2659,102 +2900,108 @@ namespace PEBakery.Ini.Tests
 
         public static void ReadRawSections_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine();
-                    w.WriteLine("1");
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
-                    w.WriteLine();
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("3");
-                }
-
-                Dictionary<string, List<string>> lineDict = IniReadWriter.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, true);
-                Dictionary<string, List<string>> compDict =
-                    new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
                     {
-                        ["Section3"] = new List<string>
-                        {
-                            "3",
-                        },
-                        ["Section2"] = new List<string>
-                        {
-                            "1=A",
-                            string.Empty,
-                            "유니코드",
-                            string.Empty,
-                            "ABXYZ",
-                            string.Empty,
-                        }
-                    };
+                        w.WriteLine("[Section1]");
+                        w.WriteLine();
+                        w.WriteLine("1");
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                        w.WriteLine();
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("3");
+                    }
 
-                foreach (string key in lineDict.Keys)
-                {
-                    Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                    Dictionary<string, List<string>> lineDict = IniReadWriter.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, true);
+                    Dictionary<string, List<string>> compDict =
+                        new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Section3"] = new List<string>
+                            {
+                                "3",
+                            },
+                            ["Section2"] = new List<string>
+                            {
+                                "1=A",
+                                string.Empty,
+                                "유니코드",
+                                string.Empty,
+                                "ABXYZ",
+                                string.Empty,
+                            }
+                        };
+
+                    foreach (string key in lineDict.Keys)
+                    {
+                        Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                    }
                 }
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
 
         public static void ReadRawSections_2()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine();
-                    w.WriteLine("1");
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("1=A");
-                    w.WriteLine();
-                    w.WriteLine("유니코드");
-                    w.WriteLine("    ");
-                    w.WriteLine("ABXYZ");
-                    w.WriteLine();
-                    w.WriteLine("[Section3]");
-                    w.WriteLine("3");
-                }
-
-                Dictionary<string, List<string>> lineDict = IniReadWriter.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, false);
-                Dictionary<string, List<string>> compDict =
-                    new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                    EncodingHelper.WriteTextBom(tempFile, encoding);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, encoding))
                     {
-                        ["Section3"] = new List<string>
-                        {
-                            "3",
-                        },
-                        ["Section2"] = new List<string>
-                        {
-                            "1=A",
-                            "유니코드",
-                            "ABXYZ",
-                        }
-                    };
+                        w.WriteLine("[Section1]");
+                        w.WriteLine();
+                        w.WriteLine("1");
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("1=A");
+                        w.WriteLine();
+                        w.WriteLine("유니코드");
+                        w.WriteLine("    ");
+                        w.WriteLine("ABXYZ");
+                        w.WriteLine();
+                        w.WriteLine("[Section3]");
+                        w.WriteLine("3");
+                    }
 
-                foreach (string key in lineDict.Keys)
-                {
-                    Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                    Dictionary<string, List<string>> lineDict = IniReadWriter.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, false);
+                    Dictionary<string, List<string>> compDict =
+                        new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Section3"] = new List<string>
+                            {
+                                "3",
+                            },
+                            ["Section2"] = new List<string>
+                            {
+                                "1=A",
+                                "유니코드",
+                                "ABXYZ",
+                            }
+                        };
+
+                    foreach (string key in lineDict.Keys)
+                    {
+                        Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                    }
                 }
-            }
-            finally
-            {
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
         }
         #endregion
@@ -2874,45 +3121,56 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("삼=三");
             b.AppendLine("사=四");
             Merge2Template(src1, src2, b.ToString());
+
+            // Legacy tests
+            Merge2_1();
+            Merge2_2();
+            Merge2_3();
+            Merge2_4();
         }
 
         public static void Merge2_1()
         {
-            string tempFile = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
+                    EncodingHelper.WriteTextBom(tempFile, srcEnc);
+                    EncodingHelper.WriteTextBom(destFile, srcEnc);
+
+                    using (StreamWriter w = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, destEnc))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=A");
+                    b.AppendLine("02=B");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile);
+                    File.Delete(destFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=A");
-                b.AppendLine("02=B");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
-                File.Delete(destFile);
             }
         }
 
@@ -3143,297 +3401,309 @@ namespace PEBakery.Ini.Tests
 
         public static void Merge3_1()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    read = r.ReadToEnd();
-                }
+                    EncodingHelper.WriteTextBom(destFile, encoding);
 
-                Assert.IsTrue(read.Length == 0);
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    Assert.IsTrue(read.Length == 0);
+                }
+                finally
+                {
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
+                }
             }
         }
 
         public static void Merge3_2()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
+                    EncodingHelper.WriteTextBom(tempFile1, encoding);
+                    EncodingHelper.WriteTextBom(destFile, encoding);
+
+                    using (StreamWriter w = new StreamWriter(tempFile1, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=A");
+                    b.AppendLine("02=B");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
+                finally
                 {
-                    read = r.ReadToEnd();
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
                 }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=A");
-                b.AppendLine("02=B");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
             }
         }
 
         public static void Merge3_3()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile1, encoding);
+                    EncodingHelper.WriteTextBom(destFile, encoding);
 
-                using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+                    using (StreamWriter w = new StreamWriter(tempFile1, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    using (StreamWriter w = new StreamWriter(tempFile2, false, encoding))
+                    {
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("03=C");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=A");
+                    b.AppendLine("02=B");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("03=C");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                }
+                finally
                 {
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("03=C");
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
                 }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
-                {
-                    read = r.ReadToEnd();
-                }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=A");
-                b.AppendLine("02=B");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("03=C");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
             }
         }
 
         public static void Merge3_4()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile1, encoding);
+                    EncodingHelper.WriteTextBom(destFile, encoding);
 
-                using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+                    using (StreamWriter w = new StreamWriter(tempFile1, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    using (StreamWriter w = new StreamWriter(tempFile2, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("04=D");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("03=C");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=A");
+                    b.AppendLine("02=B");
+                    b.AppendLine("04=D");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("03=C");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                }
+                finally
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("04=D");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("03=C");
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
                 }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
-                {
-                    read = r.ReadToEnd();
-                }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=A");
-                b.AppendLine("02=B");
-                b.AppendLine("04=D");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("03=C");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
             }
         }
 
         public static void Merge3_5()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(tempFile2, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile1, encoding);
+                    EncodingHelper.WriteTextBom(tempFile2, encoding);
+                    EncodingHelper.WriteTextBom(destFile, encoding);
 
-                using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+                    using (StreamWriter w = new StreamWriter(tempFile1, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    using (StreamWriter w = new StreamWriter(tempFile2, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("02=D");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("03=C");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("01=A");
+                    b.AppendLine("02=D");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("03=C");
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                }
+                finally
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("02=D");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("03=C");
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
                 }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
-                {
-                    read = r.ReadToEnd();
-                }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("01=A");
-                b.AppendLine("02=D");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("03=C");
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
             }
         }
 
         public static void Merge3_6()
         {
-            string tempFile1 = FileHelper.GetTempFile();
-            string tempFile2 = FileHelper.GetTempFile();
-            string destFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding encoding in Encodings)
             {
-                EncodingHelper.WriteTextBom(tempFile1, Encoding.UTF8);
-                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
-
-                using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+                string tempFile1 = FileHelper.GetTempFile();
+                string tempFile2 = FileHelper.GetTempFile();
+                string destFile = FileHelper.GetTempFile();
+                try
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("01=A");
-                    w.WriteLine("02=B");
-                }
+                    EncodingHelper.WriteTextBom(tempFile1, encoding);
+                    EncodingHelper.WriteTextBom(destFile, encoding);
 
-                using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+                    using (StreamWriter w = new StreamWriter(tempFile1, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("01=A");
+                        w.WriteLine("02=B");
+                    }
+
+                    using (StreamWriter w = new StreamWriter(tempFile2, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("02=D");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("03=C");
+                    }
+
+                    using (StreamWriter w = new StreamWriter(destFile, false, encoding))
+                    {
+                        w.WriteLine("[Section1]");
+                        w.WriteLine("02=E");
+                        w.WriteLine();
+                        w.WriteLine("[Section2]");
+                        w.WriteLine("04=F");
+                    }
+
+                    Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
+
+                    string read;
+                    using (StreamReader r = new StreamReader(destFile, encoding))
+                    {
+                        read = r.ReadToEnd();
+                    }
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Section1]");
+                    b.AppendLine("02=D");
+                    b.AppendLine("01=A");
+                    b.AppendLine();
+                    b.AppendLine("[Section2]");
+                    b.AppendLine("04=F");
+                    b.AppendLine("03=C");
+                    b.AppendLine();
+                    string comp = b.ToString();
+
+                    Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                }
+                finally
                 {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("02=D");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("03=C");
+                    File.Delete(tempFile1);
+                    File.Delete(tempFile2);
+                    File.Delete(destFile);
                 }
-
-                using (StreamWriter w = new StreamWriter(destFile, false, Encoding.UTF8))
-                {
-                    w.WriteLine("[Section1]");
-                    w.WriteLine("02=E");
-                    w.WriteLine();
-                    w.WriteLine("[Section2]");
-                    w.WriteLine("04=F");
-                }
-
-                Assert.IsTrue(IniReadWriter.Merge(tempFile1, tempFile2, destFile));
-
-                string read;
-                Encoding encoding = EncodingHelper.DetectEncoding(destFile);
-                using (StreamReader r = new StreamReader(destFile, encoding))
-                {
-                    read = r.ReadToEnd();
-                }
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Section1]");
-                b.AppendLine("02=D");
-                b.AppendLine("01=A");
-                b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("04=F");
-                b.AppendLine("03=C");
-                b.AppendLine();
-                string comp = b.ToString();
-
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile1);
-                File.Delete(tempFile2);
-                File.Delete(destFile);
             }
         }
         #endregion
@@ -3442,57 +3712,64 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void Compact()
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("  Header  ");
+            b.AppendLine();
+            b.AppendLine("       [NonIniStyle]");
+            b.AppendLine("1");
+            b.AppendLine("  2");
+            b.AppendLine("3  ");
+            b.AppendLine(" 4    ");
+            b.AppendLine();
+            b.AppendLine("[IniStyle]           ");
+            b.AppendLine("일=一");
+            b.AppendLine(" 이 = 二 ");
+            b.AppendLine("  삼  =  三  ");
+            b.AppendLine("사     =       四    ");
+            string srcStr = b.ToString();
+
+            b.Clear();
+            b.AppendLine("Header");
+            b.AppendLine();
+            b.AppendLine("[NonIniStyle]");
+            b.AppendLine("1");
+            b.AppendLine("2");
+            b.AppendLine("3");
+            b.AppendLine("4");
+            b.AppendLine();
+            b.AppendLine("[IniStyle]");
+            b.AppendLine("일=一");
+            b.AppendLine("이=二");
+            b.AppendLine("삼=三");
+            b.AppendLine("사=四");
+            string compStr = b.ToString();
+
+            foreach (Encoding srcEnc in Encodings)
             {
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("  Header  ");
-                b.AppendLine();
-                b.AppendLine("       [NonIniStyle]");
-                b.AppendLine("1");
-                b.AppendLine("  2");
-                b.AppendLine("3  ");
-                b.AppendLine(" 4    ");
-                b.AppendLine();
-                b.AppendLine("[IniStyle]           ");
-                b.AppendLine("일=一");
-                b.AppendLine(" 이 = 二 ");
-                b.AppendLine("  삼  =  三  ");
-                b.AppendLine("사     =       四    ");
-                string srcStr = b.ToString();
-                b.Clear();
-                b.AppendLine("Header");
-                b.AppendLine();
-                b.AppendLine("[NonIniStyle]");
-                b.AppendLine("1");
-                b.AppendLine("2");
-                b.AppendLine("3");
-                b.AppendLine("4");
-                b.AppendLine();
-                b.AppendLine("[IniStyle]");
-                b.AppendLine("일=一");
-                b.AppendLine("이=二");
-                b.AppendLine("삼=三");
-                b.AppendLine("사=四");
-                string compStr = b.ToString();
-
-                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    sw.Write(b.ToString());
+                    using (StreamWriter sw = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        sw.Write(srcStr);
+                    }
+
+                    IniReadWriter.Compact(tempFile);
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string resultStr;
+                    using (StreamReader sr = new StreamReader(tempFile, destEnc, false))
+                    {
+                        resultStr = sr.ReadToEnd();
+                    }
+                    Assert.IsTrue(resultStr.Equals(compStr, StringComparison.Ordinal));
                 }
-
-                IniReadWriter.Compact(tempFile);
-
-                string resultStr;
-                using (StreamReader sr = new StreamReader(tempFile, Encoding.UTF8, false))
+                finally
                 {
-                    resultStr = sr.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-                Assert.IsTrue(resultStr.Equals(compStr, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
         #endregion
@@ -3501,7 +3778,7 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void FastForwardTextReader()
         {
-            void Template(string section, string src, string expected)
+            static void Template(string section, string src, string expected)
             {
                 string remain;
                 using (StringReader sr = new StringReader(src))
@@ -3550,7 +3827,7 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void FastForwardTextWriter()
         {
-            void Template(string section, string src, string expected, bool copyFromNewSection)
+            static void Template(string section, string src, string expected, bool copyFromNewSection)
             {
                 string result;
                 using (StringReader sr = new StringReader(src))
@@ -3625,64 +3902,76 @@ namespace PEBakery.Ini.Tests
         #region Template
         void WriteTemplate(string srcStr, string expectStr, Func<string, bool> testFunc)
         {
-            string tempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                string tempFile = FileHelper.GetTempFile();
+                try
                 {
-                    sw.Write(srcStr);
+                    using (StreamWriter sw = new StreamWriter(tempFile, false, srcEnc))
+                    {
+                        sw.Write(srcStr);
+                    }
+
+                    Assert.IsTrue(testFunc.Invoke(tempFile));
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string resultStr;
+                    using (StreamReader sr = new StreamReader(tempFile, destEnc, false))
+                    {
+                        resultStr = sr.ReadToEnd();
+                    }
+
+                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
                 }
-
-                Assert.IsTrue(testFunc.Invoke(tempFile));
-
-                string resultStr;
-                using (StreamReader sr = new StreamReader(tempFile))
+                finally
                 {
-                    resultStr = sr.ReadToEnd();
+                    File.Delete(tempFile);
                 }
-
-                Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(tempFile);
             }
         }
 
         void Merge2Template(string srcStr1, string srcStr2, string expectStr, bool compact = false)
         {
-            string srcTempFile = FileHelper.GetTempFile();
-            string destTempFile = FileHelper.GetTempFile();
-            try
+            foreach (Encoding srcEnc in Encodings)
             {
-                using (StreamWriter sw = new StreamWriter(srcTempFile, false, Encoding.UTF8))
+                string srcTempFile = FileHelper.GetTempFile();
+                string destTempFile = FileHelper.GetTempFile();
+                try
                 {
-                    sw.Write(srcStr1);
+                    using (StreamWriter sw = new StreamWriter(srcTempFile, false, srcEnc))
+                    {
+                        sw.Write(srcStr1);
+                    }
+                    using (StreamWriter sw = new StreamWriter(destTempFile, false, srcEnc))
+                    {
+                        sw.Write(srcStr2);
+                    }
+
+                    bool result;
+                    if (compact)
+                        result = IniReadWriter.MergeCompact(srcTempFile, destTempFile);
+                    else
+                        result = IniReadWriter.Merge(srcTempFile, destTempFile);
+                    Assert.IsTrue(result);
+
+                    Encoding destEnc = EncodingHelper.DetectEncoding(destTempFile);
+                    Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
+
+                    string resultStr;
+                    using (StreamReader sr = new StreamReader(destTempFile, destEnc, false))
+                    {
+                        resultStr = sr.ReadToEnd();
+                    }
+
+                    Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
                 }
-                using (StreamWriter sw = new StreamWriter(destTempFile, false, Encoding.UTF8))
+                finally
                 {
-                    sw.Write(srcStr2);
+                    File.Delete(srcTempFile);
+                    File.Delete(destTempFile);
                 }
-
-                bool result;
-                if (compact)
-                    result = IniReadWriter.MergeCompact(srcTempFile, destTempFile);
-                else
-                    result = IniReadWriter.Merge(srcTempFile, destTempFile);
-                Assert.IsTrue(result);
-
-                string resultStr;
-                using (StreamReader sr = new StreamReader(destTempFile))
-                {
-                    resultStr = sr.ReadToEnd();
-                }
-
-                Assert.IsTrue(resultStr.Equals(expectStr, StringComparison.Ordinal));
-            }
-            finally
-            {
-                File.Delete(srcTempFile);
-                File.Delete(destTempFile);
             }
         }
         #endregion

@@ -542,7 +542,7 @@ namespace PEBakery.Ini
         /// <param name="iniKey">Tuple of Section, Key, and Value.</param>
         /// <returns>Returns true if the operation was successful.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool WriteCompactKey(string filePath, IniKey iniKey)
+        public static bool WriteKeyCompact(string filePath, IniKey iniKey)
         {
             return InternalWriteCompactKeys(filePath, new List<IniKey> { iniKey });
         }

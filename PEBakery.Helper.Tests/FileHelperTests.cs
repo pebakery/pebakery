@@ -31,7 +31,7 @@ using System.Linq;
 namespace PEBakery.Helper.Tests
 {
     [TestClass]
-    [TestCategory(nameof(PEBakery.Helper))]
+    [TestCategory("PEBakery.Helper")]
     [TestCategory(nameof(FileHelper))]
     public class FileHelperTests
     {
