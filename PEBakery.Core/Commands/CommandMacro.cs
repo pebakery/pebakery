@@ -51,7 +51,7 @@ namespace PEBakery.Core.Commands
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < info.Args.Count; i++)
-                paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
+                paramDict[i + 1] = StringEscaper.Preprocess(s, info.Args[i]);
 
             s.CurSectionInParams = paramDict;
             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing command [{info.MacroType}]", cmd, s.PeekDepth));

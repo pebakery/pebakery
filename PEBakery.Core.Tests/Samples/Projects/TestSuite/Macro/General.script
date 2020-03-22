@@ -13,6 +13,7 @@ SectionMacro=Run,%ScriptFile%,SectionMacroImpl
 CondMacro01=Run,%ScriptFile%,CondMacroImpl01
 CondMacro02=Run,%ScriptFile%,CondMacroImpl02
 PhoenixMacro=Run,%ScriptFile%,PhoenixMacroImpl
+SetLocalParamsMacro=Run,%ScriptFile%,SetLocalParamsMacroImpl
 
 [SectionMacroImpl]
 Set,#r,#1
@@ -62,6 +63,15 @@ End
 Set,#r,T
 System,EndLocal
 
+[SetLocalParamsMacroImpl]
+System,SetLocal
+GetParam,1,%A%
+GetParam,2,%B%
+GetParam,3,%C%
+GetParam,4,%D%
+If,%D%,Equal,"A/B/C",Set,#r,"T"
+System,EndLocal
+
 [Process-InlineMacro]
 AddVariables,%ScriptFile%,Variables
 Set,#r,F
@@ -86,3 +96,13 @@ CondMacro02,True
 AddVariables,%ScriptFile%,Variables
 Set,#r,F
 PhoenixMacro,True,3,T
+
+[Process-SetLocalParamsMacro]
+AddVariables,%ScriptFile%,Variables
+Set,%A%,"A"
+Set,%B%,"B"
+Set,%C%,"C"
+Set,#r,"F"
+SetLocalParamsMacro,"X","Y","Z","%A%/%B%/%C%"
+
+

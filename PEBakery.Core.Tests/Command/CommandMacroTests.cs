@@ -40,7 +40,7 @@ namespace PEBakery.Core.Tests.Command
         [TestMethod]
         public void Macro()
         {
-            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
@@ -51,17 +51,19 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsTrue(macroDict.ContainsKey("CondMacro01"));
                     Assert.IsTrue(macroDict.ContainsKey("CondMacro02"));
                     Assert.IsTrue(macroDict.ContainsKey("PhoenixMacro"));
+                    Assert.IsTrue(macroDict.ContainsKey("SetLocalParamsMacro"));
 
                     Assert.IsTrue(s.ReturnValue.Equals("T", StringComparison.Ordinal));
                 }
             }
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Macro", "General.script");
-            // ScriptTemplate(scPath, "Process-InlineMacro");
-            // ScriptTemplate(scPath, "Process-SectionMacro");
-            // ScriptTemplate(scPath, "Process-CondMacro01");
-            // ScriptTemplate(scPath, "Process-CondMacro02");
+            ScriptTemplate(scPath, "Process-InlineMacro");
+            ScriptTemplate(scPath, "Process-SectionMacro");
+            ScriptTemplate(scPath, "Process-CondMacro01");
+            ScriptTemplate(scPath, "Process-CondMacro02");
             ScriptTemplate(scPath, "Process-PhoenixMacro");
+            ScriptTemplate(scPath, "Process-SetLocalParamsMacro");
         }
         #endregion
     }
