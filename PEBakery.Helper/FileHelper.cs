@@ -772,6 +772,15 @@ namespace PEBakery.Helper
             return valid;
         }
         #endregion
+
+        #region SubRootDirPath
+        public static string SubRootDirPath(string path, string rootDir)
+        {
+            if (!path.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"{nameof(path)} must start with {nameof(rootDir)}");
+            return path.Substring(rootDir.Length).TrimStart('\\');
+        }
+        #endregion
     }
     #endregion
 }

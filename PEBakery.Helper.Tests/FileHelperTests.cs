@@ -321,5 +321,30 @@ namespace PEBakery.Helper.Tests
             }
         }
         #endregion
+
+        #region SubRootDirPath
+        [TestMethod]
+        public void SubRootDirPath()
+        {
+            static void Template(string path, string rootDir, string expected, bool success)
+            {
+                try
+                {
+                    string result = FileHelper.SubRootDirPath(path, rootDir);
+                    Assert.IsTrue(result.Equals(expected, StringComparison.Ordinal));
+                }
+                catch (ArgumentException)
+                {
+                    Assert.IsFalse(success);
+                    return;
+                }
+                Assert.IsTrue(success);
+            }
+
+            Template(@"C:\PEBakery\Hello\World.txt", @"C:\PEBakery", @"Hello\World.txt", true);
+            Template(@"C:\PEBakery\\Hello\World.txt", @"C:\PEBakery", @"Hello\World.txt", true);
+            Template(@"\PEBakery\Hello\World.txt", @"C:\PEBakery", null, false);
+        }
+        #endregion
     }
 }

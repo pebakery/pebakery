@@ -124,7 +124,7 @@ namespace PEBakery.Core.Commands
                     for (int i = 0; i < files.Length; i++)
                     {
                         string f = files[i];
-                        string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
+                        string destFullPath = Path.Combine(destPath, FileHelper.SubRootDirPath(f, srcDirToFind));
 
                         if (File.Exists(destFullPath))
                         {
