@@ -27,6 +27,7 @@
 
 using MessagePack;
 using MessagePack.Resolvers;
+using MessagePack.Formatters;
 using SQLite;
 using System;
 using System.Collections;
@@ -424,6 +425,34 @@ namespace PEBakery.Core
             }
         }
         #endregion
+    }
+    #endregion
+
+    #region MessagePack - Formatter
+    public class ScriptStringDictionaryFormatter<TValue>
+       : DictionaryFormatterBase<string, TValue, Dictionary<string, TValue>, Dictionary<string, TValue>.Enumerator, Dictionary<string, TValue>>
+    {
+        public static ScriptStringDictionaryFormatter<TValue> Instance => new ScriptStringDictionaryFormatter<TValue>();
+
+        protected override void Add(Dictionary<string, TValue> collection, int index, string key, TValue value, MessagePackSerializerOptions options)
+        {
+            collection.Add(key, value);
+        }
+
+        protected override Dictionary<string, TValue> Complete(Dictionary<string, TValue> intermediateCollection)
+        {
+            return intermediateCollection;
+        }
+
+        protected override Dictionary<string, TValue> Create(int count, MessagePackSerializerOptions options)
+        {
+            return new Dictionary<string, TValue>(count, StringComparer.OrdinalIgnoreCase);
+        }
+
+        protected override Dictionary<string, TValue>.Enumerator GetSourceEnumerator(Dictionary<string, TValue> source)
+        {
+            return source.GetEnumerator();
+        }
     }
     #endregion
 }

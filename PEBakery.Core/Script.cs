@@ -84,6 +84,7 @@ namespace PEBakery.Core
         [Key(3)]
         private readonly bool _ignoreMain;
         [Key(4)]
+        [MessagePackFormatter(typeof(ScriptStringDictionaryFormatter<ScriptSection>))]
         private Dictionary<string, ScriptSection> _sections;
         [Key(5)]
         private readonly List<string> _interfaceList = new List<string>();
