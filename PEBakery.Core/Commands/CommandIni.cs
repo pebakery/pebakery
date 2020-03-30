@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
 using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;

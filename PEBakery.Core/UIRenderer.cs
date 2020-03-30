@@ -762,7 +762,13 @@ namespace PEBakery.Core
 
             string url = StringEscaper.Unescape(info.Url);
             Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
-            FileHelper.OpenUri(url);
+
+            ResultReport result = FileHelper.OpenUri(url);
+            if (!result.Success)
+            {
+                MessageBox.Show(_window, $"URL [{url}] could not be opened.\r\n\r\n{result.Message}.",
+                    "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <summary>
@@ -801,7 +807,14 @@ namespace PEBakery.Core
                         ms.CopyTo(fs);
                     }
                 }
-                FileHelper.OpenPath(imageFile);
+
+                ResultReport result = FileHelper.OpenPath(imageFile);
+                if (!result.Success)
+                {
+                    MessageBox.Show(_window,
+                        $"Unable to open file [{imageFile}].\r\n\r\n[Message]\r\n{result.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             catch (Exception ex)
             {
@@ -1080,7 +1093,13 @@ namespace PEBakery.Core
 
         public void WebLabel_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            FileHelper.OpenUri(e.Uri.AbsoluteUri);
+            string uri = e.Uri.AbsoluteUri;
+            ResultReport result = FileHelper.OpenUri(uri);
+            if (!result.Success)
+            {
+                MessageBox.Show(_window, $"URL [{uri}] could not be opened.\r\n\r\n{result.Message}.",
+                    "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         #endregion
 

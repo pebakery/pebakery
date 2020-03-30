@@ -179,7 +179,7 @@ namespace PEBakery.Helper.Tests
 
                 Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("ko-KR");
                 Template();
-                
+
                 Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
                 Template();
             }
@@ -188,7 +188,7 @@ namespace PEBakery.Helper.Tests
                 Thread.CurrentThread.CurrentCulture = bak;
                 if (Directory.Exists(tempDir))
                     Directory.Delete(tempDir, true);
-            }            
+            }
         }
         #endregion
 

@@ -38,14 +38,14 @@ namespace PEBakery.Ini.Tests
     public class IniReadWriterTests
     {
         #region Encodings
-        private static readonly Encoding[] Encodings = 
+        private static readonly Encoding[] Encodings =
         {
             // Wanted to include ANSI/DBCS encodings, but they does not support multilingial text.
             // EncodingHelper.DefaultAnsi
             // UTF-8 wo BOM text without any non-ASCII char is detected as DefaultAnsi.
             // new UTF8Encoding(false),
-            Encoding.Unicode, 
-            Encoding.BigEndianUnicode, 
+            Encoding.Unicode,
+            Encoding.BigEndianUnicode,
             Encoding.UTF8,
         };
         #endregion

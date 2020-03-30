@@ -250,7 +250,7 @@ namespace PEBakery.Core
                     continue;
 
                 // TreePath of directory where folder.project exists
-                string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot)); 
+                string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot));
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
                 // Local functions fo collect ScriptParseInfo

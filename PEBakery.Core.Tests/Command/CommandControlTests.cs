@@ -334,7 +334,7 @@ namespace PEBakery.Core.Tests.Command
             }
 
             LineTemplate("Exit,UnitTest", ErrorCheck.Warning);
-            LineTemplate("Exit,UnitTest,NOWARN", ErrorCheck.Success);        
+            LineTemplate("Exit,UnitTest,NOWARN", ErrorCheck.Success);
             ScriptTemplate(scPath, "Process-Exit01", 2, ErrorCheck.Warning);
             ScriptTemplate(scPath, "Process-Exit02", 2, ErrorCheck.Warning);
         }

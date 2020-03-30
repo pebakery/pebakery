@@ -169,7 +169,12 @@ namespace PEBakery.WPF
             {
                 if (_m.FileFormat == LogExportType.Html)
                 { // open .html files with the default browser
-                    FileHelper.OpenUri(destFile);
+                    ResultReport result = FileHelper.OpenUri(destFile);
+                    if (!result.Success)
+                    {
+                        MessageBox.Show($"URL [{destFile}] could not be opened.\r\n\r\n{result.Message}.",
+                            "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 else
                 {

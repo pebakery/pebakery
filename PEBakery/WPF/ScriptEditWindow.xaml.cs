@@ -3795,23 +3795,27 @@ namespace PEBakery.WPF
                 // Do not clear tempDir right after calling OpenPath(). Doing this will trick the opened process.
                 // Instead, leave it to Global.Cleanup() when program is exited.
                 string tempDir = FileHelper.GetTempDir();
+                string tempFile = Path.Combine(tempDir, fi.FileName);
                 try
                 {
-                    string tempFile = Path.Combine(tempDir, fi.FileName);
                     using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
                     {
                         await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                     }
-
-#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
-                    FileHelper.OpenPath(tempFile);
-#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                 }
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show(_window,
                         $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                ResultReport result = FileHelper.OpenPath(tempFile);
+                if (!result.Success)
+                {
+                    MessageBox.Show(_window,
+                        $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{result.Message}",
                         "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }

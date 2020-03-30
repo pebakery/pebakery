@@ -26,8 +26,8 @@
 */
 
 using MessagePack;
-using MessagePack.Resolvers;
 using MessagePack.Formatters;
+using MessagePack.Resolvers;
 using SQLite;
 using System;
 using System.Collections;

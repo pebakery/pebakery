@@ -643,41 +643,66 @@ namespace PEBakery.Helper
         /// <summary>
         /// Open URI with default browser without Administrator privilege.
         /// </summary>
-        /// <param name="uri"></param>
-        /// <returns></returns>
-        public static void OpenUri(string uri)
+        /// <param name="uri">An URI to open on system default browser.</param>
+        /// <returns>An instance of ResultReport.</returns>
+        public static ResultReport OpenUri(string uri)
         {
             Process proc = null;
             try
             {
-                string protocol = StringHelper.GetUriProtocol(uri);
-                string exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
-                string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
+                bool fallback = false;
 
-                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                string exePath = null;
+                string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
+                string protocol = StringHelper.GetUriProtocol(uri);
+                if (protocol == null)
                 {
-                    FileName = exePath,
-                    Arguments = quoteUri,
-                });
+                    fallback = true;
+                }
+                else
+                {
+                    exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
+                    if (exePath == null)
+                        fallback = true;
+                }
+
+                if (fallback)
+                {
+                    proc = Process.Start(new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = uri,
+                    });
+                }
+                else
+                {
+                    Debug.Assert(exePath != null, $"{nameof(exePath)} is null but fallback was not enabled");
+                    proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        Arguments = quoteUri,
+                    });
+                }
             }
-            catch
+            catch (Exception e)
             {
-                proc = new Process { StartInfo = new ProcessStartInfo(uri) };
-                proc.Start();
+                return new ResultReport(e);
             }
             finally
             {
                 if (proc != null)
                     proc.Dispose();
             }
+
+            return new ResultReport(true);
         }
 
         /// <summary>
         /// ShellExecute without Administrator privilege.
         /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static void OpenPath(string path)
+        /// <param name="path">The path of the document to open.</param>
+        /// <returns>An instance of ResultReport.</returns>
+        public static ResultReport OpenPath(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -685,27 +710,52 @@ namespace PEBakery.Helper
             Process proc = null;
             try
             {
-                string ext = Path.GetExtension(path);
-                string exePath = RegistryHelper.GetDefaultExecutablePath(ext, true);
-                string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
+                bool fallback = false;
 
-                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                string exePath = null;
+                string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
+                string ext = Path.GetExtension(path);
+                if (ext == null)
                 {
-                    UseShellExecute = false,
-                    FileName = exePath,
-                    Arguments = quotePath,
-                });
+                    fallback = true;
+                }
+                else
+                {
+                    exePath = RegistryHelper.GetDefaultExecutablePath(ext, true);
+                    if (exePath == null)
+                        fallback = true;
+                }
+
+                if (fallback)
+                {
+                    proc = Process.Start(new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = path,
+                    });
+                }
+                else
+                {
+                    Debug.Assert(exePath != null, $"{nameof(exePath)} is null but fallback was not enabled");
+                    proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                    {
+                        UseShellExecute = false,
+                        FileName = exePath,
+                        Arguments = quotePath,
+                    });
+                }
             }
-            catch
+            catch (Exception e)
             {
-                proc = new Process { StartInfo = new ProcessStartInfo(path) };
-                proc.Start();
+                return new ResultReport(e);
             }
             finally
             {
                 if (proc != null)
                     proc.Dispose();
             }
+
+            return new ResultReport(true);
         }
         #endregion
 

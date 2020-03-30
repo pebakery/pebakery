@@ -1,11 +1,11 @@
 ﻿using BenchmarkDotNet.Attributes;
+using Joveler.Compression.LZ4;
 using Joveler.Compression.XZ;
 using Joveler.Compression.ZLib;
-using Joveler.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using K4os.Compression.LZ4.Streams;
 
 namespace Benchmark
 {
