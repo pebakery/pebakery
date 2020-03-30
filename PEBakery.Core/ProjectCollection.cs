@@ -179,7 +179,7 @@ namespace PEBakery.Core
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
-                        TreePath = x.Path.Substring(ProjectRoot.Length + 1),
+                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
                         IsDir = x.IsDir,
                         IsDirLink = false,
                     }).ToArray();
@@ -188,7 +188,7 @@ namespace PEBakery.Core
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
-                        TreePath = x.Path.Substring(ProjectRoot.Length + 1),
+                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
                         IsDir = x.IsDir,
                         IsDirLink = false,
                     }).ToArray();
@@ -250,7 +250,7 @@ namespace PEBakery.Core
                     continue;
 
                 // TreePath of directory where folder.project exists
-                string prefix = Path.GetDirectoryName(linkFile.Substring(ProjectRoot.Length + 1)); // +1 for \
+                string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot)); 
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
                 // Local functions fo collect ScriptParseInfo

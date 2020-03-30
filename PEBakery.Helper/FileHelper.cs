@@ -774,6 +774,18 @@ namespace PEBakery.Helper
         #endregion
 
         #region SubRootDirPath
+        /// <summary>
+        /// Remove the <paramref name="rootDir"/> (aka prefix) from <paramref name="path"/>.<br/>
+        /// Ex) path = D:\A\B\C, rootDir = D:\A -> B\C
+        /// </summary>
+        /// <remarks>
+        /// Using TrimStart('\\') helps to deal with abnormal path string (such as D:\A\\B\C).
+        /// </remarks>
+        /// <param name="path">The path to remove root directory path (aka prefix). Must start with <paramref name="rootDir"/>.</param>
+        /// <param name="rootDir">The root directory path (aka prefix) to remove from the <paramref name="path"/>.</param>
+        /// <returns>
+        /// The suffix part of the <paramref name="path"/>.
+        /// </returns>
         public static string SubRootDirPath(string path, string rootDir)
         {
             if (!path.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase))

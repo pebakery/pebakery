@@ -457,7 +457,7 @@ namespace PEBakery.Core
 
             // If realPath is child of ProjectRoot ("%BaseDir%\Projects"), remove it 
             if (realPath.StartsWith(ProjectRoot, StringComparison.OrdinalIgnoreCase))
-                treePath = realPath.Substring(ProjectRoot.Length + 1);
+                treePath = FileHelper.SubRootDirPath(realPath, ProjectRoot);
 
             return LoadScriptRuntime(realPath, treePath, opts);
         }
