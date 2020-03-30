@@ -150,7 +150,7 @@ namespace PEBakery.WPF
                     {
                         Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                         int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Id;
-                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new LogExporter.BuildLogOptions
+                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new BuildLogOptions
                         {
                             IncludeComments = _m.BuildLogIncludeComments,
                             IncludeMacros = _m.BuildLogIncludeMacros,
@@ -168,7 +168,8 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_m.FileFormat == LogExportType.Html)
-                { // open .html files with the default browser
+                { 
+                    // Call FileHelper.OpenUri (instead of OpenPath) to open .html files with the default browser.
                     ResultReport result = FileHelper.OpenUri(destFile);
                     if (!result.Success)
                     {

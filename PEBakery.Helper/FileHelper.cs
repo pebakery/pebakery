@@ -643,30 +643,19 @@ namespace PEBakery.Helper
         /// <summary>
         /// Open URI with default browser without Administrator privilege.
         /// </summary>
-        /// <param name="uri">An URI to open on system default browser.</param>
+        /// <param name="uri">
+        /// An URI to open on system default browser.<br/>
+        /// Also supports the local .html file.
+        /// </param>
         /// <returns>An instance of ResultReport.</returns>
         public static ResultReport OpenUri(string uri)
         {
             Process proc = null;
             try
             {
-                bool fallback = false;
-
-                string exePath = null;
                 string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
-                string protocol = StringHelper.GetUriProtocol(uri);
-                if (protocol == null)
-                {
-                    fallback = true;
-                }
-                else
-                {
-                    exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
-                    if (exePath == null)
-                        fallback = true;
-                }
-
-                if (fallback)
+                string exePath = RegistryHelper.GetDefaultWebBrowserPath(true);
+                if (exePath == null)
                 {
                     proc = Process.Start(new ProcessStartInfo
                     {

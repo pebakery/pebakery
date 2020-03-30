@@ -129,13 +129,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportBuildLog
-        public class BuildLogOptions
-        {
-            public bool IncludeComments;
-            public bool IncludeMacros;
-            public bool ShowLogFlags;
-        }
-
         public void ExportBuildLog(int buildId, BuildLogOptions opts)
         {
             switch (_exportType)
@@ -679,4 +672,13 @@ namespace PEBakery.Core
         }
         #endregion
     }
+
+    #region class BuildLogOptions
+    public class BuildLogOptions
+    {
+        public bool IncludeComments;
+        public bool IncludeMacros;
+        public bool ShowLogFlags;
+    }
+    #endregion
 }

@@ -390,29 +390,9 @@ namespace PEBakery.Helper
         #endregion
 
         #region GetDefaultExecutablePath, GetDefaultWebBrowserPath
-#if CACHE_DEFAULT_PATH
-        // Cache default paths in the Dictionary
-        // NOTE: If the user uninstall the executables while PEBakery was running, may the caching causes crash?
-        private static readonly Dictionary<string, string> DefaultWebBrowsers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Dictionary<string, string> DefaultExecutables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Dictionary<string, string> DefaultOpenCommands = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-#endif
         public static string GetDefaultExecutablePath(string ext, bool onlyExePath)
         {
             const string exePathKeyTemplate = @"{0}\shell\open\command";
-
-#if CACHE_DEFAULT_PATH
-            if (onlyExePath)
-            {
-                if (DefaultExecutables.ContainsKey(ext))
-                    return DefaultExecutables[ext];
-            }
-            else
-            {
-                if (DefaultOpenCommands.ContainsKey(ext))
-                    return DefaultOpenCommands[ext];
-            }
-#endif
 
             RegistryKey extSubKey = null;
             RegistryKey exePathSubKey = null;
@@ -437,16 +417,10 @@ namespace PEBakery.Helper
                 {
                     int idx = exePath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
                     exePath = exePath.Substring(0, idx).Trim().Trim('\"').Trim();
-#if CACHE_DEFAULT_PATH
-                    DefaultExecutables[ext] = exePath;
-#endif
                     return exePath;
                 }
                 else
                 {
-#if CACHE_DEFAULT_PATH
-                    DefaultOpenCommands[ext] = exePath;
-#endif
                     return exePath;
                 }
             }
@@ -457,24 +431,11 @@ namespace PEBakery.Helper
             }
         }
 
-        public static string GetDefaultWebBrowserPath(string protocol, bool onlyExePath)
+        public static string GetDefaultWebBrowserPath(bool onlyExePath)
         {
             const string progIdKey = "ProgId";
             const string httpsDefaultKey = @"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice";
             const string exePathKeyTemplate = @"{0}\shell\open\command";
-
-#if CACHE_DEFAULT_PATH
-            if (onlyExePath)
-            {
-                if (DefaultWebBrowsers.ContainsKey(protocol))
-                    return DefaultWebBrowsers[protocol];
-            }
-            else
-            {
-                if (DefaultOpenCommands.ContainsKey(protocol))
-                    return DefaultOpenCommands[protocol];
-            }
-#endif
 
             RegistryKey httpsSubKey = null;
             RegistryKey exePathSubKey = null;
@@ -503,19 +464,12 @@ namespace PEBakery.Helper
                 {
                     int idx = browserPath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
                     browserPath = browserPath.Substring(0, idx).Trim().Trim('\"').Trim();
-#if CACHE_DEFAULT_PATH
-                    DefaultWebBrowsers[protocol] = browserPath;
-#endif
                     return browserPath;
                 }
                 else
                 {
-#if CACHE_DEFAULT_PATH
-                    DefaultOpenCommands[protocol] = browserPath;
-#endif
                     return browserPath;
                 }
-
             }
             finally
             {

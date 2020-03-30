@@ -27,6 +27,9 @@ using System;
 
 namespace PEBakery.Helper
 {
+    /// <summary>
+    /// Report result of any opertaion on exception-less way.
+    /// </summary>
     public class ResultReport
     {
         public bool Success { get; set; }
@@ -53,6 +56,9 @@ namespace PEBakery.Helper
         }
     }
 
+    /// <summary>
+    /// Report result of any opertaion on exception-less way.
+    /// </summary>
     public class ResultReport<T>
     {
         public bool Success { get; set; }
@@ -83,6 +89,9 @@ namespace PEBakery.Helper
         }
     }
 
+    /// <summary>
+    /// Report result of any opertaion on exception-less way.
+    /// </summary>
     public class ResultReport<T1, T2>
     {
         public bool Success { get; set; }

@@ -431,7 +431,7 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
 
                             // Do not use s.BuildId, for case of FullDeferredLogging
-                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new BuildLogOptions
                             {
                                 IncludeComments = true,
                                 IncludeMacros = true,

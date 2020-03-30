@@ -958,7 +958,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void ExportBuildLog(LogExportType type, string exportFile, int buildId, LogExporter.BuildLogOptions opts)
+        public void ExportBuildLog(LogExportType type, string exportFile, int buildId, BuildLogOptions opts)
         {
             if (type == LogExportType.Html && MinifyHtmlExport)
             {

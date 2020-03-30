@@ -11,12 +11,11 @@
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>PEBakery.App</StartupObject>
-  </PropertyGroup>
-  <PropertyGroup>
     <ApplicationManifest>App.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
   <ItemGroup>
     <None Update="App.manifest">
