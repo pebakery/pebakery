@@ -39,7 +39,7 @@ If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?Li
 
 ### Nightly Builds
 
-Starting from beta 7, PEBakery runs on .Net Core 3. Please install [.Net Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1).
+Starting from beta 7, PEBakery runs on .Net Core 3. Please install [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1).
 
 We are preparing [self-contained](https://docs.microsoft.com/en-US/dotnet/core/deploying/#publish-self-contained) distribution, so users do not have to install runtime themselves.
 
