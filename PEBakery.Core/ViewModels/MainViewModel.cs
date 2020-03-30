@@ -1623,39 +1623,34 @@ namespace PEBakery.Core.ViewModels
                 return;
             }
 
+            ResultReport result;
             if (Global.Setting.Interface.UseCustomEditor)
             {
-                string ext = Path.GetExtension(Global.Setting.Interface.CustomEditorPath);
+                string customEditor = Global.Setting.Interface.CustomEditorPath;
+                string ext = Path.GetExtension(customEditor);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (!File.Exists(Global.Setting.Interface.CustomEditorPath))
+                if (!File.Exists(customEditor))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                ProcessStartInfo info = new ProcessStartInfo
-                {
-                    UseShellExecute = false,
-                    FileName = Global.Setting.Interface.CustomEditorPath,
-                    Arguments = StringEscaper.DoubleQuote(filePath),
-                };
-
-                try { UACHelper.UACHelper.StartWithShell(info); }
-                catch { Process.Start(info); }
+                result = FileHelper.OpenPath(customEditor, filePath);
             }
             else
             {
-                ResultReport result = FileHelper.OpenPath(filePath);
-                if (!result.Success)
-                {
-                    MessageBox.Show($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
-                        "Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                result = FileHelper.OpenPath(filePath);
+            }
+
+            if (!result.Success)
+            {
+                MessageBox.Show($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
+                    "Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1672,10 +1667,14 @@ namespace PEBakery.Core.ViewModels
             }
 
             // In most circumstances, explorer.exe is already running as a shell without Administrator privilege.
+            // So it is safe to use normal ShellExecute.
             using (Process proc = new Process())
             {
-                proc.StartInfo = new ProcessStartInfo(filePath);
-                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo = new ProcessStartInfo()
+                {
+                    UseShellExecute = true,
+                    FileName = filePath,
+                };
                 proc.Start();
             }
         }

@@ -689,12 +689,12 @@ namespace PEBakery.Helper
         /// <summary>
         /// ShellExecute without Administrator privilege.
         /// </summary>
-        /// <param name="path">The path of the document to open.</param>
+        /// <param name="docPath">The path of the document to open.</param>
         /// <returns>An instance of ResultReport.</returns>
-        public static ResultReport OpenPath(string path)
+        public static ResultReport OpenPath(string docPath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            if (docPath == null)
+                throw new ArgumentNullException(nameof(docPath));
 
             Process proc = null;
             try
@@ -702,8 +702,8 @@ namespace PEBakery.Helper
                 bool fallback = false;
 
                 string exePath = null;
-                string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
-                string ext = Path.GetExtension(path);
+                string quotePath = docPath.Contains(' ') ? $"\"{docPath}\"" : docPath;
+                string ext = Path.GetExtension(docPath);
                 if (ext == null)
                 {
                     fallback = true;
@@ -720,7 +720,7 @@ namespace PEBakery.Helper
                     proc = Process.Start(new ProcessStartInfo
                     {
                         UseShellExecute = true,
-                        FileName = path,
+                        FileName = docPath,
                     });
                 }
                 else
@@ -731,6 +731,54 @@ namespace PEBakery.Helper
                         UseShellExecute = false,
                         FileName = exePath,
                         Arguments = quotePath,
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                return new ResultReport(e);
+            }
+            finally
+            {
+                if (proc != null)
+                    proc.Dispose();
+            }
+
+            return new ResultReport(true);
+        }
+
+        /// <summary>
+        /// ShellExecute without Administrator privilege.
+        /// </summary>
+        /// <param name="exePath">The path of the executable to open a document.</param>
+        /// <param name="docPath">The path of the document to open.</param>
+        /// <returns>An instance of ResultReport.</returns>
+        public static ResultReport OpenPath(string exePath, string docPath)
+        {
+            if (exePath == null)
+                throw new ArgumentNullException(nameof(exePath));
+            if (docPath == null)
+                throw new ArgumentNullException(nameof(docPath));
+
+            Process proc = null;
+            try
+            {
+                try 
+                {
+                    string quotePath = docPath.Contains(' ') ? $"\"{docPath}\"" : docPath;
+                    proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                    {
+                        UseShellExecute = false,
+                        FileName = exePath,
+                        Arguments = quotePath,
+                    });
+                }
+                catch
+                {
+                    proc = Process.Start(new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = docPath,
                     });
                 }
             }
