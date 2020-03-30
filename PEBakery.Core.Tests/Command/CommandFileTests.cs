@@ -151,6 +151,9 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"FileCopy,{pbSrcDir}\Z\Y.ini,{destDir}", Path.Combine("Z", "Y.ini"), "Y.ini");
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.txt,{destDir}", "*.txt", true);
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.ini,{destDir},NOREC", "*.ini", false);
+            // Check https://github.com/pebakery/pebakery/issues/150
+            MultiTemplate($@"FileCopy,{pbSrcDir}\\*.txt,{destDir}", "*.txt", true);
+            MultiTemplate($@"FileCopy,{pbSrcDir}\\*.ini,{destDir},NOREC", "*.ini", false);
 
             SingleTemplate($@"FileCopy,{pbSrcDir}\P.txt,{destDir}", "P.txt", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir}", "C.txt", null, ErrorCheck.Overwrite, true);
