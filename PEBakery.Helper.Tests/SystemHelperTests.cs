@@ -29,7 +29,7 @@ namespace PEBakery.Helper.Tests
 {
     #region SystemHelper
     [TestClass]
-    [TestCategory("StringHelper")]
+    [TestCategory(nameof(SystemHelper))]
     public class SystemHelperTests
     {
         [TestMethod]
@@ -64,13 +64,6 @@ namespace PEBakery.Helper.Tests
                 string siMaxReq = NumberHelper.ByteSizeToSIUnit((long)maxReq, 1);
                 string siAvailMem = NumberHelper.ByteSizeToSIUnit((long)availMem, 1);
                 Console.WriteLine($"MaxReq = {siMaxReq} ({maxReq}), MaxPercent = {maxPercent}, AvailMem = {siAvailMem} ({availMem})");
-            }
-
-            for (int i = 0; i < results.Length - 1; i++)
-            {
-                ulong last = results[i];
-                ulong next = results[i + 1];
-                Assert.IsTrue(last <= next);
             }
         }
 
