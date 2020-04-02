@@ -175,7 +175,7 @@ namespace PEBakery.Core
 
                 // Path of normal and link scripts
                 ScriptParseInfo[] scripts = FileHelper
-                    .GetFilesExWithDirs(projectDir, "*.script", SearchOption.AllDirectories)
+                    .GetDirFilesEx(projectDir, "*.script", SearchOption.AllDirectories)
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
@@ -184,7 +184,7 @@ namespace PEBakery.Core
                         IsDirLink = false,
                     }).ToArray();
                 ScriptParseInfo[] links = FileHelper
-                    .GetFilesExWithDirs(projectDir, "*.link", SearchOption.AllDirectories)
+                    .GetDirFilesEx(projectDir, "*.link", SearchOption.AllDirectories)
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
@@ -264,9 +264,9 @@ namespace PEBakery.Core
                         IsDirLink = true,
                     };
 
-                    IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
+                    IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetDirFilesEx(dirPath, "*.script", SearchOption.AllDirectories)
                         .Select(x => CreateScriptParseInfo(x));
-                    IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.link", SearchOption.AllDirectories)
+                    IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetDirFilesEx(dirPath, "*.link", SearchOption.AllDirectories)
                         .Select(x => CreateScriptParseInfo(x));
 
                     // Duplicated ScriptParseInfo is removed later by GetScriptPaths.

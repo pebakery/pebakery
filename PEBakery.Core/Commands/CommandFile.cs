@@ -407,7 +407,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("DirCopy Progress", filesCount);
                 try
                 {
-                    FileHelper.DirCopy(srcDir, destFullPath, new FileHelper.DirCopyOptions
+                    FileHelper.DirCopy(srcDir, destFullPath, new DirCopyOptions
                     {
                         CopySubDirs = true,
                         Overwrite = true,
@@ -468,7 +468,7 @@ namespace PEBakery.Core.Commands
                     // Note wildcard will not be applied to sub-directory copy
                     foreach (DirectoryInfo d in subDirs)
                     {
-                        FileHelper.DirCopy(d.FullName, Path.Combine(destDir, d.Name), new FileHelper.DirCopyOptions
+                        FileHelper.DirCopy(d.FullName, Path.Combine(destDir, d.Name), new DirCopyOptions
                         {
                             CopySubDirs = true,
                             Overwrite = true,
@@ -500,7 +500,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Delete Directory
-            FileHelper.DirectoryDeleteEx(dirPath);
+            FileHelper.DirDeleteEx(dirPath);
 
             logs.Add(new LogInfo(LogState.Success, $"Deleted directory [{dirPath}]"));
 

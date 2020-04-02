@@ -119,15 +119,15 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
 
-        #region GetFilesExWithDir
+        #region GetDirFilesEx
         [TestMethod]
-        public void GetFilesExWithDir()
+        public void GetDirFilesEx()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
 
             // Test 1
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.AllDirectories);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.txt", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 5);
@@ -148,7 +148,7 @@ namespace PEBakery.Helper.Tests
             }
             // Test 2
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.ini", SearchOption.AllDirectories);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.ini", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 2);
@@ -162,7 +162,7 @@ namespace PEBakery.Helper.Tests
             }
             // Test 3
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 1);
@@ -177,9 +177,9 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
 
-        #region DirectoryCopy
+        #region DirCopy
         [TestMethod]
-        public void DirectoryCopy()
+        public void DirCopy()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
             string destDir = FileHelper.GetTempDir();
@@ -201,7 +201,7 @@ namespace PEBakery.Helper.Tests
             // Test 1
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -221,7 +221,7 @@ namespace PEBakery.Helper.Tests
             // Test 2
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = false,
                     Overwrite = true,
@@ -237,7 +237,7 @@ namespace PEBakery.Helper.Tests
             // Test 3
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -256,7 +256,7 @@ namespace PEBakery.Helper.Tests
             // Test 4
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = false,
                     Overwrite = true,

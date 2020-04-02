@@ -182,7 +182,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -211,7 +211,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -263,7 +263,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -533,7 +533,7 @@ namespace PEBakery.Core.Tests.Command
                 {
                     if (copyDir)
                     {
-                        FileHelper.DirCopy(srcFullPath, destFullPath, new FileHelper.DirCopyOptions
+                        FileHelper.DirCopy(srcFullPath, destFullPath, new DirCopyOptions
                         {
                             CopySubDirs = true,
                             Overwrite = true,
@@ -588,7 +588,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -708,7 +708,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -739,7 +739,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
