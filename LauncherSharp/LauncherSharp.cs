@@ -23,9 +23,12 @@
     SOFTWARE.
 */
 
-#define ENABLE_DOTNETFX_472
+// Check if .NET Framework is installed on the system
+//#define CHECK_DOTNETFX
 
+#if CHECK_DOTNETFX
 using Microsoft.Win32;
+#endif
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -36,14 +39,10 @@ namespace PEBakeryLauncher
 {
     public static class Launcher
     {
-#if ENABLE_DOTNETFX_472
+#if CHECK_DOTNETFX
         public const string DotNetFxVerStr = "4.7.2";
         public const string DotNetFxInstallerUrl = "https://go.microsoft.com/fwlink/?LinkId=863265";
         public const uint DotNetFxReleaseValue = 461808;
-#else
-        public const string DotNetFxVerStr = "4.7.1";
-        public const string DotNetFxInstallerUrl = "https://www.microsoft.com/en-us/download/details.aspx?id=56116";
-        public const uint DotNetFxReleaseValue = 461308;
 #endif
 
         public static void Main(string[] args)
@@ -60,6 +59,7 @@ namespace PEBakeryLauncher
                 Environment.Exit(1);
             }
 
+#if CHECK_DOTNETFX
             // Alert user to install .Net Framework to 4.7.x if not installed.
             // The launcher itself runs in .Net Framework 4 Client Profile.
             if (!CheckNetFrameworkVersion())
@@ -71,6 +71,7 @@ namespace PEBakeryLauncher
                 Process.Start(DotNetFxInstallerUrl);
                 Environment.Exit(1);
             }
+#endif
 
             // Launch PEBakery.exe using ShellExecute
             StringBuilder b = new StringBuilder();
@@ -106,6 +107,7 @@ namespace PEBakeryLauncher
             return path;
         }
 
+#if CHECK_DOTNETFX
         private static bool CheckNetFrameworkVersion()
         { // https://docs.microsoft.com/ko-kr/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_b
             const string ndpPath = @"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full";
@@ -120,5 +122,6 @@ namespace PEBakeryLauncher
                 return DotNetFxReleaseValue <= revision;
             }
         }
+#endif
     }
 }
