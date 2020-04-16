@@ -2203,7 +2203,7 @@ namespace PEBakery.WPF
 
         private bool UICtrlDeleteCommand_CanExecute(object sender)
         {
-            return CanExecuteCommand && UICtrlEditEnabled;
+            return CanExecuteCommand && SelectedUICtrls != null && 0 < SelectedUICtrls.Count;
         }
 
         private void UICtrlDeleteCommand_Execute(object parameter)
@@ -2211,21 +2211,25 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                if (SelectedUICtrl == null)
+                if (SelectedUICtrls == null || SelectedUICtrls.Count == 0)
                     return;
 
-                UIControl uiCtrl = SelectedUICtrl;
-                UICtrlToBeDeleted.Add(uiCtrl);
+                UICtrlToBeDeleted.AddRange(SelectedUICtrls);
 
-                // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
-                DeleteInterfaceEncodedFile(uiCtrl);
+                foreach (UIControl uiCtrl in SelectedUICtrls)
+                {
+                    // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                    DeleteInterfaceEncodedFile(uiCtrl);
 
-                Renderer.UICtrls.Remove(uiCtrl);
+                    Renderer.UICtrls.Remove(uiCtrl);
+                }
+
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
                 Renderer.Render();
                 SelectedUICtrl = null;
+                SelectedUICtrls = null;
 
                 WriteScriptInterface(null, true);
                 InterfaceNotSaved = true;
