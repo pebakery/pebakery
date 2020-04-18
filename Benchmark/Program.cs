@@ -87,7 +87,7 @@ namespace Benchmark
                 throw new PlatformNotSupportedException();
             }
 
-            void CheckLibPath(string libPath)
+            static void CheckLibPath(string libPath)
             {
                 if (libPath == null || !File.Exists(libPath))
                     throw new PlatformNotSupportedException();

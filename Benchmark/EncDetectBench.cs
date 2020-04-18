@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Joveler.FileMagician;
+using PEBakery.Helper;
 using PEBakery.Helper.ThirdParty;
 using System;
 using System.Collections.Generic;
@@ -64,15 +65,13 @@ namespace Benchmark
             foreach (string srcFileName in SrcFileNames)
             {
                 string srcFile = Path.Combine(_sampleDir, srcFileName);
-                using (MemoryStream ms = new MemoryStream())
+                long fileSize = new FileInfo(srcFile).Length;
+                byte[] bytes = new byte[fileSize];
+                using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        fs.CopyTo(ms);
-                    }
-
-                    SrcFiles[srcFileName] = ms.ToArray();
+                    fs.Read(bytes, 0, bytes.Length);
                 }
+                SrcFiles[srcFileName] = bytes;
             }
         }
 
@@ -121,7 +120,7 @@ namespace Benchmark
         {
             // "utf-16be", "utf-16le", "utf-8", "us-ascii"/"iso-8859-1"/"unknown-8bit" - "text/plain", "text/html"
             _magic.SetFlags(MagicFlags.MIME_TYPE);
-            string mimeType = _magic.CheckBuffer(rawData.Slice(0, sizeLimit));
+            string mimeType = _magic.CheckBuffer(rawData.Slice(0, Math.Min(rawData.Length, sizeLimit)));
 
             if (!mimeType.StartsWith("text/", StringComparison.Ordinal))
                 return TextType.Binary;

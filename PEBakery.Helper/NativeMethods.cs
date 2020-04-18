@@ -37,19 +37,19 @@ namespace PEBakery.Helper
 {
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public static class NativeMethods
+    internal static class NativeMethods
     {
         #region FileHelper
         #region DOS 8.3 Path
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int GetShortPathName(
+        public static extern int GetShortPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string longPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder shortPath,
             int cchBuffer
         );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int GetLongPathName(
+        public static extern int GetLongPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string shortPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder longPath,
             int cchBuffer
@@ -59,7 +59,7 @@ namespace PEBakery.Helper
 
         #region FontHelper
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class LOGFONT
+        public class LOGFONT
         {
             public int lfHeight;
             public int lfWidth;
@@ -81,7 +81,7 @@ namespace PEBakery.Helper
             public string lfFaceName;
         }
 
-        internal enum LogFontWeight
+        public enum LogFontWeight
         {
             FW_DONTCARE = 0,
             FW_THIN = 100,
@@ -95,7 +95,7 @@ namespace PEBakery.Helper
             FW_HEAVY = 900,
         }
 
-        internal enum LogFontCharSet : byte
+        public enum LogFontCharSet : byte
         {
             ANSI_CHARSET = 0,
             DEFAULT_CHARSET = 1,
@@ -119,7 +119,7 @@ namespace PEBakery.Helper
             BALTIC_CHARSET = 186,
         }
 
-        internal enum LogFontPrecision : byte
+        public enum LogFontPrecision : byte
         {
             OUT_DEFAULT_PRECIS = 0,
             OUT_STRING_PRECIS = 1,
@@ -134,7 +134,7 @@ namespace PEBakery.Helper
             OUT_PS_ONLY_PRECIS = 10,
         }
 
-        internal enum LogFontClipPrecision : byte
+        public enum LogFontClipPrecision : byte
         {
             CLIP_DEFAULT_PRECIS = 0,
             CLIP_CHARACTER_PRECIS = 1,
@@ -146,7 +146,7 @@ namespace PEBakery.Helper
             CLIP_EMBEDDED = 8 << 4,
         }
 
-        internal enum LogFontQuality : byte
+        public enum LogFontQuality : byte
         {
             DEFAULT_QUALITY = 0,
             DRAFT_QUALITY = 1,
@@ -158,7 +158,7 @@ namespace PEBakery.Helper
         }
 
         [Flags]
-        internal enum LogFontPitchAndFamily : byte
+        public enum LogFontPitchAndFamily : byte
         {
             DEFAULT_PITCH = 0,
             FIXED_PITCH = 1,
@@ -172,7 +172,7 @@ namespace PEBakery.Helper
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct CHOOSEFONT
+        public struct CHOOSEFONT
         {
             public int lStructSize;
             public IntPtr hwndOwner;
@@ -195,7 +195,7 @@ namespace PEBakery.Helper
         }
 
         [Flags]
-        internal enum ChooseFontFlags
+        public enum ChooseFontFlags
         {
             CF_SCREENFONTS = 0x00000001,
             CF_PRINTERFONTS = 0x00000002,
@@ -229,70 +229,84 @@ namespace PEBakery.Helper
         }
 
         [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, EntryPoint = "ChooseFont", SetLastError = true)]
-        internal static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
+        public static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
         #endregion
 
         #region StringHelper
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
-        internal static extern int StrCmpLogical(string psz1, string psz2);
+        public static extern int StrCmpLogical(string psz1, string psz2);
         #endregion
 
         #region EncodingHelper
+        public const uint CP_ACP = 0;
+        public const uint WC_NO_BEST_FIT_CHARS = 0x00000400;
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int GetACP();
+        public static extern int GetACP();
+
+        [DllImport("kernel32.dll")]
+        public static extern unsafe int WideCharToMultiByte(
+            uint codePage,
+            uint dwFlags,
+            [MarshalAs(UnmanagedType.LPWStr)] string lpWideCharStr,
+            int cchWideChar,
+            [MarshalAs(UnmanagedType.LPArray)] byte[] lpMultiByteStr,
+            int cbMultiByte,
+            byte* lpDefaultChar,
+            int* lpUsedDefaultChar);
         #endregion
 
         #region RegistryHelper
         [DllImport("kernel32.dll")]
-        internal static extern IntPtr GetCurrentProcess();
+        public static extern IntPtr GetCurrentProcess();
 
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+        public static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+        public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
 
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);
+        public static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
+        public static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
+        public static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern unsafe int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName, uint* lpReserved, uint* lpType, void* lpData, uint* lpcbData);
+        public static extern unsafe int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName, uint* lpReserved, uint* lpType, void* lpData, uint* lpcbData);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern unsafe int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName, uint reserved, uint dwType, void* lpData, uint cbData);
+        public static extern unsafe int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName, uint reserved, uint dwType, void* lpData, uint cbData);
 
         [DllImport("shlwapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
+        public static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CloseHandle(IntPtr hObject);
+        public static extern bool CloseHandle(IntPtr hObject);
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct LUID
+        public struct LUID
         {
             public uint LowPart;
             public int HighPart;
         }
         // ReSharper disable once UnusedMember.Local
         [StructLayout(LayoutKind.Sequential)]
-        internal struct LUID_AND_ATTRIBUTES
+        public struct LUID_AND_ATTRIBUTES
         {
             public LUID pLuid;
             public uint Attributes;
         }
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TOKEN_PRIVILEGES
+        public struct TOKEN_PRIVILEGES
         {
             public int Count;
             public LUID Luid;
@@ -300,9 +314,9 @@ namespace PEBakery.Helper
         }
 
         // ReSharper disable once UnusedMember.Local
-        internal const uint SE_PRIVILEGE_ENABLED = 0x00000002;
-        internal const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
-        internal const uint TOKEN_QUERY = 0x0008;
+        public const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+        public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        public const uint TOKEN_QUERY = 0x0008;
 
         /*
         public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
@@ -316,10 +330,10 @@ namespace PEBakery.Helper
 
         #region SystemHelper
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool GlobalMemoryStatusEx(MEMORYSTATUSEX lpBuffer);
+        public static extern bool GlobalMemoryStatusEx(MEMORYSTATUSEX lpBuffer);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class MEMORYSTATUSEX
+        public class MEMORYSTATUSEX
         {
             public uint dwLength;
             public uint dwMemoryLoad;

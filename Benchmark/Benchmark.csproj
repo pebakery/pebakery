@@ -8,7 +8,7 @@
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
     <PackageReference Include="Joveler.Compression.LZ4" Version="3.1.2" />
     <PackageReference Include="Joveler.Compression.XZ" Version="3.1.1" />
     <PackageReference Include="Joveler.Compression.ZLib" Version="3.1.1" />

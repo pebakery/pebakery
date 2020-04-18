@@ -432,7 +432,13 @@ Description=Test Commands
 
         public void SaveCodeBox()
         {
-            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectEncoding(CodeFile) : Encoding.UTF8;
+            // Detect encoding of text. 
+            Encoding encoding;
+            if (File.Exists(CodeFile))
+                encoding = EncodingHelper.SmartDetectEncoding(CodeFile, CodeBoxInput);
+            else
+                encoding = Encoding.UTF8;
+
             using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
                 w.Write(CodeBoxInput);

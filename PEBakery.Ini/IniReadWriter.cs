@@ -71,7 +71,7 @@ namespace PEBakery.Ini
         #region Interface and Override Methods
         public bool Equals(IniKey other)
         {
-            bool StringEqual(string x, string y)
+            static bool StringEqual(string x, string y)
             {
                 if (x == null)
                 {
@@ -169,7 +169,7 @@ namespace PEBakery.Ini
         {
             List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
             using (StreamReader reader = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -218,7 +218,7 @@ namespace PEBakery.Ini
                                 // Only sections contained in iniKeys will be targeted
                                 inTargetSection = false;
                                 currentSection = null;
-                                ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                                ReadOnlySpan<char> foundSection = line[1..^1];
                                 for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processedKeyIdxs.Contains(i))
@@ -241,7 +241,7 @@ namespace PEBakery.Ini
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
                             // Only sections contained in iniKeys will be targeted
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
                             for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processedKeyIdxs.Contains(i))
@@ -343,7 +343,7 @@ namespace PEBakery.Ini
             // If file does not exist just create new file and insert keys.
             if (!File.Exists(filePath))
             {
-                using (StreamWriter w = new StreamWriter(filePath, false, Encoding.UTF8))
+                using (StreamWriter w = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
                     FinalizeFile(w, null, false);
                 }
@@ -356,7 +356,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile(ext);
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, inputKeys);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -478,7 +478,7 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                string foundSection = line.Slice(1, line.Length - 2).ToString();
+                                string foundSection = line[1..^1].ToString();
                                 if (0 < inputKeys.Count(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     inTargetSection = true;
@@ -600,7 +600,7 @@ namespace PEBakery.Ini
             // If file does not exist just create new file and insert keys.
             if (!File.Exists(filePath))
             {
-                using (StreamWriter w = new StreamWriter(filePath, false, Encoding.UTF8))
+                using (StreamWriter w = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
                     FinalizeFile(w, null, false);
                 }
@@ -612,7 +612,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, inputKeys);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -738,7 +738,7 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                string foundSection = line.Slice(1, line.Length - 2).ToString();
+                                string foundSection = line[1..^1].ToString();
                                 if (0 < inputKeys.Count(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     inTargetSection = true;
@@ -852,7 +852,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLines(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalWriteRawLine(filePath, iniKeys, true);
+            return InternalWriteRawLine(filePath, iniKeys.ToList(), true);
         }
 
         /// <summary>
@@ -868,32 +868,30 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLines(string filePath, IEnumerable<IniKey> iniKeys, bool append)
         {
-            return InternalWriteRawLine(filePath, iniKeys, append);
+            return InternalWriteRawLine(filePath, iniKeys.ToList(), append);
         }
 
-        private static bool InternalWriteRawLine(string filePath, IEnumerable<IniKey> iniKeys, bool append)
+        private static bool InternalWriteRawLine(string filePath, List<IniKey> iniKeys, bool append)
         {
-            List<IniKey> keys = iniKeys.ToList();
-
             // If file do not exists or blank, just create new file and insert keys.
             if (!File.Exists(filePath))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
                     string beforeSection = string.Empty;
-                    for (int i = 0; i < keys.Count; i++)
+                    for (int i = 0; i < iniKeys.Count; i++)
                     {
-                        if (beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
+                        if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
                         {
                             if (0 < i)
                                 writer.WriteLine();
-                            writer.WriteLine($"[{keys[i].Section}]");
+                            writer.WriteLine($"[{iniKeys[i].Section}]");
                         }
 
                         // File does not exists, so we don't have to consider "append"
-                        writer.WriteLine(keys[i].Key);
+                        writer.WriteLine(iniKeys[i].Key);
 
-                        beforeSection = keys[i].Section;
+                        beforeSection = iniKeys[i].Section;
                     }
                     writer.Close();
                 }
@@ -901,18 +899,18 @@ namespace PEBakery.Ini
             }
 
             bool result = false;
-            List<int> processedKeys = new List<int>(keys.Count);
+            List<int> processedKeys = new List<int>(iniKeys.Count);
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
                 using (StreamReader reader = new StreamReader(filePath, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
                     bool inTargetSection = false;
                     ReadOnlySpan<char> currentSection = null;
-                    List<string> processedSections = new List<string>(keys.Count);
+                    List<string> processedSections = new List<string>(iniKeys.Count);
 
                     // Is Original File Empty?
                     if (reader.Peek() == -1)
@@ -921,19 +919,19 @@ namespace PEBakery.Ini
 
                         // Write all and exit
                         string beforeSection = string.Empty;
-                        for (int i = 0; i < keys.Count; i++)
+                        for (int i = 0; i < iniKeys.Count; i++)
                         {
-                            if (!beforeSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase))
+                            if (!beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (0 < i)
                                     writer.WriteLine();
-                                writer.WriteLine($"[{keys[i].Section}]");
+                                writer.WriteLine($"[{iniKeys[i].Section}]");
                             }
 
                             // File is blank, so we don't have to consider "append"
-                            writer.WriteLine(keys[i].Key);
+                            writer.WriteLine(iniKeys[i].Key);
 
-                            beforeSection = keys[i].Section;
+                            beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
                         FileHelper.FileReplaceEx(tempPath, filePath);
@@ -947,7 +945,7 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Ignore comments. If you wrote all keys successfully, also skip.
-                        if (keys.Count == 0 || IsLineComment(line))
+                        if (iniKeys.Count == 0 || IsLineComment(line))
                         {
                             thisLineWritten = true;
                             writer.WriteLine(rawLine);
@@ -958,21 +956,21 @@ namespace PEBakery.Ini
                             if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                                 line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                             {
-                                ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                                ReadOnlySpan<char> foundSection = line[1..^1];
 
                                 // Append Mode : Add to last line of section
                                 if (append && inTargetSection)
                                 { // End of targetSection and start of foundSection
-                                    for (int i = 0; i < keys.Count; i++)
+                                    for (int i = 0; i < iniKeys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
                                         // Add to last line of foundSection
-                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         {
                                             processedKeys.Add(i);
-                                            writer.WriteLine(keys[i].Key);
+                                            writer.WriteLine(iniKeys[i].Key);
                                         }
                                     }
                                 }
@@ -980,12 +978,12 @@ namespace PEBakery.Ini
                                 // Start of the section
                                 inTargetSection = false;
                                 // Only sections contained in iniKeys will be targeted
-                                for (int i = 0; i < keys.Count; i++)
+                                for (int i = 0; i < iniKeys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
                                         continue;
 
-                                    if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         inTargetSection = true;
                                         currentSection = foundSection;
@@ -997,20 +995,20 @@ namespace PEBakery.Ini
                                 // Non-Append Mode : Add to first line of section
                                 if (!append && inTargetSection)
                                 {
-                                    for (int i = 0; i < keys.Count; i++)
+                                    for (int i = 0; i < iniKeys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
                                         // Add to last line of foundSection
-                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         {
                                             if (!thisLineWritten)
                                                 writer.WriteLine(rawLine);
                                             thisLineWritten = true;
 
                                             processedKeys.Add(i);
-                                            writer.WriteLine(keys[i].Key);
+                                            writer.WriteLine(iniKeys[i].Key);
                                         }
                                     }
 
@@ -1023,15 +1021,15 @@ namespace PEBakery.Ini
                             {
                                 if (append && inTargetSection)
                                 {
-                                    for (int i = 0; i < keys.Count; i++)
+                                    for (int i = 0; i < iniKeys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
                                             continue;
 
-                                        if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                        if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                         { // append key to section
                                             processedKeys.Add(i);
-                                            writer.WriteLine(keys[i].Key);
+                                            writer.WriteLine(iniKeys[i].Key);
                                         }
                                     }
                                 }
@@ -1046,13 +1044,13 @@ namespace PEBakery.Ini
                             // Append Mode : Add to last line of section
                             if (append && inTargetSection)
                             { // End of targetSection and start of foundSection
-                                for (int i = 0; i < keys.Count; i++)
+                                for (int i = 0; i < iniKeys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
                                         continue;
 
                                     // Add to last line of foundSection
-                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     {
                                         processedKeys.Add(i);
 
@@ -1060,7 +1058,7 @@ namespace PEBakery.Ini
                                             writer.WriteLine(rawLine);
                                         thisLineWritten = true;
 
-                                        writer.WriteLine(keys[i].Key);
+                                        writer.WriteLine(iniKeys[i].Key);
                                     }
                                 }
                             }
@@ -1073,24 +1071,24 @@ namespace PEBakery.Ini
                             }
 
                             // Not in section, so create new section
-                            for (int i = 0; i < keys.Count; i++)
+                            for (int i = 0; i < iniKeys.Count; i++)
                             { // At this time, only not found section remains in iniKeys
                                 if (processedKeys.Contains(i))
                                     continue;
 
-                                if (!processedSections.Any(s => s.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)))
+                                if (!processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     if (!thisLineWritten)
                                         writer.WriteLine(rawLine);
                                     thisLineWritten = true;
 
-                                    processedSections.Add(keys[i].Section);
-                                    writer.WriteLine($"\r\n[{keys[i].Section}]");
+                                    processedSections.Add(iniKeys[i].Section);
+                                    writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }
 
                                 processedKeys.Add(i);
 
-                                writer.WriteLine(keys[i].Key);
+                                writer.WriteLine(iniKeys[i].Key);
                             }
                         }
 
@@ -1099,7 +1097,7 @@ namespace PEBakery.Ini
                     }
                 }
 
-                if (processedKeys.Count == keys.Count)
+                if (processedKeys.Count == iniKeys.Count)
                 {
                     result = true;
                     FileHelper.FileReplaceEx(tempPath, filePath);
@@ -1154,22 +1152,21 @@ namespace PEBakery.Ini
         /// <summary>
         /// Internal method for RenameKeys
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="filePath"></param>
         /// <param name="iniKeys">Use Value for new names of Key</param>
         /// <returns></returns>
-        private static bool[] InternalRenameKeys(string file, IEnumerable<IniKey> iniKeys)
+        private static bool[] InternalRenameKeys(string filePath, IniKey[] iniKeys)
         {
-            IniKey[] keys = iniKeys.ToArray();
-            bool[] processed = new bool[keys.Length];
+            bool[] processed = new bool[iniKeys.Length];
 
-            if (!File.Exists(file))
+            if (!File.Exists(filePath))
                 return processed; // All False
 
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, false))
+                Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
@@ -1198,17 +1195,17 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
 
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < keys.Length; i++)
+                            for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -1227,12 +1224,12 @@ namespace PEBakery.Ini
                             {
                                 ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
                                 ReadOnlySpan<char> lineValue = line.Slice(idx + 1).Trim();
-                                for (int i = 0; i < keys.Length; i++)
+                                for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processed[i])
                                         continue;
 
-                                    IniKey key = keys[i];
+                                    IniKey key = iniKeys[i];
                                     if (currentSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase)
                                         && lineKey.Equals(key.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     { // key exists, so do not write this line, which lead to 'deletion'
@@ -1250,7 +1247,7 @@ namespace PEBakery.Ini
                 }
 
                 if (processed.Any(x => x))
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    FileHelper.FileReplaceEx(tempPath, filePath);
             }
             finally
             {
@@ -1295,13 +1292,12 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] DeleteKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteKeys(filePath, iniKeys);
+            return InternalDeleteKeys(filePath, iniKeys.ToArray());
         }
 
-        private static bool[] InternalDeleteKeys(string filePath, IEnumerable<IniKey> iniKeys)
+        private static bool[] InternalDeleteKeys(string filePath, IniKey[] iniKeys)
         {
-            IniKey[] keys = iniKeys.ToArray();
-            bool[] processed = new bool[keys.Length];
+            bool[] processed = new bool[iniKeys.Length];
             for (int i = 0; i < processed.Length; i++)
                 processed[i] = false;
 
@@ -1312,7 +1308,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile(ext);
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1341,17 +1337,17 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
 
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < keys.Length; i++)
+                            for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -1369,13 +1365,13 @@ namespace PEBakery.Ini
                             if (inTargetSection) // process here only if we are in target section
                             {
                                 ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
-                                for (int i = 0; i < keys.Length; i++)
+                                for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processed[i])
                                         continue;
 
-                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
-                                        lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
+                                        lineKey.Equals(iniKeys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     { // key exists, so do not write this line, which lead to 'deletion'
                                         thisLineProcessed = true;
                                         processed[i] = true;
@@ -1435,13 +1431,12 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] DeleteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteCompactKeys(filePath, iniKeys);
+            return InternalDeleteCompactKeys(filePath, iniKeys.ToArray());
         }
 
-        private static bool[] InternalDeleteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
+        private static bool[] InternalDeleteCompactKeys(string filePath, IniKey[] iniKeys)
         {
-            IniKey[] keys = iniKeys.ToArray();
-            bool[] processed = new bool[keys.Length];
+            bool[] processed = new bool[iniKeys.Length];
             for (int i = 0; i < processed.Length; i++)
                 processed[i] = false;
 
@@ -1451,7 +1446,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1481,17 +1476,17 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
 
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < keys.Length; i++)
+                            for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -1509,13 +1504,13 @@ namespace PEBakery.Ini
                             if (inTargetSection) // process here only if we are in target section
                             {
                                 ReadOnlySpan<char> lineKey = line.Slice(0, idx).Trim();
-                                for (int i = 0; i < keys.Length; i++)
+                                for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processed[i])
                                         continue;
 
-                                    if (currentSection.Equals(keys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
-                                        lineKey.Equals(keys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    if (currentSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase) &&
+                                        lineKey.Equals(iniKeys[i].Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                     { // key exists, do not write this line to 'delete' them.
                                         thisLineProcessed = true;
                                         processed[i] = true;
@@ -1583,7 +1578,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, IniKey[]> ReadSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalReadSection(filePath, sections);
+            return InternalReadSection(filePath, sections.ToArray());
         }
 
         /// <summary>
@@ -1599,17 +1594,16 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, IniKey[]> ReadSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalReadSection(filePath, iniKeys.Select(x => x.Section));
+            return InternalReadSection(filePath, iniKeys.Select(x => x.Section).ToArray());
         }
 
-        private static Dictionary<string, IniKey[]> InternalReadSection(string filePath, IEnumerable<string> sections)
+        private static Dictionary<string, IniKey[]> InternalReadSection(string filePath, string[] sections)
         {
-            string[] sectionNames = sections.ToArray();
             Dictionary<string, List<IniKey>> secDict = new Dictionary<string, List<IniKey>>(StringComparer.OrdinalIgnoreCase);
-            foreach (string section in sectionNames)
+            foreach (string section in sections)
                 secDict[section] = null;
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, sections);
             using (StreamReader reader = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -1646,8 +1640,8 @@ namespace PEBakery.Ini
                                 inTargetSection = false;
                                 currentSection = null;
 
-                                string foundSection = line.Slice(1, line.Length - 2).ToString();
-                                int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                                string foundSection = line[1..^1].ToString();
+                                int sIdx = Array.FindIndex(sections, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                                 if (sIdx != -1)
                                 {
                                     inTargetSection = true;
@@ -1666,8 +1660,8 @@ namespace PEBakery.Ini
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
                             // Only sections contained in iniKeys will be targeted
-                            string foundSection = line.Slice(1, line.Length - 2).ToString();
-                            int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                            string foundSection = line[1..^1].ToString();
+                            int sIdx = Array.FindIndex(sections, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                             if (sIdx != -1)
                             {
                                 inTargetSection = true;
@@ -1719,7 +1713,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AddSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalAddSection(filePath, sections);
+            return InternalAddSection(filePath, sections.ToList());
         }
 
         /// <summary>
@@ -1734,20 +1728,18 @@ namespace PEBakery.Ini
             return InternalAddSection(filePath, iniKeys.Select(x => x.Section).ToList());
         }
 
-        private static bool InternalAddSection(string filePath, IEnumerable<string> sections)
+        private static bool InternalAddSection(string filePath, List<string> sections)
         {
-            List<string> sectionList = sections.ToList();
-
             // Not exist -> Create and exit
             if (!File.Exists(filePath))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
-                    for (int i = 0; i < sectionList.Count; i++)
+                    for (int i = 0; i < sections.Count; i++)
                     {
                         if (0 < i)
                             writer.WriteLine();
-                        writer.WriteLine($"[{sectionList[i]}]");
+                        writer.WriteLine($"[{sections[i]}]");
                     }
 
                     writer.Close();
@@ -1759,7 +1751,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, sections);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1769,11 +1761,11 @@ namespace PEBakery.Ini
                         r.Close();
 
                         // Write all and exit
-                        for (int i = 0; i < sectionList.Count; i++)
+                        for (int i = 0; i < sections.Count; i++)
                         {
                             if (0 < i)
                                 w.WriteLine();
-                            w.WriteLine($"[{sectionList[i]}]");
+                            w.WriteLine($"[{sections[i]}]");
                         }
 
                         w.Close();
@@ -1783,7 +1775,7 @@ namespace PEBakery.Ini
                     }
 
                     string rawLine;
-                    List<string> processedSections = new List<string>(sectionList.Count);
+                    List<string> processedSections = new List<string>(sections.Count);
 
                     while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
@@ -1794,16 +1786,16 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < sectionList.Count; i++)
+                            for (int i = 0; i < sections.Count; i++)
                             {
-                                if (foundSection.Equals(sectionList[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(sections[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     processedSections.Add(foundSection.ToString());
-                                    sectionList.RemoveAt(i);
+                                    sections.RemoveAt(i);
                                     break; // for shorter O(n)
                                 }
                             }
@@ -1817,23 +1809,23 @@ namespace PEBakery.Ini
                         // End of file
                         if (r.Peek() == -1)
                         { // If sections were not added, add it now
-                            List<int> processedIdxs = new List<int>(sectionList.Count);
-                            for (int i = 0; i < sectionList.Count; i++)
+                            List<int> processedIdxs = new List<int>(sections.Count);
+                            for (int i = 0; i < sections.Count; i++)
                             { // At this time, only not found section remains in iniKeys
-                                if (processedSections.Any(s => s.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase)) == false)
+                                if (processedSections.Any(s => s.Equals(sections[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
-                                    processedSections.Add(sectionList[i]);
-                                    w.WriteLine($"\r\n[{sectionList[i]}]");
+                                    processedSections.Add(sections[i]);
+                                    w.WriteLine($"\r\n[{sections[i]}]");
                                 }
                                 processedIdxs.Add(i);
                             }
                             foreach (int i in processedIdxs.OrderByDescending(x => x))
-                                sectionList.RemoveAt(i);
+                                sections.RemoveAt(i);
                         }
                     }
                 }
 
-                if (sectionList.Count == 0)
+                if (sections.Count == 0)
                 {
                     FileHelper.FileReplaceEx(tempPath, filePath);
                     result = true;
@@ -1898,7 +1890,7 @@ namespace PEBakery.Ini
             return InternalWriteSectionFast(filePath, section, tr);
         }
 
-        private static bool InternalWriteSectionFast(string file, string section, object content)
+        private static bool InternalWriteSectionFast(string filePath, string section, object content)
         {
             void WriteContent(TextWriter w)
             {
@@ -1927,9 +1919,9 @@ namespace PEBakery.Ini
             }
 
             // If file does not exist or blank, just create new file and insert keys.
-            if (!File.Exists(file))
+            if (!File.Exists(filePath))
             {
-                using (StreamWriter w = new StreamWriter(file, false, Encoding.UTF8))
+                using (StreamWriter w = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
                     WriteContent(w);
                 }
@@ -1941,8 +1933,8 @@ namespace PEBakery.Ini
             try
             {
                 bool finished = false;
-                Encoding encoding = EncodingHelper.DetectEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, false))
+                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
@@ -1959,7 +1951,7 @@ namespace PEBakery.Ini
                         {
                             passThisSection = false;
 
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
                             if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
                                 WriteContent(w);
@@ -1980,7 +1972,7 @@ namespace PEBakery.Ini
                     }
                 }
 
-                FileHelper.FileReplaceEx(tempPath, file);
+                FileHelper.FileReplaceEx(tempPath, filePath);
                 return true;
             }
             finally
@@ -2032,13 +2024,12 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] RenameSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalRenameSection(filePath, iniKeys);
+            return InternalRenameSection(filePath, iniKeys.ToArray());
         }
 
-        private static bool[] InternalRenameSection(string filePath, IEnumerable<IniKey> iniKeys)
+        private static bool[] InternalRenameSection(string filePath, IniKey[] iniKeys)
         {
-            IniKey[] keys = iniKeys.ToArray();
-            bool[] processed = new bool[keys.Length];
+            bool[] processed = new bool[iniKeys.Length];
 
             if (!File.Exists(filePath))
                 return processed;
@@ -2046,7 +2037,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2068,16 +2059,16 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < keys.Length; i++)
+                            for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                IniKey key = keys[i];
+                                IniKey key = iniKeys[i];
                                 if (foundSection.Equals(key.Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 { // Rename this section
                                     w.WriteLine($"[{key.Key}]");
@@ -2116,7 +2107,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteSection(string filePath, string section)
         {
-            return InternalDeleteSection(filePath, new string[] { section })[0];
+            return InternalDeleteSection(filePath, new List<string> { section })[0];
         }
 
         /// <summary>
@@ -2128,7 +2119,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteSection(string filePath, IniKey iniKey)
         {
-            return InternalDeleteSection(filePath, new string[] { iniKey.Section })[0];
+            return InternalDeleteSection(filePath, new List<string> { iniKey.Section })[0];
         }
 
         /// <summary>
@@ -2139,7 +2130,7 @@ namespace PEBakery.Ini
         /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
         public static bool[] DeleteSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalDeleteSection(filePath, sections);
+            return InternalDeleteSection(filePath, sections.ToList());
         }
 
         /// <summary>
@@ -2150,13 +2141,12 @@ namespace PEBakery.Ini
         /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
         public static bool[] DeleteSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteSection(filePath, iniKeys.Select(x => x.Section));
+            return InternalDeleteSection(filePath, iniKeys.Select(x => x.Section).ToList());
         }
 
-        private static bool[] InternalDeleteSection(string filePath, IEnumerable<string> sections)
+        private static bool[] InternalDeleteSection(string filePath, List<string> sections)
         {
-            List<string> sectionList = sections.ToList();
-            bool[] processed = new bool[sectionList.Count];
+            bool[] processed = new bool[sections.Count];
 
             if (!File.Exists(filePath))
                 return processed;
@@ -2164,7 +2154,7 @@ namespace PEBakery.Ini
             string tempPath = FileHelper.GetTempFile();
             try
             {
-                Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+                Encoding encoding = SmarterDetectEncoding(filePath, sections);
                 using (StreamReader r = new StreamReader(filePath, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -2186,17 +2176,17 @@ namespace PEBakery.Ini
                         if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                             line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                         {
-                            ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                            ReadOnlySpan<char> foundSection = line[1..^1];
                             ignoreCurrentSection = false;
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < sectionList.Count; i++)
+                            for (int i = 0; i < sections.Count; i++)
                             {
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(sectionList[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(sections[i].AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 { // Delete this section!
                                     ignoreCurrentSection = true;
                                     processed[i] = true;
@@ -2233,7 +2223,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, string section)
         {
-            return InternalReadRawSection(filePath, new string[] { section }, false).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, new List<string> { section }, false).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2246,7 +2236,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, string section, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, new string[] { section }, includeEmptyLines).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, new List<string> { section }, includeEmptyLines).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2258,7 +2248,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, IniKey iniKey)
         {
-            return InternalReadRawSection(filePath, new string[] { iniKey.Section }, false).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, new List<string> { iniKey.Section }, false).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2271,7 +2261,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, IniKey iniKey, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, new string[] { iniKey.Section }, includeEmptyLines).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, new List<string> { iniKey.Section }, includeEmptyLines).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2284,7 +2274,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalReadRawSection(filePath, sections, false);
+            return InternalReadRawSection(filePath, sections.ToList(), false);
         }
 
         /// <summary>
@@ -2297,7 +2287,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<string> sections, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, sections, includeEmptyLines);
+            return InternalReadRawSection(filePath, sections.ToList(), includeEmptyLines);
         }
 
         /// <summary>
@@ -2309,7 +2299,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section), false);
+            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section).ToList(), false);
         }
 
         /// <summary>
@@ -2322,15 +2312,14 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<IniKey> iniKeys, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section), includeEmptyLines);
+            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section).ToList(), includeEmptyLines);
         }
 
-        private static Dictionary<string, List<string>> InternalReadRawSection(string filePath, IEnumerable<string> sections, bool includeEmptyLines)
+        private static Dictionary<string, List<string>> InternalReadRawSection(string filePath, List<string> sections, bool includeEmptyLines)
         {
-            List<string> sectionNames = sections.ToList();
             Dictionary<string, List<string>> secDict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, sections);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2351,8 +2340,8 @@ namespace PEBakery.Ini
                     {
                         inTargetSection = false;
 
-                        string foundSection = line.Slice(1, line.Length - 2).ToString();
-                        int sIdx = sectionNames.FindIndex(x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                        string foundSection = line[1..^1].ToString();
+                        int sIdx = sections.FindIndex(x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
                         if (sIdx != -1)
                         {
                             inTargetSection = true;
@@ -2361,7 +2350,7 @@ namespace PEBakery.Ini
                             secDict[currentSection] = new List<string>(16);
                             currentContents = secDict[currentSection];
 
-                            sectionNames.RemoveAt(sIdx);
+                            sections.RemoveAt(sIdx);
                             continue;
                         }
                     }
@@ -2539,7 +2528,7 @@ namespace PEBakery.Ini
         {
             bool result = false;
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, section);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2549,7 +2538,7 @@ namespace PEBakery.Ini
                     if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                         line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     {
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                        ReadOnlySpan<char> foundSection = line[1..^1];
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
@@ -2590,7 +2579,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, section);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2612,7 +2601,7 @@ namespace PEBakery.Ini
                             break;
 
                         // Remove [ and ]
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                        ReadOnlySpan<char> foundSection = line[1..^1];
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
@@ -2643,7 +2632,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, section);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
             {
                 string rawLine;
@@ -2665,7 +2654,7 @@ namespace PEBakery.Ini
                             break;
 
                         // Remove [ and ]
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                        ReadOnlySpan<char> foundSection = line[1..^1];
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
@@ -2711,7 +2700,7 @@ namespace PEBakery.Ini
             for (int i = 0; i < sectionNames.Length; i++)
                 lines[i] = new List<string>();
 
-            Encoding encoding = EncodingHelper.DetectEncoding(filePath);
+            Encoding encoding = SmarterDetectEncoding(filePath, sectionNames);
             using (StreamReader r = new StreamReader(filePath, encoding, true))
             {
                 string rawLine;
@@ -2728,7 +2717,7 @@ namespace PEBakery.Ini
                         line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         bool isSectionFound = false;
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2);
+                        ReadOnlySpan<char> foundSection = line[1..^1];
                         for (int i = 0; i < sectionNames.Length; i++)
                         {
                             if (processedSectionIdxs.Contains(i))
@@ -2793,7 +2782,7 @@ namespace PEBakery.Ini
                     if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                         line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     {
-                        section = line.Slice(1, line.Length - 2).ToString();
+                        section = line[1..^1].ToString();
                         dict[section] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                         continue;
                     }
@@ -2846,7 +2835,7 @@ namespace PEBakery.Ini
                 if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                     line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                 { // Start of section
-                    ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2); // Remove [ and ]
+                    ReadOnlySpan<char> foundSection = line[1..^1]; // Remove [ and ]
 
                     // Found target section, so return
                     if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
@@ -2896,7 +2885,7 @@ namespace PEBakery.Ini
                         enableCopy = true;
 
                         // Found target section, so return
-                        ReadOnlySpan<char> foundSection = line.Slice(1, line.Length - 2); // Remove [ and ]
+                        ReadOnlySpan<char> foundSection = line[1..^1]; // Remove [ and ]
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             return;
                     }
@@ -3098,6 +3087,40 @@ namespace PEBakery.Ini
             { // Non-ini style entry, trim only end of it (Commands are often indented)
                 return lineSpan.ToString();
             }
+        }
+        #endregion
+
+        #region (Internal) SmarterAnsiDetect
+        private static Encoding SmarterDetectEncoding(string filePath, IReadOnlyList<IniKey> iniKeys)
+        {
+            // Test if content to write is ANSI-compatible.
+            bool IsContentAnsiCompat()
+            {
+                bool isCompat = true;
+                for (int i = 0; i < iniKeys.Count && isCompat; i++)
+                {
+                    IniKey key = iniKeys[i];
+                    if (key.Section != null)
+                        isCompat &= EncodingHelper.IsActiveCodePageCompatible(key.Section);
+                    if (key.Key != null)
+                        isCompat &= EncodingHelper.IsActiveCodePageCompatible(key.Key);
+                    if (key.Value != null)
+                        isCompat &= EncodingHelper.IsActiveCodePageCompatible(key.Value);
+                }
+                return isCompat;
+            }
+
+            return EncodingHelper.SmartDetectEncoding(filePath, IsContentAnsiCompat);
+        }
+
+        private static Encoding SmarterDetectEncoding(string filePath, IReadOnlyList<string> contents)
+        {
+            return EncodingHelper.SmartDetectEncoding(filePath, contents);
+        }
+
+        private static Encoding SmarterDetectEncoding(string filePath, string content)
+        {
+            return EncodingHelper.SmartDetectEncoding(filePath, content);
         }
         #endregion
     }

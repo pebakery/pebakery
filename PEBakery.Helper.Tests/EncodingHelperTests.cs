@@ -26,6 +26,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -245,6 +246,67 @@ namespace PEBakery.Helper.Tests
             LogTemplate("Random.bin");
             LogTemplate("Banner.zip");
             LogTemplate("Banner.7z");
+        }
+        #endregion
+
+        #region IsActiveCodePageCompatible
+        [TestMethod]
+        public void IsActiveCodePageCompatible()
+        {
+            // Assumption : No known non-unicode encodings support ancient Korean, non-ASCII latin, Chinese characters at once.
+            Assert.IsTrue(EncodingHelper.IsActiveCodePageCompatible("0123456789abcABC"));
+            Assert.IsFalse(EncodingHelper.IsActiveCodePageCompatible("ᄒᆞᆫ글ḀḘ韓國"));
+        }
+        #endregion
+
+        #region IsCodePageCompatible
+        [TestMethod]
+        public void IsCodePageCompatible()
+        {
+            // ks_c_5601-1987 : ANSI/OEM Korean (Unified Hangul Code)
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(949, "English"));
+            Assert.IsFalse(EncodingHelper.IsCodePageCompatible(949, "Español"));
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(949, "русский"));
+
+            // Windows 1252 : ANSI Latin 1
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(1252, "English"));
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(1252, "Español"));
+            Assert.IsFalse(EncodingHelper.IsCodePageCompatible(1252, "русский"));
+
+            // IBM437 : OEM United States
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(437, "English"));
+            Assert.IsTrue(EncodingHelper.IsCodePageCompatible(437, "Español"));
+            Assert.IsFalse(EncodingHelper.IsCodePageCompatible(437, "русский"));
+        }
+        #endregion
+
+        #region SmartDetectEncoding
+        [TestMethod]
+        public void SmartDetectEncoding()
+        {
+            string tempFile = FileHelper.GetTempFile();
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(tempFile, false, EncodingHelper.DefaultAnsi))
+                {
+                    sw.WriteLine("This is an ASCII-only text.");
+                    sw.WriteLine("Hello World!");
+                }
+
+                // It should return ANSI.
+                Encoding encoding = EncodingHelper.SmartDetectEncoding(tempFile, "OEM/ANSI Encoding");
+                Assert.IsTrue(EncodingHelper.EncodingEquals(encoding, EncodingHelper.DefaultAnsi));
+
+                // Assumption : No known non-unicode encoding supports ancient Korean, non-ASCII latin, Chinese characters at once.
+                // It should return UTF-8 wo BOM.
+                encoding = EncodingHelper.SmartDetectEncoding(tempFile, "ᄒᆞᆫ글ḀḘ韓國");
+                Assert.IsTrue(EncodingHelper.EncodingEquals(encoding, new UTF8Encoding(false)));
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
+            }
         }
         #endregion
     }
