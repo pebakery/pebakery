@@ -2203,7 +2203,7 @@ namespace PEBakery.WPF
 
         private bool UICtrlDeleteCommand_CanExecute(object sender)
         {
-            return CanExecuteCommand && SelectedUICtrls != null && 0 < SelectedUICtrls.Count;
+            return CanExecuteCommand && ((SelectedUICtrls != null && SelectedUICtrls.Count > 0) || (SelectedUICtrl != null));
         }
 
         private void UICtrlDeleteCommand_Execute(object parameter)
@@ -2211,17 +2211,35 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                if (SelectedUICtrls == null || SelectedUICtrls.Count == 0)
-                    return;
-
-                UICtrlToBeDeleted.AddRange(SelectedUICtrls);
-
-                foreach (UIControl uiCtrl in SelectedUICtrls)
+                if (SelectMode == ControlSelectMode.SingleSelect)
                 {
+                    // Single-Select
+                    if (SelectedUICtrl == null)
+                        return;
+
+                    UIControl uiCtrl = SelectedUICtrl;
+                    UICtrlToBeDeleted.Add(uiCtrl);
+
                     // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
                     DeleteInterfaceEncodedFile(uiCtrl);
 
                     Renderer.UICtrls.Remove(uiCtrl);
+                }
+                else if (SelectMode == ControlSelectMode.MultiSelect)
+                { 
+                    // Multi-Select
+                    if (SelectedUICtrls == null || SelectedUICtrls.Count == 0)
+                        return;
+
+                    UICtrlToBeDeleted.AddRange(SelectedUICtrls);
+
+                    foreach (UIControl uiCtrl in SelectedUICtrls)
+                    {
+                        // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                        DeleteInterfaceEncodedFile(uiCtrl);
+
+                        Renderer.UICtrls.Remove(uiCtrl);
+                    }
                 }
 
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
