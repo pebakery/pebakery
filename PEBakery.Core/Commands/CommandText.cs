@@ -30,8 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
 using System.Linq;
+using System.Text;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands
@@ -222,7 +222,7 @@ namespace PEBakery.Core.Commands
             Encoding encoding;
             if (File.Exists(fileName))
             {
-                encoding = EncodingHelper.SmartDetectEncoding(fileName, () => 
+                encoding = EncodingHelper.SmartDetectEncoding(fileName, () =>
                 {
                     return EncodingHelper.IsActiveCodePageCompatible(info.OldStr) &&
                         EncodingHelper.IsActiveCodePageCompatible(info.NewStr);

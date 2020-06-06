@@ -2226,7 +2226,7 @@ namespace PEBakery.WPF
                     Renderer.UICtrls.Remove(uiCtrl);
                 }
                 else if (SelectMode == ControlSelectMode.MultiSelect)
-                { 
+                {
                     // Multi-Select
                     if (SelectedUICtrls == null || SelectedUICtrls.Count == 0)
                         return;

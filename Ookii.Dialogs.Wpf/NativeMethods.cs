@@ -523,7 +523,7 @@ namespace Ookii.Dialogs.Wpf
             uint ulInAuthBufferSize,
             out IntPtr ppvOutAuthBuffer,
             out uint pulOutAuthBufferSize,
-            [MarshalAs(UnmanagedType.Bool)]ref bool pfSave,
+            [MarshalAs(UnmanagedType.Bool)] ref bool pfSave,
             CredUIWinFlags dwFlags);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "CredReadW", SetLastError = true)]

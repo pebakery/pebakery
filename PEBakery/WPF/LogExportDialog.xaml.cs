@@ -168,7 +168,7 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_m.FileFormat == LogExportType.Html)
-                { 
+                {
                     // Call FileHelper.OpenUri (instead of OpenPath) to open .html files with the default browser.
                     ResultReport result = FileHelper.OpenUri(destFile);
                     if (!result.Success)

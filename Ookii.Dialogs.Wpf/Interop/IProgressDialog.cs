@@ -47,7 +47,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void StopProgressDialog();
 
         [PreserveSig]
-        void SetTitle([MarshalAs(UnmanagedType.LPWStr)]string pwzTitle);
+        void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pwzTitle);
 
         [PreserveSig]
         void SetAnimation(SafeModuleHandle hInstAnimation, ushort idAnimation);
@@ -73,7 +73,7 @@ namespace Ookii.Dialogs.Wpf.Interop
             );
 
         [PreserveSig]
-        void SetCancelMsg([MarshalAs(UnmanagedType.LPWStr)]string pwzCancelMsg, object pvReserved);
+        void SetCancelMsg([MarshalAs(UnmanagedType.LPWStr)] string pwzCancelMsg, object pvReserved);
 
         [PreserveSig]
         void Timer(uint dwTimerAction, object pvReserved);

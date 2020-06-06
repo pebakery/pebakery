@@ -413,7 +413,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NopAttributes;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             try
             {
@@ -561,7 +561,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NopAttributes;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             // Flags for globbing
             if (StringHelper.IsWildcard(extractPath))
@@ -649,7 +649,7 @@ namespace PEBakery.Core.Commands
             if (firstInfo.NoAclFlag)
                 extractFlags |= ExtractFlags.NoAcls;
             if (firstInfo.NoAttribFlag)
-                extractFlags |= ExtractFlags.NopAttributes;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             List<string> extractPaths = new List<string>(infoOp.Cmds.Count);
             foreach (CodeInfo_WimExtract info in infoOp.Infos)
@@ -747,7 +747,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NopAttributes;
+                extractFlags |= ExtractFlags.NoAttributes;
             ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GlobPaths;
 
             // Check ListFile

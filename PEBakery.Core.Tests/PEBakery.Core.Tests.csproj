@@ -13,7 +13,7 @@
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ManagedWimLib" Version="2.0.0" />
+    <PackageReference Include="ManagedWimLib" Version="2.0.1" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.1" />

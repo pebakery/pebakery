@@ -495,11 +495,11 @@ namespace PEBakery.Helper
                         foundFiles.Add(file.FullName);
                     }
                 }
-                catch (UnauthorizedAccessException) { /* Ignore UnauthorizedAccessException */ } 
+                catch (UnauthorizedAccessException) { /* Ignore UnauthorizedAccessException */ }
 
                 DirectoryInfo[] dirs;
                 try
-                { 
+                {
                     dirs = di.GetDirectories();
                 }
                 catch (UnauthorizedAccessException)
@@ -805,7 +805,7 @@ namespace PEBakery.Helper
             Process proc = null;
             try
             {
-                try 
+                try
                 {
                     string quotePath = docPath.Contains(' ') ? $"\"{docPath}\"" : docPath;
                     proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
