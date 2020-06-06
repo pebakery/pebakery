@@ -220,7 +220,7 @@
                                x:Name="SettingWindowButton"
                                Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.SettingWindowCommand"
-                               IconMaterialKind="Settings"
+                               IconMaterialKind="Cog"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                 <TextBlock Grid.Row="2" Grid.Column="4"

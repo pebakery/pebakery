@@ -238,30 +238,44 @@ namespace PEBakery.Core
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
-            string arch;
-            switch (RuntimeInformation.ProcessArchitecture)
             {
-                case Architecture.X64:
-                    arch = "x64";
-                    break;
-                case Architecture.X86:
-                    arch = "x86";
-                    break;
-                default:
-                    throw new PlatformNotSupportedException();
+                string libDir = "runtimes";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    libDir = Path.Combine(libDir, "win-");
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    libDir = Path.Combine(libDir, "linux-");
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    libDir = Path.Combine(libDir, "osx-");
+
+                switch (RuntimeInformation.ProcessArchitecture)
+                {
+                    case Architecture.X86:
+                        libDir += "x86";
+                        break;
+                    case Architecture.X64:
+                        libDir += "x64";
+                        break;
+                    case Architecture.Arm:
+                        libDir += "arm";
+                        break;
+                    case Architecture.Arm64:
+                        libDir += "arm64";
+                        break;
+                }
+                libDir = Path.Combine(libDir, "native");
+
+                string magicPath = Path.Combine(baseDir, libDir, "libmagic-1.dll");
+                string zlibPath = Path.Combine(baseDir, libDir, "zlibwapi.dll");
+                string xzPath = Path.Combine(baseDir, libDir, "liblzma.dll");
+                string wimlibPath = Path.Combine(baseDir, libDir, "libwim-15.dll");
+                string sevenZipPath = Path.Combine(baseDir, libDir, "7z.dll");
+
+                Joveler.FileMagician.Magic.GlobalInit(magicPath);
+                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
+                Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
+                ManagedWimLib.Wim.GlobalInit(wimlibPath);
+                SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
             }
-
-            string zlibPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
-            string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
-            string magicPath = Path.Combine(baseDir, arch, "libmagic-1.dll");
-
-            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
-            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
-            ManagedWimLib.Wim.GlobalInit(wimlibPath);
-            SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
-            Joveler.FileMagician.Magic.GlobalInit(magicPath);
         }
 
         public static void NativeGlobalCleanup()

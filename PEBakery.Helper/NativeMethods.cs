@@ -42,6 +42,7 @@ namespace PEBakery.Helper
         #region FileHelper
         #region DOS 8.3 Path
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern int GetShortPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string longPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder shortPath,
@@ -49,6 +50,7 @@ namespace PEBakery.Helper
         );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern int GetLongPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string shortPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder longPath,
@@ -229,11 +231,13 @@ namespace PEBakery.Helper
         }
 
         [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, EntryPoint = "ChooseFont", SetLastError = true)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
         #endregion
 
         #region StringHelper
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern int StrCmpLogical(string psz1, string psz2);
         #endregion
 
@@ -242,9 +246,11 @@ namespace PEBakery.Helper
         public const uint WC_NO_BEST_FIT_CHARS = 0x00000400;
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern int GetACP();
 
         [DllImport("kernel32.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern unsafe int WideCharToMultiByte(
             uint codePage,
             uint dwFlags,

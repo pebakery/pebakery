@@ -1442,7 +1442,7 @@ namespace PEBakery.Core.ViewModels
             else if (sc.Type == ScriptType.Script)
             {
                 if (sc.IsMainScript)
-                    item.Icon = PackIconMaterialKind.Settings;
+                    item.Icon = PackIconMaterialKind.Cog;
                 else
                 {
                     if (sc.IsDirLink)

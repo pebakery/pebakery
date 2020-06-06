@@ -119,13 +119,13 @@ namespace Benchmark
         public TextType DetectFileMagician(ReadOnlySpan<byte> rawData, int sizeLimit)
         {
             // "utf-16be", "utf-16le", "utf-8", "us-ascii"/"iso-8859-1"/"unknown-8bit" - "text/plain", "text/html"
-            _magic.SetFlags(MagicFlags.MIME_TYPE);
+            _magic.SetFlags(MagicFlags.MimeType);
             string mimeType = _magic.CheckBuffer(rawData.Slice(0, Math.Min(rawData.Length, sizeLimit)));
 
             if (!mimeType.StartsWith("text/", StringComparison.Ordinal))
                 return TextType.Binary;
 
-            _magic.SetFlags(MagicFlags.MIME_ENCODING);
+            _magic.SetFlags(MagicFlags.MimeEncoding);
             string mimeEnc = _magic.CheckBuffer(rawData);
 
             TextType type;

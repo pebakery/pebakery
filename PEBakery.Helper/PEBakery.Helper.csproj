@@ -8,11 +8,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.1.90" />
-    <PackageReference Include="SharpVectors.Reloaded" Version="1.5.0">
+    <PackageReference Include="MessagePack" Version="2.1.115" />
+    <PackageReference Include="SharpVectors.Reloaded" Version="1.6.0">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
     <PackageReference Include="UACHelper" Version="1.3.0.5" />
   </ItemGroup>
 </Project>

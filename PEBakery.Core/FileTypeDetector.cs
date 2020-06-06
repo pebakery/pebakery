@@ -85,7 +85,7 @@ namespace PEBakery.Core
         /// </summary>
         public string FileType(string filePath)
         {
-            return CheckFile(filePath, MagicFlags.NONE);
+            return CheckFile(filePath, MagicFlags.None);
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace PEBakery.Core
         /// </summary>
         public string FileType(ReadOnlySpan<byte> span)
         {
-            return CheckBuffer(span, MagicFlags.NONE);
+            return CheckBuffer(span, MagicFlags.None);
         }
         #endregion
 
@@ -103,7 +103,7 @@ namespace PEBakery.Core
         /// </summary>
         public string MimeType(string filePath)
         {
-            return CheckFile(filePath, MagicFlags.MIME_TYPE);
+            return CheckFile(filePath, MagicFlags.MimeType);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace PEBakery.Core
         /// </summary>
         public string MimeType(ReadOnlySpan<byte> span)
         {
-            return CheckBuffer(span, MagicFlags.MIME_TYPE);
+            return CheckBuffer(span, MagicFlags.MimeType);
         }
         #endregion
 
@@ -121,7 +121,7 @@ namespace PEBakery.Core
         /// </summary>
         public bool IsText(string filePath)
         {
-            string ret = CheckFile(filePath, MagicFlags.MIME_ENCODING);
+            string ret = CheckFile(filePath, MagicFlags.MimeEncoding);
             return !ret.Equals("binary", StringComparison.Ordinal);
         }
 
@@ -130,7 +130,7 @@ namespace PEBakery.Core
         /// </summary>
         public bool IsText(ReadOnlySpan<byte> span)
         {
-            string ret = CheckBuffer(span, MagicFlags.MIME_ENCODING);
+            string ret = CheckBuffer(span, MagicFlags.MimeEncoding);
             return !ret.Equals("binary", StringComparison.Ordinal);
         }
         #endregion
@@ -145,7 +145,7 @@ namespace PEBakery.Core
             {
                 if (!_magicFileLoaded)
                 {
-                    _magic.Load(_magicFile);
+                    _magic.LoadMagicFile(_magicFile);
                     _magicFileLoaded = true;
                 }
 
@@ -163,7 +163,7 @@ namespace PEBakery.Core
             {
                 if (!_magicFileLoaded)
                 {
-                    _magic.Load(_magicFile);
+                    _magic.LoadMagicFile(_magicFile);
                     _magicFileLoaded = true;
                 }
 

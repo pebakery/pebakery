@@ -35,6 +35,7 @@
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Razor Templates -->
     <EmbeddedResource Include="Razor\_LogLayout.cshtml" />
     <EmbeddedResource Include="Razor\_BuildLogView.cshtml" />
     <EmbeddedResource Include="Razor\_SystemLogView.cshtml" />
@@ -43,20 +44,20 @@
     <EmbeddedResource Include="Razor\jquery.slim.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Joveler.Compression.XZ" Version="3.1.1" />
-    <PackageReference Include="Joveler.Compression.ZLib" Version="3.1.1" />
-    <PackageReference Include="Joveler.FileMagician" Version="1.3.1" />
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.6.0" />
-    <PackageReference Include="ManagedWimLib" Version="1.4.3" />
-    <PackageReference Include="MessagePack" Version="2.1.90" />
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.3" />
+    <PackageReference Include="Joveler.Compression.XZ" Version="4.0.0" />
+    <PackageReference Include="Joveler.Compression.ZLib" Version="4.0.0" />
+    <PackageReference Include="Joveler.FileMagician" Version="2.0.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.2.0" />
+    <PackageReference Include="ManagedWimLib" Version="2.0.0" />
+    <PackageReference Include="MessagePack" Version="2.1.115" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.4" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
-    <PackageReference Include="NaturalSort.Extension" Version="2.1.0" />
+    <PackageReference Include="NaturalSort.Extension" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="NUglify" Version="1.5.14" />
     <PackageReference Include="RazorLight" Version="2.0.0-beta7" />
-    <PackageReference Include="sqlite-net-pcl" Version="1.6.292" />
-    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.2.265" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
+    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.3.283" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
     <PackageReference Include="UACHelper" Version="1.3.0.5" />
   </ItemGroup>

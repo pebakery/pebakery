@@ -422,9 +422,9 @@ namespace PEBakery.Core.Tests.Command
                         Assert.IsTrue(File.Exists(wimFile));
 
                         // Try applying
-                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                         {
-                            wim.ExtractImage(1, applyDir, ExtractFlags.DEFAULT);
+                            wim.ExtractImage(1, applyDir, ExtractFlags.None);
                         }
 
                         WimChecker.CheckFileSystem(SampleSet.Src01, applyDir);
@@ -489,7 +489,7 @@ namespace PEBakery.Core.Tests.Command
                     File.Copy(srcWim, destWim, true);
 
                     uint srcImageCount;
-                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                     {
                         WimInfo wi = wim.GetWimInfo();
                         srcImageCount = wi.ImageCount;
@@ -498,12 +498,12 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimAppend, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             WimInfo wi = wim.GetWimInfo();
                             Assert.IsTrue(wi.ImageCount == srcImageCount + 1);
 
-                            wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.DEFAULT);
+                            wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.None);
                         }
 
                         WimChecker.CheckFileSystem(set, applyDir);
@@ -565,7 +565,7 @@ namespace PEBakery.Core.Tests.Command
                     File.Copy(srcWim, destWim, true);
 
                     uint srcImageCount;
-                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                     {
                         WimInfo wi = wim.GetWimInfo();
                         srcImageCount = wi.ImageCount;
@@ -574,7 +574,7 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimDelete, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             WimInfo wi = wim.GetWimInfo();
                             Assert.IsTrue(wi.ImageCount == srcImageCount - 1);
@@ -622,16 +622,16 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimPathAdd, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool found = false;
-                            CallbackStatus ExistCallback(DirEntry dentry, object userData)
+                            int ExistCallback(DirEntry dentry, object userData)
                             {
                                 found = true;
-                                return CallbackStatus.CONTINUE;
+                                return Wim.IterateCallbackSuccess;
                             }
 
-                            wim.IterateDirTree(1, comp, IterateFlags.DEFAULT, ExistCallback, null);
+                            wim.IterateDirTree(1, comp, IterateDirTreeFlags.None, ExistCallback, null);
                             Assert.IsTrue(found);
                         }
                     }
@@ -677,12 +677,12 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimPathDelete, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool deleted = false;
-                            CallbackStatus DeletedCallback(DirEntry dentry, object userData) { return CallbackStatus.CONTINUE; }
-                            try { wim.IterateDirTree(1, comp, IterateFlags.DEFAULT, DeletedCallback, null); }
-                            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST) { deleted = true; }
+                            int DeletedCallback(DirEntry dentry, object userData) => Wim.IterateCallbackSuccess;
+                            try { wim.IterateDirTree(1, comp, IterateDirTreeFlags.None, DeletedCallback, null); }
+                            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist) { deleted = true; }
 
                             Assert.IsTrue(deleted);
                         }
@@ -730,21 +730,21 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimPathRename, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool found = false;
-                            CallbackStatus ExistCallback(DirEntry dentry, object userData)
+                            int ExistCallback(DirEntry dentry, object userData)
                             {
                                 found = true;
-                                return CallbackStatus.CONTINUE;
+                                return Wim.IterateCallbackSuccess;
                             }
-                            wim.IterateDirTree(1, newName, IterateFlags.DEFAULT, ExistCallback, null);
+                            wim.IterateDirTree(1, newName, IterateDirTreeFlags.None, ExistCallback, null);
                             Assert.IsTrue(found);
 
                             bool deleted = false;
-                            CallbackStatus DeleteCallback(DirEntry dentry, object userData) { return CallbackStatus.CONTINUE; }
-                            try { wim.IterateDirTree(1, originalName, IterateFlags.DEFAULT, DeleteCallback, null); }
-                            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST) { deleted = true; }
+                            int DeleteCallback(DirEntry dentry, object userData) => Wim.IterateCallbackSuccess;
+                            try { wim.IterateDirTree(1, originalName, IterateDirTreeFlags.None, DeleteCallback, null); }
+                            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist) { deleted = true; }
                             Assert.IsTrue(deleted);
                         }
                     }
@@ -791,23 +791,23 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.EvalOptLines(s, opType, rawCodes, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             foreach ((string f, bool exist) in compFiles)
                             {
                                 bool found = false;
-                                CallbackStatus WimCallback(DirEntry dentry, object userData)
+                                int WimCallback(DirEntry dentry, object userData)
                                 {
                                     found = true;
-                                    return CallbackStatus.CONTINUE;
+                                    return Wim.IterateCallbackSuccess;
                                 }
 
                                 try
                                 {
-                                    wim.IterateDirTree(1, f, IterateFlags.DEFAULT, WimCallback, null);
+                                    wim.IterateDirTree(1, f, IterateDirTreeFlags.None, WimCallback, null);
                                     Assert.AreEqual(exist, found);
                                 }
-                                catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
+                                catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist)
                                 {
                                     found = false;
                                     Assert.AreEqual(exist, found);
@@ -951,7 +951,7 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WimExport, check);
                     if (check == ErrorCheck.Success)
                     {
-                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             WimInfo wi = wim.GetWimInfo();
 
@@ -1005,7 +1005,7 @@ namespace PEBakery.Core.Tests.Command
                 switch (set)
                 {
                     case SampleSet.Src01:
-                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                         {
                             Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD")));
                             Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD", "Z")));
@@ -1029,7 +1029,7 @@ namespace PEBakery.Core.Tests.Command
                         }
                         break;
                     case SampleSet.Src02:
-                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                         {
                             Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "B")));
                             Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "A.txt")));
@@ -1228,18 +1228,18 @@ namespace PEBakery.Core.Tests.Command
             {
                 List<Tuple<string, bool>> entries = new List<Tuple<string, bool>>();
 
-                CallbackStatus IterateCallback(DirEntry dentry, object userData)
+                int IterateCallback(DirEntry dentry, object userData)
                 {
                     string path = dentry.FullPath;
-                    bool isDir = (dentry.Attributes & FileAttribute.DIRECTORY) != 0;
+                    bool isDir = (dentry.Attributes & FileAttributes.Directory) != 0;
                     entries.Add(new Tuple<string, bool>(path, isDir));
 
-                    return CallbackStatus.CONTINUE;
+                    return Wim.IterateCallbackSuccess;
                 }
 
-                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                 {
-                    wim.IterateDirTree(1, Path.PathSeparator.ToString(), IterateFlags.RECURSIVE, IterateCallback);
+                    wim.IterateDirTree(1, Path.PathSeparator.ToString(), IterateDirTreeFlags.Recursive, IterateCallback);
                 }
 
                 return entries;
