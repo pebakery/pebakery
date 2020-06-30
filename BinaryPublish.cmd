@@ -51,7 +51,7 @@ COPY "%BaseDir%\LICENSE.GPLv3" "%DestBinDir%"
 
 REM Filter Runtime Files
 IF %PublishMode%==0 (
-    IF EXIST "%DestBinDir%\runtimes\win-x64\7z.dll" COPY "%DestBinDir%\runtimes\win-x64\7z.dll" "%DestBinDir%\7z.dll"
+    IF EXIST "%DestBinDir%\runtimes\win-x64\native\7z.dll" COPY "%DestBinDir%\runtimes\win-x64\native\7z.dll" "%DestBinDir%\7z.dll"
     IF EXIST "%DestBinDir%\runtimes" RD /S /Q "%DestBinDir%\runtimes"
 )
 
