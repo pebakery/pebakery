@@ -27,8 +27,8 @@ A nightly build is provided for testing purposes.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - Lastest Nightly (develop)
-    - [Framework Dependent Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop) - The binary requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1) to run.
-    - [Self Contained Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop) - The binary is standalone but about 3x larger than framework dependent executable. 
+    - [Framework Dependent Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-fxdep.7z?branch=develop) - The binary requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1) to run.
+    - [Self Contained Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop) - The binary is standalone but about 3x larger than framework dependent executable. 
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
