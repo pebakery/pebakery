@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
+    <Configurations>Debug;Release;Publish</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PEBakery.Core\PEBakery.Core.csproj" />

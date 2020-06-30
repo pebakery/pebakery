@@ -238,43 +238,27 @@ namespace PEBakery.Core
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
+            string magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
+            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
+            string xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
+            string wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
+            string sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
+
+            try
             {
-                string libDir = "runtimes";
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    libDir = Path.Combine(libDir, "win-");
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    libDir = Path.Combine(libDir, "linux-");
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    libDir = Path.Combine(libDir, "osx-");
-
-                switch (RuntimeInformation.ProcessArchitecture)
-                {
-                    case Architecture.X86:
-                        libDir += "x86";
-                        break;
-                    case Architecture.X64:
-                        libDir += "x64";
-                        break;
-                    case Architecture.Arm:
-                        libDir += "arm";
-                        break;
-                    case Architecture.Arm64:
-                        libDir += "arm64";
-                        break;
-                }
-                libDir = Path.Combine(libDir, "native");
-
-                string magicPath = Path.Combine(baseDir, libDir, "libmagic-1.dll");
-                string zlibPath = Path.Combine(baseDir, libDir, "zlibwapi.dll");
-                string xzPath = Path.Combine(baseDir, libDir, "liblzma.dll");
-                string wimlibPath = Path.Combine(baseDir, libDir, "libwim-15.dll");
-                string sevenZipPath = Path.Combine(baseDir, libDir, "7z.dll");
-
                 Joveler.FileMagician.Magic.GlobalInit(magicPath);
                 Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
                 Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
                 ManagedWimLib.Wim.GlobalInit(wimlibPath);
                 SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Unable to load library {e.Message}", "Library Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (Application.Current != null)
+                    Application.Current.Shutdown(1);
+                else
+                    Environment.Exit(1);
             }
         }
 
@@ -284,6 +268,58 @@ namespace PEBakery.Core
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
             Joveler.FileMagician.Magic.GlobalCleanup();
+        }
+
+        /// <summary>
+        /// Get a path of a given native library.
+        /// </summary>
+        /// <remarks>
+        /// `dotnet run` command stores native library files in `runtimes\{rid}\native` directory.<br/>
+        /// `dotnet publish` command with a {rid} flattens native library files.
+        /// https://github.com/dotnet/sdk/issues/9643
+        /// </remarks>
+        /// <param name="baseDir">Location of an executable</param>
+        /// <param name="filename">Native library file</param>
+        /// <returns>A path of a given native library.</returns>
+        private static string GetNativeLibraryPath(string baseDir, string filename)
+        {
+            string libDir = "runtimes";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                libDir = Path.Combine(libDir, "win-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                libDir = Path.Combine(libDir, "linux-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                libDir = Path.Combine(libDir, "osx-");
+
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X86:
+                    libDir += "x86";
+                    break;
+                case Architecture.X64:
+                    libDir += "x64";
+                    break;
+                case Architecture.Arm:
+                    libDir += "arm";
+                    break;
+                case Architecture.Arm64:
+                    libDir += "arm64";
+                    break;
+            }
+            libDir = Path.Combine(libDir, "native");
+
+            // `dotnet run` or `dotnet publish` wo {rid}.
+            string runDllPath = Path.Combine(baseDir, libDir, filename);
+            if (File.Exists(runDllPath))
+                return runDllPath;
+
+            // `dotnet publish` w/ {rid}
+            string publishDllPath = Path.Combine(baseDir, filename);
+            if (File.Exists(publishDllPath))
+                return publishDllPath;
+
+            // Error!
+            return null;
         }
         #endregion
     }

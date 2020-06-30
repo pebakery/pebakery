@@ -10,6 +10,7 @@
     <FileVersion>1.1.3.15063</FileVersion>
     <Copyright>Copyright © Sven Groot(Ookii.org)/Vladimir Svyatski 2009-2015</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="CredentialDialog.cs">

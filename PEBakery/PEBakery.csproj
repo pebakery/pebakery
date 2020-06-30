@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <RootNamespace>PEBakery</RootNamespace>
@@ -27,7 +28,6 @@
     <Resource Include="Resources\Donut.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj" />
     <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj" />
     <ProjectReference Include="..\PEBakery.Core\PEBakery.Core.csproj" />
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />

@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
-    </PropertyGroup>
-    <ItemGroup>
-      <PackageReference Include="System.Memory" Version="4.5.4" />
-    </ItemGroup>
-    <ItemGroup>
-      <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
-    </ItemGroup>
+  <PropertyGroup>
+      <TargetFramework>netcoreapp3.1</TargetFramework>
+      <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
+  </ItemGroup>
 </Project>

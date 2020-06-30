@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <RootNamespace>PEBakery.Core</RootNamespace>
@@ -27,8 +28,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;CA2235</NoWarn>
   </PropertyGroup>
+  <!-- In-Solution ProjectReference -->
   <ItemGroup>
-    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj" />
     <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj" />
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
@@ -43,6 +44,7 @@
     <EmbeddedResource Include="Razor\bootstrap.min.css" />
     <EmbeddedResource Include="Razor\jquery.slim.min.js" />
   </ItemGroup>
+  <!-- NuGet Packages -->
   <ItemGroup>
     <PackageReference Include="Joveler.Compression.XZ" Version="4.0.0" />
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.0.0" />
@@ -60,5 +62,14 @@
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.3.283" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
     <PackageReference Include="UACHelper" Version="1.3.0.5" />
+  </ItemGroup>
+  <!-- Native Libraries -->
+  <ItemGroup>
+    <None Update="runtimes\win-x64\native\7z.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="runtimes\win-x86\native\7z.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

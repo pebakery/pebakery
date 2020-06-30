@@ -5,9 +5,9 @@
     <IsPackable>false</IsPackable>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj" />
     <ProjectReference Include="..\PEBakery.Core\PEBakery.Core.csproj" />
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
