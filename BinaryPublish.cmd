@@ -31,9 +31,10 @@ REM Build PEBakery Binaries
 IF EXIST "%PublishDir%\%PublishName%.7z" DEL "%PublishDir%\%PublishName%.7z"
 IF EXIST "%DestDir%" RD /S /Q "%DestDir%"
 MKDIR %DestDir%
+MKDIR %DestBinDir%
 PUSHD %BaseDir%
-"%MSBUILD%" -t:restore "%BaseDir%\LauncherNative" /p:Configuration=Release /property:Platform=Win32 /target:Rebuild
-dotnet clean -c Release
+dotnet clean -c Release -verbosity:minimal
+"%MSBUILD%" -target:Rebuild -verbosity:minimal "%BaseDir%\LauncherNative" /p:Configuration=Release /property:Platform=Win32
 IF %PublishMode%==0 (
     dotnet publish -c Release -r win-x64 --force --self-contained=false -o "%DestBinDir%" PEBakery
 )
@@ -49,8 +50,10 @@ COPY "%BaseDir%\LICENSE" "%DestBinDir%"
 COPY "%BaseDir%\LICENSE.GPLv3" "%DestBinDir%"
 
 REM Filter Runtime Files
-IF EXIST "%DestBinDir%\runtimes\win-x64\7z.dll" COPY "%DestBinDir%\runtimes\win-x64\7z.dll" "%DestBinDir%\7z.dll"
-IF EXIST "%DestBinDir%\runtimes" RD /S /Q "%DestBinDir%\runtimes"
+IF %PublishMode%==0 (
+    IF EXIST "%DestBinDir%\runtimes\win-x64\7z.dll" COPY "%DestBinDir%\runtimes\win-x64\7z.dll" "%DestBinDir%\7z.dll"
+    IF EXIST "%DestBinDir%\runtimes" RD /S /Q "%DestBinDir%\runtimes"
+)
 
 REM Delete Unnecessary Files
 IF EXIST "%DestBinDir%\*.pdb" DEL "%DestBinDir%\*.pdb"
