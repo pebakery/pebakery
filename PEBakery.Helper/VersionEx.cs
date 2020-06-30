@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -23,6 +23,7 @@
     SOFTWARE.
 */
 
+using MessagePack;
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -32,16 +33,24 @@ namespace PEBakery.Helper
 {
     #region VersionEx
     /// <summary>
-    /// Extended VersionEx to support single integer
+    /// Extended VersionEx to support single integer.
     /// Ex) 5 vs 5.1.2600.1234
     /// </summary>
-    [Serializable]
-    public class VersionEx : IComparable<VersionEx>, IEquatable<VersionEx>, ISerializable
+    /// <remarks>
+    /// Comparision between two VersionEx mimics Delphi 7 implementation, as the class was written to emulate WinBuilder's version comparison.
+    /// Especially the comparison with one with revision and the other without revision behaves differently from Version class of the .NET BCL.
+    /// </remarks>
+    [MessagePackObject]
+    public class VersionEx : IComparable<VersionEx>, IEquatable<VersionEx>
     {
         #region Properties
+        [Key(0)]
         public int Major { get; }
+        [Key(1)]
         public int Minor { get; }
+        [Key(2)]
         public int Build { get; }
+        [Key(3)]
         public int Revision { get; }
         #endregion
 
@@ -79,6 +88,7 @@ namespace PEBakery.Helper
             Revision = -1;
         }
 
+        [SerializationConstructor]
         public VersionEx(int major, int minor, int build, int revision)
         {
             if (major < 0) throw new ArgumentOutOfRangeException(nameof(major));

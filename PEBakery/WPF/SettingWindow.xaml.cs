@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -125,6 +125,8 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
+                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
                 if (0 < _m.ProjectSourceDirs.Count)
                     dialog.SelectedPath = _m.ProjectSourceDirs[_m.ProjectSourceDirIndex];
@@ -180,6 +182,8 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
+                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                 {
                     SelectedPath = _m.ProjectTargetDir,
@@ -842,19 +846,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _toggleNextState, value);
         }
 
-        // Asterisk
-        private bool _compatAsteriskBugDirCopy;
-        public bool CompatAsteriskBugDirCopy
-        {
-            get => _compatAsteriskBugDirCopy;
-            set
-            {
-                _compatAsteriskBugDirCopy = value;
-                GetCompatToggleNextState();
-                OnPropertyUpdate();
-            }
-        }
-
+        // Script Tree
         private bool _compatAsteriskBugDirLink;
         public bool CompatAsteriskBugDirLink
         {
@@ -868,6 +860,18 @@ namespace PEBakery.WPF
         }
 
         // Command
+        private bool _compatAsteriskBugDirCopy;
+        public bool CompatAsteriskBugDirCopy
+        {
+            get => _compatAsteriskBugDirCopy;
+            set
+            {
+                _compatAsteriskBugDirCopy = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
+        }
+
         private bool _compatFileRenameCanMoveDir;
         public bool CompatFileRenameCanMoveDir
         {
@@ -947,6 +951,18 @@ namespace PEBakery.WPF
             set
             {
                 _compatLegacySectionParamCommand = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
+        }
+
+        private bool _compatAutoCompactIniWriteCommand;
+        public bool CompatAutoCompactIniWriteCommand
+        {
+            get => _compatAutoCompactIniWriteCommand;
+            set
+            {
+                _compatAutoCompactIniWriteCommand = value;
                 GetCompatToggleNextState();
                 OnPropertyUpdate();
             }
@@ -1185,10 +1201,10 @@ namespace PEBakery.WPF
         #region LoadCompatOptionFrom, SaveCompatOptionTo
         public void LoadCompatOptionFrom(CompatOption src)
         {
-            // Asterisk
-            CompatAsteriskBugDirCopy = src.AsteriskBugDirCopy;
+            // Script Tree
             CompatAsteriskBugDirLink = src.AsteriskBugDirLink;
             // Command
+            CompatAsteriskBugDirCopy = src.AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = src.FileRenameCanMoveDir;
             CompatAllowLetterInLoop = src.AllowLetterInLoop;
             CompatLegacyBranchCondition = src.LegacyBranchCondition;
@@ -1196,6 +1212,7 @@ namespace PEBakery.WPF
             CompatAllowSetModifyInterface = src.AllowSetModifyInterface;
             CompatLegacyInterfaceCommand = src.LegacyInterfaceCommand;
             CompatLegacySectionParamCommand = src.LegacySectionParamCommand;
+            CompatAutoCompactIniWriteCommand = src.AutoCompactIniWriteCommand;
             // Script Interface
             CompatIgnoreWidthOfWebLabel = src.IgnoreWidthOfWebLabel;
             // Variable
@@ -1207,10 +1224,10 @@ namespace PEBakery.WPF
 
         public void SaveCompatOptionTo(CompatOption dest)
         {
-            // Asterisk
-            dest.AsteriskBugDirCopy = CompatAsteriskBugDirCopy;
+            // Script Tree
             dest.AsteriskBugDirLink = CompatAsteriskBugDirLink;
             // Command
+            dest.AsteriskBugDirCopy = CompatAsteriskBugDirCopy;
             dest.FileRenameCanMoveDir = CompatFileRenameCanMoveDir;
             dest.AllowLetterInLoop = CompatAllowLetterInLoop;
             dest.LegacyBranchCondition = CompatLegacyBranchCondition;
@@ -1218,6 +1235,7 @@ namespace PEBakery.WPF
             dest.AllowSetModifyInterface = CompatAllowSetModifyInterface;
             dest.LegacyInterfaceCommand = CompatLegacyInterfaceCommand;
             dest.LegacySectionParamCommand = CompatLegacySectionParamCommand;
+            dest.AutoCompactIniWriteCommand = CompatAutoCompactIniWriteCommand;
             // Script Interface
             dest.IgnoreWidthOfWebLabel = CompatIgnoreWidthOfWebLabel;
             // Variable
@@ -1239,10 +1257,10 @@ namespace PEBakery.WPF
             // Get current state
             bool currentState = true;
 
-            // Asterisk
-            currentState &= CompatAsteriskBugDirCopy;
+            // Script Tree
             currentState &= CompatAsteriskBugDirLink;
             // Command
+            currentState &= CompatAsteriskBugDirCopy;
             currentState &= CompatFileRenameCanMoveDir;
             currentState &= CompatAllowLetterInLoop;
             currentState &= CompatLegacyBranchCondition;
@@ -1250,6 +1268,7 @@ namespace PEBakery.WPF
             currentState &= CompatAllowSetModifyInterface;
             currentState &= CompatLegacyInterfaceCommand;
             currentState &= CompatLegacySectionParamCommand;
+            currentState &= CompatAutoCompactIniWriteCommand;
             // Script Interface
             currentState &= CompatIgnoreWidthOfWebLabel;
             // Variable
@@ -1277,6 +1296,7 @@ namespace PEBakery.WPF
             CompatAllowSetModifyInterface = nextState;
             CompatLegacyInterfaceCommand = nextState;
             CompatLegacySectionParamCommand = nextState;
+            CompatAutoCompactIniWriteCommand = nextState;
             // Script Interface
             CompatIgnoreWidthOfWebLabel = nextState;
             // Variable
@@ -1577,7 +1597,7 @@ namespace PEBakery.WPF
             if (Global.ScriptCache == null)
                 return;
 
-            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
+            Global.ScriptCache.ClearTable(new ClearTableOptions
             {
                 ScriptCache = true,
             });
@@ -1599,7 +1619,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                int cacheCount = Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
+                int cacheCount = Global.ScriptCache.CacheCount;
                 ScriptCacheState = $"{cacheCount} scripts cached";
             }
         }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -918,7 +918,7 @@ namespace PEBakery.Core.ViewModels
                     ScriptCache scriptCache;
                     if (Global.Setting.Script.EnableCache && Global.ScriptCache != null)
                     { // Use ScriptCache
-                        if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir))
+                        if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir, Global.Projects))
                         {
                             // Enable scriptCache
                             scriptCache = Global.ScriptCache;
@@ -926,7 +926,7 @@ namespace PEBakery.Core.ViewModels
                         else
                         { // Cache is invalid
                             // Invalidate cache database for integrity
-                            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
+                            Global.ScriptCache.ClearTable(new ClearTableOptions
                             {
                                 CacheInfo = false,
                                 ScriptCache = true,
@@ -1442,7 +1442,7 @@ namespace PEBakery.Core.ViewModels
             else if (sc.Type == ScriptType.Script)
             {
                 if (sc.IsMainScript)
-                    item.Icon = PackIconMaterialKind.Settings;
+                    item.Icon = PackIconMaterialKind.Cog;
                 else
                 {
                     if (sc.IsDirLink)
@@ -1623,39 +1623,34 @@ namespace PEBakery.Core.ViewModels
                 return;
             }
 
+            ResultReport result;
             if (Global.Setting.Interface.UseCustomEditor)
             {
-                string ext = Path.GetExtension(Global.Setting.Interface.CustomEditorPath);
+                string customEditor = Global.Setting.Interface.CustomEditorPath;
+                string ext = Path.GetExtension(customEditor);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (!File.Exists(Global.Setting.Interface.CustomEditorPath))
+                if (!File.Exists(customEditor))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                ProcessStartInfo info = new ProcessStartInfo
-                {
-                    UseShellExecute = false,
-                    FileName = Global.Setting.Interface.CustomEditorPath,
-                    Arguments = StringEscaper.DoubleQuote(filePath),
-                };
-
-                try { UACHelper.UACHelper.StartWithShell(info); }
-                catch { Process.Start(info); }
+                result = FileHelper.OpenPath(customEditor, filePath);
             }
             else
             {
-                try { FileHelper.OpenPath(filePath); }
-                catch (Exception ex)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"File [{ filePath}] could not be opened.\r\n\r\n{ex.Message}.", $"Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                result = FileHelper.OpenPath(filePath);
+            }
+
+            if (!result.Success)
+            {
+                MessageBox.Show($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
+                    "Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1672,9 +1667,14 @@ namespace PEBakery.Core.ViewModels
             }
 
             // In most circumstances, explorer.exe is already running as a shell without Administrator privilege.
+            // So it is safe to use normal ShellExecute.
             using (Process proc = new Process())
             {
-                proc.StartInfo = new ProcessStartInfo(filePath);
+                proc.StartInfo = new ProcessStartInfo()
+                {
+                    UseShellExecute = true,
+                    FileName = filePath,
+                };
                 proc.Start();
             }
         }

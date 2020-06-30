@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -25,13 +25,32 @@
 
 using PEBakery.Helper.ThirdParty;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace PEBakery.Helper
 {
+    #region TextEncoding
+    public enum TextEncoding
+    {
+        None, // Unknown or binary
+        Ascii, // 0-127
+        Ansi, // 0-255
+        Utf8Bom, // UTF8 with BOM
+        Utf8NoBom, // UTF8 without BOM
+        Utf16LeBom, // UTF16 LE with BOM
+        Utf16LeNoBom, // UTF16 LE without BOM
+        Utf16BeBom, // UTF16-BE with BOM
+        Utf16BeNoBom // UTF16-BE without BOM
+    }
+    #endregion
+
+    #region EncodingHelper
     public static class EncodingHelper
     {
+        #region (private) Fields
         private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
         private static readonly byte[] Utf16LeBom = { 0xFF, 0xFE };
         private static readonly byte[] Utf16BeBom = { 0xFE, 0xFF };
@@ -41,11 +60,11 @@ namespace PEBakery.Helper
         {
             get
             {
-                // In .Net Framework, Encoding.Default is system's active code page.
-                // In .Net Core, System.Default is always UTF8.
-                // To prepare .Net Core migration, implement .Net Framework's Encoding.Default.
+                // In .NET Framework, Encoding.Default is system's active code page.
+                // In .NET Core, System.Default is always UTF8.
+                // To prepare .NET Core migration, implement .Net Framework's Encoding.Default.
                 // 
-                // .Net Core does not know about ANSI encodings, so do not forget to install this package.
+                // .NET Core itself does not know about ANSI encodings, so do not forget to install this package.
                 // https://www.nuget.org/packages/System.Text.Encoding.CodePages/
                 int codepage = NativeMethods.GetACP();
                 switch (codepage)
@@ -55,11 +74,17 @@ namespace PEBakery.Helper
                         return Utf8EncodingNoBom;
                     default:
                         // Encoding.GetEncoding() internally caches instances. No need to cache myself.
+                        // return Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
                         return Encoding.GetEncoding(codepage);
                 }
             }
         }
 
+        private readonly static AdvTextEncDetect AdvDetect = new AdvTextEncDetect();
+        private const int TextPeekSize = 16 * 1024;
+        #endregion
+
+        #region DetectBom
         public static Encoding DetectBom(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -77,26 +102,100 @@ namespace PEBakery.Helper
 
         public static Encoding DetectBom(byte[] buffer, int offset, int count)
         {
-            Encoding encoding = null;
             if (buffer.Length < offset + count)
                 throw new ArgumentOutOfRangeException(nameof(buffer));
 
-            if (3 <= offset + count &&
-                buffer[offset] == Utf8Bom[0] && buffer[offset + 1] == Utf8Bom[1] && buffer[offset + 2] == Utf8Bom[2])
+            return DetectBom(buffer.AsSpan(offset, count));
+        }
+
+        public static Encoding DetectBom(ReadOnlySpan<byte> span)
+        {
+            Encoding encoding = null;
+            if (3 <= span.Length && span[0] == Utf8Bom[0] && span[1] == Utf8Bom[1] && span[2] == Utf8Bom[2])
             {
                 encoding = Encoding.UTF8;
             }
-            else if (2 <= offset + count)
+            else if (2 <= span.Length)
             {
-                if (buffer[offset] == Utf16LeBom[0] && buffer[offset + 1] == Utf16LeBom[1])
+                if (span[0] == Utf16LeBom[0] && span[1] == Utf16LeBom[1])
                     encoding = Encoding.Unicode;
-                else if (buffer[offset] == Utf16BeBom[0] && buffer[offset + 1] == Utf16BeBom[1])
+                else if (span[0] == Utf16BeBom[0] && span[1] == Utf16BeBom[1])
                     encoding = Encoding.BigEndianUnicode;
             }
 
             return encoding ?? DefaultAnsi;
         }
+        #endregion
 
+        #region DetectEncoding
+        /// <summary>
+        /// Detect encoding with heuristics. Ex) Detect UTF-8 wo BOM as UTF-8, not ANSI.
+        /// </summary>
+        /// <remarks>4KB is not enough. Use at least 16KB of buffer.
+        /// <returns>Encoding instance</returns>
+        public static Encoding DetectEncoding(string filePath, int peekSize = TextPeekSize)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return DetectEncoding(fs, peekSize);
+            }
+        }
+
+        /// <summary>
+        /// Detect encoding with heuristics. Ex) Detect UTF-8 wo BOM as UTF-8, not ANSI.
+        /// </summary>
+        /// <remarks>4KB is not enough. Use at least 16KB of buffer.
+        /// <returns>Encoding instance</returns>
+        public static Encoding DetectEncoding(string filePath, out TextEncoding textEnc, int peekSize = TextPeekSize)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return DetectEncoding(fs, out textEnc, peekSize);
+            }
+        }
+
+        public static Encoding DetectEncoding(Stream s, int peekSize = TextPeekSize)
+        {
+            byte[] buffer = new byte[peekSize];
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+
+            return DetectEncoding(buffer, 0, bytesRead);
+        }
+
+        public static Encoding DetectEncoding(Stream s, out TextEncoding textEnc, int peekSize = TextPeekSize)
+        {
+            byte[] buffer = new byte[peekSize];
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+
+            return DetectEncoding(buffer, 0, bytesRead, out textEnc);
+        }
+
+        public static Encoding DetectEncoding(byte[] buffer, int offset, int count)
+        {
+            TextEncoding textEnc = AdvDetect.DetectEncoding(buffer, offset, count);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+
+        public static Encoding DetectEncoding(byte[] buffer, int offset, int count, out TextEncoding textEnc)
+        {
+            textEnc = AdvDetect.DetectEncoding(buffer, offset, count);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+
+        public static Encoding DetectEncoding(ReadOnlySpan<byte> span)
+        {
+            TextEncoding textEnc = AdvDetect.DetectEncoding(span);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+
+        public static Encoding DetectEncoding(ReadOnlySpan<byte> span, out TextEncoding textEnc)
+        {
+            textEnc = AdvDetect.DetectEncoding(span);
+            return AdvTextEncDetect.TextEncodingToBclEncoding(textEnc);
+        }
+        #endregion
+
+        #region WriteTextBom
         public static void WriteTextBom(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -112,26 +211,15 @@ namespace PEBakery.Helper
             if (encoding == null)
                 throw new ArgumentNullException(nameof(encoding));
 
-            // Encoding.Equals() checks equality of fallback as well as equality of codepage.
-            // Ignore fallback here, only check codepage id.
-            if (encoding.CodePage == Encoding.UTF8.CodePage)
-            {
-                stream.Write(Utf8Bom, 0, Utf8Bom.Length);
-            }
-            else if (encoding.CodePage == Encoding.Unicode.CodePage)
-            {
-                stream.Write(Utf16LeBom, 0, Utf16LeBom.Length);
-            }
-            else if (encoding.CodePage == Encoding.BigEndianUnicode.CodePage)
-            {
-                stream.Write(Utf16BeBom, 0, Utf16BeBom.Length);
-            }
-            else if (encoding.CodePage != DefaultAnsi.CodePage)
-            { // Unsupported Encoding
-                throw new ArgumentException($"[{encoding}] is not supported");
-            }
+            // If encoding 
+            byte[] bom = encoding.GetPreamble();
+            if (bom.Length == 0)
+                return;
+            stream.Write(bom, 0, bom.Length);
         }
+        #endregion
 
+        #region TextBomLength
         public static int TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -168,7 +256,32 @@ namespace PEBakery.Helper
 
             return length;
         }
+        #endregion
 
+        #region EncodingEquals
+        public static bool EncodingEquals(Encoding e1, Encoding e2)
+        {
+            if (e1 == null)
+            {
+                return e2 == null;
+            }
+            else
+            {
+                if (e2 == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    byte[] bom1 = e1.GetPreamble();
+                    byte[] bom2 = e2.GetPreamble();
+                    return e1.CodePage == e2.CodePage && bom1.SequenceEqual(bom2);
+                }
+            }
+        }
+        #endregion
+
+        #region IsText
         public static bool IsText(string filePath, int peekSize)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -226,7 +339,7 @@ namespace PEBakery.Helper
             // To counter these issue, if file is seems to be text, check again with AutoIt.Common.TextEncodingDetect
             if (isText)
             {
-                TextEncodingDetect detect = new TextEncodingDetect();
+                AdvTextEncDetect detect = new AdvTextEncDetect();
                 byte[] idxZeroBuffer;
                 if (offset == 0)
                 {
@@ -238,19 +351,19 @@ namespace PEBakery.Helper
                     Array.Copy(buffer, offset, idxZeroBuffer, 0, count);
                 }
 
-                switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
+                switch (detect.DetectEncoding(idxZeroBuffer, 0, idxZeroBuffer.Length))
                 {
                     // Binary
-                    case TextEncodingDetect.DetectedEncoding.None:
+                    case TextEncoding.None:
                     // PEBakery mandates unicode text to have BOM.
                     // They must have been filtered out in stage 1.
-                    case TextEncodingDetect.DetectedEncoding.Utf16LeBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf16BeBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf8Bom:
+                    case TextEncoding.Utf16LeBom:
+                    case TextEncoding.Utf16BeBom:
+                    case TextEncoding.Utf8Bom:
                     // Treat unicode text file without a BOM as a binary.
-                    case TextEncodingDetect.DetectedEncoding.Utf16LeNoBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf16BeNoBom:
-                    case TextEncodingDetect.DetectedEncoding.Utf8NoBom:
+                    case TextEncoding.Utf16LeNoBom:
+                    case TextEncoding.Utf16BeNoBom:
+                    case TextEncoding.Utf8NoBom:
                         isText = false;
                         break;
                 }
@@ -258,5 +371,129 @@ namespace PEBakery.Helper
 
             return isText;
         }
+        #endregion
+
+        #region IsAnsiCompatible
+        /// <summary>
+        /// Check if the given string is compatible with system's active ANSI codepage.
+        /// </summary>
+        /// <remarks>
+        /// Same functionality can be implemented with Encoding and EncoderFallback, but it involves exception throwing.
+        /// </remarks>
+        public static unsafe bool IsActiveCodePageCompatible(string str)
+        {
+            return IsCodePageCompatible(NativeMethods.CP_ACP, str);
+        }
+
+        /// <summary>
+        /// Check if the given string is compatible with a given codepage.
+        /// </summary>
+        /// <remarks>
+        /// Same functionality can be implemented with Encoding and EncoderFallback, but it involves exception throwing.
+        /// </remarks>
+        public static unsafe bool IsCodePageCompatible(uint codepage, string str)
+        {
+            // Empty string must be compatible to any encoding, right?
+            if (str.Length == 0)
+                return true;
+
+            // Get required buffer size
+            int bufferSize = NativeMethods.WideCharToMultiByte(codepage, 0, str, -1, null, 0, null, null);
+
+            // Try to convert unicode string to multi-byte, and see whether conversion fails or not.
+            int usedDefaultChar = 0;
+            byte[] buffer = new byte[bufferSize + 2];
+            int ret = NativeMethods.WideCharToMultiByte(codepage, NativeMethods.WC_NO_BEST_FIT_CHARS, str, -1, buffer, bufferSize, null, &usedDefaultChar);
+
+            // Return test result
+            if (ret == 0)
+                return false; // Conversion failed, assume that str is not compatible
+            return usedDefaultChar == 0;
+        }
+        #endregion
+
+        #region SmartDetectEncoding
+        /// <summary>
+        /// Detect Encoding of the text file, considering the content to write.
+        /// If the fils is ASCII-only but the content to write is not compatible with ANSI, it will be treated as UTF-8 wo BOM.
+        /// </summary>
+        /// <param name="filePath">The text file to detect encoding</param>
+        /// <param name="content">Content to write into the file</param>
+        /// <returns>Instance of the Encoding</returns>
+        public static Encoding SmartDetectEncoding(string filePath, string content)
+        {
+            // Detect Encoding
+            Encoding encoding = DetectEncoding(filePath, out TextEncoding textEnc);
+
+            // Is the text is ASCII-only?
+            switch (textEnc)
+            {
+                case TextEncoding.Ascii:
+                case TextEncoding.None:
+                    { // Check whether content to write is ANSI-compatible.
+                        if (!IsActiveCodePageCompatible(content)) // If not, use UTF-8 wo BOM instead.
+                            encoding = new UTF8Encoding(false);
+                    }
+                    break;
+            }
+
+            return encoding;
+        }
+
+        /// <summary>
+        /// Detect Encoding of the text file, considering the content to write.
+        /// If the fils is ASCII-only but the content to write is not compatible with ANSI, it will be treated as UTF-8 wo BOM.
+        /// </summary>
+        /// <param name="filePath">The text file to detect encoding</param>
+        /// <param name="contents">Contents to write into the file</param>
+        /// <returns>Instance of the Encoding</returns>
+        public static Encoding SmartDetectEncoding(string filePath, IEnumerable<string> contents)
+        {
+            // Detect Encoding
+            Encoding encoding = DetectEncoding(filePath, out TextEncoding textEnc);
+
+            // Is the text is ASCII-only?
+            switch (textEnc)
+            {
+                case TextEncoding.Ascii:
+                case TextEncoding.None:
+                    { // Check whether content to write is ANSI-compatible.
+                        if (!contents.All(x => IsActiveCodePageCompatible(x))) // If not, use UTF-8 wo BOM instead.
+                            encoding = new UTF8Encoding(false);
+                    }
+                    break;
+            }
+
+            return encoding;
+        }
+
+        /// <summary>
+        /// Detect Encoding of the text file, considering the content to write.
+        /// If the fils is ASCII-only but the content to write is not compatible with ANSI, it will be treated as UTF-8 wo BOM.
+        /// </summary>
+        /// <param name="filePath">The text file to detect encoding</param>
+        /// <param name="isContentAnsiCompat">Check if content to write is compatible with ANSI encoding</param>
+        /// <returns>Instance of the Encoding</returns>
+        public static Encoding SmartDetectEncoding(string filePath, Func<bool> isContentAnsiCompat)
+        {
+            // Detect Encoding
+            Encoding encoding = DetectEncoding(filePath, out TextEncoding textEnc);
+
+            // Is the text is ASCII-only?
+            switch (textEnc)
+            {
+                case TextEncoding.Ascii:
+                case TextEncoding.None:
+                    { // Check whether content to write is ANSI-compatible.
+                        if (!isContentAnsiCompat()) // If not, use UTF-8 wo BOM instead.
+                            encoding = new UTF8Encoding(false);
+                    }
+                    break;
+            }
+
+            return encoding;
+        }
+        #endregion
     }
+    #endregion
 }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2019 Hajin Jang
+    Copyright (C) 2017-2020 Hajin Jang
  
     MIT License
 
@@ -31,12 +31,12 @@ using System.Linq;
 namespace PEBakery.Helper.Tests
 {
     [TestClass]
+    [TestCategory("PEBakery.Helper")]
+    [TestCategory(nameof(FileHelper))]
     public class FileHelperTests
     {
         #region Temp Path
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void BaseTempDir()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -50,8 +50,6 @@ namespace PEBakery.Helper.Tests
         }
 
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetTempDir()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -68,8 +66,6 @@ namespace PEBakery.Helper.Tests
         }
 
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetTempFile()
         {
             string baseTempDir = FileHelper.BaseTempDir();
@@ -100,8 +96,6 @@ namespace PEBakery.Helper.Tests
 
         #region GetFilesEx
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
         public void GetFilesEx()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
@@ -125,17 +119,15 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
 
-        #region GetFilesExWithDir
+        #region GetDirFilesEx
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
-        public void GetFilesExWithDir()
+        public void GetDirFilesEx()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
 
             // Test 1
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.AllDirectories);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.txt", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 5);
@@ -156,7 +148,7 @@ namespace PEBakery.Helper.Tests
             }
             // Test 2
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.ini", SearchOption.AllDirectories);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.ini", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 2);
@@ -170,7 +162,7 @@ namespace PEBakery.Helper.Tests
             }
             // Test 3
             {
-                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
+                (string Path, bool IsDir)[] paths = FileHelper.GetDirFilesEx(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(dirs.Length == 1);
@@ -185,11 +177,9 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
 
-        #region DirectoryCopy
+        #region DirCopy
         [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
-        public void DirectoryCopy()
+        public void DirCopy()
         {
             string srcDir = Path.Combine(TestSetup.SampleDir, "FileHelper");
             string destDir = FileHelper.GetTempDir();
@@ -211,7 +201,7 @@ namespace PEBakery.Helper.Tests
             // Test 1
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -231,7 +221,7 @@ namespace PEBakery.Helper.Tests
             // Test 2
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = false,
                     Overwrite = true,
@@ -247,7 +237,7 @@ namespace PEBakery.Helper.Tests
             // Test 3
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -266,7 +256,7 @@ namespace PEBakery.Helper.Tests
             // Test 4
             Template(() =>
             {
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = false,
                     Overwrite = true,
@@ -278,6 +268,82 @@ namespace PEBakery.Helper.Tests
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
             });
+        }
+        #endregion
+
+        #region IsPathNonExistDir
+        [TestMethod]
+        public void IsPathNonExistDir()
+        {
+            string destDir = FileHelper.GetTempDir();
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                string destRoot = Path.GetPathRoot(destDir);
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(destRoot));
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(destDir));
+
+                // Test non-existing directory path
+                string targetPath = Path.Combine(destDir, "Dummy");
+                Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                Assert.IsTrue(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+
+                // Test existing directory path
+                Directory.CreateDirectory(targetPath);
+                try
+                {
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+                }
+                finally
+                {
+                    if (Directory.Exists(targetPath))
+                        Directory.Delete(targetPath, true);
+                }
+
+                // Test existing file path
+                try
+                {
+                    File.Create(targetPath).Dispose();
+                    Assert.IsFalse(FileHelper.IsPathNonExistDir(targetPath));
+                    Assert.IsTrue(FileHelper.IsPathNonExistDir(targetPath + @"\"));
+                }
+                finally
+                {
+                    if (File.Exists(targetPath))
+                        File.Delete(targetPath);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region SubRootDirPath
+        [TestMethod]
+        public void SubRootDirPath()
+        {
+            static void Template(string path, string rootDir, string expected, bool success)
+            {
+                try
+                {
+                    string result = FileHelper.SubRootDirPath(path, rootDir);
+                    Assert.IsTrue(result.Equals(expected, StringComparison.Ordinal));
+                }
+                catch (ArgumentException)
+                {
+                    Assert.IsFalse(success);
+                    return;
+                }
+                Assert.IsTrue(success);
+            }
+
+            Template(@"C:\PEBakery\Hello\World.txt", @"C:\PEBakery", @"Hello\World.txt", true);
+            Template(@"C:\PEBakery\\Hello\World.txt", @"C:\PEBakery", @"Hello\World.txt", true);
+            Template(@"\PEBakery\Hello\World.txt", @"C:\PEBakery", null, false);
         }
         #endregion
     }

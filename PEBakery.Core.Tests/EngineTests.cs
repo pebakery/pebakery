@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2019 Hajin Jang
+    Copyright (C) 2017-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@ using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
@@ -62,7 +63,10 @@ namespace PEBakery.Core.Tests
             if (doCopy)
             {
                 Project project = Project.PartialDeepCopy();
-                MainViewModel model = new MainViewModel();
+                MainViewModel model = null;
+                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                RunSTAThread(() => model = new MainViewModel());
+
                 if (sc == null)
                     s = new EngineState(project, Logger, model, EngineMode.RunAll);
                 else
@@ -71,7 +75,9 @@ namespace PEBakery.Core.Tests
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
-                MainViewModel model = new MainViewModel();
+                MainViewModel model = null;
+                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                RunSTAThread(() => model = new MainViewModel());
                 if (sc == null)
                     s = new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
@@ -423,5 +429,40 @@ namespace PEBakery.Core.Tests
             }
         }
         #endregion
+
+        #region STAThread
+        public static void RunSTAThread(Action action)
+        {
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+                action.Invoke();
+
+            Thread thread = new Thread(() =>
+            {
+                action.Invoke();
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+        }
+        #endregion
+    }
+
+    public class STATestMethodAttribute : TestMethodAttribute
+    {
+        public override TestResult[] Execute(ITestMethod testMethod)
+        {
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+                return new TestResult[] { testMethod.Invoke(null) };
+
+            TestResult[] result = null;
+            Thread thread = new Thread(() =>
+            {
+                result = new TestResult[] { testMethod.Invoke(null) };
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+            return result;
+        }
     }
 }

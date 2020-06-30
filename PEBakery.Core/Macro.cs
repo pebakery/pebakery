@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -181,7 +181,7 @@ namespace PEBakery.Core
         {
             if (!sc.Sections.ContainsKey(sectionName))
                 return new List<LogInfo>();
-            
+
             ScriptSection section = sc.Sections[sectionName];
 
             // Pick key-value only if key is not wrapped by %
@@ -199,7 +199,7 @@ namespace PEBakery.Core
         private List<LogInfo> LoadMacroDict(MacroType type, ScriptSection section, Dictionary<string, string> newDict, bool append)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            
+
             // Select proper macroDict
             Dictionary<string, CodeCommand> macroDict;
             switch (type)
@@ -221,7 +221,7 @@ namespace PEBakery.Core
             // If the newDict is empty, skip the rest
             if (newDict.Keys.Count == 0)
                 return logs;
-            
+
             // Parse and register commands to the macroDict
             int count = 0;
             CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
@@ -236,7 +236,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                         continue;
                     }
-                    
+
                     CodeCommand macroCmd = parser.ParseStatement(kv.Value);
                     macroDict[kv.Key] = macroCmd;
                     logs.Add(new LogInfo(LogState.Success, $"{type} macro [{kv.Key}] set to [{kv.Value}]", 1));

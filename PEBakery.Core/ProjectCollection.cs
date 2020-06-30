@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -27,7 +27,6 @@
 
 using PEBakery.Helper;
 using PEBakery.Ini;
-using SQLite;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,7 +35,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -177,20 +175,20 @@ namespace PEBakery.Core
 
                 // Path of normal and link scripts
                 ScriptParseInfo[] scripts = FileHelper
-                    .GetFilesExWithDirs(projectDir, "*.script", SearchOption.AllDirectories)
+                    .GetDirFilesEx(projectDir, "*.script", SearchOption.AllDirectories)
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
-                        TreePath = x.Path.Substring(ProjectRoot.Length + 1),
+                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
                         IsDir = x.IsDir,
                         IsDirLink = false,
                     }).ToArray();
                 ScriptParseInfo[] links = FileHelper
-                    .GetFilesExWithDirs(projectDir, "*.link", SearchOption.AllDirectories)
+                    .GetDirFilesEx(projectDir, "*.link", SearchOption.AllDirectories)
                     .Select(x => new ScriptParseInfo
                     {
                         RealPath = x.Path,
-                        TreePath = x.Path.Substring(ProjectRoot.Length + 1),
+                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
                         IsDir = x.IsDir,
                         IsDirLink = false,
                     }).ToArray();
@@ -252,7 +250,7 @@ namespace PEBakery.Core
                     continue;
 
                 // TreePath of directory where folder.project exists
-                string prefix = Path.GetDirectoryName(linkFile.Substring(ProjectRoot.Length + 1)); // +1 for \
+                string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot));
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
                 // Local functions fo collect ScriptParseInfo
@@ -266,9 +264,9 @@ namespace PEBakery.Core
                         IsDirLink = true,
                     };
 
-                    IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
+                    IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetDirFilesEx(dirPath, "*.script", SearchOption.AllDirectories)
                         .Select(x => CreateScriptParseInfo(x));
-                    IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetFilesExWithDirs(dirPath, "*.link", SearchOption.AllDirectories)
+                    IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetDirFilesEx(dirPath, "*.link", SearchOption.AllDirectories)
                         .Select(x => CreateScriptParseInfo(x));
 
                     // Duplicated ScriptParseInfo is removed later by GetScriptPaths.
@@ -370,9 +368,17 @@ namespace PEBakery.Core
                 };
             }
 
-            List<LogInfo> logs = new List<LogInfo>(32);
+            List<LogInfo> logs = new List<LogInfo>(16);
             try
             {
+                // Load caches
+                if (scriptCache != null)
+                {
+                    progress?.Report((Project.LoadReport.LoadingCache, null));
+                    scriptCache.LoadCachePool();
+                }
+
+                // Load projects
                 foreach (string key in _projectNames)
                 {
                     Project project = new Project(_baseDir, key, _compatDict[key])
@@ -382,7 +388,7 @@ namespace PEBakery.Core
                     };
 
                     // Load scripts
-                    List<LogInfo> errLogs = project.Load(_spiDict[key], scriptCache, progress);
+                    List<LogInfo> errLogs = project.Load(scriptCache, _spiDict[key], progress);
                     logs.AddRange(errLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -392,8 +398,7 @@ namespace PEBakery.Core
                 }
 
                 // Sort ProjectList
-                ProjectList.Sort((x, y) =>
-                    string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
+                ProjectList.Sort((x, y) => string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
 
                 // Populate *.link scripts
                 List<LogInfo> linkLogs = LoadLinks(scriptCache, progress);
@@ -402,16 +407,14 @@ namespace PEBakery.Core
                 // PostLoad scripts
                 foreach (Project p in ProjectList)
                     p.PostLoad();
-
-                FullyLoaded = true;
             }
-            catch (SQLiteException e)
+            finally
             {
-                // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                Application.Current.Shutdown(1);
+                if (scriptCache != null)
+                    scriptCache.UnloadCachePool();
             }
+
+            FullyLoaded = true;
 
             // Loading a project without script cache generates a lot of Gen 2 heap object
             GC.Collect();
@@ -423,15 +426,6 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
-
-            // Doing this will consume some memory, but also greatly increase performance.
-            // -> Actually, using a cache relieves GC pressure a lot, so it is effective even for memory consumption.
-            CacheModel.ScriptCache[] cachePool = null;
-            if (scriptCache != null)
-            {
-                progress?.Report((Project.LoadReport.LoadingCache, null));
-                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
-            }
 
             string CheckLinkPath(Script sc, string linkRawPath)
             {
@@ -456,7 +450,7 @@ namespace PEBakery.Core
             }
 
             int loadCount = 0;
-            bool cacheValid = true;
+            bool isCacheValid = true;
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Parallel.ForEach(linkSources, sc =>
             {
@@ -473,14 +467,12 @@ namespace PEBakery.Core
                             return;
 
                         // Load .link's linked scripts with cache
-                        if (cachePool != null && cacheValid)
+                        if (scriptCache != null && isCacheValid)
                         { // Case of ScriptCache enabled
-                            (linkTarget, cacheValid) = ScriptCache.DeserializeScript(linkRealPath, cachePool);
+                            linkTarget = scriptCache.DeserializeScript(linkRealPath, out isCacheValid);
                             if (linkTarget != null)
                             {
-                                linkTarget.TreePath = string.Empty;
-                                linkTarget.Project = sc.Project;
-                                linkTarget.IsDirLink = sc.IsDirLink;
+                                linkTarget.PostDeserialization(string.Empty, sc.Project, sc.IsDirLink);
                                 cached = Project.LoadReport.Stage2Cached;
                             }
                         }
@@ -507,17 +499,14 @@ namespace PEBakery.Core
                     }
                     while (linkTarget.Type != ScriptType.Script);
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 { // Parser Error
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
 
                 if (valid)
                 {
-                    sc.LinkLoaded = true;
-                    sc.Link = linkTarget;
+                    sc.SetLink(linkTarget);
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 else // Error
@@ -530,6 +519,7 @@ namespace PEBakery.Core
                 if (scriptCache == null)
                 {
                     // Loading a project without a script cache generates a lot of Gen 2 heap object
+                    // TODO: Remove this part of code?
                     int thisCount = Interlocked.Increment(ref loadCount);
                     if (thisCount % Project.LoadGCInterval == 0)
                         GC.Collect();

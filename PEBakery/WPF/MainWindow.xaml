@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -220,7 +220,7 @@
                                x:Name="SettingWindowButton"
                                Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.SettingWindowCommand"
-                               IconMaterialKind="Settings"
+                               IconMaterialKind="Cog"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                 <TextBlock Grid.Row="2" Grid.Column="4"
@@ -612,7 +612,7 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
-                            <Setter Property="IsSelected" Value="{Binding Build, Mode=TwoWay}" />
+                            <!-- <Setter Property="IsSelected" Value="{Binding Build, Mode=TwoWay}" /> -->
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreePanelForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>

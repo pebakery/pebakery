@@ -26,7 +26,9 @@ The official release version is recommended for general use.
 A nightly build is provided for testing purposes.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
-- [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
+- Lastest Nightly (develop)
+    - [Framework Dependent Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-fxdep.7z?branch=develop) - The binary requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1) to run.
+    - [Self Contained Executable](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop) - The binary is standalone but about 3x larger than framework dependent executable. 
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
@@ -39,9 +41,9 @@ If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?Li
 
 ### Nightly Builds
 
-Starting from beta 7, PEBakery runs on .Net Core 3. Please install [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1).
+Starting from beta 7, PEBakery runs on .Net Core 3. Please install [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1).
 
-We are preparing [self-contained](https://docs.microsoft.com/en-US/dotnet/core/deploying/#publish-self-contained) distribution, so users do not have to install runtime themselves.
+Currently only x64 builds are available.
 
 ## License
 

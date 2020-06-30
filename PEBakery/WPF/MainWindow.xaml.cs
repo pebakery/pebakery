@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -124,7 +124,7 @@ namespace PEBakery.WPF
                     int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
 #if DEBUG
-                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
                     {
                         IncludeComments = true,
                         IncludeMacros = true,
@@ -363,7 +363,7 @@ namespace PEBakery.WPF
                         int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
-                        Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                        Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
                         {
                             IncludeComments = true,
                             IncludeMacros = true,
@@ -1025,7 +1025,7 @@ namespace PEBakery.WPF
     public static class MainViewCommands
     {
         #region Main Buttons
-        public static readonly RoutedCommand ProjectBuildStartCommand = new RoutedUICommand("Build a Project", "ProjectBuildStart", typeof(MainViewCommands),
+        public static readonly RoutedCommand ProjectBuildStartCommand = new RoutedUICommand("Build the Selected Project", "ProjectBuildStart", typeof(MainViewCommands),
             new InputGestureCollection
             {
                 new KeyGesture(Key.F10),

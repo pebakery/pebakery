@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -431,7 +431,7 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
 
                             // Do not use s.BuildId, for case of FullDeferredLogging
-                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new BuildLogOptions
                             {
                                 IncludeComments = true,
                                 IncludeMacros = true,

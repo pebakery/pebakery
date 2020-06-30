@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -150,7 +150,7 @@ namespace PEBakery.WPF
                     {
                         Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                         int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Id;
-                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new LogExporter.BuildLogOptions
+                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new BuildLogOptions
                         {
                             IncludeComments = _m.BuildLogIncludeComments,
                             IncludeMacros = _m.BuildLogIncludeMacros,
@@ -168,8 +168,14 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_m.FileFormat == LogExportType.Html)
-                { // open .html files with the default browser
-                    FileHelper.OpenUri(destFile);
+                {
+                    // Call FileHelper.OpenUri (instead of OpenPath) to open .html files with the default browser.
+                    ResultReport result = FileHelper.OpenUri(destFile);
+                    if (!result.Success)
+                    {
+                        MessageBox.Show($"URL [{destFile}] could not be opened.\r\n\r\n{result.Message}.",
+                            "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 else
                 {

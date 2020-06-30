@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -35,6 +35,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 
 namespace PEBakery.Core
@@ -46,9 +47,9 @@ namespace PEBakery.Core
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r15";
-            public const string ProgramVersionStr = "0.9.6";
-            public const string ProgramVersionStrFull = "0.9.6 beta6";
+            public const string ScriptCacheRevision = "r20";
+            public const string ProgramVersionStr = "0.9.7";
+            public const string ProgramVersionStrFull = "0.9.7 beta7";
 
             public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
 
@@ -89,6 +90,9 @@ namespace PEBakery.Core
         /// <param name="initMainViewModel">Set this to true when PEBakery.Core is used outside of PEBakery</param>
         public static void PreInit(string[] args, bool initMainViewModel)
         {
+            // Regsiter Non-Unicode Encodings
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             // Process arguments
             Args = args;
 
@@ -155,14 +159,23 @@ namespace PEBakery.Core
                 Logger = new Logger(logDbFile);
                 Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
             }
-            catch (SQLiteException e)
-            { // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted.\r\nPlease delete PEBakeryLog.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                if (Application.Current != null)
-                    Application.Current.Shutdown(1);
-                else
-                    Environment.Exit(1);
+            catch (SQLiteException)
+            { // Update failure -> retry with clearing existing log db
+                File.Delete(logDbFile);
+                try
+                {
+                    Logger = new Logger(logDbFile);
+                    Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched, log cleared due to an error"));
+                }
+                catch (SQLiteException e)
+                { // Unable to continue -> raise an error message
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted and not repairable.\r\nPlease delete PEBakeryLog.db and restart.";
+                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (Application.Current != null)
+                        Application.Current.Shutdown(1);
+                    else
+                        Environment.Exit(1);
+                }
             }
 
             // Init ProjectCollection
@@ -177,28 +190,35 @@ namespace PEBakery.Core
             if (Setting.Interface.UseCustomTitle)
                 MainViewModel.TitleBar = Setting.Interface.CustomTitle;
 
-            // Load script cache
-            if (Setting.Script.EnableCache)
+            // Init script cache DB, regardless of Setting.Script.EnableCache
+            string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
+            try
             {
-                string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
+                ScriptCache = new ScriptCache(cacheDbFile);
+                int cachedScriptCount = ScriptCache.Table<CacheModel.ScriptCache>().Count();
+
+                if (Setting.Script.EnableCache)
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {cachedScriptCount} cached scripts found"));
+                else
+                    Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
+            }
+            catch (SQLiteException)
+            { // Load failure -> Fallback, delete and remake database
+                File.Delete(cacheDbFile);
                 try
                 {
                     ScriptCache = new ScriptCache(cacheDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {ScriptCache.Table<CacheModel.ScriptCache>().Count()} cached scripts found"));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, cache cleared due to an error"));
                 }
                 catch (SQLiteException e)
-                { // Load failure
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted.\r\nPlease delete PEBakeryCache.db and restart.";
+                { // Unable to continue -> raise an error message
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     if (Application.Current != null)
                         Application.Current.Shutdown(1);
                     else
                         Environment.Exit(1);
                 }
-            }
-            else
-            {
-                Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
         }
         #endregion
@@ -218,30 +238,28 @@ namespace PEBakery.Core
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
-            string arch;
-            switch (RuntimeInformation.ProcessArchitecture)
+            string magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
+            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
+            string xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
+            string wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
+            string sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
+
+            try
             {
-                case Architecture.X64:
-                    arch = "x64";
-                    break;
-                case Architecture.X86:
-                    arch = "x86";
-                    break;
-                default:
-                    throw new PlatformNotSupportedException();
+                Joveler.FileMagician.Magic.GlobalInit(magicPath);
+                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
+                Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
+                ManagedWimLib.Wim.GlobalInit(wimlibPath);
+                SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
             }
-
-            string zlibPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
-            string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
-            string magicPath = Path.Combine(baseDir, arch, "libmagic-1.dll");
-
-            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
-            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
-            ManagedWimLib.Wim.GlobalInit(wimlibPath);
-            SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
-            Joveler.FileMagician.Magic.GlobalInit(magicPath);
+            catch (Exception e)
+            {
+                MessageBox.Show($"Unable to load library {e.Message}", "Library Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (Application.Current != null)
+                    Application.Current.Shutdown(1);
+                else
+                    Environment.Exit(1);
+            }
         }
 
         public static void NativeGlobalCleanup()
@@ -250,6 +268,58 @@ namespace PEBakery.Core
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
             Joveler.FileMagician.Magic.GlobalCleanup();
+        }
+
+        /// <summary>
+        /// Get a path of a given native library.
+        /// </summary>
+        /// <remarks>
+        /// `dotnet run` command stores native library files in `runtimes\{rid}\native` directory.<br/>
+        /// `dotnet publish` command with a {rid} flattens native library files.
+        /// https://github.com/dotnet/sdk/issues/9643
+        /// </remarks>
+        /// <param name="baseDir">Location of an executable</param>
+        /// <param name="filename">Native library file</param>
+        /// <returns>A path of a given native library.</returns>
+        private static string GetNativeLibraryPath(string baseDir, string filename)
+        {
+            string libDir = "runtimes";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                libDir = Path.Combine(libDir, "win-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                libDir = Path.Combine(libDir, "linux-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                libDir = Path.Combine(libDir, "osx-");
+
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X86:
+                    libDir += "x86";
+                    break;
+                case Architecture.X64:
+                    libDir += "x64";
+                    break;
+                case Architecture.Arm:
+                    libDir += "arm";
+                    break;
+                case Architecture.Arm64:
+                    libDir += "arm64";
+                    break;
+            }
+            libDir = Path.Combine(libDir, "native");
+
+            // `dotnet run` or `dotnet publish` wo {rid}.
+            string runDllPath = Path.Combine(baseDir, libDir, filename);
+            if (File.Exists(runDllPath))
+                return runDllPath;
+
+            // `dotnet publish` w/ {rid}
+            string publishDllPath = Path.Combine(baseDir, filename);
+            if (File.Exists(publishDllPath))
+                return publishDllPath;
+
+            // Error!
+            return null;
         }
         #endregion
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@ using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System.Windows;
+using System.Windows.Navigation;
 
 namespace PEBakery.WPF
 {
@@ -41,9 +42,15 @@ namespace PEBakery.WPF
             DataContext = new AboutViewModel(monoFont);
         }
 
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            FileHelper.OpenUri(e.Uri.AbsoluteUri);
+            string uri = e.Uri.AbsoluteUri;
+            ResultReport result = FileHelper.OpenUri(uri);
+            if (!result.Success)
+            {
+                MessageBox.Show($"URL [{uri}] could not be opened.\r\n\r\n{result.Message}.",
+                    "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 

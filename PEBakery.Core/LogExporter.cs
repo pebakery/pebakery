@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,14 +25,15 @@
     not derived from or based on this program. 
 */
 
-using RazorEngine.Templating;
+using PEBakery.Core.Razor;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace PEBakery.Core
 {
@@ -42,6 +43,25 @@ namespace PEBakery.Core
         private readonly LogDatabase _db;
         private readonly LogExportType _exportType;
         private readonly TextWriter _w;
+
+        /*
+        // Lazy load RazorRenderer
+        private readonly static object _razorRendererLock = new object();
+        private static RazorRenderer _razorRenderer = null;
+        internal static RazorRenderer RazorRenderer
+        {
+            get
+            {
+                lock (_razorRendererLock)
+                {
+                    // Turn off caching to save memory. PEBakery does not call RazorRenderer too often.
+                    if (_razorRenderer == null)
+                        _razorRenderer = new RazorRenderer(false);
+                    return _razorRenderer;
+                }
+            }
+        }
+        */
 
         public LogExporter(LogDatabase db, LogExportType type, TextWriter writer)
         {
@@ -75,22 +95,24 @@ namespace PEBakery.Core
                     break;
                 case LogExportType.Html:
                     {
-                        RazorModel.ExportSystemLog m = new RazorModel.ExportSystemLog
+                        Assembly assembly = Assembly.GetExecutingAssembly();
+                        SystemLogModel m = new SystemLogModel
                         {
                             // Information
+                            HeadTitle = "PEBakery System Log",
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
-                            EmbedBootstrapCss = Properties.Resources.HtmlBootstrapCss,
-                            EmbedJQuerySlim = Properties.Resources.HtmlJQuerySlim,
-                            EmbedBootstrapJs = Properties.Resources.HtmlBootstrapJs,
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
+                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
                             // Data
-                            SysLogs = new List<RazorModel.SystemLog>(),
+                            SysLogs = new List<SystemLogItem>(),
                         };
 
                         foreach (LogModel.SystemLog log in _db.Table<LogModel.SystemLog>().OrderBy(x => x.Time))
                         {
-                            m.SysLogs.Add(new RazorModel.SystemLog
+                            m.SysLogs.Add(new SystemLogItem
                             {
                                 TimeStr = log.TimeStr,
                                 State = log.State,
@@ -98,8 +120,8 @@ namespace PEBakery.Core
                             });
                         }
 
-                        string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.SystemLogHtmlTemplate, "SystemLogHtmlTemplateKey", null, m);
-                        _w.WriteLine(html);
+                        RazorRenderer razorRenderer = new RazorRenderer(false);
+                        razorRenderer.RenderHtmlAsync("Razor._SystemLogView.cshtml", m, _w).Wait();
                     }
                     break;
             }
@@ -107,13 +129,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportBuildLog
-        public struct BuildLogOptions
-        {
-            public bool IncludeComments;
-            public bool IncludeMacros;
-            public bool ShowLogFlags;
-        }
-
         public void ExportBuildLog(int buildId, BuildLogOptions opts)
         {
             switch (_exportType)
@@ -366,22 +381,24 @@ namespace PEBakery.Core
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.FinishTime == DateTime.MinValue)
                             dbBuild.FinishTime = DateTime.UtcNow;
-                        RazorModel.ExportBuildLog m = new RazorModel.ExportBuildLog
+
+                        Assembly assembly = Assembly.GetExecutingAssembly();
+                        BuildLogModel m = new BuildLogModel
                         {
                             // Information
                             BuiltEngineVersion = dbBuild.PEBakeryVersion,
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
-                            BuildName = dbBuild.Name,
+                            HeadTitle = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildEndTimeStr = dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
                             // Embed
-                            EmbedBootstrapCss = Properties.Resources.HtmlBootstrapCss,
-                            EmbedJQuerySlim = Properties.Resources.HtmlJQuerySlim,
-                            EmbedBootstrapJs = Properties.Resources.HtmlBootstrapJs,
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
+                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
                             // Data
-                            LogStats = new List<RazorModel.LogStat>(),
+                            LogStats = new List<LogStatItem>(),
                         };
 
                         // Log Statistics
@@ -390,7 +407,7 @@ namespace PEBakery.Core
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
 
-                            m.LogStats.Add(new RazorModel.LogStat
+                            m.LogStats.Add(new LogStatItem
                             {
                                 State = state,
                                 Count = count,
@@ -398,7 +415,7 @@ namespace PEBakery.Core
                         }
 
                         // Show ErrorLogs
-                        m.ErrorCodeDict = new Dictionary<RazorModel.ScriptLog, Tuple<RazorModel.CodeLog, string>[]>();
+                        m.ErrorCodeDict = new Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]>();
                         {
                             int errIdx = 0;
                             LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
@@ -415,7 +432,7 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
-                                    RazorModel.ScriptLog scModel = new RazorModel.ScriptLog
+                                    ScriptLogItem scModel = new ScriptLogItem
                                     {
                                         Name = scLog.Name,
                                         Path = scLog.TreePath,
@@ -423,8 +440,8 @@ namespace PEBakery.Core
 
                                     m.ErrorCodeDict[scModel] = errors
                                         .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new Tuple<RazorModel.CodeLog, string>(
-                                            new RazorModel.CodeLog
+                                        .Select(x => new Tuple<CodeLogItem, string>(
+                                            new CodeLogItem
                                             {
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
@@ -435,7 +452,7 @@ namespace PEBakery.Core
                         }
 
                         // Show WarnLogs
-                        m.WarnCodeDict = new Dictionary<RazorModel.ScriptLog, Tuple<RazorModel.CodeLog, string>[]>();
+                        m.WarnCodeDict = new Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]>();
                         {
                             int warnIdx = 0;
                             LogModel.BuildLog[] warns = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
@@ -452,15 +469,15 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
-                                    RazorModel.ScriptLog pModel = new RazorModel.ScriptLog
+                                    ScriptLogItem pModel = new ScriptLogItem
                                     {
                                         Name = scLog.Name,
                                         Path = scLog.TreePath,
                                     };
                                     m.WarnCodeDict[pModel] = warns
                                         .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new Tuple<RazorModel.CodeLog, string>(
-                                            new RazorModel.CodeLog
+                                        .Select(x => new Tuple<CodeLogItem, string>(
+                                            new CodeLogItem
                                             {
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
@@ -474,13 +491,13 @@ namespace PEBakery.Core
                         var scripts = _db.Table<LogModel.Script>()
                             .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
-                        m.Scripts = new List<RazorModel.ScriptLog>();
+                        m.Scripts = new List<ScriptLogItem>();
                         {
                             int idx = 1;
                             foreach (LogModel.Script scLog in scripts)
                             {
                                 TimeSpan elapsed = scLog.FinishTime - scLog.StartTime;
-                                m.Scripts.Add(new RazorModel.ScriptLog
+                                m.Scripts.Add(new ScriptLogItem
                                 {
                                     IndexStr = idx.ToString(),
                                     Name = scLog.Name,
@@ -493,7 +510,7 @@ namespace PEBakery.Core
                         }
 
                         // Script - Referenced Scripts
-                        m.RefScripts = new List<RazorModel.ScriptLog>();
+                        m.RefScripts = new List<ScriptLogItem>();
                         {
                             var refScripts = _db.Table<LogModel.Script>()
                                 .Where(x => x.BuildId == buildId && x.Order <= 0)
@@ -514,7 +531,7 @@ namespace PEBakery.Core
                                     idxStr = idx.ToString();
                                 }
 
-                                m.RefScripts.Add(new RazorModel.ScriptLog
+                                m.RefScripts.Add(new ScriptLogItem
                                 {
                                     IndexStr = idxStr,
                                     Name = scLog.Name,
@@ -525,7 +542,7 @@ namespace PEBakery.Core
                         }
 
                         // Variables
-                        m.Variables = new List<RazorModel.VariableLog>();
+                        m.Variables = new List<VariableLogItem>();
                         {
                             var vars = _db.Table<LogModel.Variable>()
                                         .Where(x => x.BuildId == buildId && (x.Type == VarsType.Fixed || x.Type == VarsType.Global))
@@ -533,7 +550,7 @@ namespace PEBakery.Core
                                         .ThenBy(x => x.Key);
                             foreach (LogModel.Variable vLog in vars)
                             {
-                                m.Variables.Add(new RazorModel.VariableLog
+                                m.Variables.Add(new VariableLogItem
                                 {
                                     Type = vLog.Type,
                                     Key = vLog.Key,
@@ -543,7 +560,7 @@ namespace PEBakery.Core
                         }
 
                         // CodeLogs
-                        m.CodeLogs = new List<Tuple<RazorModel.ScriptLog, RazorModel.CodeLog[], RazorModel.VariableLog[]>>();
+                        m.CodeLogs = new List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>>();
                         {
                             int pIdx = 0;
                             int errIdx = 0;
@@ -566,17 +583,17 @@ namespace PEBakery.Core
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
                                 LogModel.BuildLog[] codeLogs = cLogs.OrderBy(x => x.Id).OrderBy(x => x.Id).ToArray();
 
-                                RazorModel.ScriptLog pModel = new RazorModel.ScriptLog
+                                ScriptLogItem pModel = new ScriptLogItem
                                 {
                                     IndexStr = pIdx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
                                 };
 
-                                List<RazorModel.CodeLog> logModel = new List<RazorModel.CodeLog>(codeLogs.Length);
+                                List<CodeLogItem> logModel = new List<CodeLogItem>(codeLogs.Length);
                                 foreach (LogModel.BuildLog log in codeLogs)
                                 {
-                                    RazorModel.CodeLog item = new RazorModel.CodeLog
+                                    CodeLogItem item = new CodeLogItem
                                     {
                                         State = log.State,
                                         // HTML log export handles flags itself
@@ -601,22 +618,22 @@ namespace PEBakery.Core
                                 }
 
                                 // Log local variables
-                                RazorModel.VariableLog[] localVarModel = _db.Table<LogModel.Variable>()
+                                VariableLogItem[] localVarModel = _db.Table<LogModel.Variable>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
                                     .OrderBy(x => x.Key)
-                                    .Select(x => new RazorModel.VariableLog
+                                    .Select(x => new VariableLogItem
                                     {
                                         Type = x.Type,
                                         Key = x.Key,
                                         Value = x.Value,
                                     }).ToArray();
 
-                                m.CodeLogs.Add(new Tuple<RazorModel.ScriptLog, RazorModel.CodeLog[], RazorModel.VariableLog[]>(pModel, logModel.ToArray(), localVarModel));
+                                m.CodeLogs.Add(new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
                             }
                         }
 
-                        string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.BuildLogHtmlTemplate, "BuildLogHtmlTemplateKey", null, m);
-                        _w.WriteLine(html);
+                        RazorRenderer razorRenderer = new RazorRenderer(false);
+                        razorRenderer.RenderHtmlAsync($"Razor._BuildLogView.cshtml", m, _w).Wait();
                     }
                     break;
                     #endregion
@@ -654,111 +671,14 @@ namespace PEBakery.Core
             }
         }
         #endregion
-
-        #region RazorModel
-
-        public class RazorModel
-        {
-            public class ExportSystemLog
-            {
-                // Information
-                // ReSharper disable once InconsistentNaming
-                public string ExportEngineVersion { get; set; }
-                public string ExportTimeStr { get; set; }
-                // Embed
-                public string EmbedBootstrapCss { get; set; }
-                public string EmbedJQuerySlim { get; set; }
-                public string EmbedBootstrapJs { get; set; }
-                // Data
-                public List<SystemLog> SysLogs { get; set; }
-            }
-
-            public class SystemLog
-            {
-                public string TimeStr { get; set; }
-                public LogState State { get; set; }
-                public string Message { get; set; }
-            }
-
-            [SuppressMessage("ReSharper", "InconsistentNaming")]
-            public class ExportBuildLog
-            {
-                // Information
-                public string BuiltEngineVersion { get; set; }
-                public string ExportEngineVersion { get; set; }
-                public string BuildName { get; set; }
-                public string BuildStartTimeStr { get; set; }
-                public string BuildEndTimeStr { get; set; }
-                public string BuildTookTimeStr { get; set; }
-                public bool ShowLogFlags { get; set; }
-                // Embed
-                public string EmbedBootstrapCss { get; set; }
-                public string EmbedJQuerySlim { get; set; }
-                public string EmbedBootstrapJs { get; set; }
-                // Data
-                public List<LogStat> LogStats { get; set; }
-                public List<ScriptLog> Scripts { get; set; }
-                public List<ScriptLog> RefScripts { get; set; }
-                public List<VariableLog> Variables { get; set; }
-                public Dictionary<ScriptLog, Tuple<CodeLog, string>[]> ErrorCodeDict { get; set; }
-                public Dictionary<ScriptLog, Tuple<CodeLog, string>[]> WarnCodeDict { get; set; }
-                public List<Tuple<ScriptLog, CodeLog[], VariableLog[]>> CodeLogs { get; set; }
-            }
-
-            public class LogStat
-            {
-                public LogState State { get; set; }
-                public int Count { get; set; }
-            }
-
-            public class ScriptLog
-            {
-                public string IndexStr { get; set; }
-                public string Name { get; set; }
-                public string Path { get; set; }
-                public string Version { get; set; }
-                public string TimeStr { get; set; }
-            }
-
-            public class VariableLog
-            {
-                public VarsType Type { get; set; }
-                public string Key { get; set; }
-                public string Value { get; set; }
-            }
-
-            public class CodeLog
-            {
-                public LogState State { get; set; }
-                public string Message { get; set; }
-                /// <summary>
-                /// From LogModel.BuildLogFlag
-                /// </summary>
-                public LogModel.BuildLogFlag Flags { get; set; }
-                /// <summary>
-                /// Set to null if a log was not generated from a referenced script
-                /// </summary>
-                public string RefScriptTitle { get; set; }
-                /// <summary>
-                /// Optional, for error/warning logs
-                /// </summary>
-                public int Href { get; set; }
-
-                // Used in BuildLogHtmlTemplate.cshtml
-                public string FlagsStr
-                {
-                    get
-                    {
-                        if ((Flags & LogModel.BuildLogFlag.Macro) == LogModel.BuildLogFlag.Macro)
-                            return "Macro";
-                        else if ((Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
-                            return "Ref";
-                        else
-                            return string.Empty;
-                    }
-                }
-            }
-        }
-        #endregion
     }
+
+    #region class BuildLogOptions
+    public class BuildLogOptions
+    {
+        public bool IncludeComments;
+        public bool IncludeMacros;
+        public bool ShowLogFlags;
+    }
+    #endregion
 }

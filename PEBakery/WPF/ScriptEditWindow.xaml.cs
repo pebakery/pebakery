@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -52,6 +52,29 @@ using System.Windows.Media;
 // ReSharper disable InconsistentNaming
 namespace PEBakery.WPF
 {
+    #region UIControlModifiedEvent
+    public class UIControlModifiedEventArgs : EventArgs
+    {
+        public UIControl UIControl { get; set; }
+        public List<UIControl> UIControls { get; set; }
+        public bool MultiSelect => UIControls != null;
+        public bool InfoNotUpdated { get; set; }
+
+        public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
+        {
+            UIControl = uiCtrl;
+            InfoNotUpdated = infoNotUpdated;
+        }
+        public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
+        {
+            UIControls = uiCtrls;
+            InfoNotUpdated = infoNotUpdated;
+        }
+    }
+
+    public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
+    #endregion
+
     #region ScriptEditWindow
     // ReSharper disable once RedundantExtendsListEntry
     public partial class ScriptEditWindow : Window
@@ -245,7 +268,7 @@ namespace PEBakery.WPF
                 m.InvokeUIControlEvent(true);
         }
 
-        private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
+        private void ViewModel_UIControlModified(object sender, UIControlModifiedEventArgs e)
         {
             if (e.MultiSelect)
             {
@@ -453,30 +476,12 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Events
-        public class UIControlModifiedEventArgs : EventArgs
-        {
-            public UIControl UIControl { get; set; }
-            public List<UIControl> UIControls { get; set; }
-            public bool MultiSelect => UIControls != null;
-            public bool InfoNotUpdated { get; set; }
-
-            public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
-            {
-                UIControl = uiCtrl;
-                InfoNotUpdated = infoNotUpdated;
-            }
-            public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
-            {
-                UIControls = uiCtrls;
-                InfoNotUpdated = infoNotUpdated;
-            }
-        }
-        public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
+        #region Event
         public event UIControlModifiedHandler UIControlModified;
         #endregion
 
         #region Property - Basic
+        private readonly object _scriptLock = new object();
         public Script Script;
         private readonly Window _window;
         public MainViewModel MainViewModel { get; }
@@ -1475,6 +1480,7 @@ namespace PEBakery.WPF
                     return;
 
                 OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
+                OnPropertyUpdate(nameof(UICtrlBevelCaption));
                 OnPropertyUpdate(nameof(UICtrlBevelFontSize));
                 OnPropertyUpdate(nameof(UICtrlBevelFontWeightIndex));
                 OnPropertyUpdate(nameof(UICtrlBevelFontStyleIndex));
@@ -1770,26 +1776,13 @@ namespace PEBakery.WPF
             set => SetProperty(ref _attachProgressIndeterminate, value);
         }
 
-        private bool _attachEnableAdvancedView = false;
-        public bool AttachEnableAdvancedView
+        private bool _attachAdvancedViewEnabled = false;
+        public bool AttachAdvancedViewEnabled
         {
-            get => _attachEnableAdvancedView;
-            set => SetProperty(ref _attachEnableAdvancedView, value);
+            get => _attachAdvancedViewEnabled;
+            set => SetProperty(ref _attachAdvancedViewEnabled, value);
         }
 
-        private bool _attachIncludeInterfaceEncoded = false;
-        public bool AttachIncludeInterfaceEncoded
-        {
-            get => _attachIncludeInterfaceEncoded;
-            set => SetProperty(ref _attachIncludeInterfaceEncoded, value);
-        }
-
-        private bool _attachIncludeAuthorEncoded = false;
-        public bool AttachIncludeAuthorEncoded
-        {
-            get => _attachIncludeAuthorEncoded;
-            set => SetProperty(ref _attachIncludeAuthorEncoded, value);
-        }
         #endregion
 
         #region InvokeUIControlEvent
@@ -2210,7 +2203,7 @@ namespace PEBakery.WPF
 
         private bool UICtrlDeleteCommand_CanExecute(object sender)
         {
-            return CanExecuteCommand && UICtrlEditEnabled;
+            return CanExecuteCommand && ((SelectedUICtrls != null && SelectedUICtrls.Count > 0) || (SelectedUICtrl != null));
         }
 
         private void UICtrlDeleteCommand_Execute(object parameter)
@@ -2218,21 +2211,43 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                if (SelectedUICtrl == null)
-                    return;
+                if (SelectMode == ControlSelectMode.SingleSelect)
+                {
+                    // Single-Select
+                    if (SelectedUICtrl == null)
+                        return;
 
-                UIControl uiCtrl = SelectedUICtrl;
-                UICtrlToBeDeleted.Add(uiCtrl);
+                    UIControl uiCtrl = SelectedUICtrl;
+                    UICtrlToBeDeleted.Add(uiCtrl);
 
-                // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
-                DeleteInterfaceEncodedFile(uiCtrl);
+                    // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                    DeleteInterfaceEncodedFile(uiCtrl);
 
-                Renderer.UICtrls.Remove(uiCtrl);
+                    Renderer.UICtrls.Remove(uiCtrl);
+                }
+                else if (SelectMode == ControlSelectMode.MultiSelect)
+                {
+                    // Multi-Select
+                    if (SelectedUICtrls == null || SelectedUICtrls.Count == 0)
+                        return;
+
+                    UICtrlToBeDeleted.AddRange(SelectedUICtrls);
+
+                    foreach (UIControl uiCtrl in SelectedUICtrls)
+                    {
+                        // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                        DeleteInterfaceEncodedFile(uiCtrl);
+
+                        Renderer.UICtrls.Remove(uiCtrl);
+                    }
+                }
+
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
                 Renderer.Render();
                 SelectedUICtrl = null;
+                SelectedUICtrls = null;
 
                 WriteScriptInterface(null, true);
                 InterfaceNotSaved = true;
@@ -2713,7 +2728,7 @@ namespace PEBakery.WPF
 
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
-                    ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
+                    ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
                     if (!report.Success)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -2952,9 +2967,9 @@ namespace PEBakery.WPF
         }
         private string DeleteInterfaceEncodedFile(UIControl uiCtrl)
         {
-            async void InternalDeleteInterfaceEncodedFile(string delFileName)
+            void InternalDeleteInterfaceEncodedFile(string delFileName)
             {
-                ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                ResultReport<Script> report = EncodedFile.DeleteFile(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
                 if (report.Success)
                     Script = report.Result;
                 else
@@ -3607,6 +3622,8 @@ namespace PEBakery.WPF
                 }
                 else if (1 < SelectedAttachedFiles.Length)
                 {
+                    // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                    // But it requires HWND to be displayed properly.
                     VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                     {
                         UseDescriptionForTitle = true,
@@ -3800,23 +3817,27 @@ namespace PEBakery.WPF
                 // Do not clear tempDir right after calling OpenPath(). Doing this will trick the opened process.
                 // Instead, leave it to Global.Cleanup() when program is exited.
                 string tempDir = FileHelper.GetTempDir();
+                string tempFile = Path.Combine(tempDir, fi.FileName);
                 try
                 {
-                    string tempFile = Path.Combine(tempDir, fi.FileName);
                     using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
                     {
                         await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                     }
-
-#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
-                    FileHelper.OpenPath(tempFile);
-#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                 }
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show(_window,
                         $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                ResultReport result = FileHelper.OpenPath(tempFile);
+                if (!result.Success)
+                {
+                    MessageBox.Show(_window,
+                        $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{result.Message}",
                         "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -3847,7 +3868,7 @@ namespace PEBakery.WPF
                     if (fi.EncodeMode != null)
                         return;
 
-                    ResultReport<EncodedFileInfo> report = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                    ResultReport<EncodedFileInfo> report = await EncodedFile.ReadFileInfoAsync(Script, dirName, fileName, true);
                     if (report.Success)
                     { // Success
                         EncodedFileInfo newInfo = report.Result;
@@ -3887,72 +3908,14 @@ namespace PEBakery.WPF
 
         #region Command - Attachment (Advanced)
         private ICommand _enableAdvancedViewCommand;
-        private ICommand _enableAuthorEncodedCommand;
-        private ICommand _enableInterfaceEncodedCommand;
         public ICommand EnableAdvancedViewCommand => GetRelayCommand(ref _enableAdvancedViewCommand, "Enable advanced view", EnableAdvancedViewCommand_Execute, CanExecuteFunc);
-        public ICommand EnableAuthorEncodedCommand => GetRelayCommand(ref _enableAuthorEncodedCommand, "Enable [AuthorEncoded]", EnableAuthorEncodedCommand_Execute, AdvancedView_CanExecute);
-        public ICommand EnableInterfaceEncodedCommand => GetRelayCommand(ref _enableInterfaceEncodedCommand, "Enable [InterfaceEncoded]", EnableInterfaceEncodedCommand_Execute, AdvancedView_CanExecute);
-
-        private bool AdvancedView_CanExecute(object parameter)
-        {
-            return CanExecuteCommand && AttachEnableAdvancedView;
-        }
 
         private void EnableAdvancedViewCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                if (AttachEnableAdvancedView)
-                {
-                    MessageBoxResult result = MessageBox.Show(_window,
-                        "Advanced view allows access resources embedded in the script's interface and is intended for expert users only!\r\nIf you do not understand the inner workings of PEBakery's interface and attachment handling you can easily corrupt your script!\r\n\r\nAre you sure you want to enable advanced view?",
-                        "Warning",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    if (result == MessageBoxResult.No)
-                        AttachEnableAdvancedView = false;
-                }
-                else
-                { // Turn off all advanced view
-                    AttachIncludeAuthorEncoded = false;
-                    AttachIncludeInterfaceEncoded = false;
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void EnableAuthorEncodedCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
                 ReadScriptAttachment();
-
-                if (AttachIncludeAuthorEncoded)
-                    SelectScriptAttachedFolder(ScriptSection.Names.AuthorEncoded);
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void EnableInterfaceEncodedCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                ReadScriptAttachment();
-
-                if (AttachIncludeInterfaceEncoded)
-                    SelectScriptAttachedFolder(ScriptSection.Names.InterfaceEncoded);
             }
             finally
             {
@@ -3971,7 +3934,7 @@ namespace PEBakery.WPF
             // General
             if (EncodedFile.ContainsLogo(Script))
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(Script, true);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadLogoInfo(Script, true);
                 if (!report.Success)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -4015,7 +3978,6 @@ namespace PEBakery.WPF
 
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
-
         }
 
         /// <summary>
@@ -4074,14 +4036,14 @@ namespace PEBakery.WPF
             AttachedFolders.Clear();
             AttachedFiles.Clear();
 
-            EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
+            ReadFileInfoOptions opts = new ReadFileInfoOptions
             {
-                IncludeAuthorEncoded = AttachIncludeAuthorEncoded,
-                IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
+                IncludeAuthorEncoded = AttachAdvancedViewEnabled,
+                IncludeInterfaceEncoded = AttachAdvancedViewEnabled,
                 InspectEncodeMode = false,
             };
 
-            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(Script, opts);
+            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(Script, opts);
             if (!report.Success)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
@@ -4097,10 +4059,11 @@ namespace PEBakery.WPF
                 files.AddRange(kv.Value);
             }
 
+            // Reading encode mode form encoded file requires decompression of footer.
             Parallel.ForEach(files, fi =>
             {
                 if (fi.EncodedSize <= EncodedFile.DecodeInMemorySizeLimit)
-                    fi.EncodeMode = EncodedFile.GetEncodeMode(Script, fi.FolderName, fi.FileName, true);
+                    fi.EncodeMode = EncodedFile.ReadEncodeMode(Script, fi.FolderName, fi.FileName, true);
             });
 
             // Attachment

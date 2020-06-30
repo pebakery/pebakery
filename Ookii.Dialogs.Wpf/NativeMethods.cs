@@ -4,6 +4,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#pragma warning disable CA1712 // Do not prefix enum values with type name -> Keep original name of Win32 C enum names
+
 namespace Ookii.Dialogs.Wpf
 {
     static class NativeMethods
@@ -521,7 +523,7 @@ namespace Ookii.Dialogs.Wpf
             uint ulInAuthBufferSize,
             out IntPtr ppvOutAuthBuffer,
             out uint pulOutAuthBufferSize,
-            [MarshalAs(UnmanagedType.Bool)]ref bool pfSave,
+            [MarshalAs(UnmanagedType.Bool)] ref bool pfSave,
             CredUIWinFlags dwFlags);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "CredReadW", SetLastError = true)]
@@ -645,3 +647,5 @@ namespace Ookii.Dialogs.Wpf
         #endregion
     }
 }
+
+#pragma warning restore CA1712 // Do not prefix enum values with type name

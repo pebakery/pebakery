@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2018-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,17 +25,14 @@
     not derived from or based on this program. 
 */
 
-using Newtonsoft.Json;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -357,7 +354,7 @@ namespace PEBakery.Core
                     remoteScript = _p.RefreshScript(remoteScript);
                     if (remoteScript == null)
                         return new ResultReport<Script>(false, null, $"Internal error at {nameof(FileUpdater)}.{nameof(RestoreScriptState)}");
-                }                
+                }
 
                 // Copy downloaded remote script into new script
                 File.Copy(tempScriptFile, sc.DirectRealPath, true);

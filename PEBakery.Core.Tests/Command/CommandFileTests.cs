@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2019 Hajin Jang
+    Copyright (C) 2017-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -36,6 +36,8 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
+    [TestCategory(nameof(PEBakery.Core.Tests.Command))]
+    [TestCategory(nameof(PEBakery.Core.Commands.CommandFile))]
     [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandFileTests
     {
@@ -46,8 +48,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCopy
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
         public void FileCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -151,19 +151,22 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"FileCopy,{pbSrcDir}\Z\Y.ini,{destDir}", Path.Combine("Z", "Y.ini"), "Y.ini");
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.txt,{destDir}", "*.txt", true);
             MultiTemplate($@"FileCopy,{pbSrcDir}\*.ini,{destDir},NOREC", "*.ini", false);
+            // Check https://github.com/pebakery/pebakery/issues/150
+            MultiTemplate($@"FileCopy,{pbSrcDir}\\*.txt,{destDir}", "*.txt", true);
+            MultiTemplate($@"FileCopy,{pbSrcDir}\\*.ini,{destDir},NOREC", "*.ini", false);
 
             SingleTemplate($@"FileCopy,{pbSrcDir}\P.txt,{destDir}", "P.txt", null, ErrorCheck.RuntimeError);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir}", "C.txt", null, ErrorCheck.Overwrite, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},NOWARN", "C.txt", null, ErrorCheck.Success, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE", "C.txt", null, ErrorCheck.Overwrite, true);
             SingleTemplate($@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE,NOWARN", "C.txt", null, ErrorCheck.Success, true, true);
+
+            SingleTemplate($@"FileCopy,{pbSrcDir}\A.txt,{destDir}\NonExistDir\", "A.txt", null, ErrorCheck.Warning, false, false);
         }
         #endregion
 
         #region FileDelete
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
         public void FileDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -179,7 +182,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -208,7 +211,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -246,8 +249,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileRename, FileMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
         public void FileRename()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -262,7 +263,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -295,58 +296,84 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileCreateBlank
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
         public void FileCreateBlank()
         {
             EngineState s = EngineTests.CreateEngineState();
             string destDir = FileHelper.GetTempDir();
-
-            void Template(string rawCode, string fileName, Encoding encoding, bool createDummy, ErrorCheck check = ErrorCheck.Success)
+            try
             {
-                string destFullPath = Path.Combine(destDir, fileName);
-
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
-                Directory.CreateDirectory(destDir);
-                try
+                void Template(string rawCode, string fileName, Encoding encoding, bool createDummy, ErrorCheck check = ErrorCheck.Success)
                 {
-                    if (createDummy)
-                        File.Create(destFullPath).Close();
+                    string destFullPath = Path.Combine(destDir, fileName);
 
-                    EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
-
-                    if (check == ErrorCheck.Success)
+                    if (File.Exists(destFullPath))
+                        File.Delete(destFullPath);
+                    try
                     {
-                        Assert.IsTrue(File.Exists(destFullPath));
-                        Assert.IsTrue(EncodingHelper.DetectBom(destFullPath).Equals(encoding));
+                        if (createDummy)
+                            File.Create(destFullPath).Close();
+
+                        EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
+
+                        if (check == ErrorCheck.Success)
+                        {
+                            Assert.IsTrue(File.Exists(destFullPath));
+                            Assert.IsTrue(EncodingHelper.DetectEncoding(destFullPath).Equals(encoding));
+                            switch (encoding)
+                            {
+                                case UTF8Encoding utf8Enc:
+                                    {
+                                        byte[] preamble = utf8Enc.GetPreamble();
+                                        Assert.AreEqual(3, preamble.Length);
+                                        Assert.IsTrue(preamble.SequenceEqual(Encoding.UTF8.GetPreamble()));
+                                    }
+                                    break;
+                                case UnicodeEncoding uniEnc:
+                                    {
+                                        byte[] preamble = uniEnc.GetPreamble();
+                                        Assert.AreEqual(2, preamble.Length);
+                                        if (encoding.Equals(Encoding.Unicode))
+                                            Assert.IsTrue(preamble.SequenceEqual(Encoding.Unicode.GetPreamble()));
+                                        else if (encoding.Equals(Encoding.BigEndianUnicode))
+                                            Assert.IsTrue(preamble.SequenceEqual(Encoding.BigEndianUnicode.GetPreamble()));
+                                        else
+                                            Assert.Fail();
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (File.Exists(destFullPath))
+                            File.Delete(destFullPath);
                     }
                 }
-                finally
-                {
-                    if (Directory.Exists(destDir))
-                        Directory.Delete(destDir, true);
-                }
-            }
 
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", Encoding.Default, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", Encoding.Default, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", Encoding.Default, false);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, true);
-            Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+                Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
+                Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir);
+            }
         }
         #endregion
 
         #region FileSize
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void FileSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -372,8 +399,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region FileVersion
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void FileVersion()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -398,8 +425,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirCopy
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void DirCopy()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -486,8 +513,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirDelete
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void DirDelete()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -506,7 +533,7 @@ namespace PEBakery.Core.Tests.Command
                 {
                     if (copyDir)
                     {
-                        FileHelper.DirCopy(srcFullPath, destFullPath, new FileHelper.DirCopyOptions
+                        FileHelper.DirCopy(srcFullPath, destFullPath, new DirCopyOptions
                         {
                             CopySubDirs = true,
                             Overwrite = true,
@@ -545,8 +572,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void DirMove()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -561,7 +588,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -590,8 +617,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirMake
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void DirMake()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -636,8 +663,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region DirSize
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void DirSize()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -665,8 +692,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region PathMove
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandFile")]
+
+
         public void PathMove()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -681,7 +708,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,
@@ -712,7 +739,7 @@ namespace PEBakery.Core.Tests.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                FileHelper.DirCopy(srcDir, destDir, new DirCopyOptions
                 {
                     CopySubDirs = true,
                     Overwrite = true,

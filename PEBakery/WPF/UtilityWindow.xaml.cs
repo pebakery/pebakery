@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -397,7 +397,7 @@ namespace PEBakery.WPF
             CodeFile = Path.Combine(p.ProjectDir, "CodeBox.txt");
             if (File.Exists(CodeFile))
             {
-                Encoding encoding = EncodingHelper.DetectBom(CodeFile);
+                Encoding encoding = EncodingHelper.DetectEncoding(CodeFile);
                 using (StreamReader r = new StreamReader(CodeFile, encoding))
                 {
                     CodeBoxInput = await r.ReadToEndAsync();
@@ -432,7 +432,13 @@ Description=Test Commands
 
         public void SaveCodeBox()
         {
-            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectBom(CodeFile) : Encoding.UTF8;
+            // Detect encoding of text. 
+            Encoding encoding;
+            if (File.Exists(CodeFile))
+                encoding = EncodingHelper.SmartDetectEncoding(CodeFile, CodeBoxInput);
+            else
+                encoding = Encoding.UTF8;
+
             using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
                 w.Write(CodeBoxInput);

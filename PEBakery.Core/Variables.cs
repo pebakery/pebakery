@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -405,17 +405,13 @@ namespace PEBakery.Core
         #region Get, Set, Expand Value
         private Dictionary<string, string> GetVarsMatchesType(VarsType type)
         {
-            switch (type)
+            return type switch
             {
-                case VarsType.Local:
-                    return _localVars;
-                case VarsType.Global:
-                    return _globalVars;
-                case VarsType.Fixed:
-                    return _fixedVars;
-                default:
-                    return null;
-            }
+                VarsType.Local => _localVars,
+                VarsType.Global => _globalVars,
+                VarsType.Fixed => _fixedVars,
+                _ => null,
+            };
         }
 
         public Dictionary<string, string> GetVarDict(VarsType type)
@@ -892,11 +888,10 @@ namespace PEBakery.Core
 
             // WB082 Behavior : Final form (expanded string) is written to varaibles.
             //                  Note that $#p will not be unescaped to %.
-            // When preprocessed value is "NIL", it will be removed from dict.
+            // When preprocessed value is "NIL", it will be removed from the dict.
 
             string finalValue;
             if (expand)
-                // finalValue = StringEscaper.Preprocess(s, _value, false);
                 finalValue = StringEscaper.ExpandVariables(s, varValue);
             else
                 finalValue = varValue;

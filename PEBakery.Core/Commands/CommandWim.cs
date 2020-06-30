@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2019 Hajin Jang
+    Copyright (C) 2017-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -328,7 +328,7 @@ namespace PEBakery.Core.Commands
 
             try
             {
-                using (Wim wim = Wim.OpenWim(srcWim, OpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(srcWim, OpenFlags.None))
                 {
                     WimInfo wi = wim.GetWimInfo();
 
@@ -406,14 +406,14 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.DEFAULT;
+            OpenFlags openFlags = OpenFlags.None;
+            ExtractFlags extractFlags = ExtractFlags.None;
             if (info.CheckFlag)
-                openFlags |= OpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CheckIntegrity;
             if (info.NoAclFlag)
-                extractFlags |= ExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             try
             {
@@ -434,10 +434,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GlobEnable | RefFlags.GlobErrOnNoMatch;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GlobHadNoMatches)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
@@ -478,9 +478,9 @@ namespace PEBakery.Core.Commands
             // EXTRACT_IMAGE_END
             switch (msg)
             {
-                case ProgressMsg.EXTRACT_FILE_STRUCTURE:
+                case ProgressMsg.ExtractFileStructure:
                     {
-                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
+                        ExtractProgress m = (ExtractProgress)info;
 
                         if (0 < m.EndFileCount)
                         {
@@ -490,9 +490,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.EXTRACT_STREAMS:
+                case ProgressMsg.ExtractStreams:
                     {
-                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
+                        ExtractProgress m = (ExtractProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -502,9 +502,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.EXTRACT_METADATA:
+                case ProgressMsg.ExtractMetadata:
                     {
-                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
+                        ExtractProgress m = (ExtractProgress)info;
 
                         if (0 < m.EndFileCount)
                         {
@@ -514,9 +514,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.CALC_INTEGRITY:
+                case ProgressMsg.CalcIntegrity:
                     {
-                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
+                        IntegrityProgress m = (IntegrityProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -526,7 +526,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return CallbackStatus.CONTINUE;
+            return CallbackStatus.Continue;
         }
         #endregion
 
@@ -554,18 +554,18 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            OpenFlags openFlags = OpenFlags.None;
+            ExtractFlags extractFlags = ExtractFlags.NoRpFix | ExtractFlags.NoPreserveDirStructure;
             if (info.CheckFlag)
-                openFlags |= OpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CheckIntegrity;
             if (info.NoAclFlag)
-                extractFlags |= ExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             // Flags for globbing
             if (StringHelper.IsWildcard(extractPath))
-                extractFlags |= ExtractFlags.GLOB_PATHS;
+                extractFlags |= ExtractFlags.GlobPaths;
 
             try
             {
@@ -586,10 +586,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GlobEnable | RefFlags.GlobErrOnNoMatch;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GlobHadNoMatches)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
@@ -642,14 +642,14 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            OpenFlags openFlags = OpenFlags.None;
+            ExtractFlags extractFlags = ExtractFlags.NoRpFix | ExtractFlags.NoPreserveDirStructure;
             if (firstInfo.CheckFlag)
-                openFlags |= OpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CheckIntegrity;
             if (firstInfo.NoAclFlag)
-                extractFlags |= ExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NoAcls;
             if (firstInfo.NoAttribFlag)
-                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NoAttributes;
 
             List<string> extractPaths = new List<string>(infoOp.Cmds.Count);
             foreach (CodeInfo_WimExtract info in infoOp.Infos)
@@ -659,7 +659,7 @@ namespace PEBakery.Core.Commands
 
                 // Flags for globbing
                 if (StringHelper.IsWildcard(extractPath))
-                    extractFlags |= ExtractFlags.GLOB_PATHS;
+                    extractFlags |= ExtractFlags.GlobPaths;
             }
 
             try
@@ -681,10 +681,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GlobEnable | RefFlags.GlobErrOnNoMatch;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GlobHadNoMatches)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
@@ -740,15 +740,15 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX;
+            OpenFlags openFlags = OpenFlags.None;
+            ExtractFlags extractFlags = ExtractFlags.NoRpFix;
             if (info.CheckFlag)
-                openFlags |= OpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CheckIntegrity;
             if (info.NoAclFlag)
-                extractFlags |= ExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NoAcls;
             if (info.NoAttribFlag)
-                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
-            ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GLOB_PATHS;
+                extractFlags |= ExtractFlags.NoAttributes;
+            ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GlobPaths;
 
             // Check ListFile
             if (!File.Exists(listFilePath))
@@ -761,7 +761,7 @@ namespace PEBakery.Core.Commands
                 List<string> extractGlobPaths = new List<string>();
 
                 // Read listfile
-                Encoding encoding = EncodingHelper.DetectBom(listFilePath);
+                Encoding encoding = EncodingHelper.DetectEncoding(listFilePath);
                 using (StreamReader r = new StreamReader(listFilePath, encoding, false))
                 {
                     var extractPaths = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim());
@@ -801,10 +801,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GlobEnable | RefFlags.GlobErrOnNoMatch;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GlobHadNoMatches)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
@@ -899,26 +899,26 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
-            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.FILE_PATHS_UNNEEDED;
+            WriteFlags writeFlags = WriteFlags.None;
+            AddFlags addFlags = AddFlags.WinConfig | AddFlags.FilePathsUnneeded;
             if (info.BootFlag)
-                addFlags |= AddFlags.BOOT;
+                addFlags |= AddFlags.Boot;
             if (info.NoAclFlag)
-                addFlags |= AddFlags.NO_ACLS;
+                addFlags |= AddFlags.NoAcls;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
 
             // Set Compression Type
             CompressionType compType;
             if (compStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                compType = CompressionType.NONE;
+                compType = CompressionType.None;
             else if (compStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
                 compType = CompressionType.XPRESS;
             else if (compStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
                 compType = CompressionType.LZX;
             else if (compStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
             {
-                writeFlags |= WriteFlags.SOLID;
+                writeFlags |= WriteFlags.Solid;
                 compType = CompressionType.LZMS;
             }
             else
@@ -995,15 +995,15 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
-            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.FILE_PATHS_UNNEEDED;
+            OpenFlags openFlags = OpenFlags.WriteAccess;
+            WriteFlags writeFlags = WriteFlags.None;
+            AddFlags addFlags = AddFlags.WinConfig | AddFlags.FilePathsUnneeded;
             if (info.BootFlag)
-                addFlags |= AddFlags.BOOT;
+                addFlags |= AddFlags.Boot;
             if (info.NoAclFlag)
-                addFlags |= AddFlags.NO_ACLS;
+                addFlags |= AddFlags.NoAcls;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
 
             // Set ImageName
             string imageName;
@@ -1090,16 +1090,16 @@ namespace PEBakery.Core.Commands
 
             switch (msg)
             {
-                case ProgressMsg.SCAN_BEGIN:
+                case ProgressMsg.ScanBegin:
                     {
-                        ProgressInfo_Scan m = (ProgressInfo_Scan)info;
+                        ScanProgress m = (ScanProgress)info;
 
                         s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Scanning {m.Source}...";
                     }
                     break;
-                case ProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WriteStreams:
                     {
-                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
+                        WriteStreamsProgress m = (WriteStreamsProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1109,9 +1109,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.CALC_INTEGRITY:
+                case ProgressMsg.CalcIntegrity:
                     {
-                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
+                        IntegrityProgress m = (IntegrityProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1121,7 +1121,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return CallbackStatus.CONTINUE;
+            return CallbackStatus.Continue;
         }
 
         private static LogInfo LogWimLibException(WimLibException e)
@@ -1145,10 +1145,10 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            OpenFlags openFlags = OpenFlags.WriteAccess;
+            WriteFlags writeFlags = WriteFlags.None;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
 
             try
             {
@@ -1196,9 +1196,9 @@ namespace PEBakery.Core.Commands
             // WRITE_STREAMS 
             switch (msg)
             {
-                case ProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WriteStreams:
                     {
-                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
+                        WriteStreamsProgress m = (WriteStreamsProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1208,9 +1208,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.CALC_INTEGRITY:
+                case ProgressMsg.CalcIntegrity:
                     {
-                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
+                        IntegrityProgress m = (IntegrityProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1220,7 +1220,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return CallbackStatus.CONTINUE;
+            return CallbackStatus.Continue;
         }
         #endregion
 
@@ -1243,18 +1243,18 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            const OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            const UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
-            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.VERBOSE | AddFlags.EXCLUDE_VERBOSE;
+            const OpenFlags openFlags = OpenFlags.WriteAccess;
+            const UpdateFlags updateFlags = UpdateFlags.SendProgress;
+            WriteFlags writeFlags = WriteFlags.None;
+            AddFlags addFlags = AddFlags.WinConfig | AddFlags.Verbose | AddFlags.ExcludeVerbose;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             if (info.RebuildFlag)
-                writeFlags |= WriteFlags.REBUILD;
+                writeFlags |= WriteFlags.Rebuild;
             if (info.NoAclFlag)
-                addFlags |= AddFlags.NO_ACLS;
+                addFlags |= AddFlags.NoAcls;
             if (info.PreserveFlag)
-                addFlags |= AddFlags.NO_REPLACE;
+                addFlags |= AddFlags.NoReplace;
 
             try
             {
@@ -1310,14 +1310,14 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            const OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            const UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
-            const DeleteFlags deleteFlags = DeleteFlags.RECURSIVE;
+            const OpenFlags openFlags = OpenFlags.WriteAccess;
+            const UpdateFlags updateFlags = UpdateFlags.SendProgress;
+            WriteFlags writeFlags = WriteFlags.None;
+            const DeleteFlags deleteFlags = DeleteFlags.Recursive;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             if (info.RebuildFlag)
-                writeFlags |= WriteFlags.REBUILD;
+                writeFlags |= WriteFlags.Rebuild;
 
             try
             {
@@ -1372,13 +1372,13 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            const OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            const UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            const OpenFlags openFlags = OpenFlags.WriteAccess;
+            const UpdateFlags updateFlags = UpdateFlags.SendProgress;
+            WriteFlags writeFlags = WriteFlags.None;
             if (info.CheckFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             if (info.RebuildFlag)
-                writeFlags |= WriteFlags.REBUILD;
+                writeFlags |= WriteFlags.Rebuild;
 
             try
             {
@@ -1467,13 +1467,13 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Common Flags
-            const OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            const UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
-            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            const OpenFlags openFlags = OpenFlags.WriteAccess;
+            const UpdateFlags updateFlags = UpdateFlags.SendProgress;
+            WriteFlags writeFlags = WriteFlags.None;
             if (checkFlag)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             if (rebuildFlag)
-                writeFlags |= WriteFlags.REBUILD;
+                writeFlags |= WriteFlags.Rebuild;
 
             // Make list of UpdateCommand
             List<LogInfo> wimLogs = new List<LogInfo>(infoOp.Cmds.Count);
@@ -1489,11 +1489,11 @@ namespace PEBakery.Core.Commands
                             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
                             string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
-                            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.VERBOSE | AddFlags.EXCLUDE_VERBOSE;
+                            AddFlags addFlags = AddFlags.WinConfig | AddFlags.Verbose | AddFlags.ExcludeVerbose;
                             if (info.NoAclFlag)
-                                addFlags |= AddFlags.NO_ACLS;
+                                addFlags |= AddFlags.NoAcls;
                             if (info.PreserveFlag)
-                                addFlags |= AddFlags.NO_REPLACE;
+                                addFlags |= AddFlags.NoReplace;
 
                             UpdateCommand addCmd = UpdateCommand.SetAdd(srcPath, destPath, null, addFlags);
                             wimUpdateCmds.Add(addCmd);
@@ -1507,7 +1507,7 @@ namespace PEBakery.Core.Commands
 
                             string path = StringEscaper.Preprocess(s, info.Path);
 
-                            const DeleteFlags deleteFlags = DeleteFlags.RECURSIVE;
+                            const DeleteFlags deleteFlags = DeleteFlags.Recursive;
 
                             UpdateCommand deleteCmd = UpdateCommand.SetDelete(path, deleteFlags);
                             wimUpdateCmds.Add(deleteCmd);
@@ -1581,23 +1581,23 @@ namespace PEBakery.Core.Commands
 
             switch (msg)
             {
-                case ProgressMsg.UPDATE_END_COMMAND:
+                case ProgressMsg.UpdateEndCommand:
                     {
-                        ProgressInfo_Update m = (ProgressInfo_Update)info;
+                        UpdateProgress m = (UpdateProgress)info;
 
                         UpdateCommand upCmd = m.Command;
                         string str;
                         switch (upCmd.Op)
                         {
-                            case UpdateOp.ADD:
+                            case UpdateOp.Add:
                                 var add = upCmd.Add;
                                 str = $"[Stage 1] Adding {add.FsSourcePath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
-                            case UpdateOp.DELETE:
+                            case UpdateOp.Delete:
                                 var del = upCmd.Delete;
                                 str = $"[Stage 1] Deleting {del.WimPath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
-                            case UpdateOp.RENAME:
+                            case UpdateOp.Rename:
                                 var ren = upCmd.Rename;
                                 str = $"[Stage 1] Renaming {ren.WimSourcePath} to {ren.WimTargetPath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
@@ -1608,9 +1608,9 @@ namespace PEBakery.Core.Commands
                         s.MainViewModel.BuildCommandProgressText = str;
                     }
                     break;
-                case ProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WriteStreams:
                     {
-                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
+                        WriteStreamsProgress m = (WriteStreamsProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1620,9 +1620,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.CALC_INTEGRITY:
+                case ProgressMsg.CalcIntegrity:
                     {
-                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
+                        IntegrityProgress m = (IntegrityProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1632,7 +1632,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return CallbackStatus.CONTINUE;
+            return CallbackStatus.Continue;
         }
         #endregion
 
@@ -1652,27 +1652,27 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
-            WriteFlags writeFlags = WriteFlags.REBUILD;
+            OpenFlags openFlags = OpenFlags.WriteAccess;
+            WriteFlags writeFlags = WriteFlags.Rebuild;
             CompressionType? compType = null;
             if (info.Recompress != null)
             {
                 string recompStr = StringEscaper.Preprocess(s, info.Recompress);
 
-                writeFlags |= WriteFlags.RECOMPRESS;
+                writeFlags |= WriteFlags.Recompress;
 
                 // Set Compression Type
                 // NONE, XPRESS, LZX, LZMS : Recompress file with specified algorithm
                 // KEEP : Recompress file with current compresssoin algorithm
                 if (recompStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                    compType = CompressionType.NONE;
+                    compType = CompressionType.None;
                 else if (recompStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
                     compType = CompressionType.XPRESS;
                 else if (recompStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
                     compType = CompressionType.LZX;
                 else if (recompStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
                 {
-                    writeFlags |= WriteFlags.SOLID;
+                    writeFlags |= WriteFlags.Solid;
                     compType = CompressionType.LZMS;
                 }
                 else if (!recompStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
@@ -1680,9 +1680,9 @@ namespace PEBakery.Core.Commands
             }
 
             if (info.CheckFlag == true)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             else if (info.CheckFlag == false)
-                writeFlags |= WriteFlags.NO_CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.NoCheckIntegrity;
 
             try
             {
@@ -1746,19 +1746,19 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WriteFlags writeFlags = WriteFlags.REBUILD;
-            ExportFlags exportFlags = ExportFlags.GIFT;
+            WriteFlags writeFlags = WriteFlags.Rebuild;
+            ExportFlags exportFlags = ExportFlags.Gift;
 
             if (info.BootFlag)
-                exportFlags |= ExportFlags.BOOT;
+                exportFlags |= ExportFlags.Boot;
             if (info.CheckFlag == true)
-                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CheckIntegrity;
             else if (info.CheckFlag == false)
-                writeFlags |= WriteFlags.NO_CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.NoCheckIntegrity;
 
             try
             {
-                using (Wim srcWim = Wim.OpenWim(srcWimPath, OpenFlags.DEFAULT))
+                using (Wim srcWim = Wim.OpenWim(srcWimPath, OpenFlags.None))
                 {
                     WimInfo wi = srcWim.GetWimInfo();
 
@@ -1775,10 +1775,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
-                            srcWim.ReferenceResourceFile(splitWim, refFlags, OpenFlags.DEFAULT);
+                            const RefFlags refFlags = RefFlags.GlobEnable | RefFlags.GlobErrOnNoMatch;
+                            srcWim.ReferenceResourceFile(splitWim, refFlags, OpenFlags.None);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GlobHadNoMatches)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
@@ -1797,11 +1797,11 @@ namespace PEBakery.Core.Commands
                                 if (!compStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
                                     return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]. You must use [KEEP] when exporting to an existing wim file");
 
-                                writeFlags |= WriteFlags.RECOMPRESS;
+                                writeFlags |= WriteFlags.Recompress;
                             }
 
                             uint destWimCount;
-                            using (Wim destWim = Wim.OpenWim(destWimPath, OpenFlags.WRITE_ACCESS))
+                            using (Wim destWim = Wim.OpenWim(destWimPath, OpenFlags.WriteAccess))
                             {
                                 destWim.RegisterCallback(WimSimpleWriteProgress, s);
 
@@ -1827,7 +1827,7 @@ namespace PEBakery.Core.Commands
                                 // Set Compression Type
                                 // Use of compress argument [KEEP] is prohibitted
                                 if (compStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                                    compType = CompressionType.NONE;
+                                    compType = CompressionType.None;
                                 else if (compStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
                                     compType = CompressionType.XPRESS;
                                 else if (compStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
@@ -1840,8 +1840,8 @@ namespace PEBakery.Core.Commands
                                     return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]");
 
                                 if (compType == CompressionType.LZMS)
-                                    writeFlags |= WriteFlags.SOLID;
-                                writeFlags |= WriteFlags.RECOMPRESS;
+                                    writeFlags |= WriteFlags.Solid;
+                                writeFlags |= WriteFlags.Recompress;
                             }
 
                             using (Wim destWim = Wim.CreateNewWim(compType))
@@ -1881,9 +1881,9 @@ namespace PEBakery.Core.Commands
             // WRITE_STREAMS 
             switch (msg)
             {
-                case ProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WriteStreams:
                     {
-                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
+                        WriteStreamsProgress m = (WriteStreamsProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1893,9 +1893,9 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case ProgressMsg.CALC_INTEGRITY:
+                case ProgressMsg.CalcIntegrity:
                     {
-                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
+                        IntegrityProgress m = (IntegrityProgress)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1905,7 +1905,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return CallbackStatus.CONTINUE;
+            return CallbackStatus.Continue;
         }
         #endregion
     }

@@ -208,11 +208,11 @@ NUglify
 
     https://github.com/xoofx/NUglify
 
-RazorEngine
+RazorLight
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
     
-    https://github.com/Antaris/RazorEngine
+    https://github.com/toddams/RazorLight
 
 SevenZipSharp
     LGPLv3 License
@@ -249,8 +249,8 @@ UACHelper
     https://github.com/falahati/UACHelper
 
 -----------------------------------------------------------
-PEBakery's log html template uses Open Source Software (OSS).
-This is the list of open source projects and licenses.
+PEBakery's log html templates use Open Source Software (OSS).
+This is the list of open source projects and their licenses.
 
 Bootstrap
     MIT License

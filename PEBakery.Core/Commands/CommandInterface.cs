@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2019 Hajin Jang
+    Copyright (C) 2016-2020 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -1225,7 +1225,7 @@ namespace PEBakery.Core.Commands
             }
 
             string txtStr;
-            Encoding encoding = EncodingHelper.DetectBom(srcFile);
+            Encoding encoding = EncodingHelper.DetectEncoding(srcFile);
             using (StreamReader r = new StreamReader(srcFile, encoding))
             {
                 txtStr = r.ReadToEnd().Trim();
@@ -1297,6 +1297,8 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
+                                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                                // But it requires HWND to be displayed properly.
                                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                                 {
                                     SelectedPath = initPath,
