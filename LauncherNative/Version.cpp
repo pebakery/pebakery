@@ -1,3 +1,28 @@
+/*
+	Copyright (C) 2016-2020 Hajin Jang
+	Licensed under MIT License.
+
+	MIT License
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
 #include "Version.h"
 
 // Windows SDK Headers
@@ -10,6 +35,9 @@
 #include <string>
 #include <sstream>
 
+// C Runtime Headers
+#include <cstdint>
+
 // Local Headers
 #include "Helper.h"
 
@@ -19,30 +47,39 @@ Version::Version() :
 	_major(0), _minor(0), _patch(0)
 { }
 
-Version::Version(WORD major, WORD minor) :
+Version::Version(uint16_t major, uint16_t minor) :
 	_major(major), _minor(minor), _patch(0)
 { }
 
-Version::Version(WORD major, WORD minor, WORD patch) :
+Version::Version(uint16_t major, uint16_t minor, uint16_t patch) :
 	_major(major), _minor(minor), _patch(patch)
 { }
 
-WORD Version::GetMajor()
+Version::~Version()
+{
+}
+
+uint16_t Version::GetMajor() const
 {
 	return _major;
 }
 
-WORD Version::GetMinor()
+uint16_t Version::GetMinor() const
 {
 	return _minor;
 }
 
-WORD Version::GetPatch()
+uint16_t Version::GetPatch() const
 {
 	return _patch;
 }
 
 wstring Version::ToString(bool excludePatch)
+{
+	return static_cast<const Version>(*this).ToString(excludePatch);
+}
+
+const wstring Version::ToString(bool excludePatch) const
 {
 	// Version String is used for displaying purpose only
 	wostringstream woss;
@@ -57,7 +94,7 @@ wstring Version::ToString(bool excludePatch)
 	return woss.str();
 }
 
-bool Version::IsEqual(Version& rhs, bool excludePatch)
+bool Version::IsEqual(const Version& rhs, bool excludePatch) const
 {
 	bool isEqual = _major == rhs.GetMajor() && _minor == rhs.GetMinor();
 	if (excludePatch == false)
@@ -73,19 +110,19 @@ bool Version::Parse(const std::string& str, Version& ver)
 	const char* minorPtr = Helper::Tokenize(str.c_str(), '.', slice);
 	if (minorPtr == nullptr)
 		return false;
-	WORD major = StrToIntA(slice.c_str());
+	uint16_t major = StrToIntA(slice.c_str());
 
 	// Read minor and patch
 	const char* patchPtr = Helper::Tokenize(minorPtr, '.', slice);
 	if (patchPtr == nullptr)
 	{ // No patch, Ex) 3.1
-		WORD minor = StrToIntA(minorPtr);
+		uint16_t minor = StrToIntA(minorPtr);
 		ver = Version(major, minor);
 	}
 	else
 	{ // Found patch, Ex) 3.1.5
-		WORD minor = StrToIntA(slice.c_str());
-		WORD patch = StrToIntA(patchPtr);
+		uint16_t minor = StrToIntA(slice.c_str());
+		uint16_t patch = StrToIntA(patchPtr);
 		ver = Version(major, minor, patch);
 	}
 
@@ -102,13 +139,13 @@ bool Version::Parse(const std::wstring& wstr, Version& ver)
 	after = Helper::Tokenize(before, '.', slice);
 	if (after == nullptr)
 		return false;
-	WORD major = StrToIntW(slice.c_str());
+	uint16_t major = StrToIntW(slice.c_str());
 
 	// Read minor
 	after = Helper::Tokenize(before, '.', slice);
 	if (after == nullptr)
 		return false;
-	WORD minor = StrToIntW(slice.c_str());
+	uint16_t minor = StrToIntW(slice.c_str());
 
 	// Read patch (if exists)
 	after = Helper::Tokenize(before, '.', slice);
@@ -118,19 +155,63 @@ bool Version::Parse(const std::wstring& wstr, Version& ver)
 	}
 	else
 	{ // Ex) 3.1.5
-		WORD patch = StrToIntW(slice.c_str());
+		uint16_t patch = StrToIntW(slice.c_str());
 		ver = Version(major, minor, patch);
 	}
 
 	return true;
 }
 
-bool Version::operator==(Version& rhs)
+bool Version::operator==(const Version& rhs) const
 {
 	return IsEqual(rhs);
 }
 
-bool Version::operator!=(Version& rhs)
+bool Version::operator!=(const Version& rhs) const
 {
 	return !IsEqual(rhs);
+}
+
+bool Version::operator<(const Version& rhs) const
+{
+	if (!(_major < rhs.GetMajor()))
+		return false;
+	if (!(_minor < rhs.GetMinor()))
+		return false;
+	if (!(_patch < rhs.GetPatch()))
+		return false;
+	return true;
+}
+
+bool Version::operator<=(const Version& rhs) const
+{
+	if (!(_major <= rhs.GetMajor()))
+		return false;
+	if (!(_minor <= rhs.GetMinor()))
+		return false;
+	if (!(_patch <= rhs.GetPatch()))
+		return false;
+	return true;
+}
+
+bool Version::operator>(const Version& rhs) const
+{
+	if (!(_major > rhs.GetMajor()))
+		return false;
+	if (!(_minor > rhs.GetMinor()))
+		return false;
+	if (!(_patch > rhs.GetPatch()))
+		return false;
+	return true;
+}
+
+bool Version::operator>=(const Version& rhs) const
+{
+	if (!(_major >= rhs.GetMajor()))
+		return false;
+	if (!(_minor >= rhs.GetMinor()))
+		return false;
+	if (!(_patch >= rhs.GetPatch()))
+		return false;
+	return true;
 }

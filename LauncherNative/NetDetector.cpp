@@ -1,3 +1,28 @@
+/*
+	Copyright (C) 2016-2020 Hajin Jang
+	Licensed under MIT License.
+
+	MIT License
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
 // Custom Constants
 #include "Var.h"
 
@@ -15,6 +40,9 @@
 #include <map>
 #include <regex>
 
+// C Runtime Headers
+#include <cstdint>
+
 // Local Headers
 #include "Helper.h"
 #include "Version.h"
@@ -23,8 +51,17 @@
 using namespace std;
 
 #ifdef CHECK_NETFX
-NetFxDetector::NetFxDetector()
+NetFxDetector::NetFxDetector(Version& targetVer) :
+	NetDetector(targetVer)
 {
+	// NetFxDetector supports .NET Framework 4.5+
+	if (_targetVer < Version(4, 5))
+		Helper::PrintError(L"The launcher is able to detect .NET Framework Runtime 4.5 or later.", true);
+}
+
+NetFxDetector::~NetFxDetector()
+{
+
 }
 
 bool NetFxDetector::IsInstalled()
@@ -42,7 +79,7 @@ bool NetFxDetector::IsInstalled()
 	if (RegQueryValueExW(hKey, ndpValue, NULL, NULL, (LPBYTE)&revision, &dwordSize) != ERROR_SUCCESS)
 		goto out;
 
-	if (MIN_NETFX_RELEASE_VALUE <= revision)
+	if (GetReleaseMinValue() <= revision)
 		ret = true;
 
 out:
@@ -50,16 +87,132 @@ out:
 	return ret;
 }
 
-void NetFxDetector::ExitAndDownload()
+void NetFxDetector::DownloadRuntime(bool exitAfter)
 {
-	Helper::PrintErrorAndOpenUrl(ERR_MSG_INSTALL_NETFX, ERR_CAP_INSTALL_NETFX, NETFX_INSTALLER_URL);
+	wstring url = GetInstallerUrl();
+
+	wostringstream woss;
+	woss << L"PEBakery requires .NET Framework ";
+	woss << _targetVer.ToString(false);
+	woss << L" or later.";
+	wstring errMsg = woss.str();
+
+	woss.clear();
+	woss.str(L"");
+	woss << L"Install .NET Framework ";
+	woss << _targetVer.ToString(false);
+	wstring errCap = woss.str();
+
+	Helper::PrintErrorAndOpenUrl(errMsg, errCap, url, exitAfter);
+}
+
+DWORD NetFxDetector::GetReleaseMinValue()
+{
+	DWORD minValue = UINT16_MAX;
+
+	// For 4.5+
+	if (_targetVer < Version(4, 5))
+		return minValue;
+
+	uint16_t minor = _targetVer.GetMinor();
+	uint16_t patch = _targetVer.GetPatch();
+	switch (minor)
+	{
+	case 5:
+		switch (patch)
+		{
+		case 0:
+			minValue = 378389;
+			break;
+		case 1:
+			minValue = 378675;
+			break;
+		case 2:
+			minValue = 379893;
+			break;
+		}
+		break;
+	case 6:
+		switch (patch)
+		{
+		case 0:
+			minValue = 393295;
+			break;
+		case 1:
+			minValue = 394254;
+			break;
+		case 2:
+			minValue = 394802;
+			break;
+		}
+		break;
+	case 7:
+		switch (patch)
+		{
+		case 0:
+			minValue = 460798;
+			break;
+		case 1:
+			minValue = 461308;
+			break;
+		case 2:
+			minValue = 461808;
+			break;
+		}
+		break;
+	case 8:
+		switch (patch)
+		{
+		case 0:
+			minValue = 528040;
+			break;
+		}
+		break;
+	}
+
+	return minValue;
+}
+
+const wstring NetFxDetector::GetInstallerUrl()
+{
+	// Strange enough, Microsoft does not provide offline installer for .NET Framework 4.5.
+	if (_targetVer == Version(4, 5))
+		return L"https://dotnet.microsoft.com/download/dotnet-framework/thank-you/net45-web-installer";
+
+	// Ex) https://dotnet.microsoft.com/download/dotnet-framework/thank-you/net48-offline-installer
+	wostringstream woss;
+	woss << L"https://dotnet.microsoft.com/download/dotnet-framework/thank-you/net";
+	woss << _targetVer.GetMajor();
+	woss << _targetVer.GetMinor();
+	if (0 < _targetVer.GetPatch())
+		woss << _targetVer.GetPatch();
+	woss << L"-offline-installer";
+	return woss.str();
 }
 #endif
 
 #ifdef CHECK_NETCORE
-NetCoreDetector::NetCoreDetector(Version& targetVer) :
-	_targetVer(targetVer)
-{ }
+NetCoreDetector::NetCoreDetector(Version& targetVer, bool checkDesktopRuntime) :
+	NetDetector(targetVer), _checkDesktopRuntime(checkDesktopRuntime)
+{
+	// NetCoreDetector supports .NET Core 2.1+
+	// Desktop runtime have been provided since .NET Core 3.0.
+	if (checkDesktopRuntime)
+	{
+		if (_targetVer < Version(3, 0))
+			Helper::PrintError(L"The launcher is able to detect .NET Core Desktop Runtime 3.0 or later.", true);
+	}
+	else
+	{
+		if (_targetVer < Version(2, 1))
+			Helper::PrintError(L"The launcher is able to detect .NET Core Runtime 2.1 or later.", true);
+	}
+}
+
+NetCoreDetector::~NetCoreDetector()
+{
+
+}
 
 bool NetCoreDetector::IsInstalled()
 {
@@ -67,13 +220,13 @@ bool NetCoreDetector::IsInstalled()
 	// - .NET Core SDK creates HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch}:InstallLocation on registry.
 	//   But .NET Core runtime does not create such registry value.
 
-	// Read list of runtimes from `dotnet` command
+	// Read list of runtimes from `dotnet` command.
 	map<string, vector<Version>> rtMap = ListRuntimes();
 	
-	// Check `Microsoft.NETCore.App` and `Microsoft.WindowsDesktop.App`
+	// Check `Microsoft.NETCore.App` and `Microsoft.WindowsDesktop.App`.
 	auto checkVer = [rtMap](const string& key, Version& targetVer) -> bool
 	{
-		map<string, vector<Version>>::const_iterator nit = rtMap.find(key);
+		auto nit = rtMap.find(key);
 		if (nit == rtMap.cend())
 			return false;
 		
@@ -82,6 +235,7 @@ bool NetCoreDetector::IsInstalled()
 		for (Version& v : versions)
 		{
 			// Do not compare patch version.
+			// Patch number is only used on generating download urls.
 			if (targetVer.IsEqual(v, true))
 			{
 				success = true;
@@ -93,14 +247,34 @@ bool NetCoreDetector::IsInstalled()
 	
 	bool installed = true;
 	installed &= checkVer("Microsoft.NETCore.App", _targetVer);
-	installed &= checkVer("Microsoft.WindowsDesktop.App", _targetVer);
+	if (_checkDesktopRuntime)
+		installed &= checkVer("Microsoft.WindowsDesktop.App", _targetVer);
 	return installed;
 }
 
-void NetCoreDetector::ExitAndDownload()
+void NetCoreDetector::DownloadRuntime(bool exitAfter)
 {
 	wstring url = GetInstallerUrl();
-	Helper::PrintErrorAndOpenUrl(ERR_MSG_INSTALL_NETCORE, ERR_CAP_INSTALL_NETCORE, url);
+
+	wostringstream woss;
+	woss << L"PEBakery requires .NET Core ";
+	if (_checkDesktopRuntime)
+		woss << L"Desktop ";
+	woss << L"Runtime ";
+	woss << _targetVer.ToString(true);
+	woss << L".";
+	wstring errMsg = woss.str();
+
+	woss.clear();
+	woss.str(L"");
+	woss << L"Install .NET Core ";
+	woss << _targetVer.ToString(true);
+	if (_checkDesktopRuntime)
+		woss << L" Desktop";
+	woss << L" Runtime";
+	wstring errCap = woss.str();
+
+	Helper::PrintErrorAndOpenUrl(errMsg, errCap, url, exitAfter);
 }
 
 map<string, vector<Version>> NetCoreDetector::ListRuntimes()
@@ -159,12 +333,15 @@ map<string, vector<Version>> NetCoreDetector::ListRuntimes()
 	CloseHandle(hChildStdInWr);
 
 	// Read from child stdout read pipe
-	ostringstream oss;
-	ReadFromPipe(oss, hChildStdOutRd);
+	string rtiStr;
+	{
+		ostringstream oss;
+		ReadFromPipe(oss, hChildStdOutRd);
+		CloseHandle(hChildStdOutRd);
+		rtiStr = oss.str();
+	}
 
 	// Build rtMap
-	string rtiStr = oss.str();
-
 	const char* rtiPtr = rtiStr.c_str();
 	while (1)
 	{
@@ -200,12 +377,12 @@ void NetCoreDetector::ReadFromPipe(ostringstream& destStream, HANDLE hSrcPipe)
 	BOOL ret = TRUE;
 	DWORD readBytes = 0;
 
-	const DWORD ansiBufSize = 512;
-	char ansiBuf[ansiBufSize];
+	char ansiBuf[4096];
 	memset(ansiBuf, 0, sizeof(ansiBuf));
+	DWORD ansiBufSize = static_cast<DWORD>(sizeof(ansiBuf) - 1);
 	while (1)
 	{
-		ret = ReadFile(hSrcPipe, ansiBuf, ansiBufSize - 1, &readBytes, NULL);
+		ret = ReadFile(hSrcPipe, ansiBuf, ansiBufSize, &readBytes, NULL);
 		if (ret == FALSE || readBytes == 0)
 			break;
 		
@@ -239,38 +416,30 @@ bool NetCoreDetector::ParseRuntimeInfoLine(string& line, string& key, Version& v
 		return false;
 
 	return true;
-	
-
-	/*
-	regex r = regex("([a-zA-Z\\.]+) ([0-9]+)\\.([0-9]+)\\.([0-9]+) (\\[.+\\])");
-	smatch m;
-
-	if (!regex_match(line, m, r))
-		return false;
-
-	for (auto& sm : m)
-	{
-		sm.matched;
-	}
-	*/
 }
 
 // Return installer url of .NET Core Windows Desktop Runtime.
-wstring NetCoreDetector::GetInstallerUrl()
+const wstring NetCoreDetector::GetInstallerUrl()
 {
 	WORD procArch = Helper::GetProcArch();
 	const wchar_t* procArchStr = Helper::GetProcArchStr(procArch);
 	if (procArchStr == nullptr)
 		Helper::PrintError(L"Unsupported processor architecure!");
 
-	// Ex) L"https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.5-windows-x64-installer"
+	// Patch number is only used on generating download urls.
+	// Ex) .NET Core Runtime: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-3.1.5-windows-x64-installer
+	// Ex) Desktop Runtime:   https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.5-windows-x64-installer
 	wstring verStr = _targetVer.ToString(false);
 	wostringstream woss;
-	woss << L"https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-";
+	woss << L"https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-";
+	if (_checkDesktopRuntime)
+		woss << L"desktop-";
 	woss << verStr;
 	woss << L"-windows-";
 	woss << procArchStr;
 	woss << L"-installer";
 	return woss.str();
 }
+
 #endif
+

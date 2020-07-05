@@ -1,10 +1,34 @@
+/*
+	Copyright (C) 2016-2020 Hajin Jang
+	Licensed under MIT License.
+
+	MIT License
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
 #pragma once
 
 #include "Var.h"
 
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
-// #include <WinDef.h>
 #include <Windows.h>
 
 // C++ Runtime Headers
@@ -15,47 +39,56 @@
 // Local Headers
 #include "Version.h"
 
+class NetDetector
+{
+protected:
+	Version _targetVer;
+	virtual const std::wstring GetInstallerUrl() = 0;
+public:
+	NetDetector(Version& targetVer) : 
+		_targetVer(targetVer) { }
+	virtual ~NetDetector() { }
+	virtual bool IsInstalled() = 0;
+	virtual void DownloadRuntime(bool exitAfter = true) = 0;
+};
+
 #ifdef CHECK_NETFX
-class NetFxDetector
+/**
+ * @breif Detect if .NET Framework 4.5 or later is installed.
+ */
+class NetFxDetector : public NetDetector
 {
 private:
-	const DWORD MIN_NETFX_RELEASE_VALUE = 461808;
-	const wchar_t* NETFX_INSTALLER_URL = L"https://go.microsoft.com/fwlink/?LinkId=863265";
-	const wchar_t* ERR_MSG_INSTALL_NETFX = L"PEBakery requires .NET Framework 4.7.2 or later.";
-	const wchar_t* ERR_CAP_INSTALL_NETFX = L"Install .NET Framework 4.7.2";
+	DWORD GetReleaseMinValue();
+protected:
+	virtual const std::wstring GetInstallerUrl();
 public:
-	NetFxDetector();
-	bool IsInstalled();
-	void ExitAndDownload();
+	NetFxDetector(Version& targetVer);
+	virtual ~NetFxDetector();
+	virtual bool IsInstalled();
+	virtual void DownloadRuntime(bool exitAfter = true);
 };
 
 #endif
 
 #ifdef CHECK_NETCORE
-constexpr WORD NETCORE_VER_MAJOR = 3;
-constexpr WORD NETCORE_VER_MINOR = 1;
-// Patch number is only used on generating download urls
-constexpr WORD NETCORE_VER_PATCH = 5;
-
-class NetCoreDetector
+/**
+ * @breif Detect if .NET Core 2.1 or later is installed.
+ */
+class NetCoreDetector : public NetDetector
 {
 private:
-	// Functions
+	bool _checkDesktopRuntime;
+
 	static std::map<std::string, std::vector<Version>> ListRuntimes();
 	static void ReadFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
 	static bool ParseRuntimeInfoLine(std::string& line, std::string& key, Version& ver);
-	std::wstring GetInstallerUrl();
-
-	// Variables
-	Version _targetVer;
-
-	// Const
-	const wchar_t* ERR_MSG_INSTALL_NETCORE = L"PEBakery requires .NET Core Desktop Runtime 3.1.";
-	const wchar_t* ERR_CAP_INSTALL_NETCORE = L"Install .NET Core 3.1 Desktop Runtime";
-
+protected:
+	virtual const std::wstring GetInstallerUrl();
 public:	
-	NetCoreDetector(Version& targetVer);
-	bool IsInstalled();
-	void ExitAndDownload();
+	NetCoreDetector(Version& targetVer, bool checkDesktopRuntime);
+	virtual ~NetCoreDetector();
+	virtual bool IsInstalled();
+	virtual void DownloadRuntime(bool exitAfter = true);
 };
 #endif

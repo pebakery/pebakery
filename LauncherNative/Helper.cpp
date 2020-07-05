@@ -1,3 +1,28 @@
+/*
+	Copyright (C) 2016-2020 Hajin Jang
+	Licensed under MIT License.
+
+	MIT License
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
 // Constants
 #include "Var.h"
 
@@ -71,20 +96,35 @@ wchar_t* Helper::GetParameters(wchar_t* cmdLine)
 	return cmdParam;
 }
 
-void Helper::PrintError(const std::wstring& errMsg)
+void Helper::PrintError(const std::wstring& errMsg, bool exitAfter)
 {
 	wcerr << errMsg << endl;
 	MessageBoxW(NULL, errMsg.c_str(), L"Error", MB_OK | MB_ICONERROR);
-	exit(1);
+	if (exitAfter)
+		exit(1);
 }
 
-void Helper::PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url)
+void Helper::PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter)
 {
 	wcerr << errMsg << endl;
 	MessageBoxW(NULL, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
+	if (exitAfter)
+		exit(1);
+}
+
+void Helper::PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter)
+{
+	wcerr << errMsg << endl;
+	MessageBoxW(NULL, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
+	OpenUrl(url);
+	if (exitAfter)
+		exit(1);
+}
+
+void Helper::OpenUrl(const std::wstring& url)
+{
 	if (0 < url.size())
 		ShellExecuteW(NULL, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
-	exit(1);
 }
 
 WORD Helper::GetProcArch()
