@@ -67,8 +67,8 @@ NetFxDetector::~NetFxDetector()
 bool NetFxDetector::IsInstalled()
 { // https://docs.microsoft.com/en-US/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
 	HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
-	const WCHAR* ndpPath = L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full";
-	const WCHAR* ndpValue = L"Release";
+	const wchar_t* ndpPath = L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full";
+	const wchar_t* ndpValue = L"Release";
 	DWORD revision = 0;
 	DWORD dwordSize = sizeof(DWORD);
 	bool ret = false;
@@ -216,9 +216,22 @@ NetCoreDetector::~NetCoreDetector()
 
 bool NetCoreDetector::IsInstalled()
 {
-	// Used method: Invoking `dotnet list-runtimes` command.
-	// - .NET Core SDK creates HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch}:InstallLocation on registry.
-	//   But .NET Core runtime does not create such registry value.
+	// Stage 1) Check registry to make sure a runtime of proper architecture is installed.
+	// Check if the subkey HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\{Arch} exists.
+	// Note) .NET Core SDK creates HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch}:InstallLocation on registry, but runtime does not.
+
+	const wchar_t* arch = Helper::GetProcArchStr();
+	wstring subKeyPath = wstring(L"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\") + arch;
+
+	// Check if HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch} exists by opening it.
+	{
+		HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
+		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subKeyPath.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
+			return false;
+		RegCloseKey(hKey);
+	}
+	
+	// Stage 2) Inspect stdout of `dotnet list-runtimes` command.
 
 	// Read list of runtimes from `dotnet` command.
 	map<string, vector<Version>> rtMap = ListRuntimes();

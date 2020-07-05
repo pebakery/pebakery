@@ -42,6 +42,7 @@ public:
 	static void PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter = true);
 	static void OpenUrl(const std::wstring& url);
 	static WORD GetProcArch();
+	static const wchar_t* GetProcArchStr();
 	static const wchar_t* GetProcArchStr(WORD procArch);
 	static const char* Tokenize(const char* str, const char token, std::string& out);
 	static const wchar_t* Tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);

@@ -134,6 +134,12 @@ WORD Helper::GetProcArch()
 	return si.wProcessorArchitecture;
 }
 
+const wchar_t* Helper::GetProcArchStr()
+{
+	WORD procArch = GetProcArch();
+	return GetProcArchStr(procArch);
+}
+
 const wchar_t* Helper::GetProcArchStr(WORD procArch)
 {
 	const wchar_t* str = nullptr;
