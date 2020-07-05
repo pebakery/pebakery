@@ -97,7 +97,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <iconPacks:PackIconMaterial Kind="GitHubCircle" Width="20" Height="20"/>
+                        <iconPacks:PackIconMaterial Kind="Github" Width="20" Height="20"/>
                         <TextBlock Grid.Column="1"
                                    Margin="5, 0, 0, 0"
                                    FontSize="15" >
