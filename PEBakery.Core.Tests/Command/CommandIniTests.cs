@@ -98,6 +98,8 @@ namespace PEBakery.Core.Tests.Command
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ1,%Dest%", tempFile, sampleStr, "#$qA B C#$q");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,DQ2,%Dest%", tempFile, sampleStr, "#$qX\\Y\\Z#$q");
                 ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Doublequote,CUR_DIR,%Dest%", tempFile, sampleStr, "#$qCursors\\Material Design Cursors#$q");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,A,%Dest%,Moo", tempFile, sampleStr, "1");
+                ReadTemplate(s, CodeType.IniRead, $@"IniRead,{tempFile},Sec1,Cow,%Dest%,Moo", tempFile, sampleStr, "Moo");
 
                 // Optimization
                 ReadOptTemplate(s, CodeType.IniReadOp, new List<string>
@@ -106,7 +108,9 @@ namespace PEBakery.Core.Tests.Command
                     $@"IniRead,{tempFile},Sec1,B,%Dest1%",
                     $@"IniRead,{tempFile},Sec2,Z,%Dest2%",
                     $@"IniRead,{tempFile},Sec3,나,%Dest3%",
-                }, tempFile, sampleStr, new string[] { "1", "2", "6", "8" });
+                    $@"IniRead,{tempFile},Sec1,Cow,%Dest4%,Moo",
+                    $@"IniRead,{tempFile},Sec1,A,%Dest5%,Moo",
+                }, tempFile, sampleStr, new string[] { "1", "2", "6", "8", "Moo", "1" });
                 ReadOptTemplate(s, null, new List<string>
                 {
                     $@"IniRead,{tempFile},Sec1,A,%Dest0%",

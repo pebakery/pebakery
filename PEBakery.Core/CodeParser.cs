@@ -946,16 +946,21 @@ namespace PEBakery.Core
                 #endregion
                 #region 04 Ini
                 case CodeType.IniRead:
-                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
-                        const int argCount = 4;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>,[DefaultValue]
+                        const int minArgCount = 4;
+                        const int maxArgCount = 5;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[3];
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
+                        string defaultValue = null;
+                        if (args.Count == maxArgCount)
+                            defaultValue = args[4];
+
+                        return new CodeInfo_IniRead(args[0], args[1], args[2], destVar, defaultValue);
                     }
                 case CodeType.IniWrite:
                     { // INIWrite,<FileName>,<Section>,<Key>,<Value>
