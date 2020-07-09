@@ -25,7 +25,7 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Core.Razor;
+using PEBakery.Core.Html;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -103,9 +103,9 @@ namespace PEBakery.Core
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
-                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
-                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
-                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
+                            EmbedBootstrapCss = Properties.Resources.BootstrapCss,
+                            EmbedJQuerySlimJs = Properties.Resources.JQuerySlimJs,
+                            EmbedBootstrapJs = Properties.Resources.BootstrapBundleJs,
                             // Data
                             SysLogs = new List<SystemLogItem>(),
                         };
@@ -120,8 +120,8 @@ namespace PEBakery.Core
                             });
                         }
 
-                        RazorRenderer razorRenderer = new RazorRenderer(false);
-                        razorRenderer.RenderHtmlAsync("Razor._SystemLogView.cshtml", m, _w).Wait();
+                        HtmlRenderer htmlRenderer = new HtmlRenderer(false);
+                        htmlRenderer.RenderHtmlAsync("SystemLogView", m, _w).Wait();
                     }
                     break;
             }
@@ -394,9 +394,9 @@ namespace PEBakery.Core
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
                             // Embed
-                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
-                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
-                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
+                            EmbedBootstrapCss = Properties.Resources.BootstrapCss,
+                            EmbedJQuerySlimJs = Properties.Resources.JQuerySlimJs,
+                            EmbedBootstrapJs = Properties.Resources.BootstrapBundleJs,
                             // Data
                             LogStats = new List<LogStatItem>(),
                         };
@@ -446,7 +446,8 @@ namespace PEBakery.Core
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
                                                 Href = errIdx++,
-                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
+                                            }, ExportRefScriptText(x, scOriginLogs))
+                                        ).ToArray();
                                 }
                             }
                         }
@@ -482,7 +483,8 @@ namespace PEBakery.Core
                                                 State = x.State,
                                                 Message = x.Export(LogExportType.Html, false, false),
                                                 Href = warnIdx++,
-                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
+                                            }, ExportRefScriptText(x, scOriginLogs))
+                                        ).ToArray();
                                 }
                             }
                         }
@@ -632,8 +634,8 @@ namespace PEBakery.Core
                             }
                         }
 
-                        RazorRenderer razorRenderer = new RazorRenderer(false);
-                        razorRenderer.RenderHtmlAsync($"Razor._BuildLogView.cshtml", m, _w).Wait();
+                        HtmlRenderer htmlRenderer = new HtmlRenderer(false);
+                        htmlRenderer.RenderHtmlAsync("BuildLogView", m, _w).Wait();
                     }
                     break;
                     #endregion
@@ -658,16 +660,6 @@ namespace PEBakery.Core
             else
             { // Not a referenced sript
                 return null;
-                /*
-                LogModel.Script scLog = scLogs.FirstOrDefault(x => x.Id == bLog.ScriptId);
-                if (scLog == null)
-                    return null;
-
-                string path = scLog.TreePath;
-                if (path.Length == 0)
-                    path = scLog.RealPath;
-                return $"|-> Script [{scLog.Name}] ({path})";
-                */
             }
         }
         #endregion

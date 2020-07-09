@@ -16,7 +16,7 @@
     <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <!-- <PreserveCompilationContext>true</PreserveCompilationContext> -->
   </PropertyGroup>
   <ItemGroup>
     <None Update="App.manifest">

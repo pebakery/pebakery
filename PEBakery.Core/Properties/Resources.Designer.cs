@@ -59,5 +59,64 @@ namespace PEBakery.Core.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   &lt;!DOCTYPE html&gt;
+        ///&lt;html&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///
+        ///        &lt;title&gt;{{ p.HeadTitle | escape }}&lt;/title&gt;
+        ///
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        {% if p.EmbedBootstrapCss != null %}
+        ///            &lt;style&gt;{{ p.Embe[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string _LogLayout {
+            get {
+                return ResourceManager.GetString("_LogLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   /*!
+        ///  * Bootstrap v4.4.1 (https://getbootstrap.com/)
+        ///  * Copyright 2011-2019 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+        ///  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+        ///  */
+        ///!function(e,t){&quot;object&quot;==typeof exports&amp;&amp;&quot;undefined&quot;!=typeof module?t(exports,require(&quot;jquery&quot;)):&quot;function&quot;==typeof define&amp;&amp;define.amd?define([&quot;exports&quot;,&quot;jquery&quot;],t):t((e=e||self).bootstrap={},e.jQuery)}(this,function(e,p){&quot;use strict&quot;;function i(e,t){for(var n=0;n&lt;t.[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string BootstrapBundleJs {
+            get {
+                return ResourceManager.GetString("BootstrapBundleJs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   /*!
+        /// * Bootstrap v4.4.1 (https://getbootstrap.com/)
+        /// * Copyright 2011-2019 The Bootstrap Authors
+        /// * Copyright 2011-2019 Twitter, Inc.
+        /// * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+        /// */:root{--blue:#007bff;--indigo:#6610f2;--purple:#6f42c1;--pink:#e83e8c;--red:#dc3545;--orange:#fd7e14;--yellow:#ffc107;--green:#28a745;--teal:#20c997;--cyan:#17a2b8;--white:#fff;--gray:#6c757d;--gray-dark:#343a40;--primary:#007bff;--secondary:#6c757d;--success:#28a745;--info:#17a2b8;--warning[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string BootstrapCss {
+            get {
+                return ResourceManager.GetString("BootstrapCss", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   /*! jQuery v3.4.1 -ajax,-ajax/jsonp,-ajax/load,-ajax/parseXML,-ajax/script,-ajax/var/location,-ajax/var/nonce,-ajax/var/rquery,-ajax/xhr,-manipulation/_evalUrl,-event/ajax,-effects,-effects/Tween,-effects/animatedSelector | (c) JS Foundation and other contributors | jquery.org/license */
+        ///!function(e,t){&quot;use strict&quot;;&quot;object&quot;==typeof module&amp;&amp;&quot;object&quot;==typeof module.exports?module.exports=e.document?t(e,!0):function(e){if(!e.document)throw new Error(&quot;jQuery requires a window with a document&quot;);return t(e)}:t(e[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string JQuerySlimJs {
+            get {
+                return ResourceManager.GetString("jQuerySlimMin", resourceCulture);
+            }
+        }
     }
 }

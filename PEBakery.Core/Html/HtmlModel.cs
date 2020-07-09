@@ -25,10 +25,11 @@
     not derived from or based on this program. 
 */
 
+using SharpVectors.Dom.Events;
 using System;
 using System.Collections.Generic;
 
-namespace PEBakery.Core.Razor
+namespace PEBakery.Core.Html
 {
     #region LogLayoutModel
     public class LogLayoutModel
@@ -39,7 +40,7 @@ namespace PEBakery.Core.Razor
         public string ExportTimeStr { get; set; }
         // Embed
         public string EmbedBootstrapCss { get; set; }
-        public string EmbedJQuerySlim { get; set; }
+        public string EmbedJQuerySlimJs { get; set; }
         public string EmbedBootstrapJs { get; set; }
     }
     #endregion
@@ -55,6 +56,7 @@ namespace PEBakery.Core.Razor
     {
         public string TimeStr { get; set; }
         public LogState State { get; set; }
+        public string StateStr => State.ToString();
         public string Message { get; set; }
     }
     #endregion
