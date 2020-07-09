@@ -1,9 +1,18 @@
 # Script Parameters
 param (
+    [switch]$nightly = $false,
     [switch]$noclean = $false
 )
 
-Write-Host "[Publishing PEBakery]" -ForegroundColor Yellow
+# CI Mode?
+if ($nightly) {
+    $BinaryName = "nightly"
+} else {
+    $BinaryName = "release"
+}
+
+# Banner
+Write-Host "[*] Publishing PEBakery ${BinaryName} binaries..." -ForegroundColor Yellow
 
 # Find MSBuild location
 $VSWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -13,16 +22,19 @@ Write-Output "MSBuild Path = ${MSBuild}"
 # Get directory paths
 $BaseDir = $PSScriptRoot
 $PublishDir = "${BaseDir}\Publish"
-$ToolDir = "${PublishDir}\tools"
+$ToolDir = "${PublishDir}\_tools"
 $SevenZipExe = "${ToolDir}\7za_x64.exe"
 # $UpxExe = "${ToolDir}\upx_x64.exe"
 
-# Clean the solution
+# Clean the solution and restore NuGet packages
 if ($noclean -eq $false) {
     Push-Location "${BaseDir}"
     Write-Output ""
     Write-Host "[*] Cleaning the solution" -ForegroundColor Yellow
     dotnet clean -c Release -verbosity:minimal
+    Write-Output ""
+    Write-Host "[*] Restore NuGet packages" -ForegroundColor Yellow
+    dotnet restore --force PEBakery
     Pop-Location
 }
 
@@ -40,11 +52,11 @@ enum PublishModes
 foreach ($PublishMode in [PublishModes].GetEnumValues())
 {
     Write-Output ""
-    Write-Host "[*] Publish ${PublishMode} PEBakery build" -ForegroundColor Yellow
+    Write-Host "[*] Publish ${PublishMode} ${BinaryName} PEBakery" -ForegroundColor Yellow
     if ($PublishMode -eq [PublishModes]::FxDependent) {
-        $PublishName = "PEBakery-nightly-fxdep"
+        $PublishName = "PEBakery-${BinaryName}-fxdep"
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
-        $PublishName = "PEBakery-nightly-sc"
+        $PublishName = "PEBakery-${BinaryName}-sc"
     } else {
         Write-Output "Invalid PublishMode"
         exit 1
@@ -55,7 +67,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
 
     # Remove old publish files
     Remove-Item "${PublishDir}\${PublishName}.7z" -ErrorAction SilentlyContinue
-    Remove-Item "${Dest}.7z" -Recurse -ErrorAction Ignore
+    Remove-Item "${Dest}.7z" -Recurse -ErrorAction SilentlyContinue
 
     New-Item "${DestDir}" -ItemType Directory -ErrorAction SilentlyContinue
     New-Item "${DestBinDir}" -ItemType Directory -ErrorAction SilentlyContinue
@@ -63,13 +75,13 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     # Call dotnet command
     Push-Location "${BaseDir}"
     if ($PublishMode -eq [PublishModes]::FxDependent) {
-        dotnet publish -c Release --force --self-contained=false -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -r win-x64 --force --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
-        dotnet publish -c Release -r win-x64 --force --self-contained=true /p:PublishTrimmed=true /p:PublishSingleFile=false -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -r win-x64 --force --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
     }
     Pop-Location
 
-    # Handle Native Binaries
+    # Handle native bnaries
     if ($PublishMode -eq [PublishModes]::FxDependent) {
         Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
         New-Item "${DestBinDir}\runtimes" -ItemType Directory
@@ -96,7 +108,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
 
     # Create release 7z archive
     Write-Output ""
-    Write-Host "[*] Create ${PublishMode} PEBakery release archive" -ForegroundColor Yellow
+    Write-Host "[*] Create ${PublishMode} ${BinaryName} archive" -ForegroundColor Yellow
     Push-Location "${PublishDir}"
     & "${SevenZipExe}" a "${PublishName}.7z" ".\${PublishName}\*"
     Pop-Location
