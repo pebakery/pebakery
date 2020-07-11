@@ -1,0 +1,57 @@
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+<title>{{ p.HeadTitle }}</title>
+
+<!-- Bootstrap CSS -->
+{% if p.EmbedBootstrapCss != null %}
+    <style>{{ p.EmbedBootstrapCss | raw }}</style>
+{% else %}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+{% endif %}
+
+<!-- Custom CSS -->
+<style>
+    .pb-table-content {
+        font-family: monospace;
+    }
+    table.pb-table-content td {
+        padding: .15rem;
+    }
+    table.pb-table-content th {
+        padding: .15rem;
+    }
+    .pb-table-codes {
+        font-family: monospace;
+        font-size: 14px;
+    }
+    table.pb-table-codes td {
+        padding: .10rem;
+    }
+    table.pb-table-codes th {
+        padding: .10rem;
+    }
+    .pb-whitespace {
+        white-space: pre-wrap;
+    }
+    .pb-monospace {
+        font-family: monospace;
+    }
+    .pb-footer {
+        font-family: 'D2Coding', monospace;
+        text-align: center;
+    }
+    .text-overwrite {
+        color: #ff6600;
+    }
+    .table-nonfluid {
+        width: auto !important;
+        word-wrap: break-word;
+    }
+</style>
+
+<!-- Font Awesome -->
+<!-- Always use CDN to avoid file size explosion. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-1/css/all.min.css" integrity="sha256-4w9DunooKSr3MFXHXWyFER38WmPdm361bQS/2KUWZbU=" crossorigin="anonymous" />

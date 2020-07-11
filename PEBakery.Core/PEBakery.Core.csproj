@@ -38,17 +38,15 @@
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <!-- Razor Templates -->
-  <!--
   <ItemGroup>
-    <EmbeddedResource Include="Html\_LogLayoutHeader.cshtml" />
-    <EmbeddedResource Include="Html\_LogLayoutFooter.cshtml" />
-    <EmbeddedResource Include="Html\_BuildLogView.cshtml" />
-    <EmbeddedResource Include="Html\_SystemLogView.cshtml" />\
+    <EmbeddedResource Include="Html\_LogLayoutHeader.sbnhtml" />
+    <EmbeddedResource Include="Html\_LogLayoutFooter.sbnhtml" />
+    <EmbeddedResource Include="Html\_BuildLogView.sbnhtml" />
+    <EmbeddedResource Include="Html\_SystemLogView.sbnhtml" />
     <EmbeddedResource Include="Html\bootstrap.bundle.min.js" />
     <EmbeddedResource Include="Html\bootstrap.min.css" />
     <EmbeddedResource Include="Html\jquery.slim.min.js" />
   </ItemGroup>
-  -->
   <!-- NuGet Packages -->
   <ItemGroup>
     <PackageReference Include="Joveler.Compression.XZ" Version="4.0.0" />

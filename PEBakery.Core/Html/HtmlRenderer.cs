@@ -27,18 +27,13 @@
 
 // using RazorLight;
 // using RazorLight.Caching;
+using PEBakery.Helper;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
-using System.Printing.IndexedProperties;
 using System.Reflection;
-using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -46,23 +41,11 @@ using System.Windows;
 namespace PEBakery.Core.Html
 {
     #region HtmlRenderer
-    internal class HtmlRenderer
+    internal static class HtmlRenderer
     {
-        // private readonly RazorLightEngine _engine = null;
-        private readonly bool _isCachingEnabled;
-
-        public HtmlRenderer(bool isCachingEnabled)
+        public static string ScribanObjectRenamer(MemberInfo member)
         {
-            /*
-            _isCachingEnabled = isCachingEnabled;
-
-            RazorLightEngineBuilder builder = new RazorLightEngineBuilder().UseEmbeddedResourcesProject(typeof(Global));
-
-            if (_isCachingEnabled)
-                builder = builder.UseMemoryCachingProvider();
-
-            _engine = builder.Build();
-            */
+            return member.Name;
         }
 
         /// <summary>
@@ -72,9 +55,48 @@ namespace PEBakery.Core.Html
         /// <param name="templateKey"></param>
         /// <param name="model"></param>
         /// <param name="textWriter"></param>
-        public async Task RenderHtmlAsync<TModel>(string templateKey, TModel model, TextWriter textWriter)
+        public static async Task RenderHtmlAsync(string templateKey, Assembly templateAssembly, SystemLogModel model, TextWriter textWriter)
         {
-            string templateBody = Properties.Resources.ResourceManager.GetString(templateKey);
+            string templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
+            Template template = Template.Parse(templateBody);
+            if (template.HasErrors)
+            {
+                StringBuilder b = new StringBuilder();
+                foreach (LogMessage err in template.Messages)
+                {
+                    b.AppendLine(err.Message);
+                }
+                string errMsg = b.ToString();
+
+                MessageBox.Show(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            ScriptObject root = new ScriptObject();
+            root.Import(model, renamer: ScribanObjectRenamer);
+
+            TemplateContext ctx = new TemplateContext();
+            ctx.PushGlobal(root);
+            ctx.TemplateLoader = new LogLayoutTemplateLoader(templateAssembly);
+            ctx.LoopLimit = int.MaxValue;
+
+            try
+            {
+                await textWriter.WriteAsync(template.Render(ctx));
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            }
+        }
+
+        /// <summary>
+        /// Render the HTML page using a Razor Core template and a model instance.
+        /// </summary>
+        /// <typeparam name="TModel">Type of the model.</typeparam>
+        public static async Task RenderHtmlAsync(string templateKey, Assembly templateAssembly, BuildLogModel model, TextWriter textWriter)
+        {
+            string templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
             Template template = Template.Parse(templateBody);
             if (template.HasErrors)
             {
@@ -93,7 +115,7 @@ namespace PEBakery.Core.Html
 
             TemplateContext ctx = new TemplateContext();
             ctx.PushGlobal(so);
-            ctx.TemplateLoader = new LogLayoutTemplateLoader();
+            ctx.TemplateLoader = new LogLayoutTemplateLoader(templateAssembly);
             ctx.LoopLimit = int.MaxValue;
 
             try
@@ -105,11 +127,19 @@ namespace PEBakery.Core.Html
                 MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        #endregion
+
+        
     }
-    #endregion
-    
+
     public class LogLayoutTemplateLoader : ITemplateLoader
     {
+        private readonly Assembly _assembly;
+        public LogLayoutTemplateLoader(Assembly assembly)
+        {
+            _assembly = assembly;
+        }
+
         public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
         {
             return templateName;
@@ -117,7 +147,7 @@ namespace PEBakery.Core.Html
 
         public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
         {
-            string templateStr = Properties.Resources.ResourceManager.GetString(templatePath);
+            string templateStr = ResourceHelper.GetEmbeddedResourceString("Html." + templatePath, _assembly);
             return templateStr ?? string.Empty;
         }
 

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+    {{ include '_LogLayoutHeader.sbnhtml' }}
+    <body id="page-top" data-spy="scroll">
+        <h1 class="container mt-2 text-center">PEBakery System Log</h1>
+        <header id="summary" class="container-fluid mt-2">
+            <h2>Summary</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <tbody>
+                        <tr>
+                            <th class="table-dark">Exported by</th>
+                            <td>PEBakery {{ ExportEngineVersion | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">Exported at</th>
+                            <td>{{ ExportTimeStr | html.escape }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </header>
+        <section id="codes" class="container-fluid mt-2">
+            <h2>System Logs</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th class="text-nowrap">Time</th>
+                            <th class="text-nowrap">State</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in SysLogs }}
+                            {{ if $item.StateStr == "Success" }}
+                            <tr>
+                            <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Warning" }}
+                            <tr class="table-warning">
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Overwrite" }}
+                            <tr>
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Error" }}
+                            <tr class="table-danger">
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Info" }}
+                            <tr>
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap text-info"><i class="fa fa-fw fa-info-circle"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Ignore" }}
+                            <tr class="text-muted">
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else if $item.StateStr == "Muted" }}
+                            <tr class="text-muted">
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap"><i class="fas fa-fw fa-lock"></i>&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ else }}
+                            <tr>
+                                <td class="text-nowrap">{{ $item.TimeStr | html.escape }}</td>
+                                <td class="text-nowrap">&#91;{{ $item.StateStr | html.escape }}&#93;</td>
+                                <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                            </tr>
+                            {{ end }}
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {{ include '_LogLayoutFooter.sbnhtml' }}
+    </body>
+</html>

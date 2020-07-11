@@ -25,9 +25,11 @@
     not derived from or based on this program. 
 */
 
+using Scriban.Runtime;
 using SharpVectors.Dom.Events;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace PEBakery.Core.Html
 {
@@ -49,7 +51,7 @@ namespace PEBakery.Core.Html
     public class SystemLogModel : LogLayoutModel
     {
         // Data
-        public List<SystemLogItem> SysLogs { get; set; }
+        public ScriptArray SysLogs { get; private set; } = new ScriptArray();
     }
 
     public class SystemLogItem
@@ -71,6 +73,15 @@ namespace PEBakery.Core.Html
         public string BuildTookTimeStr { get; set; }
         public bool ShowLogFlags { get; set; }
         // Data
+        /*
+        public ScriptArray LogStats { get; private set; } = new ScriptArray();
+        public ScriptArray Scripts { get; private set; } = new ScriptArray();
+        public ScriptArray RefScripts { get; private set; } = new ScriptArray();
+        public ScriptArray Variables { get; private set; } = new ScriptArray();
+        public ScriptObject ErrorCodeDict { get; private set; } = new ScriptObject();
+        public ScriptObject WarnCodeDict { get; private set; } = new ScriptObject();
+        public ScriptArray CodeLogs { get; private set; } = new ScriptArray();
+        */
         public List<LogStatItem> LogStats { get; set; }
         public List<ScriptLogItem> Scripts { get; set; }
         public List<ScriptLogItem> RefScripts { get; set; }
@@ -131,6 +142,18 @@ namespace PEBakery.Core.Html
                 else
                     return string.Empty;
             }
+        }
+    }
+    #endregion
+
+    #region ScriptArrayExtension
+    public static class ScriptArrayExtension
+    {
+        public static void AddItem<T>(this ScriptArray sa, T item)
+        {
+            ScriptObject so = new ScriptObject();
+            so.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
+            sa.Add(so);
         }
     }
     #endregion

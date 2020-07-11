@@ -44,25 +44,6 @@ namespace PEBakery.Core
         private readonly LogExportType _exportType;
         private readonly TextWriter _w;
 
-        /*
-        // Lazy load RazorRenderer
-        private readonly static object _razorRendererLock = new object();
-        private static RazorRenderer _razorRenderer = null;
-        internal static RazorRenderer RazorRenderer
-        {
-            get
-            {
-                lock (_razorRendererLock)
-                {
-                    // Turn off caching to save memory. PEBakery does not call RazorRenderer too often.
-                    if (_razorRenderer == null)
-                        _razorRenderer = new RazorRenderer(false);
-                    return _razorRenderer;
-                }
-            }
-        }
-        */
-
         public LogExporter(LogDatabase db, LogExportType type, TextWriter writer)
         {
             // The responsibility of closing _db and _w goes to the caller of LogExporter
@@ -103,16 +84,15 @@ namespace PEBakery.Core
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
-                            EmbedBootstrapCss = Properties.Resources.BootstrapCss,
-                            EmbedJQuerySlimJs = Properties.Resources.JQuerySlimJs,
-                            EmbedBootstrapJs = Properties.Resources.BootstrapBundleJs,
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
+                            EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.bundle.min.js", assembly),
                             // Data
-                            SysLogs = new List<SystemLogItem>(),
                         };
 
                         foreach (LogModel.SystemLog log in _db.Table<LogModel.SystemLog>().OrderBy(x => x.Time))
                         {
-                            m.SysLogs.Add(new SystemLogItem
+                            m.SysLogs.AddItem(new SystemLogItem
                             {
                                 TimeStr = log.TimeStr,
                                 State = log.State,
@@ -120,8 +100,7 @@ namespace PEBakery.Core
                             });
                         }
 
-                        HtmlRenderer htmlRenderer = new HtmlRenderer(false);
-                        htmlRenderer.RenderHtmlAsync("SystemLogView", m, _w).Wait();
+                        HtmlRenderer.RenderHtmlAsync("Html._SystemLogView.sbnhtml", assembly, m, _w).Wait();
                     }
                     break;
             }
@@ -394,9 +373,9 @@ namespace PEBakery.Core
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
                             // Embed
-                            EmbedBootstrapCss = Properties.Resources.BootstrapCss,
-                            EmbedJQuerySlimJs = Properties.Resources.JQuerySlimJs,
-                            EmbedBootstrapJs = Properties.Resources.BootstrapBundleJs,
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
+                            EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.bundle.min.js", assembly),
                             // Data
                             LogStats = new List<LogStatItem>(),
                         };
@@ -630,12 +609,12 @@ namespace PEBakery.Core
                                         Value = x.Value,
                                     }).ToArray();
 
+                                // LogLayoutModel.AddItem(m.CodeLogs, new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
                                 m.CodeLogs.Add(new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
                             }
                         }
 
-                        HtmlRenderer htmlRenderer = new HtmlRenderer(false);
-                        htmlRenderer.RenderHtmlAsync("BuildLogView", m, _w).Wait();
+                        HtmlRenderer.RenderHtmlAsync("Html._BuildLogView.sbnhtml", assembly, m, _w).Wait();
                     }
                     break;
                     #endregion
