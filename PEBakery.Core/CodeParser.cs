@@ -946,7 +946,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 04 Ini
                 case CodeType.IniRead:
-                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>,[DefaultValue]
+                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>[,<Default=[Value]>]
                         const int minArgCount = 4;
                         const int maxArgCount = 5;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -957,8 +957,18 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string defaultValue = null;
-                        if (args.Count == maxArgCount)
-                            defaultValue = args[4];
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string splitKey = "Default=";
+                            if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (defaultValue != null)
+                                    throw new InvalidCommandException("Argument <Default> cannot be duplicated", rawCode);
+                                defaultValue = arg.Substring(splitKey.Length);
+                            }
+                        }
 
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar, defaultValue);
                     }

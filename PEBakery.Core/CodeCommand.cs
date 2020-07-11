@@ -944,7 +944,7 @@ namespace PEBakery.Core
     #region CodeInfo 04 - Ini
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
-    { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>,[DefaultValue]
+    { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>[,<Default=[Value]>]
         public string FileName;
         public string Section;
         public string Key;
