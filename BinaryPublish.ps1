@@ -58,7 +58,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         $PublishName = "PEBakery-${BinaryName}-sc"
     } else {
-        Write-Output "Invalid PublishMode"
+        Write-Host "Invalid PublishMode" -ForegroundColor Red
         exit 1
     }
 
@@ -66,8 +66,8 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     $DestBinDir = "${DestDir}\Binary"
 
     # Remove old publish files
+    Remove-Item "${DestDir}" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${PublishDir}\${PublishName}.7z" -ErrorAction SilentlyContinue
-    Remove-Item "${Dest}.7z" -Recurse -ErrorAction SilentlyContinue
 
     New-Item "${DestDir}" -ItemType Directory -ErrorAction SilentlyContinue
     New-Item "${DestBinDir}" -ItemType Directory -ErrorAction SilentlyContinue

@@ -188,7 +188,7 @@
   <ItemGroup>
     <ClCompile Include="NetDetector.cpp" />
     <ClCompile Include="Helper.cpp" />
-    <ClCompile Include="LauncherNative.cpp" />
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>

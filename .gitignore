@@ -3,7 +3,7 @@
 
 # Joveler-specific Resoures
 Publish/
-!Publish/tools/
+!Publish/_tools/
 res/
 PEBakery/Core/Parser/.antlr
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/

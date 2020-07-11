@@ -35,9 +35,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LauncherNative.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Helper.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -45,6 +42,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Version.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

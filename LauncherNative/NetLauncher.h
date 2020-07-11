@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2020 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,44 +25,24 @@
 
 #pragma once
 
+// Custom Constants
 #include "Var.h"
+
+// Windows SDK Headers
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 // C++ Runtime Headers
 #include <string>
+#include <vector>
+#include <map>
 
-// C Runtime Headers
-#include <cstdint>
+// Local Headers
 
-class Version
+
+class NetLauncher
 {
-private:
-	uint16_t _major;
-	uint16_t _minor;
-	uint16_t _patch;
-
 public:
-	// Constructors and Destructor
-	Version();
-	Version(uint16_t major, uint16_t minor);
-	Version(uint16_t major, uint16_t minor, uint16_t patch);
-	~Version();
-
-	// Member Functions
-	uint16_t GetMajor() const;
-	uint16_t GetMinor() const;
-	uint16_t GetPatch() const;
-	std::wstring ToString(bool excludePatch = false) const;
-	bool IsEqual(const Version& rhs, bool excludePatch = false) const;
-
-	// Static Functions
-	static bool Parse(const std::string& str, Version& ver);
-	static bool Parse(const std::wstring& str, Version& ver);
-
-	// Operator Overloading
-	bool operator==(const Version& rhs) const;
-	bool operator!=(const Version& rhs) const;
-	bool operator<(const Version& rhs) const;
-	bool operator<=(const Version& rhs) const;
-	bool operator>(const Version& rhs) const;
-	bool operator>=(const Version& rhs) const;
+	static void Launch(std::wstring executable);
 };
+

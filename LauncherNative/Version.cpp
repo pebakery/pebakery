@@ -74,12 +74,7 @@ uint16_t Version::GetPatch() const
 	return _patch;
 }
 
-wstring Version::ToString(bool excludePatch)
-{
-	return static_cast<const Version>(*this).ToString(excludePatch);
-}
-
-const wstring Version::ToString(bool excludePatch) const
+wstring Version::ToString(bool excludePatch) const
 {
 	// Version String is used for displaying purpose only
 	wostringstream woss;

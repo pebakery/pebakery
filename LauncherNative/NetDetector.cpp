@@ -330,7 +330,7 @@ map<string, vector<Version>> NetCoreDetector::ListRuntimes()
 	si.hStdError = hChildStdOutWr;
 	si.dwFlags |= STARTF_USESTDHANDLES;
 
-	BOOL ret = CreateProcessW(NULL, dotnet, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+	BOOL ret = CreateProcessW(NULL, dotnet, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 
 	// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
 	if (ret == FALSE)

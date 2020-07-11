@@ -43,6 +43,7 @@
         xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
+        Icon="/Resources/Donut.ico"
         Closing="Window_Closing"
         Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
         MinWidth="600" MinHeight="480"
