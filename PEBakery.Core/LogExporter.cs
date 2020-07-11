@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using Newtonsoft.Json.Serialization;
 using PEBakery.Core.Html;
 using PEBakery.Helper;
 using System;
@@ -642,6 +643,8 @@ namespace PEBakery.Core
             }
         }
         #endregion
+
+       
     }
 
     #region class BuildLogOptions

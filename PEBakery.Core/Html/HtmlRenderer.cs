@@ -73,6 +73,9 @@ namespace PEBakery.Core.Html
 
             ScriptObject root = new ScriptObject();
             root.Import(model, renamer: ScribanObjectRenamer);
+            root.Import(nameof(LogStateCssTrClass), new Func<LogState, string>(LogStateCssTrClass));
+            root.Import(nameof(LogStateCssTdClass), new Func<LogState, string>(LogStateCssTdClass));
+            root.Import(nameof(LogStateFaIcon), new Func<LogState, string>(LogStateFaIcon));
 
             TemplateContext ctx = new TemplateContext();
             ctx.PushGlobal(root);
@@ -129,7 +132,60 @@ namespace PEBakery.Core.Html
         }
         #endregion
 
-        
+        public static string LogStateCssTrClass(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Warning:
+                    return "table-warning";
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return "table-danger";
+                case LogState.Muted:
+                    return "text-muted";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static string LogStateCssTdClass(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Success:
+                    return "text-success";
+                case LogState.Overwrite:
+                    return "text-overwrite";
+                case LogState.Info:
+                    return "text-info";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static string LogStateFaIcon(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Success:
+                    return @"<i class=""fas fa-fw fa-check""></i>";
+                case LogState.Warning:
+                    return @"<i class=""fas fa-fw fa-exclamation-triangle""></i>";
+                case LogState.Overwrite:
+                    return @"<i class=""fas fa-fw fa-copy""></i>";
+                case LogState.Error:
+                case LogState.CriticalError:
+                    return @"<i class=""fas fa-fw fa-times""></i>";
+                case LogState.Info:
+                    return @"<i class=""fas fa-fw fa-info-circle""></i>";
+                case LogState.Ignore:
+                    return @"<i class=""fas fa-fw fa-file""></i>";
+                case LogState.Muted:
+                    return @"<i class=""fas fa-fw fa-lock""></i>";
+                default:
+                    return string.Empty;
+            }
+        }
     }
 
     public class LogLayoutTemplateLoader : ITemplateLoader
@@ -157,4 +213,6 @@ namespace PEBakery.Core.Html
             return new ValueTask<string>(templateBody);
         }
     }
+
+     
 }

@@ -94,6 +94,7 @@ namespace PEBakery.Core.Html
     public class LogStatItem
     {
         public LogState State { get; set; }
+        public string StateStr => State.ToString();
         public int Count { get; set; }
     }
 
@@ -116,6 +117,7 @@ namespace PEBakery.Core.Html
     public class CodeLogItem
     {
         public LogState State { get; set; }
+        public string StateStr => State.ToString();
         public string Message { get; set; }
         /// <summary>
         /// From LogModel.BuildLogFlag
