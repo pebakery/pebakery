@@ -38,6 +38,7 @@
         ResizeMode="NoResize"
         Title="About PEBakery"
         Width="640" Height="480"
+        Icon="/Resources/Donut.ico"
         WindowStartupLocation="CenterOwner" 
         d:DataContext="{d:DesignInstance local:AboutViewModel}">
     <Window.Resources>

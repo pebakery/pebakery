@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html>
     <!-- Header Template -->
     {{ include '_LogLayoutHeader.sbnhtml' }}
 

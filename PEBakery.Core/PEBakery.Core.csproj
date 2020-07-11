@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Library</OutputType>
-    <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
@@ -11,11 +10,6 @@
     <AssemblyName>PEBakery.Core</AssemblyName>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- 
-    <PreserveCompilationContext>true</PreserveCompilationContext>
-    <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
-    <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
-    -->
     <Authors>Team PEBakery</Authors>
     <Version>0.9.7.0</Version>
     <Company>Team PEBakery</Company>
@@ -37,7 +31,7 @@
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
-  <!-- Razor Templates -->
+  <!-- Scriban Templates -->
   <ItemGroup>
     <EmbeddedResource Include="Html\_LogLayoutHeader.sbnhtml" />
     <EmbeddedResource Include="Html\_LogLayoutFooter.sbnhtml" />
@@ -52,14 +46,14 @@
     <PackageReference Include="Joveler.Compression.XZ" Version="4.0.0" />
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.0.0" />
     <PackageReference Include="Joveler.FileMagician" Version="2.0.0" />
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.2.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.3.0" />
     <PackageReference Include="ManagedWimLib" Version="2.0.1" />
     <PackageReference Include="MessagePack" Version="2.1.152" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.4" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
     <PackageReference Include="NaturalSort.Extension" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="NUglify" Version="1.6.3" />
+    <PackageReference Include="NUglify" Version="1.6.4" />
     <PackageReference Include="Scriban" Version="2.1.3" />
     <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.3.283" />

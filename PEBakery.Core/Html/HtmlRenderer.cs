@@ -25,9 +25,6 @@
     not derived from or based on this program. 
 */
 
-// using RazorLight;
-// using RazorLight.Caching;
-using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using Scriban;
 using Scriban.Parsing;
@@ -145,7 +142,7 @@ namespace PEBakery.Core.Html
                 case LogState.CriticalError:
                     return "text-danger";
                 case LogState.Info:
-                    return "text-info"; 
+                    return "text-info";
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
@@ -186,7 +183,7 @@ namespace PEBakery.Core.Html
                     return string.Empty;
                 default:
                     if (withSqureBrackets)
-                        return $"[{state}]"; 
+                        return $"[{state}]";
                     else
                         return state.ToString();
             }

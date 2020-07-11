@@ -558,7 +558,7 @@ namespace PEBakery.Core
                                     IndexStr = pIdx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
-                                };                                
+                                };
                                 ScriptObject scObj = new ScriptObject();
                                 scObj.Import(scModel, renamer: HtmlRenderer.ScribanObjectRenamer);
 
@@ -650,7 +650,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-       
+
     }
 
     #region class BuildLogOptions

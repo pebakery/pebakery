@@ -38,6 +38,7 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Title="Export Logs" 
+        Icon="/Resources/Donut.ico"
         d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
     <Window.CommandBindings>
         <CommandBinding x:Name="ExportCommand"
