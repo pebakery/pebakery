@@ -14,8 +14,8 @@ SET BaseDir=%~dp0
 IF %BaseDir:~-1%==\ SET BaseDir=%BaseDir:~0,-1%
 SET SrcDir=%BaseDir%\PEBakery\bin\Release\netcoreapp3.1
 SET PublishDir=%~dp0\Publish
-SET SevenZipExe=%PublishDir%\tools\7za_x64.exe
-SET UpxExe=%PublishDir%\tools\upx_x64.exe
+SET SevenZipExe=%PublishDir%\_tools\7za_x64.exe
+SET UpxExe=%PublishDir%\_tools\upx_x64.exe
 SET PublishMode=0
 :_BUILD
 IF %PublishMode%==0 (
