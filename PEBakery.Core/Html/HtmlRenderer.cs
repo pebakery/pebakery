@@ -73,11 +73,15 @@ namespace PEBakery.Core.Html
             }
 
             ScriptObject root = new ScriptObject();
+            // Import data model
             root.Import(model, renamer: ScribanObjectRenamer);
+            // Import .NET functions
             root.Import(nameof(LogStateCssTrClass), new Func<LogState, string>(LogStateCssTrClass));
             root.Import(nameof(LogStateCssTdClass), new Func<LogState, string>(LogStateCssTdClass));
             root.Import(nameof(LogStateCssFaClass), new Func<LogState, string>(LogStateCssFaClass));
             root.Import(nameof(LogStateFaIcon), new Func<LogState, string>(LogStateFaIcon));
+            root.Import(nameof(LogStateStr), new Func<bool, LogState, string>(LogStateStr));
+            root.Import(nameof(BuildErrorWarnRefId), new Func<int, LogState, string>(BuildErrorWarnRefId));
 
             TemplateContext ctx = new TemplateContext();
             ctx.PushGlobal(root);
@@ -104,6 +108,7 @@ namespace PEBakery.Core.Html
                 case LogState.CriticalError:
                 case LogState.Error:
                     return "table-danger";
+                case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
                 default:
@@ -168,6 +173,34 @@ namespace PEBakery.Core.Html
                     return @"<i class=""fas fa-fw fa-file""></i>";
                 case LogState.Muted:
                     return @"<i class=""fas fa-fw fa-lock""></i>";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static string LogStateStr(bool withSqureBrackets, LogState state)
+        {
+            switch (state)
+            {
+                case LogState.None:
+                    return string.Empty;
+                default:
+                    if (withSqureBrackets)
+                        return $"[{state}]"; 
+                    else
+                        return state.ToString();
+            }
+        }
+
+        public static string BuildErrorWarnRefId(int href, LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Warning:
+                    return $"id=\'warn_{href}\'";
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return $"id=\'error_{href}\'";
                 default:
                     return string.Empty;
             }

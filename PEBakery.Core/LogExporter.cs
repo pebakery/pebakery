@@ -387,6 +387,7 @@ namespace PEBakery.Core
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
 
+                            // type: LogStatItem[]
                             m.LogStats.AddItem(new LogStatItem
                             {
                                 State = state,
@@ -448,39 +449,25 @@ namespace PEBakery.Core
                                         ["Codes"] = codeArr,
                                     };
                                     dest.Add(itemRoot);
-
-                                    /*
-                                    m.WarnCodeDict[pModel] = warns
-                                        .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new CodeDictItem()
-                                        {
-                                            LogItem = new CodeLogItem
-                                            {
-                                                State = x.State,
-                                                Message = x.Export(LogExportType.Html, false, false),
-                                                Href = warnIdx++,
-                                            },
-                                            Message = ExportRefScriptText(x, scOriginLogs)
-                                        }).ToArray();
-                                    */
                                 }
                             }
                         }
 
-                        BuildErrorWarnLogs(m.ErrorCodes, LogState.Error);
-                        BuildErrorWarnLogs(m.WarnCodes, LogState.Warning);
-                        /*
+                        BuildErrorWarnLogs(m.ErrorSummaries, LogState.Error);
+                        BuildErrorWarnLogs(m.WarnSummaries, LogState.Warning);
+
                         // Scripts - Build Scripts
                         var scripts = _db.Table<LogModel.Script>()
                             .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
-                        m.Scripts = new List<ScriptLogItem>();
                         {
                             int idx = 1;
                             foreach (LogModel.Script scLog in scripts)
                             {
                                 TimeSpan elapsed = scLog.FinishTime - scLog.StartTime;
-                                m.Scripts.Add(new ScriptLogItem
+
+                                // type: ScriptLogItem[]
+                                m.Scripts.AddItem(new ScriptLogItem
                                 {
                                     IndexStr = idx.ToString(),
                                     Name = scLog.Name,
@@ -493,7 +480,6 @@ namespace PEBakery.Core
                         }
 
                         // Script - Referenced Scripts
-                        m.RefScripts = new List<ScriptLogItem>();
                         {
                             var refScripts = _db.Table<LogModel.Script>()
                                 .Where(x => x.BuildId == buildId && x.Order <= 0)
@@ -514,7 +500,8 @@ namespace PEBakery.Core
                                     idxStr = idx.ToString();
                                 }
 
-                                m.RefScripts.Add(new ScriptLogItem
+                                // type: ScriptLogItem[]
+                                m.RefScripts.AddItem(new ScriptLogItem
                                 {
                                     IndexStr = idxStr,
                                     Name = scLog.Name,
@@ -525,7 +512,6 @@ namespace PEBakery.Core
                         }
 
                         // Variables
-                        m.Variables = new List<VariableLogItem>();
                         {
                             var vars = _db.Table<LogModel.Variable>()
                                         .Where(x => x.BuildId == buildId && (x.Type == VarsType.Fixed || x.Type == VarsType.Global))
@@ -533,7 +519,8 @@ namespace PEBakery.Core
                                         .ThenBy(x => x.Key);
                             foreach (LogModel.Variable vLog in vars)
                             {
-                                m.Variables.Add(new VariableLogItem
+                                // type: VariableLogItem[]
+                                m.Variables.AddItem(new VariableLogItem
                                 {
                                     Type = vLog.Type,
                                     Key = vLog.Key,
@@ -543,7 +530,6 @@ namespace PEBakery.Core
                         }
 
                         // CodeLogs
-                        m.CodeLogs = new List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>>();
                         {
                             int pIdx = 0;
                             int errIdx = 0;
@@ -566,14 +552,18 @@ namespace PEBakery.Core
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
                                 LogModel.BuildLog[] codeLogs = cLogs.OrderBy(x => x.Id).OrderBy(x => x.Id).ToArray();
 
-                                ScriptLogItem pModel = new ScriptLogItem
+                                // Populate CodeLogs.Script
+                                ScriptLogItem scModel = new ScriptLogItem
                                 {
                                     IndexStr = pIdx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
-                                };
+                                };                                
+                                ScriptObject scObj = new ScriptObject();
+                                scObj.Import(scModel, renamer: HtmlRenderer.ScribanObjectRenamer);
 
-                                List<CodeLogItem> logModel = new List<CodeLogItem>(codeLogs.Length);
+                                // Populate CodeLogs.Codes
+                                ScriptArray codeArr = new ScriptArray(codeLogs.Length);
                                 foreach (LogModel.BuildLog log in codeLogs)
                                 {
                                     CodeLogItem item = new CodeLogItem
@@ -597,25 +587,40 @@ namespace PEBakery.Core
                                     else if (log.State == LogState.Warning)
                                         item.Href = warnIdx++;
 
-                                    logModel.Add(item);
+                                    codeArr.AddItem(item);
                                 }
 
-                                // Log local variables
-                                VariableLogItem[] localVarModel = _db.Table<LogModel.Variable>()
+                                // Populate CodeLogs.Variables (record of local variables))
+                                ScriptArray varArr = new ScriptArray();
+                                foreach (LogModel.Variable varLog in _db.Table<LogModel.Variable>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
-                                    .OrderBy(x => x.Key)
-                                    .Select(x => new VariableLogItem
+                                    .OrderBy(x => x.Key))
+                                {
+                                    varArr.AddItem(new VariableLogItem
                                     {
-                                        Type = x.Type,
-                                        Key = x.Key,
-                                        Value = x.Value,
-                                    }).ToArray();
+                                        Type = varLog.Type,
+                                        Key = varLog.Key,
+                                        Value = varLog.Value,
+                                    });
+                                }
 
-                                // LogLayoutModel.AddItem(m.CodeLogs, new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
-                                m.CodeLogs.Add(new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
+                                /* type: [
+                                    { 
+                                        Script = ScriptLogItem,
+                                        Codes = ScriptArray of CodeLogItem,
+                                        Variables = ScriptArray of VariableLogItem
+                                    }, ...
+                                ] */
+                                ScriptObject rootItem = new ScriptObject
+                                {
+                                    ["Script"] = scObj,
+                                    ["Codes"] = codeArr,
+                                    ["Variables"] = varArr
+                                };
+                                m.CodeLogs.Add(rootItem);
                             }
                         }
-                        */
+
                         HtmlRenderer.RenderHtmlAsync("Html._BuildLogView.sbnhtml", assembly, m, _w).Wait();
                     }
                     break;

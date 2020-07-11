@@ -75,7 +75,7 @@ namespace PEBakery.Core.Html
         public bool ShowLogFlags { get; set; }
         // Data
         // type: LogStatItem[]
-        public ScriptArray LogStats = new ScriptArray();
+        public ScriptArray LogStats { get; private set; } = new ScriptArray();
         /* type: [
             { 
                 ScriptName = string,
@@ -88,36 +88,33 @@ namespace PEBakery.Core.Html
                 }]
             }, ...
         ] */
-        public ScriptArray ErrorCodes = new ScriptArray();
-        public ScriptArray WarnCodes = new ScriptArray();
-        /*
-        public ScriptArray LogStats { get; private set; } = new ScriptArray();
+        public ScriptArray ErrorSummaries { get; private set; } = new ScriptArray();
+        public ScriptArray WarnSummaries { get; private set; } = new ScriptArray();
+        // type: ScriptLogItem[]
         public ScriptArray Scripts { get; private set; } = new ScriptArray();
         public ScriptArray RefScripts { get; private set; } = new ScriptArray();
+        // type: VariableLogItem[]
         public ScriptArray Variables { get; private set; } = new ScriptArray();
-        public ScriptObject ErrorCodeDict { get; private set; } = new ScriptObject();
-        public ScriptObject WarnCodeDict { get; private set; } = new ScriptObject();
+        /* type: [
+            { 
+                Script = ScriptLogItem,
+                Codes = ScriptArray of CodeLogItem,
+                Variables = ScriptArray of VariableLogItem
+            }, ...
+        ] */
         public ScriptArray CodeLogs { get; private set; } = new ScriptArray();
-        */
-        //public List<LogStatItem> LogStats { get; set; }
-        //public List<ScriptLogItem> Scripts { get; set; }
-        //public List<ScriptLogItem> RefScripts { get; set; }
-        //public List<VariableLogItem> Variables { get; set; }
-        //public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> ErrorCodeDict { get; set; }
-        //public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> WarnCodeDict { get; set; }
         //public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
     }
 
     public class LogStatItem
     {
         public LogState State { get; set; }
-        public string StateStr => State.ToString();
         public int Count { get; set; }
     }
 
     public class ScriptLogItem
     {
-        public string IndexStr { get; set; }
+        public string IndexStr { get; set; } // int Index or "Macro"
         public string Name { get; set; }
         public string Path { get; set; }
         public string Version { get; set; }
@@ -127,6 +124,7 @@ namespace PEBakery.Core.Html
     public class VariableLogItem
     {
         public VarsType Type { get; set; }
+        public string TypeStr => Type.ToString();
         public string Key { get; set; }
         public string Value { get; set; }
     }
@@ -134,7 +132,6 @@ namespace PEBakery.Core.Html
     public class CodeLogItem
     {
         public LogState State { get; set; }
-        public string StateStr => State.ToString();
         public string Message { get; set; }
         /// <summary>
         /// From LogModel.BuildLogFlag
@@ -150,7 +147,7 @@ namespace PEBakery.Core.Html
         public int Href { get; set; }
         public string RefScriptMsg { get; set; }
 
-        // Used in BuildLogHtmlTemplate.cshtml
+        // Used in _BuildLogView.sbnhtml
         public string FlagsStr
         {
             get
