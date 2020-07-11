@@ -30,6 +30,7 @@ using SharpVectors.Dom.Events;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 
 namespace PEBakery.Core.Html
 {
@@ -73,6 +74,22 @@ namespace PEBakery.Core.Html
         public string BuildTookTimeStr { get; set; }
         public bool ShowLogFlags { get; set; }
         // Data
+        // type: LogStatItem[]
+        public ScriptArray LogStats = new ScriptArray();
+        /* type: [
+            { 
+                ScriptName = string,
+                ScriptPath = string,
+                Codes = [{
+                    State = string,
+                    Message = string,
+                    Href = string,
+                    RefScriptMsg = string,
+                }]
+            }, ...
+        ] */
+        public ScriptArray ErrorCodes = new ScriptArray();
+        public ScriptArray WarnCodes = new ScriptArray();
         /*
         public ScriptArray LogStats { get; private set; } = new ScriptArray();
         public ScriptArray Scripts { get; private set; } = new ScriptArray();
@@ -82,13 +99,13 @@ namespace PEBakery.Core.Html
         public ScriptObject WarnCodeDict { get; private set; } = new ScriptObject();
         public ScriptArray CodeLogs { get; private set; } = new ScriptArray();
         */
-        public List<LogStatItem> LogStats { get; set; }
-        public List<ScriptLogItem> Scripts { get; set; }
-        public List<ScriptLogItem> RefScripts { get; set; }
-        public List<VariableLogItem> Variables { get; set; }
-        public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> ErrorCodeDict { get; set; }
-        public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> WarnCodeDict { get; set; }
-        public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
+        //public List<LogStatItem> LogStats { get; set; }
+        //public List<ScriptLogItem> Scripts { get; set; }
+        //public List<ScriptLogItem> RefScripts { get; set; }
+        //public List<VariableLogItem> Variables { get; set; }
+        //public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> ErrorCodeDict { get; set; }
+        //public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> WarnCodeDict { get; set; }
+        //public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
     }
 
     public class LogStatItem
@@ -131,6 +148,7 @@ namespace PEBakery.Core.Html
         /// Optional, for error/warning logs
         /// </summary>
         public int Href { get; set; }
+        public string RefScriptMsg { get; set; }
 
         // Used in BuildLogHtmlTemplate.cshtml
         public string FlagsStr
@@ -153,9 +171,36 @@ namespace PEBakery.Core.Html
     {
         public static void AddItem<T>(this ScriptArray sa, T item)
         {
-            ScriptObject so = new ScriptObject();
-            so.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
-            sa.Add(so);
+            ScriptObject itemObj = new ScriptObject();
+            itemObj.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
+            sa.Add(itemObj);
+        }
+
+        public static void AddItem<T>(this ScriptArray sa, IEnumerable<T> items)
+        {
+            ScriptArray itemArr = new ScriptArray();
+            foreach (T item in items)
+            {
+                AddItem(itemArr, item);
+            }
+            sa.Add(itemArr);
+        }
+
+        public static void AddItem<T>(this ScriptObject so, string key, T item)
+        {
+            ScriptObject itemObj = new ScriptObject();
+            itemObj.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
+            so[key] = itemObj;
+        }
+
+        public static void AddItem<T>(this ScriptObject so, string key, IEnumerable<T> items)
+        {
+            ScriptArray itemArr = new ScriptArray();
+            foreach (T item in items)
+            {
+                AddItem(itemArr, item);
+            }
+            so[key] = itemArr;
         }
     }
     #endregion

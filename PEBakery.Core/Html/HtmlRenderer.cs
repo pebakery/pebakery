@@ -27,6 +27,7 @@
 
 // using RazorLight;
 // using RazorLight.Caching;
+using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using Scriban;
 using Scriban.Parsing;
@@ -55,7 +56,7 @@ namespace PEBakery.Core.Html
         /// <param name="templateKey"></param>
         /// <param name="model"></param>
         /// <param name="textWriter"></param>
-        public static async Task RenderHtmlAsync(string templateKey, Assembly templateAssembly, SystemLogModel model, TextWriter textWriter)
+        public static async Task RenderHtmlAsync<TModel>(string templateKey, Assembly templateAssembly, TModel model, TextWriter textWriter)
         {
             string templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
             Template template = Template.Parse(templateBody);
@@ -75,49 +76,11 @@ namespace PEBakery.Core.Html
             root.Import(model, renamer: ScribanObjectRenamer);
             root.Import(nameof(LogStateCssTrClass), new Func<LogState, string>(LogStateCssTrClass));
             root.Import(nameof(LogStateCssTdClass), new Func<LogState, string>(LogStateCssTdClass));
+            root.Import(nameof(LogStateCssFaClass), new Func<LogState, string>(LogStateCssFaClass));
             root.Import(nameof(LogStateFaIcon), new Func<LogState, string>(LogStateFaIcon));
 
             TemplateContext ctx = new TemplateContext();
             ctx.PushGlobal(root);
-            ctx.TemplateLoader = new LogLayoutTemplateLoader(templateAssembly);
-            ctx.LoopLimit = int.MaxValue;
-
-            try
-            {
-                await textWriter.WriteAsync(template.Render(ctx));
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
-            }
-        }
-
-        /// <summary>
-        /// Render the HTML page using a Razor Core template and a model instance.
-        /// </summary>
-        /// <typeparam name="TModel">Type of the model.</typeparam>
-        public static async Task RenderHtmlAsync(string templateKey, Assembly templateAssembly, BuildLogModel model, TextWriter textWriter)
-        {
-            string templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
-            Template template = Template.Parse(templateBody);
-            if (template.HasErrors)
-            {
-                StringBuilder b = new StringBuilder();
-                foreach (LogMessage err in template.Messages)
-                {
-                    b.AppendLine(err.Message);
-                }
-                string errMsg = b.ToString();
-
-                MessageBox.Show(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
-            ScriptObject so = new ScriptObject();
-            so.Import(model, renamer: member => member.Name);
-
-            TemplateContext ctx = new TemplateContext();
-            ctx.PushGlobal(so);
             ctx.TemplateLoader = new LogLayoutTemplateLoader(templateAssembly);
             ctx.LoopLimit = int.MaxValue;
 
@@ -158,6 +121,29 @@ namespace PEBakery.Core.Html
                     return "text-overwrite";
                 case LogState.Info:
                     return "text-info";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static string LogStateCssFaClass(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Success:
+                    return "text-success";
+                case LogState.Warning:
+                    return "text-warning";
+                case LogState.Overwrite:
+                    return "text-overwrite";
+                case LogState.Error:
+                case LogState.CriticalError:
+                    return "text-danger";
+                case LogState.Info:
+                    return "text-info"; 
+                case LogState.Ignore:
+                case LogState.Muted:
+                    return "text-muted";
                 default:
                     return string.Empty;
             }
@@ -214,5 +200,5 @@ namespace PEBakery.Core.Html
         }
     }
 
-     
+
 }
