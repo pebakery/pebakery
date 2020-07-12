@@ -968,6 +968,10 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Default> cannot be duplicated", rawCode);
                                 defaultValue = arg.Substring(splitKey.Length);
                             }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
                         }
 
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar, defaultValue);
@@ -1732,6 +1736,10 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Password> cannot be duplicated", rawCode);
                                 password = arg.Substring(passwordKey.Length);
                             }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
                         }
 
                         return new CodeInfo_Decompress(args[0], args[1], password);
@@ -2079,12 +2087,18 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool warn = false;
-                        if (args.Count == maxArgCount)
+                        for (int i = minArgCount; i < args.Count; i++)
                         {
-                            if (args[1].Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                            string arg = args[i];
+                            if (arg.Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (warn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 warn = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
-
                         return new CodeInfo_Echo(args[0], warn);
                     }
                 case CodeType.EchoFile:
@@ -2436,7 +2450,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Halt(message);
                     }
                 case CodeType.Wait:
-                    { // Wait,<Second>
+                    { // Wait,<Seconds>
                         const int argCount = 1;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
