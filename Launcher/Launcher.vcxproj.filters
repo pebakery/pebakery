@@ -60,7 +60,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LauncherNative.rc">
+    <ResourceCompile Include="Launcher.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>
   </ItemGroup>

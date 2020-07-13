@@ -41,7 +41,7 @@ if ($noclean -eq $false) {
 # Build PEBakeryLauncher
 Write-Output ""
 Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
-& "${MSBuild}" -target:Rebuild -verbosity:minimal "${BaseDir}\LauncherNative" /p:Configuration=Release /property:Platform=Win32
+& "${MSBuild}" -target:Rebuild -verbosity:minimal "${BaseDir}\Launcher" /p:Configuration=Release /property:Platform=Win32
 
 # Loop tp publish PEBakery
 enum PublishModes
@@ -103,7 +103,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
 
     # Copy PEBakeryLauncher and license files
-    Copy-Item "${BaseDir}\LauncherNative\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
+    Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
     # & "${UpxExe}" "${DestDir}\PEBakeryLauncher.exe"
     Copy-Item "${BaseDir}\LICENSE" "${DestBinDir}"
     Copy-Item "${BaseDir}\LICENSE.GPLv3" "${DestBinDir}"
