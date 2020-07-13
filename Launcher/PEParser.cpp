@@ -143,7 +143,6 @@ bool PEParser::ParseFile()
 		case IMAGE_FILE_MACHINE_AMD64:
 			_arch = PROC_ARCH::X64;
 			break;
-		case IMAGE_FILE_MACHINE_ARM:
 		case IMAGE_FILE_MACHINE_ARMNT:
 			_arch = PROC_ARCH::ARM;
 			break;
