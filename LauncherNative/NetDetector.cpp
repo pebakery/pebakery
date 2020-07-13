@@ -434,7 +434,7 @@ bool NetCoreDetector::ParseRuntimeInfoLine(string& line, string& key, Version& v
 // Return installer url of .NET Core Windows Desktop Runtime.
 const wstring NetCoreDetector::GetInstallerUrl()
 {
-	WORD procArch = Helper::GetProcArch();
+	PROC_ARCH procArch = Helper::GetProcArch();
 	const wchar_t* procArchStr = Helper::GetProcArchStr(procArch);
 	if (procArchStr == nullptr)
 		Helper::PrintError(L"Unsupported processor architecure!");

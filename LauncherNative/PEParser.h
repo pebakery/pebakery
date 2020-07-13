@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2020 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,26 +25,56 @@
 
 #pragma once
 
+// Custom Constants
+#include "Var.h"
+
+// Windows SDK Headers
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 // C++ Runtime Headers
 #include <string>
 
+// C Runtime Headers
+#include <cstdint>
+
 // Local Headers
+#include "Helper.h"
+#include "Version.h"
 #include "PEParser.h"
 
-class Helper
+enum class PROC_ARCH
+{
+	UNKNOWN = 0,
+	X86,
+	X64,
+	ARM,
+	ARM64,
+};
+
+class PEParser
 {
 private:
+	std::wstring _filePath;
+
+	PROC_ARCH _arch;
+	int _bitness; // PE32 or PE32+?
+	uint16_t _subsys; // Windows Subsystem
+	uint16_t _chars; // Characteristics
 public:
-	static wchar_t* GetParameters(wchar_t* cmdLine);
-	static void PrintError(const std::wstring& errMsg, bool exitAfter = true);
-	static void PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter = true);
-	static void PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter = true);
-	static void OpenUrl(const std::wstring& url);
-	static PROC_ARCH GetProcArch();
-	static const wchar_t* GetProcArchStr();
-	static const wchar_t* GetProcArchStr(PROC_ARCH procArch);
-	static const char* Tokenize(const char* str, const char token, std::string& out);
-	static const wchar_t* Tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);
-	static const char* Tokenize(const char* str, const std::string& token, std::string& out);
-	static const wchar_t* Tokenize(const wchar_t* wstr, const std::wstring& token, std::wstring& out);
+	// Constructor and Destructor
+	PEParser(const std::wstring& filePath);
+	~PEParser();
+
+	// Parse and Utilities
+	bool ParseFile();
+	static int ArchToBitness(PROC_ARCH arch);
+
+	// Getters
+	PROC_ARCH GetArch() { return _arch; }
+	int GetBitness() { return _bitness; }
+	uint16_t GetSubSys() { return _subsys; }
+	uint16_t GetCharacteristics() { return _chars; }
+	bool IsDll() { return _chars & IMAGE_FILE_DLL; }
 };
+

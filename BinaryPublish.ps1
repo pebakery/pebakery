@@ -46,7 +46,9 @@ Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
 # Loop tp publish PEBakery
 enum PublishModes
 {
+    # Runtime-dependent cross-platform binary
     FxDependent = 0
+    # Self-contained x64
     SelfContained
 }
 foreach ($PublishMode in [PublishModes].GetEnumValues())
@@ -75,9 +77,9 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     # Call dotnet command
     Push-Location "${BaseDir}"
     if ($PublishMode -eq [PublishModes]::FxDependent) {
-        dotnet publish -c Release -r win-x64 --force --self-contained=false -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
-        dotnet publish -c Release -r win-x64 --force --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
     }
     Pop-Location
 

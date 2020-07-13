@@ -38,6 +38,7 @@
 
 // Local Headers
 #include "Helper.h"
+#include "PEParser.h"
 
 using namespace std;
 
@@ -127,35 +128,52 @@ void Helper::OpenUrl(const std::wstring& url)
 		ShellExecuteW(NULL, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 
-WORD Helper::GetProcArch()
+PROC_ARCH Helper::GetProcArch()
 {
 	SYSTEM_INFO si;
 	GetNativeSystemInfo(&si);
-	return si.wProcessorArchitecture;
+
+	PROC_ARCH ret = PROC_ARCH::UNKNOWN;
+	switch (si.wProcessorArchitecture)
+	{
+	case PROCESSOR_ARCHITECTURE_INTEL:
+		ret = PROC_ARCH::X86;
+		break;
+	case PROCESSOR_ARCHITECTURE_AMD64:
+		ret = PROC_ARCH::X64;
+		break;
+	case PROCESSOR_ARCHITECTURE_ARM:
+		ret = PROC_ARCH::ARM;
+		break;
+	case PROCESSOR_ARCHITECTURE_ARM64:
+		ret = PROC_ARCH::ARM64;
+		break;
+	}
+	return ret;
 }
 
 const wchar_t* Helper::GetProcArchStr()
 {
-	WORD procArch = GetProcArch();
+	PROC_ARCH procArch = GetProcArch();
 	return GetProcArchStr(procArch);
 }
 
-const wchar_t* Helper::GetProcArchStr(WORD procArch)
+const wchar_t* Helper::GetProcArchStr(PROC_ARCH procArch)
 {
 	const wchar_t* str = nullptr;
 
 	switch (procArch)
 	{
-	case PROCESSOR_ARCHITECTURE_INTEL:
+	case PROC_ARCH::X86:
 		str = L"x86";
 		break;
-	case PROCESSOR_ARCHITECTURE_AMD64:
+	case PROC_ARCH::X64:
 		str = L"x64";
 		break;
-	case PROCESSOR_ARCHITECTURE_ARM:
+	case PROC_ARCH::ARM:
 		str = L"arm";
 		break;
-	case PROCESSOR_ARCHITECTURE_ARM64:
+	case PROC_ARCH::ARM64:
 		str = L"arm64";
 		break;
 	}
