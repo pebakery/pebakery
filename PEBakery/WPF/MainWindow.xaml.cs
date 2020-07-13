@@ -630,7 +630,7 @@ namespace PEBakery.WPF
                     Debug.Assert(node != null, "Internal error with MainTree management");
                     Model.PostRefreshScript(node, newScript);
 
-                    MessageBox.Show($"Successfully updated script {newScript.Title}",
+                    MessageBox.Show(this, $"Successfully updated script {newScript.Title}",
                         "Script Update Success",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -643,7 +643,7 @@ namespace PEBakery.WPF
                     foreach (LogInfo log in errorLogs)
                         b.AppendLine($"- {log.Message}");
 
-                    MessageBox.Show(b.ToString(), "Script Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, b.ToString(), "Script Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

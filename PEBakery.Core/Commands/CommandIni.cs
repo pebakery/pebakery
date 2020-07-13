@@ -44,6 +44,9 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
+            string defaultValue = null;
+            if (info.DefaultValue != null)
+                defaultValue = StringEscaper.Preprocess(s, info.DefaultValue);
 
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
             Debug.Assert(sectionName != null, $"{nameof(sectionName)} != null");
@@ -65,10 +68,20 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]"));
+                if (defaultValue != null)
+                {
+                    logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]. Assigning default value [{defaultValue}]"));
 
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false, false);
-                logs.AddRange(varLogs);
+                    List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, defaultValue, false, false, false);
+                    logs.AddRange(varLogs);
+                }
+                else
+                {
+                    logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]"));
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false, false);
+                    logs.AddRange(varLogs);
+                }
             }
 
             return logs;
@@ -123,10 +136,20 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist", subCmd));
+                    if (infoOp.Infos[i].DefaultValue != null)
+                    {
+                        logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist. Assigning default value [{infoOp.Infos[i].DefaultValue}]"));
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, string.Empty, false, false, false);
-                    logs.AddRange(varLogs);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, infoOp.Infos[i].DefaultValue, false, false, false);
+                        logs.AddRange(varLogs);
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist", subCmd));
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, string.Empty, false, false, false);
+                        logs.AddRange(varLogs);
+                    }
                 }
             }
             logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from [{fileName}]", cmd));

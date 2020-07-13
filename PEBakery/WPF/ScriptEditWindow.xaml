@@ -43,6 +43,7 @@
         Closed="Window_Closed"
         Width="900" Height="720"
         MinWidth="600" MinHeight="480"
+        Icon="/Resources/Donut.ico"
         WindowStartupLocation="CenterOwner"
         PreviewKeyDown="Window_PreviewKeyDown"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">

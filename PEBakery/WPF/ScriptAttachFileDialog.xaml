@@ -34,6 +34,7 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         mc:Ignorable="d"
+        Icon="/Resources/Donut.ico"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Title="Attach File" 

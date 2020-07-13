@@ -944,18 +944,20 @@ namespace PEBakery.Core
     #region CodeInfo 04 - Ini
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
-    { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>
+    { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>[,<Default=[Value]>]
         public string FileName;
         public string Section;
         public string Key;
         public string DestVar;
+        public string DefaultValue;
 
-        public CodeInfo_IniRead(string fileName, string section, string key, string destVar)
+        public CodeInfo_IniRead(string fileName, string section, string key, string destVar, string defaultValue)
         {
             FileName = fileName;
             Section = section;
             Key = key;
             DestVar = destVar;
+            DefaultValue = defaultValue;
         }
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
@@ -978,6 +980,11 @@ namespace PEBakery.Core
             b.Append(",%");
             b.Append(DestVar);
             b.Append("%");
+            if (DefaultValue != null)
+            {
+                b.Append(",");
+                b.Append(DefaultValue);
+            }
             return b.ToString();
         }
     }

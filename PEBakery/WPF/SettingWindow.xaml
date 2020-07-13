@@ -44,6 +44,7 @@
         WindowStartupLocation="CenterOwner"
         Title="PEBakery Settings"
         Width="600" Height="560"
+        Icon="/Resources/Donut.ico"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
         <!-- Global -->

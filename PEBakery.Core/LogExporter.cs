@@ -25,8 +25,9 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Core.Razor;
+using PEBakery.Core.Html;
 using PEBakery.Helper;
+using Scriban.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,25 +44,6 @@ namespace PEBakery.Core
         private readonly LogDatabase _db;
         private readonly LogExportType _exportType;
         private readonly TextWriter _w;
-
-        /*
-        // Lazy load RazorRenderer
-        private readonly static object _razorRendererLock = new object();
-        private static RazorRenderer _razorRenderer = null;
-        internal static RazorRenderer RazorRenderer
-        {
-            get
-            {
-                lock (_razorRendererLock)
-                {
-                    // Turn off caching to save memory. PEBakery does not call RazorRenderer too often.
-                    if (_razorRenderer == null)
-                        _razorRenderer = new RazorRenderer(false);
-                    return _razorRenderer;
-                }
-            }
-        }
-        */
 
         public LogExporter(LogDatabase db, LogExportType type, TextWriter writer)
         {
@@ -103,16 +85,15 @@ namespace PEBakery.Core
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
-                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
-                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
-                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
+                            EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.bundle.min.js", assembly),
                             // Data
-                            SysLogs = new List<SystemLogItem>(),
                         };
 
                         foreach (LogModel.SystemLog log in _db.Table<LogModel.SystemLog>().OrderBy(x => x.Time))
                         {
-                            m.SysLogs.Add(new SystemLogItem
+                            m.SysLogs.AddItem(new SystemLogItem
                             {
                                 TimeStr = log.TimeStr,
                                 State = log.State,
@@ -120,8 +101,7 @@ namespace PEBakery.Core
                             });
                         }
 
-                        RazorRenderer razorRenderer = new RazorRenderer(false);
-                        razorRenderer.RenderHtmlAsync("Razor._SystemLogView.cshtml", m, _w).Wait();
+                        HtmlRenderer.RenderHtmlAsync("Html._SystemLogView.sbnhtml", assembly, m, _w).Wait();
                     }
                     break;
             }
@@ -394,11 +374,11 @@ namespace PEBakery.Core
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
                             // Embed
-                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.min.css", assembly),
-                            EmbedJQuerySlim = ResourceHelper.GetEmbeddedResourceString("Razor.jquery.slim.min.js", assembly),
-                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Razor.bootstrap.bundle.min.js", assembly),
+                            EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
+                            EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
+                            EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.bundle.min.js", assembly),
                             // Data
-                            LogStats = new List<LogStatItem>(),
+                            // LogStats = new List<LogStatItem>(),
                         };
 
                         // Log Statistics
@@ -407,7 +387,8 @@ namespace PEBakery.Core
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
 
-                            m.LogStats.Add(new LogStatItem
+                            // type: LogStatItem[]
+                            m.LogStats.AddItem(new LogStatItem
                             {
                                 State = state,
                                 Count = count,
@@ -415,14 +396,15 @@ namespace PEBakery.Core
                         }
 
                         // Show ErrorLogs
-                        m.ErrorCodeDict = new Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]>();
+                        // m.ErrorCodeDict = new Dictionary<SriptLogItem, Tuple<CodeLogItem, string>[]>();
+                        void BuildErrorWarnLogs(ScriptArray dest, LogState target)
                         {
-                            int errIdx = 0;
-                            LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
-                            if (0 < errors.Length)
+                            int targetIdx = 0;
+                            LogModel.BuildLog[] targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == target).ToArray();
+                            if (0 < targetLogs.Length)
                             {
-                                int[] scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                                int[] refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
+                                int[] scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
+                                int[] refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
                                 LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
                                     .ToArray();
@@ -432,72 +414,60 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
-                                    ScriptLogItem scModel = new ScriptLogItem
+                                    /* type: [
+                                        { 
+                                            ScriptName = string,
+                                            ScriptPath = string,
+                                            Codes = [{
+                                                State = string,
+                                                Message = string,
+                                                Href = string,
+                                                RefScriptMsg = string,
+                                            }]
+                                        }, ...
+                                    ] */
+                                    ScriptArray codeArr = new ScriptArray();
+                                    foreach (LogModel.BuildLog targetLog in targetLogs.Where(x => x.ScriptId == scLog.Id))
                                     {
-                                        Name = scLog.Name,
-                                        Path = scLog.TreePath,
-                                    };
+                                        CodeLogItem logItem = new CodeLogItem()
+                                        {
+                                            State = targetLog.State,
+                                            Message = targetLog.Export(LogExportType.Html, false, false),
+                                            Href = targetIdx++,
+                                            RefScriptMsg = ExportRefScriptText(targetLog, scOriginLogs)
+                                        };
+                                        ScriptObject logObj = new ScriptObject();
+                                        logObj.Import(logItem, renamer: HtmlRenderer.ScribanObjectRenamer);
 
-                                    m.ErrorCodeDict[scModel] = errors
-                                        .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new Tuple<CodeLogItem, string>(
-                                            new CodeLogItem
-                                            {
-                                                State = x.State,
-                                                Message = x.Export(LogExportType.Html, false, false),
-                                                Href = errIdx++,
-                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
+                                        codeArr.Add(logObj);
+                                    }
+
+                                    ScriptObject itemRoot = new ScriptObject
+                                    {
+                                        ["ScriptName"] = scLog.Name,
+                                        ["ScriptPath"] = scLog.TreePath,
+                                        ["Codes"] = codeArr,
+                                    };
+                                    dest.Add(itemRoot);
                                 }
                             }
                         }
 
-                        // Show WarnLogs
-                        m.WarnCodeDict = new Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]>();
-                        {
-                            int warnIdx = 0;
-                            LogModel.BuildLog[] warns = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
-                            if (0 < warns.Length)
-                            {
-                                int[] scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                                int[] refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
-                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
-                                    .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
-                                    .ToArray();
-                                LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
-                                    .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
-                                    .ToArray();
-
-                                foreach (LogModel.Script scLog in scLogs)
-                                {
-                                    ScriptLogItem pModel = new ScriptLogItem
-                                    {
-                                        Name = scLog.Name,
-                                        Path = scLog.TreePath,
-                                    };
-                                    m.WarnCodeDict[pModel] = warns
-                                        .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new Tuple<CodeLogItem, string>(
-                                            new CodeLogItem
-                                            {
-                                                State = x.State,
-                                                Message = x.Export(LogExportType.Html, false, false),
-                                                Href = warnIdx++,
-                                            }, ExportRefScriptText(x, scOriginLogs))).ToArray();
-                                }
-                            }
-                        }
+                        BuildErrorWarnLogs(m.ErrorSummaries, LogState.Error);
+                        BuildErrorWarnLogs(m.WarnSummaries, LogState.Warning);
 
                         // Scripts - Build Scripts
                         var scripts = _db.Table<LogModel.Script>()
                             .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
-                        m.Scripts = new List<ScriptLogItem>();
                         {
                             int idx = 1;
                             foreach (LogModel.Script scLog in scripts)
                             {
                                 TimeSpan elapsed = scLog.FinishTime - scLog.StartTime;
-                                m.Scripts.Add(new ScriptLogItem
+
+                                // type: ScriptLogItem[]
+                                m.Scripts.AddItem(new ScriptLogItem
                                 {
                                     IndexStr = idx.ToString(),
                                     Name = scLog.Name,
@@ -510,7 +480,6 @@ namespace PEBakery.Core
                         }
 
                         // Script - Referenced Scripts
-                        m.RefScripts = new List<ScriptLogItem>();
                         {
                             var refScripts = _db.Table<LogModel.Script>()
                                 .Where(x => x.BuildId == buildId && x.Order <= 0)
@@ -531,7 +500,8 @@ namespace PEBakery.Core
                                     idxStr = idx.ToString();
                                 }
 
-                                m.RefScripts.Add(new ScriptLogItem
+                                // type: ScriptLogItem[]
+                                m.RefScripts.AddItem(new ScriptLogItem
                                 {
                                     IndexStr = idxStr,
                                     Name = scLog.Name,
@@ -542,7 +512,6 @@ namespace PEBakery.Core
                         }
 
                         // Variables
-                        m.Variables = new List<VariableLogItem>();
                         {
                             var vars = _db.Table<LogModel.Variable>()
                                         .Where(x => x.BuildId == buildId && (x.Type == VarsType.Fixed || x.Type == VarsType.Global))
@@ -550,7 +519,8 @@ namespace PEBakery.Core
                                         .ThenBy(x => x.Key);
                             foreach (LogModel.Variable vLog in vars)
                             {
-                                m.Variables.Add(new VariableLogItem
+                                // type: VariableLogItem[]
+                                m.Variables.AddItem(new VariableLogItem
                                 {
                                     Type = vLog.Type,
                                     Key = vLog.Key,
@@ -560,7 +530,6 @@ namespace PEBakery.Core
                         }
 
                         // CodeLogs
-                        m.CodeLogs = new List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>>();
                         {
                             int pIdx = 0;
                             int errIdx = 0;
@@ -583,14 +552,18 @@ namespace PEBakery.Core
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
                                 LogModel.BuildLog[] codeLogs = cLogs.OrderBy(x => x.Id).OrderBy(x => x.Id).ToArray();
 
-                                ScriptLogItem pModel = new ScriptLogItem
+                                // Populate CodeLogs.Script
+                                ScriptLogItem scModel = new ScriptLogItem
                                 {
                                     IndexStr = pIdx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
                                 };
+                                ScriptObject scObj = new ScriptObject();
+                                scObj.Import(scModel, renamer: HtmlRenderer.ScribanObjectRenamer);
 
-                                List<CodeLogItem> logModel = new List<CodeLogItem>(codeLogs.Length);
+                                // Populate CodeLogs.Codes
+                                ScriptArray codeArr = new ScriptArray(codeLogs.Length);
                                 foreach (LogModel.BuildLog log in codeLogs)
                                 {
                                     CodeLogItem item = new CodeLogItem
@@ -614,26 +587,41 @@ namespace PEBakery.Core
                                     else if (log.State == LogState.Warning)
                                         item.Href = warnIdx++;
 
-                                    logModel.Add(item);
+                                    codeArr.AddItem(item);
                                 }
 
-                                // Log local variables
-                                VariableLogItem[] localVarModel = _db.Table<LogModel.Variable>()
+                                // Populate CodeLogs.Variables (record of local variables))
+                                ScriptArray varArr = new ScriptArray();
+                                foreach (LogModel.Variable varLog in _db.Table<LogModel.Variable>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
-                                    .OrderBy(x => x.Key)
-                                    .Select(x => new VariableLogItem
+                                    .OrderBy(x => x.Key))
+                                {
+                                    varArr.AddItem(new VariableLogItem
                                     {
-                                        Type = x.Type,
-                                        Key = x.Key,
-                                        Value = x.Value,
-                                    }).ToArray();
+                                        Type = varLog.Type,
+                                        Key = varLog.Key,
+                                        Value = varLog.Value,
+                                    });
+                                }
 
-                                m.CodeLogs.Add(new Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>(pModel, logModel.ToArray(), localVarModel));
+                                /* type: [
+                                    { 
+                                        Script = ScriptLogItem,
+                                        Codes = ScriptArray of CodeLogItem,
+                                        Variables = ScriptArray of VariableLogItem
+                                    }, ...
+                                ] */
+                                ScriptObject rootItem = new ScriptObject
+                                {
+                                    ["Script"] = scObj,
+                                    ["Codes"] = codeArr,
+                                    ["Variables"] = varArr
+                                };
+                                m.CodeLogs.Add(rootItem);
                             }
                         }
 
-                        RazorRenderer razorRenderer = new RazorRenderer(false);
-                        razorRenderer.RenderHtmlAsync($"Razor._BuildLogView.cshtml", m, _w).Wait();
+                        HtmlRenderer.RenderHtmlAsync("Html._BuildLogView.sbnhtml", assembly, m, _w).Wait();
                     }
                     break;
                     #endregion
@@ -658,19 +646,11 @@ namespace PEBakery.Core
             else
             { // Not a referenced sript
                 return null;
-                /*
-                LogModel.Script scLog = scLogs.FirstOrDefault(x => x.Id == bLog.ScriptId);
-                if (scLog == null)
-                    return null;
-
-                string path = scLog.TreePath;
-                if (path.Length == 0)
-                    path = scLog.RealPath;
-                return $"|-> Script [{scLog.Name}] ({path})";
-                */
             }
         }
         #endregion
+
+
     }
 
     #region class BuildLogOptions

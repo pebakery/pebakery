@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+    <!-- Header Template -->
+    {{ include '_LogLayoutHeader.sbnhtml' }}
+
+    <!-- Body -->
+    <body id="page-top" data-spy="scroll">
+        <h1 class="container mt-2 text-center">PEBakery Build &lt;{{ HeadTitle | html.escape }}&gt;</h1>
+
+        <!-- Summary -->
+        <header id="summary" class="container-fluid">
+            <h2 class="mt-2">Summary</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <tbody> 
+                        <tr>
+                            <th class="table-dark">Built by</th>
+                            <td>PEBakery {{ BuiltEngineVersion | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">Exported by</th>
+                            <td>PEBakery {{ ExportEngineVersion | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">Started at</th>
+                            <td>{{ BuildStartTimeStr | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">Finished at</th>
+                            <td>{{ BuildEndTimeStr | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">Elapsed</th>
+                            <td>{{ BuildTookTimeStr | html.escape }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </header>
+
+        <!-- Statistics -->
+        <section id="statistics" class="container-fluid mt-2">
+            <h2 class="mt-2">Log Statistics</h2>
+            <table class="table table-striped table-bordered pb-table-content table-nonfluid">
+                <thead class="thead-dark text-center">
+                    <tr>
+                        <th class="text-nowrap">LogState</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ for $item in LogStats }}
+                    <tr>
+                        <th class="text-nowrap"><span class="{{ $item.State | LogStateCssFaClass }}">{{ $item.State | LogStateFaIcon }}</span>&nbsp;{{ LogStateStr false $item.State | html.escape }}</th>
+                        <td class="text-center">{{ $item.Count | html.escape }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Error Summary, Warning Summary -->
+        {{ func RenderErrorWarnSummary }}
+            {{ 
+                # 0 = error, 1 = warning
+                $type = $0
+                # ErrorCodes or WarnCodes
+                $model = $1
+
+                if $type == 0
+                    $h2 = "Errors"
+                    $sectionMsg = "error"
+                    $sectionId = "error_summary"
+                    $hrefPrefix = "#error_"
+                    $tdClass = "bg-danger"
+                else
+                    $h2 = "Warnings"
+                    $sectionMsg = "warning"
+                    $sectionId = "warn_summary"
+                    $hrefPrefix = "#warn_"
+                    $tdClass = "bg-warning"
+                end
+
+                if 1 < $model.size
+                    $sectionMsg = string.append $sectionMsg "s"
+                end
+            }}
+
+            {{ if 0 < $model.size }}
+            <section id="{{ $sectionId }}" class="container-fluid mt-2">
+                <h2 class="mt-2">{{ $h2 }}</h2>
+                {{ for $d in $model }}
+                <span class="pb-monospace">{{ $d.Codes.size }} {{ $sectionMsg }} in script &#91;{{ $d.ScriptName | html.escape }}&#93; &#40;{{ $d.ScriptPath | html.escape }}&#41;</span>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                        <thead class="thead-dark text-center">
+                            <tr>
+                                <th class="text-nowrap">State</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ for $item in $d.Codes }}
+                            <tr>
+                                <td class="text-nowrap {{ $tdClass }}">
+                                    <a class="text-dark" href='{{ $hrefPrefix }}{{ $item.Href }})'>
+                                        {{ $item.State | LogStateFaIcon }}{{ LogStateStr true $item.State | html.escape }}
+                                    </a>
+                                </td>
+                                {{ if $item.RefScriptMsg != null }}
+                                    <td class="pb-whitespace">{{ $item.Message | html.escape }}<br>{{ $item.RefScriptMsg | html.escape }}</td>
+                                {{ else }}
+                                    <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                                {{ end }}
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+                {{ end }}
+            </section>
+            {{ end }}
+        {{ end }}
+
+        {{ RenderErrorWarnSummary 0 ErrorSummaries }}
+        {{ RenderErrorWarnSummary 1 WarnSummaries }}
+
+        <!-- Scripts -->
+        <section id="script" class="container-fluid mt-2">
+            <h2>Scripts</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Index</th>
+                            <th>Script</th>
+                            <th>Version</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in Scripts }}
+                        <tr class="py-1">
+                            <td>{{ $item.IndexStr | html.escape }}</td>
+                            <td class="text-left" data-toggle="tooltip" title='{{ $item.Path | html.escape }}'><a href="#script-{{ $item.IndexStr | html.escape }}">{{ $item.Name | html.escape }}</a></td>
+                            <td>{{ $item.Version | html.escape }}</td>
+                            <td class="text-right">{{ $item.TimeStr | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Referenced Script -->
+        <section id="ref-script" class="container-fluid mt-2">
+            <h2>Referenced Scripts</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Index</th>
+                            <th>Script</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in RefScripts }}
+                        <tr>
+                            <td>{{ $item.IndexStr | html.escape }}</td>
+                            <td class="text-left" data-toggle="tooltip" title='{{ $item.Path | html.escape }}'>{{ $item.Name | html.escape }}</td>
+                            <td>{{ $item.Version | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Variables -->
+        <section id="vars" class="container-fluid mt-2">
+            <h2>Variables</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th class="text-nowrap">Type</th>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in Variables }}
+                        <tr>
+                            {{ if $item.TypeStr == "Fixed" }}
+                            <td class="text-nowrap text-primary">
+                                <i class="fas fa-fw fa-lock"></i>{{ $item.TypeStr }}
+                            </td>
+                            {{ else if $item.TypeStr == "Global" }}
+                            <td class="text-nowrap text-success">
+                                <i class="fas fa-fw fa-globe"></i>{{ $item.TypeStr }}
+                            </td>
+                            {{ end }}
+                            <td>{{ $item.Key }}</td>
+                            <td>{{ $item.Value }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Code Logs -->
+        {{ func RenderLogFlags }}
+            {{
+                # $item = entry of $entry.Codes (One CodeLogItem)
+                $item = $0
+            }}
+            {{ if ShowLogFlags }}
+                {{ if $item.RefScriptTitle }}
+                    <td class="text-nowrap text-primary" data-toggle="tooltip" title='{{ $item.RefScriptTitle | html.escape }} '>{{ $item.FlagsStr | html.escape }}</td>
+                {{ else }}
+                    <td class="text-nowrap">{{ $item.FlagsStr | html.escape }}</td>
+                {{ end }}
+            {{ end }}
+        {{ end }}
+
+        <h2 class="container-fluid mt-2">Code Logs</h2>
+        {{ for $entry in CodeLogs }}
+        <div id="script-{{ $entry.Script.IndexStr }}" class="container-fluid mt-2">
+            <span class="pb-monospace">&#91;{{ $entry.Script.IndexStr | html.escape }}&#47;{{ CodeLogs.size }}&#93; {{ $entry.Script.Name | html.escape }}&#40;{{ $entry.Script.Path | html.escape}}&#41;</span>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th class="text-nowrap">State</th>
+                            {{ if ShowLogFlags }}
+                            <th class="text-nowrap">Flags</th>
+                            {{ end }}
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in $entry.Codes }}
+                        <tr class='{{ $item.State | LogStateCssTrClass }}' {{ BuildErrorWarnRefId $item.Href $item.StateStr }}>
+                            <td class='text-nowrap {{ $item.State | LogStateCssTdClass }}'>{{ $item.State | LogStateFaIcon }}{{ LogStateStr true $item.State | html.escape }}</td>
+                            {{ RenderLogFlags $item }}
+                            <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+
+            {{ if 0 < $entry.Variables.size }}
+            <span class="pb-monospace">Local Variables of Script &#91;{{ $entry.Script.Name | html.escape }}&#93;</span>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th class="text-nowrap">Type</th>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ for $item in $entry.Variables }}
+                        <tr>
+                            <td class="text-nowrap text-info"><i class="fas fa-fw fa-cube"></i>Local</td>
+                            <td>{{ $item.Key | html.escape }}</td>
+                            <td>{{ $item.Value | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+            {{ end }}
+            <a class="float-right" href="#page-top">[ Top ]</a>
+            <div class="clearfix"></div>
+        </div>
+        {{ end }}
+
+        <!-- Footer Template -->
+        {{ include '_LogLayoutFooter.sbnhtml' }}
+    </body>
+</html>
+

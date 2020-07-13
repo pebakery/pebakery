@@ -25,10 +25,10 @@
     not derived from or based on this program. 
 */
 
-using System;
+using Scriban.Runtime;
 using System.Collections.Generic;
 
-namespace PEBakery.Core.Razor
+namespace PEBakery.Core.Html
 {
     #region LogLayoutModel
     public class LogLayoutModel
@@ -39,7 +39,7 @@ namespace PEBakery.Core.Razor
         public string ExportTimeStr { get; set; }
         // Embed
         public string EmbedBootstrapCss { get; set; }
-        public string EmbedJQuerySlim { get; set; }
+        public string EmbedJQuerySlimJs { get; set; }
         public string EmbedBootstrapJs { get; set; }
     }
     #endregion
@@ -48,13 +48,14 @@ namespace PEBakery.Core.Razor
     public class SystemLogModel : LogLayoutModel
     {
         // Data
-        public List<SystemLogItem> SysLogs { get; set; }
+        public ScriptArray SysLogs { get; private set; } = new ScriptArray();
     }
 
     public class SystemLogItem
     {
         public string TimeStr { get; set; }
         public LogState State { get; set; }
+        public string StateStr => State.ToString();
         public string Message { get; set; }
     }
     #endregion
@@ -69,13 +70,36 @@ namespace PEBakery.Core.Razor
         public string BuildTookTimeStr { get; set; }
         public bool ShowLogFlags { get; set; }
         // Data
-        public List<LogStatItem> LogStats { get; set; }
-        public List<ScriptLogItem> Scripts { get; set; }
-        public List<ScriptLogItem> RefScripts { get; set; }
-        public List<VariableLogItem> Variables { get; set; }
-        public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> ErrorCodeDict { get; set; }
-        public Dictionary<ScriptLogItem, Tuple<CodeLogItem, string>[]> WarnCodeDict { get; set; }
-        public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
+        // type: LogStatItem[]
+        public ScriptArray LogStats { get; private set; } = new ScriptArray();
+        /* type: [
+            { 
+                ScriptName = string,
+                ScriptPath = string,
+                Codes = [{
+                    State = string,
+                    Message = string,
+                    Href = string,
+                    RefScriptMsg = string,
+                }]
+            }, ...
+        ] */
+        public ScriptArray ErrorSummaries { get; private set; } = new ScriptArray();
+        public ScriptArray WarnSummaries { get; private set; } = new ScriptArray();
+        // type: ScriptLogItem[]
+        public ScriptArray Scripts { get; private set; } = new ScriptArray();
+        public ScriptArray RefScripts { get; private set; } = new ScriptArray();
+        // type: VariableLogItem[]
+        public ScriptArray Variables { get; private set; } = new ScriptArray();
+        /* type: [
+            { 
+                Script = ScriptLogItem,
+                Codes = ScriptArray of CodeLogItem,
+                Variables = ScriptArray of VariableLogItem
+            }, ...
+        ] */
+        public ScriptArray CodeLogs { get; private set; } = new ScriptArray();
+        //public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
     }
 
     public class LogStatItem
@@ -86,7 +110,7 @@ namespace PEBakery.Core.Razor
 
     public class ScriptLogItem
     {
-        public string IndexStr { get; set; }
+        public string IndexStr { get; set; } // int Index or "Macro"
         public string Name { get; set; }
         public string Path { get; set; }
         public string Version { get; set; }
@@ -96,6 +120,7 @@ namespace PEBakery.Core.Razor
     public class VariableLogItem
     {
         public VarsType Type { get; set; }
+        public string TypeStr => Type.ToString();
         public string Key { get; set; }
         public string Value { get; set; }
     }
@@ -116,8 +141,9 @@ namespace PEBakery.Core.Razor
         /// Optional, for error/warning logs
         /// </summary>
         public int Href { get; set; }
+        public string RefScriptMsg { get; set; }
 
-        // Used in BuildLogHtmlTemplate.cshtml
+        // Used in _BuildLogView.sbnhtml
         public string FlagsStr
         {
             get
@@ -129,6 +155,45 @@ namespace PEBakery.Core.Razor
                 else
                     return string.Empty;
             }
+        }
+    }
+    #endregion
+
+    #region ScriptArrayExtension
+    public static class ScriptArrayExtension
+    {
+        public static void AddItem<T>(this ScriptArray sa, T item)
+        {
+            ScriptObject itemObj = new ScriptObject();
+            itemObj.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
+            sa.Add(itemObj);
+        }
+
+        public static void AddItem<T>(this ScriptArray sa, IEnumerable<T> items)
+        {
+            ScriptArray itemArr = new ScriptArray();
+            foreach (T item in items)
+            {
+                AddItem(itemArr, item);
+            }
+            sa.Add(itemArr);
+        }
+
+        public static void AddItem<T>(this ScriptObject so, string key, T item)
+        {
+            ScriptObject itemObj = new ScriptObject();
+            itemObj.Import(item, renamer: HtmlRenderer.ScribanObjectRenamer);
+            so[key] = itemObj;
+        }
+
+        public static void AddItem<T>(this ScriptObject so, string key, IEnumerable<T> items)
+        {
+            ScriptArray itemArr = new ScriptArray();
+            foreach (T item in items)
+            {
+                AddItem(itemArr, item);
+            }
+            so[key] = itemArr;
         }
     }
     #endregion

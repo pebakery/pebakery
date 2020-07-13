@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2020 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,7 +25,56 @@
 
 #pragma once
 
-#define WINVER 0x0501
-#define _WIN32_WINNT 0x0501
+// Custom Constants
+#include "Var.h"
 
-#include <SDKDDKVer.h>
+// Windows SDK Headers
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+// C++ Runtime Headers
+#include <string>
+
+// C Runtime Headers
+#include <cstdint>
+
+// Local Headers
+#include "Helper.h"
+#include "Version.h"
+#include "PEParser.h"
+
+enum class PROC_ARCH
+{
+	UNKNOWN = 0,
+	X86,
+	X64,
+	ARM,
+	ARM64,
+};
+
+class PEParser
+{
+private:
+	std::wstring _filePath;
+
+	PROC_ARCH _arch;
+	int _bitness; // PE32 or PE32+?
+	uint16_t _subsys; // Windows Subsystem
+	uint16_t _chars; // Characteristics
+public:
+	// Constructor and Destructor
+	PEParser(const std::wstring& filePath);
+	~PEParser();
+
+	// Parse and Utilities
+	bool ParseFile();
+	static int ArchToBitness(PROC_ARCH arch);
+
+	// Getters
+	PROC_ARCH GetArch() { return _arch; }
+	int GetBitness() { return _bitness; }
+	uint16_t GetSubSys() { return _subsys; }
+	uint16_t GetCharacteristics() { return _chars; }
+	bool IsDll() { return _chars & IMAGE_FILE_DLL; }
+};
+

@@ -42,6 +42,7 @@
         Closed="Window_Closed"
         Width="800" Height="640"
         MinWidth="600" MinHeight="480"
+        Icon="/Resources/Donut.ico"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
     <Window.CommandBindings>

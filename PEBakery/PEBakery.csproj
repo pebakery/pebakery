@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
@@ -14,9 +13,11 @@
     <StartupObject>PEBakery.App</StartupObject>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <Version>0.9.7.0</Version>
+    <Authors>Team PEBakery</Authors>
+    <Copyright>Copyright © 2016-2020</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <None Update="App.manifest">
@@ -35,15 +36,8 @@
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.2.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.3.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
   </ItemGroup>
-  <PropertyGroup>
-    <Version>0.9.7.0</Version>
-    <Authors>Team PEBakery</Authors>
-    <Copyright>Copyright © 2016-2020</Copyright>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
-    <NeutralLanguage>en-US</NeutralLanguage>
-  </PropertyGroup>
 </Project>

@@ -173,7 +173,7 @@ namespace PEBakery.WPF
                     ResultReport result = FileHelper.OpenUri(destFile);
                     if (!result.Success)
                     {
-                        MessageBox.Show($"URL [{destFile}] could not be opened.\r\n\r\n{result.Message}.",
+                        MessageBox.Show(this, $"URL [{destFile}] could not be opened.\r\n\r\n{result.Message}.",
                             "Error Opening URL", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }

@@ -37,6 +37,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace PEBakery.Core
 {
@@ -79,7 +80,7 @@ namespace PEBakery.Core
         public static Setting Setting { get; set; }
         public static ProjectCollection Projects { get; set; }
         public static ScriptCache ScriptCache { get; set; }
-        public static FileTypeDetector FileTypeDetector { get; set; }
+        public static FileTypeDetector FileTypeDetector { get; set; }        
         #endregion
 
         #region Init

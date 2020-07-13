@@ -32,6 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
+        Icon="/Resources/Donut.ico"
         Title="DebugWindow" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>

@@ -3,9 +3,8 @@
 
 # Joveler-specific Resoures
 Publish/
-!Publish/tools/
+!Publish/_tools/
 res/
-PEBakery/Core/Parser/.antlr
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
 
@@ -30,10 +29,6 @@ BenchmarkDotNet.Artifacts
 bld/
 [Bb]in/
 [Oo]bj/
-
-# Do not ignore Precompiled directory
-!/ManagedWimLib/Precompiled/x86/
-!/ManagedWimLib/Precompiled/x64/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -259,3 +254,6 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# TestResults
+**/TestResults/
