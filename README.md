@@ -71,35 +71,36 @@ Testers using nightly builds should refer to the developer branch [Official PEBa
 
 See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
-## Build
+## Build Instructions
 
 .NET Core SDK, Windows SDK, and MSVC are required to compile PEBakery from the source.
 
 ### Requirement
 
 - [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) to build and test `PEBakery.exe`.
-- [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build the `PEBakeryLauncher.exe`
+- [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
     - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
-We recommend using full-featured Visual Studio for your best development experience.
+If you are a contributor, we recommend using a full-featured Visual Studio for the best development experience.
 
 - [Visual Studio 2019](https://visualstudio.microsoft.com/vs/)
 
 ### Compiling
 
-To compile PEBakery, run `BinaryPublish.ps1` with PowerShell or Powershell Core. 
+Nightly binaries can be compiled by running `BinaryPublish.ps1 -nightly` on PowerShell.
 
-- Publish\PEBakery-release-fxdep : Runtime-depedent binary
-- Publish\PEBakery-release-sc : Standalone binary
+- `Publish\PEBakery-nightly-fxdep` : Runtime-dependent binary
+- `Publish\PEBakery-nightly-sc` : Standalone binary
 
 ### Testing
 
 To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XPE), [ChrisPE](https://github.com/pebakery/chrispe), etc.), follow one of the given instructions.
 
-1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` alongside `Projects` directory.
+**NOTE**: `<ProjectPath>` is the directory that contains `Projects` directory from the PE building project.
+
+1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` inside `<ProjectPath>`, and run `PEBakeryLauncher.exe`.
 2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `/baseDir` parameter.
     ```powershell
-    # <ProjectPath> is a path of the root directory that contains "Projects".
     $ .\PEBakeryLauncher.exe /baseDir <ProjectPath>
     # or
     $ .\Binary\PEBakery.exe /baseDir <ProjectPath>
