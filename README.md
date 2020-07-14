@@ -26,12 +26,12 @@ The official release version is recommended for general use.
 A nightly build is provided for testing purposes. 
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
-- Lastest Nightly (develop)
+- [Lastest Nightly (develop)](https://ci.appveyor.com/project/ied206/pebakery/build/artifacts?branch=develop)
     - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop)
       - No dependency
       - Sizes about 110MB
       - Built for x64 architecture
-    - **[Runtime Dependent Nightly (x64, x86)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-fxdep.7z?branch=develop)**
+    - **[Runtime-dependent Nightly (x64, x86)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
       - Requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1)
       - Sizes about 32MB
       - Supports both x86, x64 architecture
@@ -89,7 +89,7 @@ If you are a contributor, we recommend using a full-featured Visual Studio for t
 
 Nightly binaries can be compiled by running `BinaryPublish.ps1 -nightly` on PowerShell.
 
-- `Publish\PEBakery-nightly-fxdep` : Runtime-dependent binary
+- `Publish\PEBakery-nightly-rt` : Runtime-dependent binary
 - `Publish\PEBakery-nightly-sc` : Standalone binary
 
 ### Testing
