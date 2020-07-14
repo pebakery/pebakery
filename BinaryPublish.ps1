@@ -38,29 +38,25 @@ if ($noclean -eq $false) {
     Pop-Location
 }
 
-# Build PEBakeryLauncher
-Write-Output ""
-Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
-& "${MSBuild}" -target:Rebuild -verbosity:minimal "${BaseDir}\Launcher" /p:Configuration=Release /property:Platform=Win32
-
 # Loop tp publish PEBakery
 enum PublishModes
 {
     # Runtime-dependent cross-platform binary
-    FxDependent = 0
+    RuntimeDependent = 1
     # Self-contained x64
-    SelfContained
+    SelfContained = 2
 }
 foreach ($PublishMode in [PublishModes].GetEnumValues())
 {
     Write-Output ""
     Write-Host "[*] Publish ${PublishMode} ${BinaryName} PEBakery" -ForegroundColor Yellow
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
-        $PublishName = "PEBakery-${BinaryName}-fxdep"
+    $PublishModeInt = ${PublishMode}.value__
+    if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
+        $PublishName = "PEBakery-${BinaryName}-rt"
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         $PublishName = "PEBakery-${BinaryName}-sc"
     } else {
-        Write-Host "Invalid PublishMode" -ForegroundColor Red
+        Write-Host "Invalid publish mode ${PublishMode} (${PublishModeInt})" -ForegroundColor Red
         exit 1
     }
 
@@ -74,9 +70,18 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     New-Item "${DestDir}" -ItemType Directory -ErrorAction SilentlyContinue
     New-Item "${DestBinDir}" -ItemType Directory -ErrorAction SilentlyContinue
     
-    # Call dotnet command
+    # Build and copy PEBakeryLauncher
     Push-Location "${BaseDir}"
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
+    Write-Output ""
+    Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
+    & "${MSBuild}" -target:Rebuild -verbosity:minimal Launcher /p:Configuration=Release /p:Platform=Win32 /p:PublishMacro="PUBLISH_MODE=${PublishModeInt}"
+    Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
+    # & "${UpxExe}" "${DestDir}\PEBakeryLauncher.exe"
+
+    # Publish PEBakery
+    Write-Output ""
+    Write-Host "[*] Build PEBakery" -ForegroundColor Yellow
+    if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
         dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
@@ -84,7 +89,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Pop-Location
 
     # Handle native bnaries
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
+    if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
         Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
         New-Item "${DestBinDir}\runtimes" -ItemType Directory
         Copy-Item "${DestBinDir}\runtimes_bak\win*" -Destination "${DestBinDir}\runtimes" -Recurse
@@ -102,9 +107,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Remove-Item "${DestBinDir}\Database" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
 
-    # Copy PEBakeryLauncher and license files
-    Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
-    # & "${UpxExe}" "${DestDir}\PEBakeryLauncher.exe"
+    # Copy license files
     Copy-Item "${BaseDir}\LICENSE" "${DestBinDir}"
     Copy-Item "${BaseDir}\LICENSE.GPLv3" "${DestBinDir}"
 

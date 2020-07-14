@@ -28,7 +28,6 @@
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <strsafe.h>
 #include <shlwapi.h>
 
 // C++ Runtime Headers

@@ -28,9 +28,6 @@
 // C++ Runtime Headers
 #include <string>
 
-// Local Headers
-#include "PEParser.h"
-
 class Helper
 {
 private:
@@ -40,9 +37,9 @@ public:
 	static void PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter = true);
 	static void PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter = true);
 	static void OpenUrl(const std::wstring& url);
-	static PROC_ARCH GetProcArch();
+	static ProcArch GetCpuArch();
 	static const wchar_t* GetProcArchStr();
-	static const wchar_t* GetProcArchStr(PROC_ARCH procArch);
+	static const wchar_t* GetProcArchStr(ProcArch procArch);
 	static const char* Tokenize(const char* str, const char token, std::string& out);
 	static const wchar_t* Tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);
 	static const char* Tokenize(const char* str, const std::string& token, std::string& out);

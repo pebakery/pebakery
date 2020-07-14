@@ -29,9 +29,6 @@
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <strsafe.h>
-#include <shlwapi.h>
-#include <shellapi.h>
 
 // C++ Runtime Headers
 #include <string>
@@ -50,7 +47,6 @@
 
 using namespace std;
 
-#ifdef CHECK_NETFX
 NetFxDetector::NetFxDetector(Version& targetVer) :
 	NetDetector(targetVer)
 {
@@ -189,9 +185,7 @@ const wstring NetFxDetector::GetInstallerUrl()
 	woss << L"-offline-installer";
 	return woss.str();
 }
-#endif
 
-#ifdef CHECK_NETCORE
 NetCoreDetector::NetCoreDetector(Version& targetVer, bool checkDesktopRuntime) :
 	NetDetector(targetVer), _checkDesktopRuntime(checkDesktopRuntime)
 {
@@ -434,7 +428,7 @@ bool NetCoreDetector::ParseRuntimeInfoLine(string& line, string& key, Version& v
 // Return installer url of .NET Core Windows Desktop Runtime.
 const wstring NetCoreDetector::GetInstallerUrl()
 {
-	PROC_ARCH procArch = Helper::GetProcArch();
+	ProcArch procArch = Helper::GetCpuArch();
 	const wchar_t* procArchStr = Helper::GetProcArchStr(procArch);
 	if (procArchStr == nullptr)
 		Helper::PrintError(L"Unsupported processor architecure!");
@@ -453,6 +447,4 @@ const wstring NetCoreDetector::GetInstallerUrl()
 	woss << L"-installer";
 	return woss.str();
 }
-
-#endif
 

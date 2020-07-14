@@ -27,10 +27,47 @@
 
 #include "targetver.h"
 
-// Windows SDK Headers
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+// Build & Publish mode
+#define BUILD_NETCORE_RT_DEPENDENT		1
+#define BUILD_NETCORE_SELF_CONTAINED	2
+#define BUILD_NETFX						3
+// Development only
+#define BUILD_MODE		BUILD_NETCORE_RT_DEPENDENT
 
-// Check if .NET is installed on the system
-// #define CHECK_NETFX
-#define CHECK_NETCORE
+#ifdef PUBLISH_MODE
+	// Force given build mode when publishing
+	#undef BUILD_MODE
+	#define BUILD_MODE PUBLISH_MODE
+#endif
+
+#undef CHECK_NETFX
+#undef CHECK_NETCORE
+#if BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
+	#undef CHECK_NETFX
+	#define CHECK_NETCORE
+#elif BUILD_MODE == BUILD_NETCORE_SELF_CONTAINED
+	#undef CHECK_NETFX
+	#undef CHECK_NETCORE
+#elif BUILD_MODE == BUILD_NETFRAMEWORK
+	#define CHECK_NETFX
+	#undef CHECK_NETCORE
+#else
+	#error Invalid build mode BUILD_MODE, halting build.
+#endif
+
+// Enums
+enum class ProcArch
+{
+	UNKNOWN = 0,
+	X86,
+	X64,
+	ARM,
+	ARM64,
+};
+
+enum class PEFormat
+{
+	UNKNOWN = 0,
+	PE32 = 32,
+	PE32_PLUS = 64,
+};

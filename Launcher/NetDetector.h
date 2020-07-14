@@ -52,7 +52,6 @@ public:
 	virtual void DownloadRuntime(bool exitAfter = true) = 0;
 };
 
-#ifdef CHECK_NETFX
 /**
  * @breif Detect if .NET Framework 4.5 or later is installed.
  */
@@ -69,9 +68,6 @@ public:
 	virtual void DownloadRuntime(bool exitAfter = true);
 };
 
-#endif
-
-#ifdef CHECK_NETCORE
 /**
  * @breif Detect if .NET Core 2.1 or later is installed.
  */
@@ -91,4 +87,3 @@ public:
 	virtual bool IsInstalled();
 	virtual void DownloadRuntime(bool exitAfter = true);
 };
-#endif
