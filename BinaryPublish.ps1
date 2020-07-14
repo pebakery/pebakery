@@ -42,7 +42,7 @@ if ($noclean -eq $false) {
 enum PublishModes
 {
     # Runtime-dependent cross-platform binary
-    FxDependent = 1
+    RuntimeDependent = 1
     # Self-contained x64
     SelfContained = 2
 }
@@ -51,12 +51,12 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Write-Output ""
     Write-Host "[*] Publish ${PublishMode} ${BinaryName} PEBakery" -ForegroundColor Yellow
     $PublishModeInt = ${PublishMode}.value__
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
+    if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
         $PublishName = "PEBakery-${BinaryName}-fxdep"
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         $PublishName = "PEBakery-${BinaryName}-sc"
     } else {
-        Write-Host "Invalid PublishMode" -ForegroundColor Red
+        Write-Host "Invalid publish mode ${PublishMode} (${PublishModeInt})" -ForegroundColor Red
         exit 1
     }
 
@@ -81,7 +81,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     # Publish PEBakery
     Write-Output ""
     Write-Host "[*] Build PEBakery" -ForegroundColor Yellow
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
+    if ($PublishMode -eq [PublishModes]::RuntimeDepenent) {
         dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
@@ -89,7 +89,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Pop-Location
 
     # Handle native bnaries
-    if ($PublishMode -eq [PublishModes]::FxDependent) {
+    if ($PublishMode -eq [PublishModes]::RuntimeDepenent) {
         Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
         New-Item "${DestBinDir}\runtimes" -ItemType Directory
         Copy-Item "${DestBinDir}\runtimes_bak\win*" -Destination "${DestBinDir}\runtimes" -Recurse

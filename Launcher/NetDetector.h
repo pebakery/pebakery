@@ -39,7 +39,6 @@
 // Local Headers
 #include "Version.h"
 
-#if defined(CHECK_NETFX) || defined(CHECK_NETCORE)
 class NetDetector
 {
 protected:
@@ -52,9 +51,7 @@ public:
 	virtual bool IsInstalled() = 0;
 	virtual void DownloadRuntime(bool exitAfter = true) = 0;
 };
-#endif
 
-#ifdef CHECK_NETFX
 /**
  * @breif Detect if .NET Framework 4.5 or later is installed.
  */
@@ -71,9 +68,6 @@ public:
 	virtual void DownloadRuntime(bool exitAfter = true);
 };
 
-#endif
-
-#ifdef CHECK_NETCORE
 /**
  * @breif Detect if .NET Core 2.1 or later is installed.
  */
@@ -93,4 +87,3 @@ public:
 	virtual bool IsInstalled();
 	virtual void DownloadRuntime(bool exitAfter = true);
 };
-#endif

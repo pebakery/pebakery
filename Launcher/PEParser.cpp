@@ -29,16 +29,13 @@
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <strsafe.h>
-#include <shlwapi.h>
-#include <shellapi.h>
 
 // C++ Runtime Headers
 #include <string>
 #include <sstream>
 #include <vector>
 #include <map>
-#include <regex>
+#include <memory>
 
 // C Runtime Headers
 #include <cstdint>
@@ -53,7 +50,6 @@ using namespace std;
 
 static constexpr size_t BUF_SiZE = 4096;
 
-#if BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT || BUILD_MODE == BUILD_NETFX
 PEParser::PEParser() :
 	_format(PEFormat::UNKNOWN), _arch(ProcArch::UNKNOWN), 
 	_subsys(0), _characteristics(0),
@@ -276,4 +272,3 @@ int PEParser::ArchToBitness(ProcArch arch)
 	}
 	return bitness;
 }
-#endif

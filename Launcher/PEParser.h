@@ -38,7 +38,6 @@
 // C Runtime Headers
 #include <cstdint>
 
-#if BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT || BUILD_MODE == BUILD_NETFX
 class PEParser
 {
 private:
@@ -72,4 +71,3 @@ public:
 	bool IsDll() { return _characteristics & IMAGE_FILE_DLL; }
 	bool IsNet() { return _isNet; }
 };
-#endif
