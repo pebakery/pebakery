@@ -671,6 +671,27 @@ namespace PEBakery.Core.WpfControls
         /// Displays a message box that has a message, title bar caption, button, and icon; and that returns a result.
         /// </summary>
         /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
+        /// <param name="owner">A System.Windows.Window that represents the owner window of the message box.</param>
+        /// <param name="caption">A System.String that specifies the title bar caption to display.</param>
+        /// <param name="button">A System.Windows.MessageBoxButton value that specifies which button or buttons to display.</param>
+        /// <param name="icon">A System.Windows.MessageBoxImage value that specifies the icon to display.</param>
+        /// <param name="timeout">A System.Int32 that specifies message box will be closed after how much seconds</param>
+        /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
+        public static MessageBoxResult Show(Window owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, int timeout)
+        {
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption, button, icon, timeout)
+            {
+                Owner = owner,
+            };
+            msg.ShowDialog();
+
+            return msg.Result;
+        }
+
+        /// <summary>
+        /// Displays a message box that has a message, title bar caption, button, and icon; and that returns a result.
+        /// </summary>
+        /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
         /// <param name="caption">A System.String that specifies the title bar caption to display.</param>
         /// <param name="button">A System.Windows.MessageBoxButton value that specifies which button or buttons to display.</param>
         /// <param name="icon">A System.Windows.MessageBoxImage value that specifies the icon to display.</param>
