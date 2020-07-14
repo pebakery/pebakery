@@ -128,25 +128,25 @@ void Helper::OpenUrl(const std::wstring& url)
 		ShellExecuteW(NULL, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 
-PROC_ARCH Helper::GetProcArch()
+ProcArch Helper::GetCpuArch()
 {
 	SYSTEM_INFO si;
 	GetNativeSystemInfo(&si);
 
-	PROC_ARCH ret = PROC_ARCH::UNKNOWN;
+	ProcArch ret = ProcArch::UNKNOWN;
 	switch (si.wProcessorArchitecture)
 	{
 	case PROCESSOR_ARCHITECTURE_INTEL:
-		ret = PROC_ARCH::X86;
+		ret = ProcArch::X86;
 		break;
 	case PROCESSOR_ARCHITECTURE_AMD64:
-		ret = PROC_ARCH::X64;
+		ret = ProcArch::X64;
 		break;
 	case PROCESSOR_ARCHITECTURE_ARM:
-		ret = PROC_ARCH::ARM;
+		ret = ProcArch::ARM;
 		break;
 	case PROCESSOR_ARCHITECTURE_ARM64:
-		ret = PROC_ARCH::ARM64;
+		ret = ProcArch::ARM64;
 		break;
 	}
 	return ret;
@@ -154,26 +154,26 @@ PROC_ARCH Helper::GetProcArch()
 
 const wchar_t* Helper::GetProcArchStr()
 {
-	PROC_ARCH procArch = GetProcArch();
+	ProcArch procArch = GetCpuArch();
 	return GetProcArchStr(procArch);
 }
 
-const wchar_t* Helper::GetProcArchStr(PROC_ARCH procArch)
+const wchar_t* Helper::GetProcArchStr(ProcArch procArch)
 {
 	const wchar_t* str = nullptr;
 
 	switch (procArch)
 	{
-	case PROC_ARCH::X86:
+	case ProcArch::X86:
 		str = L"x86";
 		break;
-	case PROC_ARCH::X64:
+	case ProcArch::X64:
 		str = L"x64";
 		break;
-	case PROC_ARCH::ARM:
+	case ProcArch::ARM:
 		str = L"arm";
 		break;
-	case PROC_ARCH::ARM64:
+	case ProcArch::ARM64:
 		str = L"arm64";
 		break;
 	}

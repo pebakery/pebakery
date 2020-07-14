@@ -38,23 +38,19 @@ if ($noclean -eq $false) {
     Pop-Location
 }
 
-# Build PEBakeryLauncher
-Write-Output ""
-Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
-& "${MSBuild}" -target:Rebuild -verbosity:minimal "${BaseDir}\Launcher" /p:Configuration=Release /property:Platform=Win32
-
 # Loop tp publish PEBakery
 enum PublishModes
 {
     # Runtime-dependent cross-platform binary
-    FxDependent = 0
+    FxDependent = 1
     # Self-contained x64
-    SelfContained
+    SelfContained = 2
 }
 foreach ($PublishMode in [PublishModes].GetEnumValues())
 {
     Write-Output ""
     Write-Host "[*] Publish ${PublishMode} ${BinaryName} PEBakery" -ForegroundColor Yellow
+    $PublishModeInt = ${PublishMode}.value__
     if ($PublishMode -eq [PublishModes]::FxDependent) {
         $PublishName = "PEBakery-${BinaryName}-fxdep"
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
@@ -74,8 +70,17 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     New-Item "${DestDir}" -ItemType Directory -ErrorAction SilentlyContinue
     New-Item "${DestBinDir}" -ItemType Directory -ErrorAction SilentlyContinue
     
-    # Call dotnet command
+    # Build and copy PEBakeryLauncher
     Push-Location "${BaseDir}"
+    Write-Output ""
+    Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
+    & "${MSBuild}" -target:Rebuild -verbosity:minimal Launcher /p:Configuration=Release /p:Platform=Win32 /p:PublishMacro="PUBLISH_MODE=${PublishModeInt}"
+    Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
+    # & "${UpxExe}" "${DestDir}\PEBakeryLauncher.exe"
+
+    # Publish PEBakery
+    Write-Output ""
+    Write-Host "[*] Build PEBakery" -ForegroundColor Yellow
     if ($PublishMode -eq [PublishModes]::FxDependent) {
         dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
@@ -102,9 +107,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Remove-Item "${DestBinDir}\Database" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
 
-    # Copy PEBakeryLauncher and license files
-    Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
-    # & "${UpxExe}" "${DestDir}\PEBakeryLauncher.exe"
+    # Copy license files
     Copy-Item "${BaseDir}\LICENSE" "${DestBinDir}"
     Copy-Item "${BaseDir}\LICENSE.GPLv3" "${DestBinDir}"
 

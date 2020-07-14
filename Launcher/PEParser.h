@@ -38,43 +38,38 @@
 // C Runtime Headers
 #include <cstdint>
 
-// Local Headers
-#include "Helper.h"
-#include "Version.h"
-#include "PEParser.h"
-
-enum class PROC_ARCH
-{
-	UNKNOWN = 0,
-	X86,
-	X64,
-	ARM,
-	ARM64,
-};
-
+#if BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT || BUILD_MODE == BUILD_NETFX
 class PEParser
 {
 private:
-	std::wstring _filePath;
-
-	PROC_ARCH _arch;
-	int _bitness; // PE32 or PE32+?
+	PEFormat _format; // PE32 or PE32+?
+	ProcArch _arch; // Processor Architecutre
 	uint16_t _subsys; // Windows Subsystem
-	uint16_t _chars; // Characteristics
+	uint16_t _characteristics; // Characteristics
+	bool _isNet; // Is .NET assembly?
+
+	// Parse
+	bool ParseDosHeader(const HANDLE hFile, size_t& outPeHeaderPos);
+	bool ParsePECoffHeader(const HANDLE hFile, const size_t peHeaderPos, size_t& outOptHeaderPos);
+	bool ParsePEOptionalHeader(const HANDLE hFile, const size_t optHeaderPos);
+	static bool IsImageDataDirectoryValid(const IMAGE_DATA_DIRECTORY& dir);
 public:
 	// Constructor and Destructor
-	PEParser(const std::wstring& filePath);
+	PEParser();
 	~PEParser();
 
-	// Parse and Utilities
-	bool ParseFile();
-	static int ArchToBitness(PROC_ARCH arch);
+	// Parse
+	bool ParseFile(const std::wstring& filePath);
 
 	// Getters
-	PROC_ARCH GetArch() { return _arch; }
-	int GetBitness() { return _bitness; }
+	PEFormat GetFormat() { return _format; }
+	ProcArch GetArch() { return _arch; }
 	uint16_t GetSubSys() { return _subsys; }
-	uint16_t GetCharacteristics() { return _chars; }
-	bool IsDll() { return _chars & IMAGE_FILE_DLL; }
-};
+	uint16_t GetCharacteristics() { return _characteristics; }
 
+	// Utilities
+	static int ArchToBitness(ProcArch arch);
+	bool IsDll() { return _characteristics & IMAGE_FILE_DLL; }
+	bool IsNet() { return _isNet; }
+};
+#endif

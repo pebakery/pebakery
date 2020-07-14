@@ -39,6 +39,7 @@
 // Local Headers
 #include "Version.h"
 
+#if defined(CHECK_NETFX) || defined(CHECK_NETCORE)
 class NetDetector
 {
 protected:
@@ -51,6 +52,7 @@ public:
 	virtual bool IsInstalled() = 0;
 	virtual void DownloadRuntime(bool exitAfter = true) = 0;
 };
+#endif
 
 #ifdef CHECK_NETFX
 /**
