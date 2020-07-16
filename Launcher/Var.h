@@ -40,21 +40,6 @@
 	#define BUILD_MODE PUBLISH_MODE
 #endif
 
-#undef CHECK_NETFX
-#undef CHECK_NETCORE
-#if BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
-	#undef CHECK_NETFX
-	#define CHECK_NETCORE
-#elif BUILD_MODE == BUILD_NETCORE_SELF_CONTAINED
-	#undef CHECK_NETFX
-	#undef CHECK_NETCORE
-#elif BUILD_MODE == BUILD_NETFRAMEWORK
-	#define CHECK_NETFX
-	#undef CHECK_NETCORE
-#else
-	#error Invalid build mode BUILD_MODE, halting build.
-#endif
-
 // Enums
 enum class ProcArch
 {

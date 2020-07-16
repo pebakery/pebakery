@@ -4,5 +4,3 @@
 
 #define PUBLISH_MODE
 #define BUILD_MODE
-#define CHECK_NETCORE
-#define CHECK_NETFX

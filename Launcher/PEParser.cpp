@@ -180,11 +180,9 @@ bool PEParser::ParsePECoffHeader(const HANDLE hFile, const size_t peHeaderPos, s
 	{
 	case IMAGE_NT_OPTIONAL_HDR32_MAGIC: // PE32
 		_format = PEFormat::PE32;
-		// outOptHeaderSize = sizeof(IMAGE_OPTIONAL_HEADER32);
 		break;
 	case IMAGE_NT_OPTIONAL_HDR64_MAGIC: // PE32+
 		_format = PEFormat::PE32_PLUS;
-		// peOptHeaderSize = sizeof(IMAGE_OPTIONAL_HEADER64);
 		break;
 	default:
 		return false;
@@ -238,7 +236,7 @@ bool PEParser::ParsePEOptionalHeader(const HANDLE hFile, const size_t optHeaderP
 		IMAGE_DATA_DIRECTORY netDir = optHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
 		_isNet = IsImageDataDirectoryValid(netDir);
 	}
-	else if (_format == PEFormat::PE32)
+	else if (_format == PEFormat::PE32_PLUS)
 	{
 		IMAGE_OPTIONAL_HEADER64* optHeader = reinterpret_cast<IMAGE_OPTIONAL_HEADER64*>(buffer);
 		_subsys = optHeader->Subsystem;
