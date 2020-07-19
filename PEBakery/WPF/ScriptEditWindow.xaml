@@ -488,10 +488,28 @@
                                           VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="3, 0, 3, 0" Orientation="Vertical">
                                     <!-- UIControl Selection -->
-                                    <ComboBox IsEnabled="{Binding InterfaceLoaded}"
-                                              SelectedIndex="{Binding InterfaceUICtrlIndex}"
-                                              ItemsSource="{Binding InterfaceUICtrls}"
-                                              SelectionChanged="UIControlComboBox_SelectionChanged"/>
+                                    <Grid Height="25">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="30"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- UIControl Selection -->
+                                        <ComboBox Grid.Column="0"
+                                            IsEnabled="{Binding InterfaceLoaded}"
+                                            SelectedIndex="{Binding InterfaceUICtrlIndex}"
+                                            ItemsSource="{Binding InterfaceUICtrls}"
+                                            SelectionChanged="UIControlComboBox_SelectionChanged"/>
+                                        <!-- UIControl Delete -->
+                                        <Button Grid.Column="1"
+                                            Margin="5, 0, 0, 0"
+                                            HorizontalAlignment="Right"
+                                            x:Name="UICtrlDeleteButton"
+                                            Command="{Binding UICtrlDeleteCommand}"
+                                            ToolTip="Delete UIControl">
+                                            <iconPacks:PackIconMaterial Kind="Minus" Width="Auto" Height="Auto" Margin="5"/>
+                                        </Button>
+                                    </Grid>
 
                                     <!-- Common -->
                                     <Grid Margin="0, 10, 0, 0">
@@ -1148,22 +1166,6 @@
                                                       IsChecked="{Binding UICtrlHideProgress}"/>
                                         </StackPanel>
                                     </Border>
-                                    <!-- Delete -->
-                                    <Button Width="100" Height="25"
-                                            Margin="0, 10, 0, 0"
-                                            HorizontalAlignment="Right"
-                                            x:Name="UICtrlDeleteButton"
-                                            Command="{Binding UICtrlDeleteCommand}"
-                                            ToolTip="Delete UIControl">
-                                        <StackPanel Orientation="Horizontal">
-                                            <iconPacks:PackIconMaterial Kind="Close"
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="0, 5, 5, 5"/>
-                                            <TextBlock Text="Delete"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
                                 </StackPanel>
                             </ScrollViewer>
                         </StackPanel>

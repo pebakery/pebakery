@@ -99,7 +99,6 @@ namespace PEBakery.Core.Html
             }, ...
         ] */
         public ScriptArray CodeLogs { get; private set; } = new ScriptArray();
-        //public List<Tuple<ScriptLogItem, CodeLogItem[], VariableLogItem[]>> CodeLogs { get; set; }
     }
 
     public class LogStatItem
