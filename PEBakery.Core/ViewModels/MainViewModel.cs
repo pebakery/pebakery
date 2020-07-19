@@ -442,7 +442,7 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        // Status Bar
+        // StatusBar & ProgressBar
         private string _statusBarText = string.Empty;
         public string StatusBarText
         {
@@ -450,23 +450,23 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _statusBarText, value);
         }
 
-        // True - StatusBar, False - ProgressBar
-        private bool _switchStatusProgressBar = false;
-        public bool SwitchStatusProgressBar
+        private StatusProgressSwitch _switchStatusProgressBar = StatusProgressSwitch.Progress;
+        public StatusProgressSwitch SwitchStatusProgressBar
         {
             get => _switchStatusProgressBar;
             set
             {
                 _switchStatusProgressBar = value;
-                if (value)
+                switch (value)
                 {
-                    BottomStatusBarVisibility = Visibility.Visible;
-                    BottomProgressBarVisibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    BottomStatusBarVisibility = Visibility.Collapsed;
-                    BottomProgressBarVisibility = Visibility.Visible;
+                    case StatusProgressSwitch.Status:
+                        BottomStatusBarVisibility = Visibility.Visible;
+                        BottomProgressBarVisibility = Visibility.Collapsed;
+                        break;
+                    case StatusProgressSwitch.Progress:
+                        BottomStatusBarVisibility = Visibility.Collapsed;
+                        BottomProgressBarVisibility = Visibility.Visible;
+                        break;
                 }
             }
         }
@@ -882,7 +882,7 @@ namespace PEBakery.Core.ViewModels
                 Interlocked.Increment(ref ProjectsLoading);
                 if (!quiet)
                     WorkInProgress = true;
-                SwitchStatusProgressBar = false; // Show Progress Bar
+                SwitchStatusProgressBar = StatusProgressSwitch.Progress; // Show Progress Bar
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
@@ -1008,7 +1008,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     if (!quiet)
                         WorkInProgress = false;
-                    SwitchStatusProgressBar = true; // Show Status Bar
+                    SwitchStatusProgressBar = StatusProgressSwitch.Status; // Show Status Bar
                     Interlocked.Decrement(ref ProjectsLoading);
 
                     // Enable Button/Context Menu Commands

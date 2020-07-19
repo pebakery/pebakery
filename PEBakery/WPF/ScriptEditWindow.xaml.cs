@@ -100,6 +100,7 @@ namespace PEBakery.WPF
                 m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlDragged;
                 m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlDragged;
                 m.UIControlModified += ViewModel_UIControlModified;
+                m.SwitchInterfaceStatusProgressBar = StatusProgressSwitch.Status;
 
                 m.ReadScriptGeneral();
                 m.ReadScriptInterface(true);
@@ -231,8 +232,13 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.ClearSelectedElements(true);
             m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
         }
+        #endregion
 
-        private void InterfaceCanvas_UIControlSelected(object sender, DragCanvas.UIControlSelectedEventArgs e)
+        #region For Interface Move/Resize via Mouse
+        /// <summary>
+        /// Selected UIControl(s) from interface canvas.
+        /// </summary>
+        private void InterfaceCanvas_UIControlSelected(object sender, UIControlSelectedEventArgs e)
         {
             if (e.UIControl == null && e.UIControls == null)
             { // Reset
@@ -241,12 +247,12 @@ namespace PEBakery.WPF
                 m.InterfaceUICtrlIndex = -1;
             }
             else if (e.MultiSelect)
-            {
+            { // Selected multiple controls
                 m.SelectedUICtrls = e.UIControls;
                 m.InterfaceUICtrlIndex = -1;
             }
             else
-            {
+            { // Selected single control
                 m.SelectedUICtrl = e.UIControl;
                 m.ReadUIControlInfo(m.SelectedUICtrl);
 
@@ -256,7 +262,10 @@ namespace PEBakery.WPF
             }
         }
 
-        private void InterfaceCanvas_UIControlDragged(object sender, DragCanvas.UIControlDraggedEventArgs e)
+        /// <summary>
+        /// Dragged UIControl(s) from interface canvas.
+        /// </summary>
+        private void InterfaceCanvas_UIControlDragged(object sender, UIControlDraggedEventArgs e)
         {
             if (!e.MultiSelect)
             {
@@ -264,10 +273,31 @@ namespace PEBakery.WPF
                 Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
             }
 
-            if (e.ForceUpdate || 5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
-                m.InvokeUIControlEvent(true);
+            if (e.IsFinished)
+            { // Dragging finished, refresh dragged UIControl
+                m.InterfaceStatusBarText = string.Empty;
+                if (e.ForceUpdate || 5 <= Math.Abs(e.Delta.X) || 5 <= Math.Abs(e.Delta.Y))
+                    m.InvokeUIControlEvent(true);
+            }
+            else
+            { // In the middle of dragging, update status bar
+                if (e.MultiSelect)
+                {
+                    Point n = e.Origin + e.Delta;
+                    m.InterfaceStatusBarText = $"Cursor: {(int)n.X}, {(int)n.Y}px";
+                }
+                else
+                {
+                    int x = e.UIControl.X + (int)e.Delta.X;
+                    int y = e.UIControl.Y + (int)e.Delta.Y;
+                    m.InterfaceStatusBarText = $"{e.UIControl.Key}: {x}, {y}px";
+                }
+            }
         }
 
+        /// <summary>
+        /// Update modified UIControl(s).
+        /// </summary>
         private void ViewModel_UIControlModified(object sender, UIControlModifiedEventArgs e)
         {
             if (e.MultiSelect)
@@ -289,6 +319,9 @@ namespace PEBakery.WPF
             }
         }
 
+        /// <summary>
+        /// Event handler to start UIControl dragging
+        /// </summary>
         private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             InterfaceScrollViewer.Focus();
@@ -305,7 +338,7 @@ namespace PEBakery.WPF
                 cvCursor.Y < 0 || m.InterfaceCanvas.Height < cvCursor.Y)
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
         }
-        #endregion  
+        #endregion 
         #region For Interface Move/Resize via Keyboard
         private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -792,24 +825,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Interface - Panels
-        public bool InterfaceNotSaved { get; set; } = false;
-        public bool InterfaceUpdated { get; set; } = false;
-
-        // Canvas
-        private DragCanvas _interfaceCanvas;
-        public DragCanvas InterfaceCanvas
-        {
-            get => _interfaceCanvas;
-            set => SetProperty(ref _interfaceCanvas, value);
-        }
-
-        private int _interfaceScaleFactor = 100;
-        public int InterfaceScaleFactor
-        {
-            get => _interfaceScaleFactor;
-            set => SetProperty(ref _interfaceScaleFactor, value);
-        }
-
         // InterfaceSection
         private ObservableCollection<string> _interfaceSectionNames;
         private readonly object _interfaceSectionNamesLock = new object();
@@ -846,6 +861,95 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Interface - Editor
+        public bool InterfaceNotSaved { get; set; } = false;
+        public bool InterfaceUpdated { get; set; } = false;
+
+        // Interface View Canvas
+        private DragCanvas _interfaceCanvas;
+        public DragCanvas InterfaceCanvas
+        {
+            get => _interfaceCanvas;
+            set => SetProperty(ref _interfaceCanvas, value);
+        }
+
+        private int _interfaceScaleFactor = 100;
+        public int InterfaceScaleFactor
+        {
+            get => _interfaceScaleFactor;
+            set => SetProperty(ref _interfaceScaleFactor, value);
+        }
+
+        // Interface StatusBar & ProgressBar
+        private string _interfaceStatusBarText;
+        public string InterfaceStatusBarText
+        {
+            get => _interfaceStatusBarText;
+            set => SetProperty(ref _interfaceStatusBarText, value);
+        }
+
+        private StatusProgressSwitch _switchInterfaceStatusProgressBar = StatusProgressSwitch.Status;
+        public StatusProgressSwitch SwitchInterfaceStatusProgressBar
+        {
+            get => _switchInterfaceStatusProgressBar;
+            set
+            {
+                _switchInterfaceStatusProgressBar = value;
+                switch (value)
+                {
+                    case StatusProgressSwitch.Status:
+                        InterfaceStatusBarVisibility = Visibility.Visible;
+                        InterfaceProgressBarVisibility = Visibility.Collapsed;
+                        break;
+                    case StatusProgressSwitch.Progress:
+                        InterfaceStatusBarVisibility = Visibility.Collapsed;
+                        InterfaceProgressBarVisibility = Visibility.Visible;
+                        break;
+                }
+            }
+        }
+
+        private Visibility _interfaceStatusBarVisibility = Visibility.Collapsed;
+        public Visibility InterfaceStatusBarVisibility
+        {
+            get => _interfaceStatusBarVisibility;
+            set => SetProperty(ref _interfaceStatusBarVisibility, value);
+        }
+
+        private bool _interfaceProgressBarIndeterminate;
+        public bool InterfaceProgressBarIndeterminate
+        {
+            get => _interfaceProgressBarIndeterminate;
+            set => SetProperty(ref _interfaceProgressBarIndeterminate, value);
+        }
+
+        private double _interfaceProgressBarMinimum = 0;
+        public double InterfaceProgressBarMinimum
+        {
+            get => _interfaceProgressBarMinimum;
+            set => SetProperty(ref _interfaceProgressBarMinimum, value);
+        }
+
+        private double _interfaceProgressBarMaximum = 100;
+        public double InterfaceProgressBarMaximum
+        {
+            get => _interfaceProgressBarMaximum;
+            set => SetProperty(ref _interfaceProgressBarMaximum, value);
+        }
+
+        private double _interfaceProgressBarValue = 0;
+        public double InterfaceProgressBarValue
+        {
+            get => _interfaceProgressBarValue;
+            set => SetProperty(ref _interfaceProgressBarValue, value);
+        }
+
+        private Visibility _interfaceProgressBarVisibility = Visibility.Visible;
+        public Visibility InterfaceProgressBarVisibility
+        {
+            get => _interfaceProgressBarVisibility;
+            set => SetProperty(ref _interfaceProgressBarVisibility, value);
+        }
+
         // Editor
         private bool _interfaceLoaded = false;
         public bool InterfaceLoaded

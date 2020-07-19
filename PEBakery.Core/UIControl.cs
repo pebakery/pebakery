@@ -160,6 +160,7 @@ namespace PEBakery.Core
 
         #region Properties
         public Rect Rect => new Rect(X, Y, Width, Height);
+        public Point Point => new Point(X, Y);
         #endregion
 
         #region Constructors
