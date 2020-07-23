@@ -1224,6 +1224,7 @@
                                           HorizontalScrollBarVisibility="Auto"
                                           VerticalScrollBarVisibility="Auto"
                                           PreviewMouseLeftButtonDown="InterfaceScrollViewer_PreviewMouseLeftButtonDown"
+                                          PreviewMouseMove="InterfaceScrollViewer_PreviewMouseMove"
                                           Content="{Binding InterfaceCanvas}"/>
                         </Border>
 

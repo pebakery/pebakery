@@ -71,7 +71,7 @@ namespace PEBakery.WPF.Controls
 
         // Drag
         private DragMode _dragMode;
-        private bool _isBeingDragged;
+        private DragState _dragState;
         private Point _dragStartCursorPos;
         private Rectangle _dragAreaRectangle;
 
@@ -133,7 +133,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (_isBeingDragged)
+            if (_dragState != DragState.None)
                 return;
 
             // Capture mouse
@@ -150,7 +150,7 @@ namespace PEBakery.WPF.Controls
             {
                 _dragMode = DragMode.DragToSelect;
 
-                _isBeingDragged = true;
+                _dragState = DragState.None;
 
                 // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
                 _dragAreaRectangle = new Rectangle
@@ -173,7 +173,7 @@ namespace PEBakery.WPF.Controls
                 _dragMode = 2 <= _selectedElements.Count ? DragMode.MultiResize : DragMode.SingleResize;
 
                 // Record select information
-                _isBeingDragged = true;
+                _dragState = DragState.Moving;
                 _selectedClickPos = info.ClickPos;
                 _selectedElementIndex = _selectedElements.FindIndex(x => x.Element.Equals(info.Parent));
                 Debug.Assert(_selectedElementIndex != -1, "Incorrect SelectedElement handling");
@@ -207,7 +207,10 @@ namespace PEBakery.WPF.Controls
                     _selectedElements.Add(selected); // Add to list only if (1) single-select mode or (2) multi-select and the element is not added yet
                 _selectedElementIndex = idx == -1 ? _selectedElements.Count - 1 : idx;
                 _selectedClickPos = ResizeClickPosition.Inside;
-                _isBeingDragged = true;
+                _dragState = DragState.Moving;
+
+                // Let ScriptEditWindow know about the drag event
+                UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, new Vector(0, 0), false, DragState.Start));
 
                 // Draw border and drag handles
                 DrawSelectedElements();
@@ -225,13 +228,13 @@ namespace PEBakery.WPF.Controls
 
         /// <inheritdoc />
         /// <summary>
-        /// Middle of dragging 
+        /// In the state of dragging 
         /// </summary>
         /// <param name="e"></param>
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
             // Change cursor following underlying element
-            if (!_isBeingDragged)
+            if (_dragState != DragState.Moving)
             {
                 FrameworkElement hoverElement = FindRootFrameworkElement(e.Source);
                 if (hoverElement == null) // Outside
@@ -273,7 +276,7 @@ namespace PEBakery.WPF.Controls
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
                         Vector delta = new Vector(newElementPos.X - uiCtrl.X, newElementPos.Y - uiCtrl.Y);
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, false));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Moving));
                     }
                     break;
                 case DragMode.MultiMove:
@@ -299,7 +302,7 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, false));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Moving));
                     }
                     break;
                 case DragMode.SingleResize:
@@ -311,7 +314,7 @@ namespace PEBakery.WPF.Controls
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
                         Vector delta = CalcResizeDeltas(newElementRect, uiCtrl);
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, false));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Moving));
                     }
                     break;
                 case DragMode.MultiResize:
@@ -328,7 +331,7 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, false));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Moving));
                     }
                     break;
             }
@@ -344,7 +347,7 @@ namespace PEBakery.WPF.Controls
             Point nowCursorPos = e.GetPosition(this);
             ReleaseMouseCapture();
 
-            if (!_isBeingDragged)
+            if (_dragState != DragState.Moving)
                 return;
 
             switch (_dragMode)
@@ -379,7 +382,7 @@ namespace PEBakery.WPF.Controls
                         uiCtrl.X = (int)newCtrlPos.X;
                         uiCtrl.Y = (int)newCtrlPos.Y;
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, true));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, DragState.Finished));
                     }
                     break;
                 case DragMode.MultiMove:
@@ -400,7 +403,7 @@ namespace PEBakery.WPF.Controls
                             uiCtrl.Y = (int)newCtrlPos.Y;
                         }
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, true));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
                 case DragMode.SingleResize:
@@ -417,7 +420,7 @@ namespace PEBakery.WPF.Controls
                         uiCtrl.Width = (int)newCtrlRect.Width;
                         uiCtrl.Height = (int)newCtrlRect.Height;
 
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, true));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
                 case DragMode.MultiResize:
@@ -440,14 +443,14 @@ namespace PEBakery.WPF.Controls
                             uiCtrl.Height = (int)newCtrlRect.Height;
                         }
 
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, true));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
             }
 
             ResetMouseCursor();
 
-            _isBeingDragged = false;
+            _dragState = DragState.None;
         }
         #endregion
 
@@ -1253,6 +1256,26 @@ namespace PEBakery.WPF.Controls
         MultiResize,
     }
 
+    public enum DragState
+    {
+        /// <summary>
+        /// Not dragging, for use in DragCanvas
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Started dragging, for use in DraggedEventArgs
+        /// </summary>
+        Start,
+        /// <summary>
+        /// In the middle of dragging, for use in DragCanvas and DraggedEventArgs
+        /// </summary>
+        Moving,
+        /// <summary>
+        /// Stopped dragging, for use in DraggedEventArgs
+        /// </summary>
+        Finished,
+    }
+
     public enum ResizeClickPosition
     {
         Left,
@@ -1329,26 +1352,26 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Is dragging finished?
         /// </summary>
-        public bool IsFinished { get; set; }
+        public DragState DragState { get; set; }
 
-        public UIControlDraggedEventArgs(UIControl uiCtrl, Point origin, Vector delta, bool forceUpdate, bool isFinished)
+        public UIControlDraggedEventArgs(UIControl uiCtrl, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
             UIControl = uiCtrl;
             UIControls = null;
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
-            IsFinished = isFinished;
+            DragState = dragState;
         }
 
-        public UIControlDraggedEventArgs(List<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, bool isFinished)
+        public UIControlDraggedEventArgs(List<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
             UIControl = null;
             UIControls = uiCtrls;
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
-            IsFinished = isFinished;
+            DragState = dragState;
         }
     }
     public delegate void UIControlDraggedEventHandler(object sender, UIControlDraggedEventArgs e);
