@@ -44,38 +44,37 @@ using namespace std;
 // Get start point of argv[1] from command line
 wchar_t* Helper::GetParameters(wchar_t* cmdLine)
 {
-	WCHAR* cmdRawLine = cmdLine;
-	WCHAR* cmdParam = NULL;
+	wchar_t* cmdParam = nullptr;
 
 	// Case 1 : Simplest form of 'single param', no space
 	// Ex) calc.exe
-	if (StrChrW(cmdRawLine, L' ') == NULL)
+	if (cmdLine == nullptr || StrChrW(cmdLine, L' ') == nullptr)
 	{
-		cmdParam = NULL;
+		cmdParam = nullptr;
 	}
 	else // It is 'multiple params' OR 'single param with quotes'
 	{
-		if (StrChrW(cmdRawLine, L'\"') == NULL)
+		if (StrChrW(cmdLine, L'\"') == nullptr)
 		{
 			// Case 2 : 'multiple params' without quotes
 			// Ex) notepad.exe Notepad-UTF8.txt
-			cmdParam = StrChrW(cmdRawLine, L' ');
+			cmdParam = StrChrW(cmdLine, L' ');
 		}
 		else
 		{
 			// Detect if first parameter has quotes
-			if (StrChrW(cmdRawLine, L'\"') == cmdRawLine)
+			if (StrChrW(cmdLine, L'\"') == cmdLine)
 			{
-				wchar_t* cmdLeftQuote = NULL; // Start of first parameter
-				wchar_t* cmdRightQuote = NULL; // End of first parameter
-				cmdLeftQuote = StrChrW(cmdRawLine, L'\"');
+				wchar_t* cmdLeftQuote = nullptr; // Start of first parameter
+				wchar_t* cmdRightQuote = nullptr; // End of first parameter
+				cmdLeftQuote = StrChrW(cmdLine, L'\"');
 				cmdRightQuote = StrChrW(cmdLeftQuote + 1, L'\"');
 
-				if (StrChrW(cmdRightQuote + 1, L' ') == NULL)
+				if (StrChrW(cmdRightQuote + 1, L' ') == nullptr)
 				{
 					// Case 3 : Single param with quotes on first param
 					// Ex) "Simple Browser.exe"
-					cmdParam = NULL;
+					cmdParam = nullptr;
 				}
 				else
 				{
@@ -88,7 +87,7 @@ wchar_t* Helper::GetParameters(wchar_t* cmdLine)
 			{
 				// Case 5 : Multiple param, but no quotes on first param
 				// Ex) notepad.exe "Notepad UTF8.txt"
-				cmdParam = StrChrW(cmdRawLine, L' ');
+				cmdParam = StrChrW(cmdLine, L' ');
 			}
 		}
 	}
@@ -99,7 +98,7 @@ wchar_t* Helper::GetParameters(wchar_t* cmdLine)
 void Helper::PrintError(const std::wstring& errMsg, bool exitAfter)
 {
 	wcerr << errMsg << endl;
-	MessageBoxW(NULL, errMsg.c_str(), L"Error", MB_OK | MB_ICONERROR);
+	MessageBoxW(nullptr, errMsg.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	if (exitAfter)
 		exit(1);
 }
@@ -107,7 +106,7 @@ void Helper::PrintError(const std::wstring& errMsg, bool exitAfter)
 void Helper::PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter)
 {
 	wcerr << errMsg << endl;
-	MessageBoxW(NULL, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
+	MessageBoxW(nullptr, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
 	if (exitAfter)
 		exit(1);
 }
@@ -115,7 +114,7 @@ void Helper::PrintError(const std::wstring& errMsg, const std::wstring& errCapti
 void Helper::PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter)
 {
 	wcerr << errMsg << endl;
-	MessageBoxW(NULL, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
+	MessageBoxW(nullptr, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
 	OpenUrl(url);
 	if (exitAfter)
 		exit(1);
@@ -124,7 +123,7 @@ void Helper::PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring
 void Helper::OpenUrl(const std::wstring& url)
 {
 	if (0 < url.size())
-		ShellExecuteW(NULL, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+		ShellExecuteW(nullptr, nullptr, url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
 ProcArch Helper::GetCpuArch()

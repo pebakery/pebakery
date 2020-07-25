@@ -42,9 +42,9 @@ if ($noclean -eq $false) {
 enum PublishModes
 {
     # Runtime-dependent cross-platform binary
-    RuntimeDependent = 1
+    RuntimeDependent = 2
     # Self-contained x64
-    SelfContained = 2
+    SelfContained = 3
 }
 foreach ($PublishMode in [PublishModes].GetEnumValues())
 {

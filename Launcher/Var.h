@@ -28,11 +28,11 @@
 #include "targetver.h"
 
 // Build & Publish mode
-#define BUILD_NETCORE_RT_DEPENDENT		1
-#define BUILD_NETCORE_SELF_CONTAINED	2
-#define BUILD_NETFX						3
+#define BUILD_NETFX						1
+#define BUILD_NETCORE_RT_DEPENDENT		2
+#define BUILD_NETCORE_SELF_CONTAINED	3
 // Development only
-#define BUILD_MODE		BUILD_NETCORE_RT_DEPENDENT
+#define BUILD_MODE		BUILD_NETCORE_SELF_CONTAINED
 
 #ifdef PUBLISH_MODE
 	// Force given build mode when publishing
