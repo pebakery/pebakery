@@ -150,7 +150,7 @@ namespace PEBakery.WPF.Controls
             {
                 _dragMode = DragMode.DragToSelect;
 
-                _dragState = DragState.None;
+                _dragState = DragState.Moving;
 
                 // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
                 _dragAreaRectangle = new Rectangle
