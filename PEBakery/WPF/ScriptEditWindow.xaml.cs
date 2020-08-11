@@ -230,7 +230,7 @@ namespace PEBakery.WPF
                 return;
 
             m.SelectedUICtrl = m.Renderer.UICtrls[m.InterfaceUICtrlIndex];
-            m.InterfaceCanvas.ClearSelectedElements(true);
+            m.InterfaceCanvas.ClearSelectedElements();
             m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
         }
         #endregion
@@ -243,7 +243,7 @@ namespace PEBakery.WPF
         {
             if (e.MultiSelect)
             {
-                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.InterfaceCanvas.ClearSelectedElements();
                 m.Renderer.Render();
                 m.InterfaceCanvas.DrawSelectedElements(e.UIControls);
             }
@@ -254,7 +254,7 @@ namespace PEBakery.WPF
                 if (!e.InfoNotUpdated)
                     m.WriteUIControlInfo(uiCtrl);
 
-                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.InterfaceCanvas.ClearSelectedElements();
                 m.Renderer.Render();
                 m.InterfaceCanvas.DrawSelectedElement(uiCtrl);
             }
@@ -296,8 +296,8 @@ namespace PEBakery.WPF
             {
                 case DragState.Start:
                     { // Started dragging, set 
-                        m.InterfaceCursorDragging = true;
-                        m.InterfaceControlDragOrigin = e.Origin;
+                        m.InterfaceControlDragging = true;
+                        m.InterfaceControlDragDelta = new Vector(0, 0);
                     }
                     break;
                 case DragState.Moving:
@@ -313,13 +313,11 @@ namespace PEBakery.WPF
                             Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
                         }
 
-                        m.InterfaceStatusBarText = string.Empty;
+                        m.InterfaceControlDragging = false;
+                        m.InterfaceControlDragDelta = new Vector(0, 0);
+
                         if (e.ForceUpdate || 5 <= Math.Abs(e.Delta.X) || 5 <= Math.Abs(e.Delta.Y))
                             m.InvokeUIControlEvent(true);
-
-                        m.InterfaceCursorDragging = false;
-                        m.InterfaceControlDragOrigin = new Point(0, 0);
-                        m.InterfaceControlDragDelta = new Vector(0, 0);
                     }
                     break;
             }
@@ -343,6 +341,11 @@ namespace PEBakery.WPF
             if (cvCursor.X < 0 || m.InterfaceCanvas.Width < cvCursor.X ||
                 cvCursor.Y < 0 || m.InterfaceCanvas.Height < cvCursor.Y)
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
+
+            // Update current cursor position to the status bar
+            m.InterfaceCursorPos = cvCursor;
+            m.InterfaceControlDragDelta = new Vector(0, 0);
+            m.UpdateCursorPosStatus(m.InterfaceControlDragging, true);
         }
 
         /// <summary>
@@ -350,11 +353,8 @@ namespace PEBakery.WPF
         /// </summary>
         private void InterfaceScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (!m.CheckCursorPosStatusUpdate())
-                return;
-
             m.InterfaceCursorPos = e.GetPosition(m.InterfaceCanvas);
-            m.UpdateCursorPosStatus();
+            m.UpdateCursorPosStatus(m.InterfaceControlDragging, false);
         }
         #endregion 
 
@@ -364,6 +364,10 @@ namespace PEBakery.WPF
             if (m.TabIndex == 1)
                 InterfaceScrollViewer.Focus();
         }
+
+        /// <summary>
+        /// Handle moving UIControl via keyboard
+        /// </summary>
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             IInputElement focusedControl = Keyboard.FocusedElement;
@@ -414,33 +418,40 @@ namespace PEBakery.WPF
                         return;
                 }
 
+                // TODO: Need full rewrite of DrawSelectedElement
+                //       Current keyboard code is a mess.
                 switch (m.SelectMode)
                 {
                     case ScriptEditViewModel.ControlSelectMode.SingleSelect:
                         if (move)
                         {
-                            DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
+                            m.InterfaceCanvas.ApplyControlPosition(m.SelectedUICtrl, deltaX, deltaY);
+                            m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
                         }
                         else // Resize
                         {
-                            DragCanvas.ApplyUIControlSize(m.SelectedUICtrl, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
+                            m.InterfaceCanvas.ApplyControlSize(m.SelectedUICtrl, deltaX, deltaY);
+                            m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
                         }
                         break;
                     case ScriptEditViewModel.ControlSelectMode.MultiSelect:
                         if (move)
                         {
-                            DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
+                            m.InterfaceCanvas.ApplyControlPositions(m.SelectedUICtrls, deltaX, deltaY);
+                            m.InterfaceCanvas.DrawSelectedElements(m.SelectedUICtrls);
                         }
                         else // Resize
                         {
-                            DragCanvas.ApplyUIControlSizes(m.SelectedUICtrls, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
+                            m.InterfaceCanvas.ApplyControlSizes(m.SelectedUICtrls, deltaX, deltaY);
+                            m.InterfaceCanvas.DrawSelectedElements(m.SelectedUICtrls);
                         }
                         break;
                 }
+
+                // Update control delta to the status bar
+                m.InterfaceCursorPos = new Point(-1, -1); // Do not display cursor position
+                m.InterfaceControlDragDelta += new Vector(deltaX, deltaY); // Accumulate delta set by keyboard
+                m.UpdateCursorPosStatus(true, true);
             }
         }
         #endregion
@@ -916,17 +927,10 @@ namespace PEBakery.WPF
         }
 
         private bool _interfaceControlDragging = false;
-        public bool InterfaceCursorDragging
+        public bool InterfaceControlDragging
         {
             get => _interfaceControlDragging;
             set => SetProperty(ref _interfaceControlDragging, value);
-        }
-
-        private Point _interfaceControlDragOrigin = new Point(0, 0);
-        public Point InterfaceControlDragOrigin
-        {
-            get => _interfaceControlDragOrigin;
-            set => SetProperty(ref _interfaceControlDragOrigin, value);
         }
 
         private Vector _interfaceControlDragDelta = new Vector(0, 0);
@@ -1197,7 +1201,7 @@ namespace PEBakery.WPF
                     return 0;
 
                 int x = _selectedUICtrl.X;
-                if (InterfaceCursorDragging)
+                if (InterfaceControlDragging)
                     x += (int)InterfaceControlDragDelta.X;
                 return x;
             }
@@ -1218,7 +1222,7 @@ namespace PEBakery.WPF
                     return 0;
 
                 int y = _selectedUICtrl.Y;
-                if (InterfaceCursorDragging)
+                if (InterfaceControlDragging)
                     y += (int)InterfaceControlDragDelta.Y;
                 return y;
             }
@@ -2364,7 +2368,7 @@ namespace PEBakery.WPF
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
-                InterfaceCanvas.ClearSelectedElements(true);
+                InterfaceCanvas.ClearSelectedElements();
                 Renderer.Render();
                 SelectedUICtrl = uiCtrl;
                 InterfaceCanvas.DrawSelectedElement(uiCtrl);
@@ -4569,7 +4573,7 @@ namespace PEBakery.WPF
         {
             SelectedUICtrl = null;
             SelectedUICtrls = null;
-            InterfaceCanvas.ClearSelectedElements(true);
+            InterfaceCanvas.ClearSelectedElements();
         }
 
         /// <summary>
@@ -4587,18 +4591,38 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public void UpdateCursorPosStatus()
+        public void UpdateCursorPosStatus(bool dragging, bool forceUpdate)
         {
-            // Display current cursor position
-            string status = $"Cursor: ({(int)InterfaceCursorPos.X}, {(int)InterfaceCursorPos.Y})";
-            if (InterfaceCursorDragging)
+            string GetDeltaStatus(Vector d)
             {
-                Vector d = InterfaceControlDragDelta;
-                status += $" / d: ({(int)d.X:+#;-#;0}, {(int)d.Y:+#;-#;0})";
-
+                // Force update
                 OnPropertyUpdate(nameof(UICtrlX));
                 OnPropertyUpdate(nameof(UICtrlY));
+
+                // Add delta info to the status
+                return $"d: ({(int)d.X:+#;-#;0}, {(int)d.Y:+#;-#;0})";
             }
+
+            // Update at specific interval
+            if (!forceUpdate && !CheckCursorPosStatusUpdate())
+                return;
+
+            // Check if InterfaceCursorPos is in the range of canvas
+            if (InterfaceCursorPos.X < 0 || InterfaceCursorPos.Y < 0)
+            {
+                if (dragging)
+                    InterfaceStatusBarText = GetDeltaStatus(InterfaceControlDragDelta);
+
+                return;
+            }
+
+            // Display current cursor position
+            string status = $"Cursor: ({(int)InterfaceCursorPos.X}, {(int)InterfaceCursorPos.Y})";
+
+            // Interface Control is being dragged
+            if (dragging)
+                status += " / " + GetDeltaStatus(InterfaceControlDragDelta);
+
             InterfaceStatusBarText = status;
         }
         #endregion

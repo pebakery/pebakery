@@ -73,7 +73,10 @@ namespace PEBakery.WPF.Controls
         private DragMode _dragMode;
         private DragState _dragState;
         private Point _dragStartCursorPos;
-        private Rectangle _dragAreaRectangle;
+        private Rectangle _dragAreaRectangle = new Rectangle
+        {
+            Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
+        };
 
         // Max Z Index
         private int MaxZIndex
@@ -146,22 +149,6 @@ namespace PEBakery.WPF.Controls
             // Which element was selected?
             FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
 
-            void ResetSelectedElements()
-            {
-                _dragMode = DragMode.DragToSelect;
-
-                _dragState = DragState.Moving;
-
-                // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
-                _dragAreaRectangle = new Rectangle
-                {
-                    Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
-                };
-                Children.Add(_dragAreaRectangle);
-
-                ClearSelectedElements(true);
-            }
-
             // No UIControl was selected
             if (focusedElement == null)
             { // Clicked background -> Reset selected elements
@@ -185,18 +172,17 @@ namespace PEBakery.WPF.Controls
             { // Clicked UIControl
                 // Move mode
                 // Multi-select mode handling
-                int idx = _selectedElements.FindIndex(x => x.UIControl.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
+                int idx = _selectedElements.FindIndex(x => x.UIControl.KeyEquals(uiCtrl));
                 if (_dragMode != DragMode.MultiMove)
                 {
-                    //bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-                    //if (multiClick || (_dragMode == DragMode.SingleMove && idx == -1))
-                    if (_dragMode == DragMode.SingleMove && idx == -1)
+                    bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+                    if (multiClick || idx != -1)
                     {
                         _dragMode = DragMode.MultiMove;
                     }
                     else
                     {
-                        ClearSelectedElements(true);
+                        ClearSelectedElements();
                         _dragMode = DragMode.SingleMove;
                     }
                 }
@@ -257,13 +243,13 @@ namespace PEBakery.WPF.Controls
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
-                        SetElementRect(_dragAreaRectangle, dragRect);
+                        SetDragAreaRectangle(dragRect);
                     }
                     break;
                 case DragMode.SingleMove:
                     {
                         Debug.Assert(Selected != null, "SelectedElement is null");
-                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
+                        (Point newElementPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
                         Rect r = new Rect
                         {
                             X = newElementPos.X,
@@ -275,7 +261,6 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
-                        Vector delta = new Vector(newElementPos.X - uiCtrl.X, newElementPos.Y - uiCtrl.Y);
                         UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Moving));
                     }
                     break;
@@ -355,8 +340,7 @@ namespace PEBakery.WPF.Controls
                 case DragMode.DragToSelect:
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
-                        Children.Remove(_dragAreaRectangle);
-                        _dragAreaRectangle = null;
+                        RemoveDragAreaRectangle();
 
                         // Check if any element was caught by drag-to-select
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
@@ -375,8 +359,7 @@ namespace PEBakery.WPF.Controls
                         Debug.Assert(Selected != null, "SelectedElement was not set");
                         UIControl uiCtrl = Selected.UIControl;
 
-                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
-                        Vector delta = new Vector(newCtrlPos.X - uiCtrl.X, newCtrlPos.Y - uiCtrl.Y);
+                        (Point newCtrlPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
 
                         // UIControl should have position/size of int
                         uiCtrl.X = (int)newCtrlPos.X;
@@ -455,10 +438,15 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (public) SelectedElements
+        public void SetSelectedElements()
+        {
+
+        }
+
         /// <summary>
         /// Clear border and drag handles around selected element
         /// </summary>
-        public void ClearSelectedElements(bool clearList)
+        public void ClearSelectedElementsFromScreen()
         {
             foreach (SelectedElement selected in _selectedElements)
             {
@@ -467,9 +455,35 @@ namespace PEBakery.WPF.Controls
                 foreach (Border dragHandle in selected.DragHandles)
                     UIRenderer.RemoveFromCanvas(this, dragHandle);
             }
+        }
 
-            if (clearList)
-                _selectedElements.Clear();
+        /// <summary>
+        /// Clear border around selected element.
+        /// </summary>
+        public void ClearSelectedElements()
+        {
+            ClearSelectedElementsFromScreen();
+            _selectedElements.Clear();
+        }
+
+        /// <summary>
+        /// Clear border and drag handles around selected element
+        /// </summary>
+        private void ResetSelectedElements()
+        {
+            _dragMode = DragMode.DragToSelect;
+
+            _dragState = DragState.None;
+
+            /*
+            // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
+            _dragAreaRectangle = new Rectangle
+            {
+                Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
+            };
+            Children.Add(_dragAreaRectangle);
+            */
+            ClearSelectedElements();
         }
 
         /// <summary>
@@ -477,7 +491,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         public void DrawSelectedElements()
         {
-            ClearSelectedElements(false);
+            ClearSelectedElementsFromScreen();
 
             if (1 < _selectedElements.Count)
             {
@@ -498,7 +512,47 @@ namespace PEBakery.WPF.Controls
                 UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(selected.UIControl));
             }
         }
+        /*
+        public void SetSelectedElement(UIControl toSelectCtrl)
+        {
+            foreach (object child in Children)
+            {
+                if (!(child is FrameworkElement element))
+                    continue;
 
+                if (!(element.Tag is UIControl uiCtrl))
+                    continue;
+
+                if (!uiCtrl.Key.Equals(toSelectCtrl.Key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ResetSelectedElements();
+                SelectedElement selected = new SelectedElement(element);
+                _selectedElements.Add(selected);
+                _selectedElementIndex = 0;
+            }
+        }
+
+        public void SetSelectedElements(List<UIControl> toSelectCtrl)
+        {
+            foreach (object child in Children)
+            {
+                if (!(child is FrameworkElement element))
+                    continue;
+
+                if (!(element.Tag is UIControl uiCtrl))
+                    continue;
+
+                if (!uiCtrl.Key.Equals(toSelectCtrl.Key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ResetSelectedElements();
+                SelectedElement selected = new SelectedElement(element);
+                _selectedElements.Add(selected);
+                _selectedElementIndex = 0;
+            }
+        }
+        */
         /// <summary>
         /// Draw border and drag handles around a selected element
         /// </summary>
@@ -573,7 +627,7 @@ namespace PEBakery.WPF.Controls
             {
                 if (!(child.Tag is UIControl ctrl))
                     continue;
-                if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                if (!ctrl.KeyEquals(uiCtrl))
                     continue;
 
                 _selectedElements.Clear();
@@ -599,7 +653,7 @@ namespace PEBakery.WPF.Controls
                 {
                     if (!(child.Tag is UIControl ctrl))
                         continue;
-                    if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    if (!ctrl.KeyEquals(uiCtrl))
                         continue;
 
                     _selectedElements.Add(new SelectedElement(child));
@@ -610,7 +664,14 @@ namespace PEBakery.WPF.Controls
             DrawSelectedElements();
         }
 
-        private static void MoveSelectedElement(SelectedElement selected, Rect newRect)
+        private void MoveSelectedElement(SelectedElement selected, Point newPos)
+        {
+            Rect oldRect = selected.UIControl.Rect;
+            Rect newRect = new Rect(newPos.X, newPos.Y, oldRect.Width, oldRect.Height);
+            MoveSelectedElement(selected, newRect);
+        }
+
+        private void MoveSelectedElement(SelectedElement selected, Rect newRect)
         {
             // Assertion
             Debug.Assert(selected.Element != null, "Incorrect SelectedElement handling");
@@ -631,9 +692,70 @@ namespace PEBakery.WPF.Controls
                 Point p = CalcDragHandlePosition(info.ClickPos, newRect);
                 SetElementPosition(dragHandle, p);
             }
+
+            // Move drag area rectangle
+            SetDragAreaRectangle(newRect);
         }
 
-        private static void ResizeSelectedElement(SelectedElement selected, Rect newRect)
+        private void MoveSelectedElement(UIControl uiCtrl, Point newPos)
+        {
+            Rect oldRect = uiCtrl.Rect;
+            Rect newRect = new Rect(newPos.X, newPos.Y, oldRect.Width, oldRect.Height);
+            MoveSelectedElement(uiCtrl, newRect);
+        }
+
+        private void MoveSelectedElement(UIControl uiCtrl, Rect newRect)
+        {
+            SelectedElement selected = FindSelectedElement(uiCtrl);
+            MoveSelectedElement(selected, newRect);
+        }
+
+        private SelectedElement FindSelectedElement(UIControl toSelectCtrl)
+        {
+            // Search current selected elements
+            HashSet<string> checkedCtrlKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (SelectedElement selected in _selectedElements)
+            {
+                UIControl ctrl = selected.UIControl;
+                if (ctrl.KeyEquals(toSelectCtrl))
+                {
+                    ResetSelectedElements();
+                    _selectedElements.Add(selected);
+                    _selectedElementIndex = 0;
+                    return selected;
+                }
+                else
+                {
+                    checkedCtrlKeys.Add(ctrl.Key);
+                }
+            }
+
+            // Create new selected elements
+            foreach (FrameworkElement child in Children)
+            {
+                if (!(child.Tag is UIControl uiCtrl))
+                    continue;
+
+                if (!uiCtrl.KeyEquals(toSelectCtrl))
+                    continue;
+
+                ResetSelectedElements();
+                SelectedElement selected = new SelectedElement(child);
+                _selectedElements.Add(selected);
+                _selectedElementIndex = 0;
+                return selected;
+            }
+
+            return null;
+        }
+
+        private void ResizeSelectedElement(UIControl uiCtrl, Rect newRect)
+        {
+            SelectedElement selected = FindSelectedElement(uiCtrl);
+            ResizeSelectedElement(selected, newRect);
+        }
+        
+        private void ResizeSelectedElement(SelectedElement selected, Rect newRect)
         {
             // Assertion
             Debug.Assert(selected.Element != null, "Incorrect SelectedElement handling");
@@ -653,6 +775,9 @@ namespace PEBakery.WPF.Controls
                 Point p = CalcDragHandlePosition(info.ClickPos, newRect);
                 SetElementPosition(dragHandle, p);
             }
+
+            // Resize drag area rectangle
+            SetDragAreaRectangle(newRect);
         }
         #endregion
 
@@ -786,23 +911,44 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) Move Utility
-        private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
+        private static (Point NewPos, Vector CaliDelta) CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
         {
-            double x = elementStart.X + cursorNow.X - cursorStart.X;
-            double y = elementStart.Y + cursorNow.Y - cursorStart.Y;
+            Vector delta = cursorNow - cursorStart;
+            double caliDeltaX = delta.X;
+            double caliDeltaY = delta.Y;
+
+            // Calibrate deltaX, deltaY
+            double x = elementStart.X + delta.X;
+            double y = elementStart.Y + delta.Y;
 
             // Do not use Width and Height here, or canvas cannot be expanded
             // Guard new X and Y in 0 ~ 600
             if (x < 0)
-                x = 0;
+                caliDeltaX = Math.Max(delta.X, -1 * elementStart.X);
             else if (CanvasLengthLimit < x + elementStart.Width)
-                x = CanvasLengthLimit - elementStart.Width;
-            if (y < 0)
-                y = 0;
-            else if (CanvasLengthLimit < y + elementStart.Height)
-                y = CanvasLengthLimit - elementStart.Height;
+                caliDeltaX = Math.Min(delta.X, CanvasLengthLimit - (elementStart.X + elementStart.Width));
 
-            return new Point(x, y);
+            if (y < 0)
+                caliDeltaY = Math.Max(delta.Y, -1 * elementStart.Y);
+            else if (CanvasLengthLimit < y + elementStart.Height)
+                caliDeltaY = Math.Min(delta.Y, CanvasLengthLimit - (elementStart.Y + elementStart.Height));
+
+            // Get calibrated new position
+            double caliX = elementStart.X + caliDeltaX;
+            double caliY = elementStart.Y + caliDeltaY;
+
+            // floating point always have subtle rounding error, so guard again
+            if (caliX < 0)
+                caliX = 0;
+            else if (CanvasLengthLimit < caliX + elementStart.Width)
+                caliX = CanvasLengthLimit - elementStart.Width;
+
+            if (caliY < 0)
+                caliY = 0;
+            else if (CanvasLengthLimit < caliY + elementStart.Height)
+                caliY = CanvasLengthLimit - elementStart.Height;
+
+            return (new Point(caliX, caliY), new Vector(caliDeltaX, caliDeltaY));
         }
 
         private static (List<Point> NewPosList, Vector CaliDelta) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementStartList)
@@ -821,14 +967,14 @@ namespace PEBakery.WPF.Controls
                 // Do not use Width and Height here, or canvas cannot be expanded
                 // Guard new X and Y in 0 ~ 600
                 if (x < 0)
-                    caliDeltaX = Math.Max(caliDeltaX, deltaX - x);
+                    caliDeltaX = Math.Max(caliDeltaX, -1 * elementStart.X);
                 else if (CanvasLengthLimit < x + elementStart.Width)
-                    caliDeltaX = Math.Min(caliDeltaX, deltaX + CanvasLengthLimit - (x + elementStart.Width));
+                    caliDeltaX = Math.Min(caliDeltaX, CanvasLengthLimit - (elementStart.X + elementStart.Width));
 
                 if (y < 0)
-                    caliDeltaY = Math.Max(caliDeltaY, deltaY - y);
+                    caliDeltaY = Math.Max(caliDeltaY, -1 * elementStart.Y);
                 else if (CanvasLengthLimit < y + elementStart.Height)
-                    caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - (y + elementStart.Height));
+                    caliDeltaY = Math.Min(caliDeltaY, CanvasLengthLimit - (elementStart.Y + elementStart.Height));
             }
 
             // Apply calibrated deltaX, deltaY
@@ -863,14 +1009,14 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) Resize Utility
-        private static (Rect NewRect, double CaliDeltaX, double CaliDeltaY) InternalCalcNewSize(double deltaX, double deltaY, Rect elementRect, ResizeClickPosition clickPos)
+        private static (Rect NewRect, Vector CaliDelta) InternalCalcNewSize(Vector delta, Rect elementRect, ResizeClickPosition clickPos)
         {
             // Do not touch Width and Height if border was not clicked
             switch (clickPos)
             {
                 case ResizeClickPosition.Inside:
                 case ResizeClickPosition.Outside:
-                    return (elementRect, deltaX, deltaY);
+                    return (elementRect, delta);
             }
 
             // Prepare variables
@@ -878,6 +1024,8 @@ namespace PEBakery.WPF.Controls
             double y = elementRect.Y;
             double width = elementRect.Width;
             double height = elementRect.Height;
+            double deltaX = delta.X;
+            double deltaY = delta.Y;
 
             // X Direction
             switch (clickPos)
@@ -1023,30 +1171,27 @@ namespace PEBakery.WPF.Controls
                     break;
             }
 
-            return (new Rect(x, y, width, height), deltaX, deltaY);
+            return (new Rect(x, y, width, height), new Vector(deltaX, deltaY));
         }
 
         private static Rect CalcNewSize(Point cursorStart, Point cursorNow, Rect elementRect, ResizeClickPosition clickPos)
         {
             // Get delta of X and Y
-            double deltaX = cursorNow.X - cursorStart.X;
-            double deltaY = cursorNow.Y - cursorStart.Y;
-
-            (Rect newRect, _, _) = InternalCalcNewSize(deltaX, deltaY, elementRect, clickPos);
+            Vector delta = cursorNow - cursorStart;
+            (Rect newRect, _) = InternalCalcNewSize(delta, elementRect, clickPos);
             return newRect;
         }
 
         private static (List<Rect> NewRects, Vector DeltaX) CalcNewSizes(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementRects, ResizeClickPosition clickPos)
         {
             // Get delta of X and Y
-            double deltaX = cursorNow.X - cursorStart.X;
-            double deltaY = cursorNow.Y - cursorStart.Y;
-            double caliDeltaX = deltaX;
-            double caliDeltaY = deltaY;
+            Vector delta = cursorNow - cursorStart;
+            double caliDeltaX = delta.X;
+            double caliDeltaY = delta.Y;
 
             foreach (Rect elementRect in elementRects)
             {
-                (_, double newDeltaX, double newDeltaY) = InternalCalcNewSize(deltaX, deltaY, elementRect, clickPos);
+                (_, Vector newDelta) = InternalCalcNewSize(delta, elementRect, clickPos);
 
                 // Calibrate deltaX
                 switch (clickPos)
@@ -1055,13 +1200,13 @@ namespace PEBakery.WPF.Controls
                     case ResizeClickPosition.Left:
                     case ResizeClickPosition.LeftTop:
                     case ResizeClickPosition.LeftBottom:
-                        caliDeltaX = Math.Max(caliDeltaX, newDeltaX);
+                        caliDeltaX = Math.Max(caliDeltaX, newDelta.X);
                         break;
                     // L [    ]-> R, deltaX is positive
                     case ResizeClickPosition.Right:
                     case ResizeClickPosition.RightTop:
                     case ResizeClickPosition.RightBottom:
-                        caliDeltaX = Math.Min(caliDeltaX, newDeltaX);
+                        caliDeltaX = Math.Min(caliDeltaX, newDelta.X);
                         break;
                 }
 
@@ -1072,13 +1217,13 @@ namespace PEBakery.WPF.Controls
                     case ResizeClickPosition.Top:
                     case ResizeClickPosition.LeftTop:
                     case ResizeClickPosition.RightTop:
-                        caliDeltaY = Math.Max(caliDeltaY, newDeltaY);
+                        caliDeltaY = Math.Max(caliDeltaY, newDelta.Y);
                         break;
                     // T [    ]-> B, deltaY is positive
                     case ResizeClickPosition.Bottom:
                     case ResizeClickPosition.LeftBottom:
                     case ResizeClickPosition.RightBottom:
-                        caliDeltaY = Math.Min(caliDeltaY, newDeltaY);
+                        caliDeltaY = Math.Min(caliDeltaY, newDelta.Y);
                         break;
                 }
             }
@@ -1087,7 +1232,7 @@ namespace PEBakery.WPF.Controls
             foreach (Rect elementRect in elementRects)
             {
                 Rect newRect;
-                (newRect, _, _) = InternalCalcNewSize(caliDeltaX, caliDeltaY, elementRect, clickPos);
+                (newRect, _) = InternalCalcNewSize(new Vector(caliDeltaX, caliDeltaY), elementRect, clickPos);
                 newRects.Add(newRect);
             }
 
@@ -1122,8 +1267,9 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (public) Apply to UIControl
-        public static void ApplyUIControlPosition(UIControl uiCtrl, int deltaX, int deltaY)
+        public void ApplyControlPosition(UIControl uiCtrl, int deltaX, int deltaY)
         {
+            // Update actual UIControl 
             int x = uiCtrl.X + deltaX;
             int y = uiCtrl.Y + deltaY;
 
@@ -1140,10 +1286,14 @@ namespace PEBakery.WPF.Controls
 
             uiCtrl.X = x;
             uiCtrl.Y = y;
+
+            // Update rendered UIControl
+            MoveSelectedElement(uiCtrl, uiCtrl.Point);
         }
 
-        public static void ApplyUIControlPositions(List<UIControl> uiCtrls, int deltaX, int deltaY)
+        public void ApplyControlPositions(List<UIControl> uiCtrls, int deltaX, int deltaY)
         {
+            // Update actual UIControl 
             int caliDeltaX = deltaX;
             int caliDeltaY = deltaY;
 
@@ -1166,15 +1316,18 @@ namespace PEBakery.WPF.Controls
                     caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - y);
             }
 
-            // Apply calibrated deltaX, deltaY
             foreach (UIControl uiCtrl in uiCtrls)
             {
+                // Apply calibrated deltaX, deltaY
                 uiCtrl.X += caliDeltaX;
                 uiCtrl.Y += caliDeltaY;
+
+                // Update rendered UIControl
+                MoveSelectedElement(uiCtrl, uiCtrl.Point);
             }
         }
 
-        public static void ApplyUIControlSize(UIControl uiCtrl, int deltaX, int deltaY)
+        public void ApplyControlSize(UIControl uiCtrl, int deltaX, int deltaY)
         {
             int width = uiCtrl.Width + deltaX;
             int height = uiCtrl.Height + deltaY;
@@ -1190,9 +1343,12 @@ namespace PEBakery.WPF.Controls
 
             uiCtrl.Width = width;
             uiCtrl.Height = height;
+
+            // Update rendered UIControl
+            ResizeSelectedElement(uiCtrl, uiCtrl.Rect);
         }
 
-        public static void ApplyUIControlSizes(List<UIControl> uiCtrls, int deltaX, int deltaY)
+        public void ApplyControlSizes(List<UIControl> uiCtrls, int deltaX, int deltaY)
         {
             int caliDeltaX = deltaX;
             int caliDeltaY = deltaY;
@@ -1216,6 +1372,19 @@ namespace PEBakery.WPF.Controls
                 uiCtrl.Width += caliDeltaX;
                 uiCtrl.Height += caliDeltaY;
             }
+        }
+        #endregion
+
+        #region DragAreaRectangle Management
+        private void SetDragAreaRectangle(Rect newRect)
+        {
+            SetElementRect(_dragAreaRectangle, newRect);
+        }
+
+        private void RemoveDragAreaRectangle()
+        {
+            // Remove from Canvas.Children
+            Children.Remove(_dragAreaRectangle);
         }
         #endregion
 
@@ -1308,7 +1477,7 @@ namespace PEBakery.WPF.Controls
         public bool MultiSelect => UIControls != null;
 
         public UIControlSelectedEventArgs()
-        { 
+        {
         }
 
         public UIControlSelectedEventArgs(UIControl uiCtrl)
@@ -1400,7 +1569,7 @@ namespace PEBakery.WPF.Controls
         public UIControl UIControl => Element.Tag as UIControl;
         public Rect ElementInitialRect;
         public Border Border;
-        public readonly List<Border> DragHandles = new List<Border>();
+        public readonly List<Border> DragHandles = new List<Border>(8);
 
         public SelectedElement(FrameworkElement element)
         {
