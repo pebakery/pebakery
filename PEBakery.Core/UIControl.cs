@@ -570,6 +570,18 @@ namespace PEBakery.Core
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         #endregion
+
+        #region KeyEquals
+        public bool KeyEquals(UIControl y)
+        {
+            return KeyEquals(this, y);
+        }
+
+        public static bool KeyEquals(UIControl x, UIControl y)
+        {
+            return x.Key.Equals(y.Key, StringComparison.OrdinalIgnoreCase);
+        }
+        #endregion
     }
     #endregion
 
