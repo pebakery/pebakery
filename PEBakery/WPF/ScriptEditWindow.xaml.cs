@@ -296,8 +296,8 @@ namespace PEBakery.WPF
             {
                 case DragState.Start:
                     { // Started dragging, set 
-                        m.InterfaceCursorDragging = true;
-                        m.InterfaceControlDragOrigin = e.Origin;
+                        m.InterfaceControlDragging = true;
+                        m.InterfaceControlDragDelta = new Vector(0, 0);
                     }
                     break;
                 case DragState.Moving:
@@ -313,13 +313,11 @@ namespace PEBakery.WPF
                             Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
                         }
 
-                        m.InterfaceStatusBarText = string.Empty;
+                        m.InterfaceControlDragging = false;
+                        m.InterfaceControlDragDelta = new Vector(0, 0);
+
                         if (e.ForceUpdate || 5 <= Math.Abs(e.Delta.X) || 5 <= Math.Abs(e.Delta.Y))
                             m.InvokeUIControlEvent(true);
-
-                        m.InterfaceCursorDragging = false;
-                        m.InterfaceControlDragOrigin = new Point(0, 0);
-                        m.InterfaceControlDragDelta = new Vector(0, 0);
                     }
                     break;
             }
@@ -343,6 +341,11 @@ namespace PEBakery.WPF
             if (cvCursor.X < 0 || m.InterfaceCanvas.Width < cvCursor.X ||
                 cvCursor.Y < 0 || m.InterfaceCanvas.Height < cvCursor.Y)
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
+
+            // Update current cursor position to the status bar
+            m.InterfaceCursorPos = cvCursor;
+            m.InterfaceControlDragDelta = new Vector(0, 0);
+            m.UpdateCursorPosStatus(m.InterfaceControlDragging, true);
         }
 
         /// <summary>
@@ -350,11 +353,8 @@ namespace PEBakery.WPF
         /// </summary>
         private void InterfaceScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (!m.CheckCursorPosStatusUpdate())
-                return;
-
             m.InterfaceCursorPos = e.GetPosition(m.InterfaceCanvas);
-            m.UpdateCursorPosStatus();
+            m.UpdateCursorPosStatus(m.InterfaceControlDragging, false);
         }
         #endregion 
 
@@ -364,84 +364,93 @@ namespace PEBakery.WPF
             if (m.TabIndex == 1)
                 InterfaceScrollViewer.Focus();
         }
+
+        /// <summary>
+        /// Handle moving UIControl via keyboard
+        /// </summary>
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             IInputElement focusedControl = Keyboard.FocusedElement;
-            if (Equals(focusedControl, InterfaceScrollViewer))
+            if (!Equals(focusedControl, InterfaceScrollViewer))
+                return;
+            
+            int delta;
+            bool move;
+            switch (e.KeyboardDevice.Modifiers)
             {
-                int delta;
-                bool move;
-                switch (e.KeyboardDevice.Modifiers)
-                {
-                    case ModifierKeys.None:
-                        move = true;
-                        delta = 5;
-                        break;
-                    case ModifierKeys.Control:
-                        move = true;
-                        delta = 1;
-                        break;
-                    case ModifierKeys.Shift:
-                        move = false;
-                        delta = 5;
-                        break;
-                    case ModifierKeys.Shift | ModifierKeys.Control:
-                        move = false;
-                        delta = 1;
-                        break;
-                    default:
-                        return;
-                }
-
-                // UIControl should have position/size of int
-                int deltaX = 0;
-                int deltaY = 0;
-                switch (e.Key)
-                {
-                    case Key.Left:
-                        deltaX = -1 * delta;
-                        break;
-                    case Key.Right:
-                        deltaX = delta;
-                        break;
-                    case Key.Up:
-                        deltaY = -1 * delta;
-                        break;
-                    case Key.Down:
-                        deltaY = delta;
-                        break;
-                    default:
-                        return;
-                }
-
-                switch (m.SelectMode)
-                {
-                    case ScriptEditViewModel.ControlSelectMode.SingleSelect:
-                        if (move)
-                        {
-                            DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
-                        }
-                        else // Resize
-                        {
-                            DragCanvas.ApplyUIControlSize(m.SelectedUICtrl, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
-                        }
-                        break;
-                    case ScriptEditViewModel.ControlSelectMode.MultiSelect:
-                        if (move)
-                        {
-                            DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
-                        }
-                        else // Resize
-                        {
-                            DragCanvas.ApplyUIControlSizes(m.SelectedUICtrls, deltaX, deltaY);
-                            m.InvokeUIControlEvent(true);
-                        }
-                        break;
-                }
+                case ModifierKeys.None:
+                    move = true;
+                    delta = 5;
+                    break;
+                case ModifierKeys.Control:
+                    move = true;
+                    delta = 1;
+                    break;
+                case ModifierKeys.Shift:
+                    move = false;
+                    delta = 5;
+                    break;
+                case ModifierKeys.Shift | ModifierKeys.Control:
+                    move = false;
+                    delta = 1;
+                    break;
+                default:
+                    return;
             }
+
+            // UIControl should have position/size of int
+            int deltaX = 0;
+            int deltaY = 0;
+            switch (e.Key)
+            {
+                case Key.Left:
+                    deltaX = -1 * delta;
+                    break;
+                case Key.Right:
+                    deltaX = delta;
+                    break;
+                case Key.Up:
+                    deltaY = -1 * delta;
+                    break;
+                case Key.Down:
+                    deltaY = delta;
+                    break;
+                default:
+                    return;
+            }
+
+            switch (m.SelectMode)
+            {
+                case ScriptEditViewModel.ControlSelectMode.SingleSelect:
+                    if (move)
+                    {
+                        DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
+                        m.InvokeUIControlEvent(true);
+                    }
+                    else // Resize
+                    {
+                        DragCanvas.ApplyUIControlSize(m.SelectedUICtrl, deltaX, deltaY);
+                        m.InvokeUIControlEvent(true);
+                    }
+                    break;
+                case ScriptEditViewModel.ControlSelectMode.MultiSelect:
+                    if (move)
+                    {
+                        DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
+                        m.InvokeUIControlEvent(true);
+                    }
+                    else // Resize
+                    {
+                        DragCanvas.ApplyUIControlSizes(m.SelectedUICtrls, deltaX, deltaY);
+                        m.InvokeUIControlEvent(true);
+                    }
+                    break;
+            }
+            
+            // Update control delta to the status bar
+            m.InterfaceCursorPos = new Point(-1, -1); // Do not display cursor position
+            m.InterfaceControlDragDelta += new Vector(deltaX, deltaY); // Accumulate delta set by keyboard
+            m.UpdateCursorPosStatus(true, true);
         }
         #endregion
         #region For (Common) ListItemBox
@@ -916,17 +925,10 @@ namespace PEBakery.WPF
         }
 
         private bool _interfaceControlDragging = false;
-        public bool InterfaceCursorDragging
+        public bool InterfaceControlDragging
         {
             get => _interfaceControlDragging;
             set => SetProperty(ref _interfaceControlDragging, value);
-        }
-
-        private Point _interfaceControlDragOrigin = new Point(0, 0);
-        public Point InterfaceControlDragOrigin
-        {
-            get => _interfaceControlDragOrigin;
-            set => SetProperty(ref _interfaceControlDragOrigin, value);
         }
 
         private Vector _interfaceControlDragDelta = new Vector(0, 0);
@@ -1197,7 +1199,7 @@ namespace PEBakery.WPF
                     return 0;
 
                 int x = _selectedUICtrl.X;
-                if (InterfaceCursorDragging)
+                if (InterfaceControlDragging)
                     x += (int)InterfaceControlDragDelta.X;
                 return x;
             }
@@ -1218,7 +1220,7 @@ namespace PEBakery.WPF
                     return 0;
 
                 int y = _selectedUICtrl.Y;
-                if (InterfaceCursorDragging)
+                if (InterfaceControlDragging)
                     y += (int)InterfaceControlDragDelta.Y;
                 return y;
             }
@@ -4587,18 +4589,37 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public void UpdateCursorPosStatus()
+        public void UpdateCursorPosStatus(bool dragging, bool forceUpdate)
         {
-            // Display current cursor position
-            string status = $"Cursor: ({(int)InterfaceCursorPos.X}, {(int)InterfaceCursorPos.Y})";
-            if (InterfaceCursorDragging)
+            string GetDeltaStatus(Vector d)
             {
-                Vector d = InterfaceControlDragDelta;
-                status += $" / d: ({(int)d.X:+#;-#;0}, {(int)d.Y:+#;-#;0})";
-
+                // Force update
                 OnPropertyUpdate(nameof(UICtrlX));
                 OnPropertyUpdate(nameof(UICtrlY));
+
+                // Add delta info to the status
+                return $"d: ({(int)d.X:+#;-#;0}, {(int)d.Y:+#;-#;0})";
             }
+            // Update at specific interval
+            if (!forceUpdate && !CheckCursorPosStatusUpdate())
+                return;
+
+            // Check if InterfaceCursorPos is in the range of canvas
+            if (InterfaceCursorPos.X < 0 || InterfaceCursorPos.Y < 0)
+            {
+                if (dragging)
+                    InterfaceStatusBarText = GetDeltaStatus(InterfaceControlDragDelta);
+
+                return;
+            }
+
+            // Display current cursor position
+            string status = $"Cursor: ({(int)InterfaceCursorPos.X}, {(int)InterfaceCursorPos.Y})";
+
+            // Interface Control is being dragged
+            if (dragging)
+                status += " / " + GetDeltaStatus(InterfaceControlDragDelta);
+
             InterfaceStatusBarText = status;
         }
         #endregion
