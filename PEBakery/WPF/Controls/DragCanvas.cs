@@ -193,15 +193,16 @@ namespace PEBakery.WPF.Controls
                         { // No UIControl is selected, set to SingleMove
                             _dragMode = DragMode.SingleMove;
                             SelectedElement selected = new SelectedElement(focusedElement);
-                            _selectedElements.Add(selected);
-                            _selectedElementIndex = 0;
+                            Debug.Assert(_selectedElements.Count == 0);
+                            AddSelectedElements(selected);
                         }
                         break;
                     case DragMode.SingleMove:
+                    case DragMode.MultiMove:
                         {
                             // 1) Clicked selected UIControl           : Do nothing
-                            // 2) Clicked new UIControl with Shift/Ctrl: Enter MultiMove mode, add clicked UIControl into _selectedElements.
-                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Keep SingleMove mode, Clear _selectedElements, and set clicked UIControl as unique _selectedElements.
+                            // 2) Clicked new UIControl with Shift/Ctrl: Keep/Enter MultiMove mode, add clicked UIControl into _selectedElements.
+                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Keep/Enter SingleMove mode, clear _selectedElements, and set clicked UIControl as unique _selectedElements.
                             if (idx != -1)
                                 break;
 
@@ -209,37 +210,13 @@ namespace PEBakery.WPF.Controls
                             if (multiClick)
                             {
                                 _dragMode = DragMode.MultiMove;
-                                _selectedElements.Add(selected);
-                                _selectedElementIndex = _selectedElements.Count - 1;
-                            }
-                            else
-                            {
-                                ClearSelectedElements(true);
-                                _selectedElements.Add(selected);
-                                _selectedElementIndex = 0;
-                            }
-                        }
-                        break;
-                    case DragMode.MultiMove:
-                        {
-                            // 1) Clicked selected UIControl           : Do nothing
-                            // 2) Clicked new UIControl with Shift/Ctrl: Keep MultiMove mode, add clicked UIControl into _selectedElements.
-                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Enter SingleMove mode, clear _selectedElements, and set clicked UIControl as unique _selectedElements.
-                            if (idx != -1)
-                                break;
-
-                            SelectedElement selected = new SelectedElement(focusedElement);
-                            if (multiClick)
-                            {
-                                _selectedElements.Add(selected);
-                                _selectedElementIndex = _selectedElements.Count - 1;
+                                AddSelectedElements(selected);
                             }
                             else
                             {
                                 _dragMode = DragMode.SingleMove;
                                 ClearSelectedElements(true);
-                                _selectedElements.Add(selected);
-                                _selectedElementIndex = 0;
+                                AddSelectedElements(selected);
                             }
                         }
                         break;
@@ -498,7 +475,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Clear border and drag handles around selected element
         /// </summary>
-        public void ClearSelectedElements(bool clearList)
+        private void ClearSelectedElementsFromScreen()
         {
             foreach (SelectedElement selected in _selectedElements)
             {
@@ -507,9 +484,22 @@ namespace PEBakery.WPF.Controls
                 foreach (Border dragHandle in selected.DragHandles)
                     UIRenderer.RemoveFromCanvas(this, dragHandle);
             }
+        }
 
+        /// <summary>
+        /// Clear border and drag handles around selected element
+        /// </summary>
+        public void ClearSelectedElements(bool clearList)
+        {
+            ClearSelectedElementsFromScreen();
             if (clearList)
                 _selectedElements.Clear();
+        }
+
+        public void AddSelectedElements(SelectedElement selected)
+        {
+            _selectedElements.Add(selected);
+            _selectedElementIndex = _selectedElements.Count - 1;
         }
 
         /// <summary>
