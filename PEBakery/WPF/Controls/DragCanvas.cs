@@ -148,8 +148,9 @@ namespace PEBakery.WPF.Controls
 
             void ResetSelectedElements()
             {
-                _dragMode = DragMode.DragToSelect;
-
+                // Are we moving, resizng control, or waiting?
+                _dragMode = DragMode.Waiting;
+                // In which stage the dragging is being processed?
                 _dragState = DragState.None;
 
                 // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
@@ -168,8 +169,7 @@ namespace PEBakery.WPF.Controls
                 ResetSelectedElements();
             }
             else if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
-            { // Clicked drag handle
-                // Resize mode
+            { // Clicked drag handle, resize mode
                 _dragMode = 2 <= _selectedElements.Count ? DragMode.MultiResize : DragMode.SingleResize;
 
                 // Record select information
@@ -182,29 +182,70 @@ namespace PEBakery.WPF.Controls
                 SetMouseCursor(_selectedClickPos);
             }
             else if (focusedElement.Tag is UIControl uiCtrl)
-            { // Clicked UIControl
-                // Move mode
+            { // Clicked UIControl, enter Move mode
                 // Multi-select mode handling
-                int idx = _selectedElements.FindIndex(x => x.UIControl.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
-                if (_dragMode != DragMode.MultiMove)
+                int idx = _selectedElements.FindIndex(x => x.UIControl.KeyEquals(uiCtrl));
+                bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+                switch (_dragMode)
                 {
-                    bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-                    if (multiClick || idx != -1)
-                    {
-                        _dragMode = DragMode.MultiMove;
-                    }
-                    else
-                    {
-                        ClearSelectedElements(true);
-                        _dragMode = DragMode.SingleMove;
-                    }
+                    case DragMode.Waiting:
+                        { // No UIControl is selected, set to SingleMove
+                            _dragMode = DragMode.SingleMove;
+                            SelectedElement selected = new SelectedElement(focusedElement);
+                            _selectedElements.Add(selected);
+                            _selectedElementIndex = 0;
+                        }
+                        break;
+                    case DragMode.SingleMove:
+                        {
+                            // 1) Clicked selected UIControl           : Do nothing
+                            // 2) Clicked new UIControl with Shift/Ctrl: Enter MultiMove mode, add clicked UIControl into _selectedElements.
+                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Keep SingleMove mode, Clear _selectedElements, and set clicked UIControl as unique _selectedElements.
+                            if (idx != -1)
+                                break;
+
+                            SelectedElement selected = new SelectedElement(focusedElement);
+                            if (multiClick)
+                            {
+                                _dragMode = DragMode.MultiMove;
+                                _selectedElements.Add(selected);
+                                _selectedElementIndex = _selectedElements.Count - 1;
+                            }
+                            else
+                            {
+                                ClearSelectedElements(true);
+                                _selectedElements.Add(selected);
+                                _selectedElementIndex = 0;
+                            }
+                        }
+                        break;
+                    case DragMode.MultiMove:
+                        {
+                            // 1) Clicked selected UIControl           : Do nothing
+                            // 2) Clicked new UIControl with Shift/Ctrl: Keep MultiMove mode, add clicked UIControl into _selectedElements.
+                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Enter SingleMove mode, clear _selectedElements, and set clicked UIControl as unique _selectedElements.
+                            if (idx != -1)
+                                break;
+
+                            SelectedElement selected = new SelectedElement(focusedElement);
+                            if (multiClick)
+                            {
+                                _selectedElements.Add(selected);
+                                _selectedElementIndex = _selectedElements.Count - 1;
+                            }
+                            else
+                            {
+                                _dragMode = DragMode.SingleMove;
+                                ClearSelectedElements(true);
+                                _selectedElements.Add(selected);
+                                _selectedElementIndex = 0;
+                            }
+                        }
+                        break;
                 }
 
                 // Record select information
-                SelectedElement selected = new SelectedElement(focusedElement);
-                if (_dragMode == DragMode.SingleMove || _dragMode == DragMode.MultiMove && idx == -1)
-                    _selectedElements.Add(selected); // Add to list only if (1) single-select mode or (2) multi-select and the element is not added yet
-                _selectedElementIndex = idx == -1 ? _selectedElements.Count - 1 : idx;
                 _selectedClickPos = ResizeClickPosition.Inside;
                 _dragState = DragState.Moving;
 
@@ -252,7 +293,7 @@ namespace PEBakery.WPF.Controls
 
             switch (_dragMode)
             {
-                case DragMode.DragToSelect:
+                case DragMode.Waiting:
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
@@ -351,7 +392,7 @@ namespace PEBakery.WPF.Controls
 
             switch (_dragMode)
             {
-                case DragMode.DragToSelect:
+                case DragMode.Waiting:
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
                         Children.Remove(_dragAreaRectangle);
@@ -1248,7 +1289,7 @@ namespace PEBakery.WPF.Controls
     #region enum DragMode, ResizeClickPosition
     public enum DragMode
     {
-        DragToSelect,
+        Waiting,
         SingleMove,
         MultiMove,
         SingleResize,
