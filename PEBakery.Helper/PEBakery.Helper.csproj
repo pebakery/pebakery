@@ -9,7 +9,7 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.1.152" />
+    <PackageReference Include="MessagePack" Version="2.1.165" />
     <PackageReference Include="SharpVectors.Reloaded" Version="1.6.0">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
