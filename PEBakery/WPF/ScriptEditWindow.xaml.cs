@@ -300,7 +300,7 @@ namespace PEBakery.WPF
                         m.InterfaceControlDragDelta = new Vector(0, 0);
                     }
                     break;
-                case DragState.Moving:
+                case DragState.Dragging:
                     { // In the middle of dragging, update status bar
                         m.InterfaceControlDragDelta = e.Delta;
                     }

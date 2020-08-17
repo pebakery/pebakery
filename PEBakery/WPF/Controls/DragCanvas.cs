@@ -73,7 +73,13 @@ namespace PEBakery.WPF.Controls
         private DragMode _dragMode;
         private DragState _dragState;
         private Point _dragStartCursorPos;
-        private Rectangle _dragAreaRectangle;
+        /// <summary>
+        /// Display which area is being drag-to-select (lasso).
+        /// </summary>
+        private Rectangle _dragAreaRectangle = new Rectangle
+        {
+            Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
+        };
 
         // Max Z Index
         private int MaxZIndex
@@ -146,18 +152,15 @@ namespace PEBakery.WPF.Controls
             // Which element was selected?
             FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
 
-            void ResetSelectedElements()
+            void SetDragToSelect()
             {
-                // Are we moving, resizng control, or waiting?
-                _dragMode = DragMode.Waiting;
+                // Are we moving, resizng control, or waiting drag-to-select/clicking?
+                _dragMode = DragMode.DragToSelect;
                 // In which stage the dragging is being processed?
-                _dragState = DragState.None;
+                _dragState = DragState.Dragging;
 
                 // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
-                _dragAreaRectangle = new Rectangle
-                {
-                    Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
-                };
+                Debug.Assert(_dragAreaRectangle != null);
                 Children.Add(_dragAreaRectangle);
 
                 ClearSelectedElements(true);
@@ -165,15 +168,15 @@ namespace PEBakery.WPF.Controls
 
             // No UIControl was selected
             if (focusedElement == null)
-            { // Clicked background -> Reset selected elements
-                ResetSelectedElements();
+            { // Clicked background -> Reset selected elements, prepare to enter drag-to-select
+                SetDragToSelect();
             }
             else if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
             { // Clicked drag handle, resize mode
                 _dragMode = 2 <= _selectedElements.Count ? DragMode.MultiResize : DragMode.SingleResize;
 
                 // Record select information
-                _dragState = DragState.Moving;
+                _dragState = DragState.Dragging;
                 _selectedClickPos = info.ClickPos;
                 _selectedElementIndex = _selectedElements.FindIndex(x => x.Element.Equals(info.Parent));
                 Debug.Assert(_selectedElementIndex != -1, "Incorrect SelectedElement handling");
@@ -189,8 +192,8 @@ namespace PEBakery.WPF.Controls
 
                 switch (_dragMode)
                 {
-                    case DragMode.Waiting:
-                        { // No UIControl is selected, set to SingleMove
+                    case DragMode.None:
+                        { // St to SingleMove
                             _dragMode = DragMode.SingleMove;
                             SelectedElement selected = new SelectedElement(focusedElement);
                             Debug.Assert(_selectedElements.Count == 0);
@@ -224,7 +227,7 @@ namespace PEBakery.WPF.Controls
 
                 // Record select information
                 _selectedClickPos = ResizeClickPosition.Inside;
-                _dragState = DragState.Moving;
+                _dragState = DragState.Dragging;
 
                 // Let ScriptEditWindow know about the drag event
                 UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, new Vector(0, 0), false, DragState.Start));
@@ -236,8 +239,8 @@ namespace PEBakery.WPF.Controls
                 SetMouseCursor();
             }
             else
-            { // Clicked background -> Reset selected elements
-                ResetSelectedElements();
+            { // Clicked background -> Reset selected elements, prepare to enter drag-to-select
+                SetDragToSelect();
             }
 
             e.Handled = true;
@@ -251,7 +254,7 @@ namespace PEBakery.WPF.Controls
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
             // Change cursor following underlying element
-            if (_dragState != DragState.Moving)
+            if (_dragState != DragState.Dragging)
             {
                 FrameworkElement hoverElement = FindRootFrameworkElement(e.Source);
                 if (hoverElement == null) // Outside
@@ -270,7 +273,7 @@ namespace PEBakery.WPF.Controls
 
             switch (_dragMode)
             {
-                case DragMode.Waiting:
+                case DragMode.DragToSelect:
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
@@ -293,7 +296,7 @@ namespace PEBakery.WPF.Controls
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
                         Vector delta = new Vector(newElementPos.X - uiCtrl.X, newElementPos.Y - uiCtrl.Y);
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Moving));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
                     }
                     break;
                 case DragMode.MultiMove:
@@ -319,7 +322,7 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Moving));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
                     }
                     break;
                 case DragMode.SingleResize:
@@ -331,7 +334,7 @@ namespace PEBakery.WPF.Controls
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
                         Vector delta = CalcResizeDeltas(newElementRect, uiCtrl);
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Moving));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
                     }
                     break;
                 case DragMode.MultiResize:
@@ -348,7 +351,7 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Moving));
+                        UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
                     }
                     break;
             }
@@ -364,16 +367,16 @@ namespace PEBakery.WPF.Controls
             Point nowCursorPos = e.GetPosition(this);
             ReleaseMouseCapture();
 
-            if (_dragState != DragState.Moving)
+            if (_dragState != DragState.Dragging)
                 return;
 
             switch (_dragMode)
             {
-                case DragMode.Waiting:
+                case DragMode.DragToSelect:
                     {
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
+                        Debug.Assert(_dragAreaRectangle != null);
                         Children.Remove(_dragAreaRectangle);
-                        _dragAreaRectangle = null;
 
                         // Check if any element was caught by drag-to-select
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
@@ -466,7 +469,7 @@ namespace PEBakery.WPF.Controls
             }
 
             ResetMouseCursor();
-
+            _dragMode = DragMode.None;
             _dragState = DragState.None;
         }
         #endregion
@@ -1279,7 +1282,14 @@ namespace PEBakery.WPF.Controls
     #region enum DragMode, ResizeClickPosition
     public enum DragMode
     {
-        Waiting,
+        /// <summary>
+        /// No UIControl is selected, waiting for drag-to-select or click
+        /// </summary>
+        None,
+        /// <summary>
+        /// No UIControl is selected, in process of drag-to-select
+        /// </summary>
+        DragToSelect,
         SingleMove,
         MultiMove,
         SingleResize,
@@ -1299,7 +1309,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// In the middle of dragging, for use in DragCanvas and DraggedEventArgs
         /// </summary>
-        Moving,
+        Dragging,
         /// <summary>
         /// Stopped dragging, for use in DraggedEventArgs
         /// </summary>
