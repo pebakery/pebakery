@@ -103,7 +103,7 @@
                             {{ for $item in $d.Codes }}
                             <tr>
                                 <td class="text-nowrap {{ $tdClass }}">
-                                    <a class="text-dark" href='{{ $hrefPrefix }}{{ $item.Href }})'>
+                                    <a class="text-dark" href='{{ $hrefPrefix }}{{ $item.Href }}'>
                                         {{ $item.State | LogStateFaIcon }}{{ LogStateStr true $item.State | html.escape }}
                                     </a>
                                 </td>
@@ -242,7 +242,7 @@
                     </thead>
                     <tbody>
                         {{ for $item in $entry.Codes }}
-                        <tr class='{{ $item.State | LogStateCssTrClass }}' {{ BuildErrorWarnRefId $item.Href $item.StateStr }}>
+                        <tr class='{{ $item.State | LogStateCssTrClass }}' {{ BuildErrorWarnRefId $item.Href $item.State }}>
                             <td class='text-nowrap {{ $item.State | LogStateCssTdClass }}'>{{ $item.State | LogStateFaIcon }}{{ LogStateStr true $item.State | html.escape }}</td>
                             {{ RenderLogFlags $item }}
                             <td class="pb-whitespace">{{ $item.Message | html.escape }}</td>
