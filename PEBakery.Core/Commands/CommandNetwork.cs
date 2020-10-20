@@ -38,7 +38,7 @@ namespace PEBakery.Core.Commands
     public static class CommandNetwork
     {
         public static List<LogInfo> WebGet(EngineState s, CodeCommand cmd)
-        { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+        { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WebGet info = cmd.Info.Cast<CodeInfo_WebGet>();
@@ -54,6 +54,10 @@ namespace PEBakery.Core.Commands
                 if (timeOut <= 0)
                     return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
             }
+
+            string refererUrl = null;
+            if (info.Referer != null)
+                refererUrl = StringEscaper.Preprocess(s, info.Referer);
 
             // Check PathSecurity in destPath
             if (!StringEscaper.PathSecurityCheck(destPath, out string pathErrorMsg))
@@ -93,7 +97,7 @@ namespace PEBakery.Core.Commands
                 { // Standard WebGet
                     string tempPath = FileHelper.GetTempFile(destFileExt);
 
-                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent);
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent, refererUrl);
                     HttpFileDownloader.Report report;
                     try
                     {
@@ -147,7 +151,7 @@ namespace PEBakery.Core.Commands
 
                     string tempPath = FileHelper.GetTempFile(destFileExt);
 
-                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent);
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent, refererUrl);
                     HttpFileDownloader.Report report;
                     try
                     {

@@ -116,6 +116,7 @@ namespace PEBakery.Core.Tests.Command
             WebGet_Http(s);
             WebGet_Compat(s);
             WebGet_TimeOut(s);
+            WebGet_Referer(s);
             WebGet_HashSuccess(s);
             WebGet_HashError(s);
 
@@ -273,6 +274,42 @@ namespace PEBakery.Core.Tests.Command
                     File.Delete(destFile);
             }
         }
+
+        public void WebGet_Referer(EngineState s)
+        {
+            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
+            string destFile = FileHelper.ReserveTempFile("html");
+            try
+            {
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+
+                // Download index.html (1/2) - Success
+                s.ReturnValue = string.Empty;
+
+                string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",Referer=https://www.google.com";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
+
+                Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
+
+                // Download index.html (2/2) - Fail (Invalid referer uri)
+                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",Referer=www.google.com";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
+
+                Assert.IsFalse(File.Exists(destFile));
+                Assert.IsTrue(s.ReturnValue.Equals("0", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
+            }
+        }
+
         public void WebGet_HashSuccess(EngineState s)
         {
             foreach (HashHelper.HashType hashType in SampleDigestDict.Keys)

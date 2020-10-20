@@ -2269,22 +2269,24 @@ namespace PEBakery.Core
     #region CodeInfo 07 - Network
     [Serializable]
     public class CodeInfo_WebGet : CodeInfo
-    { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,NOERR]
+    { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
         // This command was rebuilt in PEBakery, not following WB082 spec.
         public string URL;
         public string DestPath;
         public HashHelper.HashType HashType; // Optional Argument
         public string HashDigest; // Optional Argument
         public string TimeOut; // Optional Argument
+        public string Referer; // Optional Argument
         public bool NoErrFlag; // Optional Flag
 
-        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, string timeOut, bool noErr)
+        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, string timeOut, string referer, bool noErr)
         {
             URL = url;
             DestPath = destPath;
             HashType = hashType;
             HashDigest = hashDigest;
             TimeOut = timeOut;
+            Referer = referer;
             NoErrFlag = noErr;
         }
 
@@ -2305,6 +2307,11 @@ namespace PEBakery.Core
             {
                 b.Append(",");
                 b.Append(TimeOut);
+            }
+            if (Referer != null)
+            {
+                b.Append(",");
+                b.Append(Referer);
             }
             if (NoErrFlag)
                 b.Append(",NOERR");

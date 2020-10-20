@@ -149,7 +149,7 @@ namespace PEBakery.Core
             _m = mainViewModel;
 
             string userAgent = customUserAgent ?? Engine.DefaultUserAgent;
-            _downloader = new HttpFileDownloader(_m, 10, userAgent);
+            _downloader = new HttpFileDownloader(_m, 10, userAgent, null);
         }
         #endregion
 

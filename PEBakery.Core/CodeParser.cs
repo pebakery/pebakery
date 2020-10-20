@@ -1818,15 +1818,16 @@ namespace PEBakery.Core
                 #region 07 Network
                 case CodeType.WebGet:
                 case CodeType.WebGetIfNotExist: // Will be deprecated
-                    { // WebGet,<URL>,<DestPath>[,<HashType>=<HashDigest>][,TimeOut=<Int>][,NOERR]
+                    { // WebGet,<URL>,<DestPath>[,<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
                         const int minArgCount = 2;
-                        const int maxArgCount = 4;
+                        const int maxArgCount = 5;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         HashHelper.HashType hashType = HashHelper.HashType.None;
                         string hashDigest = null;
                         string timeOut = null;
+                        string referer = null;
                         bool noErr = false;
 
                         const string md5Key = "MD5=";
@@ -1835,6 +1836,7 @@ namespace PEBakery.Core
                         const string sha384Key = "SHA384=";
                         const string sha512Key = "SHA512=";
                         const string timeOutKey = "TimeOut=";
+                        const string refererKey = "Referer=";
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1876,8 +1878,14 @@ namespace PEBakery.Core
                             else if (arg.StartsWith(timeOutKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (timeOut != null)
-                                    throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <TimeOut> cannot be duplicated", rawCode);
                                 timeOut = arg.Substring(timeOutKey.Length);
+                            }
+                            else if (arg.StartsWith(refererKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (referer != null)
+                                    throw new InvalidCommandException("Argument <Referer> cannot be duplicated", rawCode);
+                                referer = arg.Substring(refererKey.Length);
                             }
                             else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1891,7 +1899,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, timeOut, noErr);
+                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, timeOut, referer, noErr);
                     }
                 #endregion
                 #region 08 Hash

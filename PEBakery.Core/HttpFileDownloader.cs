@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,14 +17,16 @@ namespace PEBakery.Core
         private readonly MainViewModel _m;
         private readonly int _timeOut;
         private readonly string _userAgent;
+        private readonly string _referer;
         #endregion
 
         #region Constructor
-        public HttpFileDownloader(MainViewModel m, int timeOut, string customUserAgent)
+        public HttpFileDownloader(MainViewModel m, int timeOut, string customUserAgent, string referer)
         {
             _m = m;
             _timeOut = timeOut;
             _userAgent = customUserAgent ?? Engine.DefaultUserAgent;
+            _referer = referer;
         }
         #endregion
 
@@ -71,6 +74,13 @@ namespace PEBakery.Core
 
                     // User Agent
                     client.DefaultRequestHeaders.UserAgent.ParseAdd(_userAgent);
+
+                    // Referrer
+                    if (_referer != null)
+                    {
+                        Uri refererUri = new Uri(_referer);
+                        client.DefaultRequestHeaders.Referrer = refererUri;
+                    }
 
                     // Progress Report
                     Progress<(long Position, long ContentLength, TimeSpan Elapsed)> progress = null;
