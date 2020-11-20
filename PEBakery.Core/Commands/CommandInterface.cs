@@ -1309,6 +1309,9 @@ namespace PEBakery.Core.Commands
                                     InitialDirectory = initDir,
                                 };
 
+                                if (subInfo.Title != null)
+                                    dialog.Title = subInfo.Title;
+
                                 bool? result = dialog.ShowDialog();
 
                                 if (result == true)
@@ -1330,6 +1333,12 @@ namespace PEBakery.Core.Commands
                                 {
                                     SelectedPath = initPath,
                                 };
+
+                                if (subInfo.Title != null)
+                                {
+                                    dialog.Description = subInfo.Title;
+                                    dialog.UseDescriptionForTitle = true;
+                                }
 
                                 bool? result = dialog.ShowDialog();
 

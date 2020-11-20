@@ -160,10 +160,7 @@ namespace PEBakery.Core.Commands
 
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
-                        FileInfo f = new FileInfo(path);
-                        if (f.Directory == null)
-                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information for [{path}]");
-                        DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
+                        DriveInfo drive = new DriveInfo(Path.GetPathRoot(path));
                         long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString(CultureInfo.InvariantCulture));

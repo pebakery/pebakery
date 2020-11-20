@@ -2668,29 +2668,47 @@ namespace PEBakery.Core
         public static CodeInfo_UserInput ParseCodeInfoUserInput(string rawCode, List<string> args)
         {
             const int minArgCount = 3;
-            if (CheckInfoArgumentCount(args, minArgCount, -1))
-                throw new InvalidCommandException($"Command [UserInput] must have at least [{minArgCount}] arguments", rawCode);
+            const int maxArgCount = 4;
+            if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                throw new InvalidCommandException($"Command [UserInput] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
             UserInputType type = ParseUserInputType(args[0]);
             UserInputInfo info;
 
             // Remove UserInputType
             args.RemoveAt(0);
+            int argCount = minArgCount - 1; // subtract 1 from minArgCount to ignore UserInputType
 
             switch (type)
             {
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        // UserInput,DirPath,<Path>,<DestVar>
-                        // UserInput,FilePath,<Path>,<DestVar>
-                        const int argCount = 2;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [UserInput,{type}] must have [{argCount}] arguments", rawCode);
+                        // UserInput,DirPath,<Path>,<DestVar>,[Title=<Str>]
+                        // UserInput,FilePath,<Path>,<DestVar>,[Title=<Str>]
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
-                        info = new UserInputInfo_DirFile(args[0], args[1]);
+
+                        string title = null;
+                        for (int i = argCount; i < args.Count; i++) 
+                        {
+                            string arg = args[i];
+
+                            const string splitKey = "Title=";
+                            if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (title != null)
+                                    throw new InvalidCommandException("Argument <Title> cannot be duplicated", rawCode);
+                                title = arg.Substring(splitKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new UserInputInfo_DirFile(args[0], args[1], title);
                     }
                     break;
                 default: // Error
