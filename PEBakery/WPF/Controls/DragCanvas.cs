@@ -1348,7 +1348,7 @@ namespace PEBakery.WPF.Controls
         public bool MultiSelect => UIControls != null;
 
         public UIControlSelectedEventArgs()
-        { 
+        {
         }
 
         public UIControlSelectedEventArgs(UIControl uiCtrl)

@@ -1081,6 +1081,11 @@
                                                  Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- Common - ListItemBox -->
+                                    <Button Height="20"  Margin="0, 10, 0, 0"
+                                            Visibility="{Binding ShowUICtrlListItemButton}" 
+                                            Command="{Binding UICtrlListItemEditCommand}"
+                                            Content="Edit ListItem"/>
+                                    <!--
                                     <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition />
@@ -1148,6 +1153,7 @@
                                                                         Margin="3"/>
                                         </Button>
                                     </Grid>
+                                    -->
                                     <!-- Common - RunOptional-->
                                     <TextBlock Visibility="{Binding ShowUICtrlRunOptional}"
                                                Text="Optional Engine Run"

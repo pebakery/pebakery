@@ -1,0 +1,168 @@
+﻿<!--
+    Copyright (C) 2020 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+-->
+
+<Window x:Class="PEBakery.WPF.ListItemEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        Icon="/Resources/Donut.ico"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Title="Attach File"
+        Width="480" Height="320">
+    <Grid Margin="10, 10, 10, 10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Banner -->
+        <TextBlock Grid.Row="0" Grid.Column="0"
+                   Grid.ColumnSpan="2"
+                   Text="{Binding Banner}"/>
+
+        <!-- Left Panel - ListView -->
+        <ListView Grid.Row="1" Grid.Column="0"
+                  SelectedIndex="{Binding ListItemBoxSelectedIndex}"
+                  ItemsSource="{Binding ListItemBoxItems}"
+                  SelectionMode="Single"
+                  HorizontalContentAlignment="Stretch"
+                  AlternationCount="2">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="ListViewEditItemRadios"
+                                     IsChecked="{Binding Path=IsDefault}"
+                                     Visibility="{Binding Path=ItemViewVisibility}"/>
+                        <TextBlock Text="{Binding Path=Value}"
+                                   Visibility="{Binding Path=ItemViewVisibility}">
+                            <TextBlock.InputBindings>
+                                <MouseBinding Command="{Binding ViewToEditCommand}" MouseAction="LeftDoubleClick"/>
+                            </TextBlock.InputBindings>
+                        </TextBlock>
+                        <TextBox Text="{Binding Path=ItemName}"
+                                 PreviewTextInput="ItemValue_PreviewTextInput"
+                                 Visibility="{Binding Path=ItemEditVisibility}">
+                            <TextBox.InputBindings>
+                                <KeyBinding Command="{Binding EditToViewCommand}" Key="Return"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <!-- CheckBox IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}"/> -->
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+            <!-- 
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn CellTemplate="{StaticResource FirstCell}" Width="30"/>
+                </GridView>
+            </ListView.View>
+            -->
+        </ListView>
+        <!--
+        <TextBox Grid.Row="5" Grid.Column="0"
+                     VerticalContentAlignment="Center"
+                     PreviewTextInput="ListNewItem_PreviewTextInput"
+                     Text="{Binding UICtrlListItemBoxNewItem}"/>
+        -->
+        
+        <!-- Right Panel Buttons -->
+        <StackPanel Grid.Row="1" Grid.Column="1">
+            <Button x:Name="ListItemAddButton"
+                    Height="25" Margin="0, 0, 0, 5" 
+                    Command="{Binding ListItemAddCommand}"
+                    ToolTip="Add">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="Plus" Width="Auto" Height="Auto" Margin="0, 5, 5, 5"/>
+                    <TextBlock VerticalAlignment="Center" Text="Add"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="ListItemEditButton"
+                    Height="25" Margin="0, 0, 0, 5" 
+                    Command="{Binding ListItemEditCommand}"
+                    ToolTip="Edit" >
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="0, 5, 5, 5"/>
+                    <TextBlock VerticalAlignment="Center" Text="Edit"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="ListItemDeleteButton"
+                    Height="25" Margin="0, 0, 0, 15"
+                    Command="{Binding ListItemDeleteCommand}"
+                    ToolTip="Delete">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="Minus" Width="Auto" Height="Auto" Margin="0, 5, 5, 5"/>
+                    <TextBlock VerticalAlignment="Center" Text="Delete"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="ListItemMoveUpButton"
+                    Height="25" Margin="0, 0, 0, 5" 
+                    Command="{Binding ListItemMoveUpCommand}"
+                    ToolTip="Up">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="ChevronUp" Width="Auto" Height="Auto" Margin="0, 5, 5, 5"/>
+                    <TextBlock VerticalAlignment="Center" Text="Move Up"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="ListItemMoveDownButton"
+                    Height="25" Margin="0, 0, 0, 5" 
+                    Command="{Binding ListItemMoveDownCommand}"
+                    ToolTip="Down">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="ChevronDown" Width="Auto" Height="Auto" Margin="0, 5, 5, 5"/>
+                    <TextBlock VerticalAlignment="Center" Text="Move Down"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+      
+        <!-- OK, Cancel -->
+        <StackPanel Grid.Row="2" Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Margin="0, 10, 0, 0" 
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Margin="0, 0, 10, 0" 
+                    Width="100"
+                    IsDefault="True"
+                    x:Name="ApplyButton"
+                    Content="Apply"/>
+            <Button Width="100"
+                    IsCancel="True"
+                    x:Name="CancelButton"
+                    Content="Cancel"/>
+        </StackPanel>
+    </Grid>
+</Window>
