@@ -641,7 +641,7 @@ namespace PEBakery.Core
 
         #region Template
 #pragma warning disable IDE0060
-        public static string Template(string key) => string.Empty;
+        public virtual static string Template(string key) => string.Empty;
 #pragma warning restore IDE0060
         #endregion
     }
@@ -1061,7 +1061,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(IsFile ? ",file" : ",dir");
-            if (Title == null)
+            if (Title != null)
             {
                 b.Append($",Title={Title}");
             }
