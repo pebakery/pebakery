@@ -641,7 +641,7 @@ namespace PEBakery.Core
 
         #region Template
 #pragma warning disable IDE0060
-        public virtual static string Template(string key) => string.Empty;
+        public static string Template(string key) => string.Empty;
 #pragma warning restore IDE0060
         #endregion
     }
