@@ -1356,6 +1356,7 @@ namespace PEBakery.Core
                     Filter = "All Files|*.*",
                     InitialDirectory = currentPath,
                 };
+
                 if (info.Title != null)
                 {
                     dialog.Title = StringEscaper.Unescape(info.Title);
@@ -1375,6 +1376,12 @@ namespace PEBakery.Core
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
                 if (Directory.Exists(currentPath))
                     dialog.SelectedPath = currentPath;
+
+                if (info.Title != null)
+                {
+                    dialog.UseDescriptionForTitle = true;
+                    dialog.Description = StringEscaper.Unescape(info.Title);
+                }
 
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
