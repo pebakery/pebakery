@@ -1356,6 +1356,11 @@ namespace PEBakery.Core
                     Filter = "All Files|*.*",
                     InitialDirectory = currentPath,
                 };
+                if (info.Title != null)
+                {
+                    dialog.Title = StringEscaper.Unescape(info.Title);
+                }
+
                 if (dialog.ShowDialog() == true)
                 {
                     box.Text = dialog.FileName;

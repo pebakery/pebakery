@@ -1046,18 +1046,25 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_FileBox : UIInfo
     {
-        public bool IsFile;
+        public bool IsFile { get; set; }
+        // Optional
+        public string Title { get; set; }
 
-        public UIInfo_FileBox(string tooltip, bool isFile)
+        public UIInfo_FileBox(string tooltip, bool isFile, string title)
             : base(tooltip)
         {
             IsFile = isFile;
+            Title = title;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(IsFile ? ",file" : ",dir");
+            if (Title == null)
+            {
+                b.Append($",Title={Title}");
+            }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
