@@ -566,6 +566,7 @@ namespace PEBakery.Core
                         }
 
                         string title = null;
+                        string tooltip = null;
                         for (int i = 1; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -577,13 +578,17 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Title> cannot be duplicated");
                                 title = arg.Substring(splitKey.Length);
                             }
+                            else if (arg.StartsWith("__", StringComparison.OrdinalIgnoreCase)) // ToolTip
+                            {
+                                tooltip = GetInfoTooltip(args, i);
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument [{arg}]");
                             }
                         }
 
-                        return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile, title);
+                        return new UIInfo_FileBox(tooltip, isFile, title);
                     }
                 #endregion
                 #region RadioGroup
