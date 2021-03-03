@@ -15,7 +15,7 @@
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.0.0" />
     <PackageReference Include="Joveler.DynLoader" Version="2.0.0" />
     <PackageReference Include="Joveler.FileMagician" Version="2.0.0" />
-    <PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.1.11" />
+    <PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.2.6" />
     <PackageReference Include="UTF.Unknown" Version="2.3.0" />
   </ItemGroup>
 </Project>

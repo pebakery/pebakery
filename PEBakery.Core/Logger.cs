@@ -929,7 +929,7 @@ namespace PEBakery.Core
                 {
                     RemoveOptionalTags = false,
                 };
-                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                uglifySettings.TagsWithNonCollapsibleWhitespaces["td"] = true;
                 UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
                 using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
@@ -975,7 +975,7 @@ namespace PEBakery.Core
                 {
                     RemoveOptionalTags = false,
                 };
-                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                uglifySettings.TagsWithNonCollapsibleWhitespaces["td"] = true;
                 UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
                 using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
