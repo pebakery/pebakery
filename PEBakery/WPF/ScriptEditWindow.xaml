@@ -61,6 +61,7 @@
         <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
+        <local:StringEscapeConverter x:Key="StringEscapeConverter" />
         <Style x:Key="MultiSelectAlternativeListViewColor" BasedOn="{StaticResource AlternativeListViewColor}" TargetType="{x:Type ListViewItem}">
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
@@ -577,7 +578,7 @@
                                                  VerticalContentAlignment="Center"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"
-                                                 Text="{Binding UICtrlToolTip, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlToolTip, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- TextBox -->
                                     <Grid Visibility="{Binding IsUICtrlTextBox}" Margin="0, 10, 0, 0">
@@ -595,14 +596,14 @@
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  FontSize="11"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  FontSize="11"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlTextBoxValue, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlTextBoxValue, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- TextLabel -->
                                     <Grid Visibility="{Binding IsUICtrlTextLabel}" Margin="0, 10, 0, 0">
@@ -622,7 +623,7 @@
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  FontSize="11"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
@@ -718,7 +719,7 @@
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  FontSize="11"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
@@ -798,7 +799,7 @@
                                                    Text="URL" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlImageUrl, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlImageUrl, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- TextFile -->
                                     <Grid Visibility="{Binding IsUICtrlTextFile}" Margin="0, 10, 0, 0">
@@ -874,7 +875,7 @@
                                                    Text="Caption" />
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Image" />
@@ -942,7 +943,7 @@
                                                    Text="Caption" />
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="URL" />
@@ -965,7 +966,7 @@
                                                    Text="Caption" />
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Select" />
@@ -999,15 +1000,15 @@
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                 Text="{Binding UICtrlBevelCaption, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlBevelCaption, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
                                         <ccc:NumberBox Grid.Row="2" Grid.Column="1"
-                                                              Minimum="0"
-                                                              IncrementUnit="1"
-                                                              IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                              Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                       Minimum="0"
+                                                       IncrementUnit="1"
+                                                       IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                       Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Weight" />
@@ -1050,7 +1051,7 @@
                                                    Text="Path" />
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Type" />
@@ -1069,7 +1070,7 @@
                                                    Text="Title" />
                                         <TextBox Grid.Row="3" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlFileBoxTitle, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlFileBoxTitle, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- RadioGroup -->
                                     <Grid Visibility="{Binding IsUICtrlRadioGroup}" Margin="0, 10, 0, 0">
@@ -1085,7 +1086,7 @@
                                                    Text="Caption" />
                                         <TextBox Grid.Row="0" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- Common - ListItemBox -->
                                     <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
@@ -1111,7 +1112,7 @@
                                         <TextBox Grid.Row="5" Grid.Column="0"
                                                  VerticalContentAlignment="Center"
                                                  PreviewTextInput="ListNewItem_PreviewTextInput"
-                                                 Text="{Binding UICtrlListItemBoxNewItem}"/>
+                                                 Text="{Binding UICtrlListItemBoxNewItem, Converter={StaticResource StringEscapeConverter}}"/>
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxUp"
                                                 Command="{Binding UICtrlListItemBoxUpCommand}"
@@ -1167,7 +1168,7 @@
                                             <TextBox Margin="0, 0, 0, 5"
                                                      VerticalContentAlignment="Center"
                                                      PreviewTextInput="SectionName_PreviewTextInput"
-                                                     Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
+                                                     Text="{Binding UICtrlSectionToRun, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=Default}"
                                                      ToolTip="Leave this field blank to disable optional engine run."/>
                                             <CheckBox Content="Hide Progress"
                                                       IsChecked="{Binding UICtrlHideProgress}"/>
@@ -1197,13 +1198,13 @@
                                        VerticalAlignment="Center"
                                        Text="Script Scale Factor (%)"/>
                             <ccc:NumberBox Grid.Column="1"
-                                          Height="25"
-                                          VerticalContentAlignment="Center"
-                                          Minimum="50"
-                                          Maximum="200"
-                                          IncrementUnit="5"
-                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"
-                                          ValueChanged="ScaleFactor_ValueChanged"/>
+                                           Height="25"
+                                           VerticalContentAlignment="Center"
+                                           Minimum="50"
+                                           Maximum="200"
+                                           IncrementUnit="5"
+                                            Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"
+                                            ValueChanged="ScaleFactor_ValueChanged"/>
                             <Button Grid.Column="3"
                                     Width="100" Height="25"
                                     Content="Reload"

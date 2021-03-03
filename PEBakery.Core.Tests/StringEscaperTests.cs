@@ -45,49 +45,45 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void Escape()
         {
-            Escape_1();
-            Escape_2();
-            Escape_3();
-            Escape_4();
-        }
+            // SampleString
+            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]");
+            EscapeTemplate(SampleString, true, false, "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]");
+            EscapeTemplate(SampleString, true, true, "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]");
+            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]");
+            EscapeTemplate("Hello#$xWorld", false, false, "Hello##$xWorld");
 
-        public static void Escape_1()
-        {
-            string src = SampleString;
-            string dest = StringEscaper.Escape(src, false, false);
-            const string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Escape_2()
-        {
-            string src = SampleString;
-            string dest = StringEscaper.Escape(src, true, false);
-            const string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Escape_3()
-        {
-            string src = SampleString;
-            string dest = StringEscaper.Escape(src, true, true);
-            const string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Escape_4()
-        {
-            string[] srcStrs = { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            List<string> destStrs = StringEscaper.Escape(srcStrs, true);
+            // Overload of IEnumerable<string>
+            string[] srcStrs = 
+            { 
+                "Comma [,]", 
+                "Space [ ]", 
+                "DoubleQuote [\"]"
+            };
             string[] comps =
             {
                "Comma#$s[#$c]",
                "Space#$s[#$s]",
                "DoubleQuote#$s[#$q]",
             };
+            EscapeArrayTemplate(srcStrs, true, false, comps);
 
+            // #$x issue
+            string srcStr = "Hello#$xWorld";
+            string expectStr = "Hello##$xWorld";
+            EscapeTemplate(srcStr, false, false, expectStr);
+        }
+
+        public static void EscapeTemplate(string srcStr, bool fullEscape, bool escapePercent, string expected)
+        {
+            string dest = StringEscaper.Escape(srcStr, fullEscape, escapePercent);
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
+        }
+
+        public static void EscapeArrayTemplate(string[] srcStrs, bool fullEscape, bool escapePercent, string[] expected)
+        {
+            List<string> destStrs = StringEscaper.Escape(srcStrs, fullEscape, escapePercent);
             for (int i = 0; i < destStrs.Count; i++)
-                Assert.IsTrue(destStrs[i].Equals(comps[i], StringComparison.Ordinal));
+                Assert.IsTrue(destStrs[i].Equals(expected[i], StringComparison.Ordinal));
         }
         #endregion
 
@@ -95,47 +91,30 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void QuoteEscape()
         {
-            QuoteEscape_1();
-            QuoteEscape_2();
-            QuoteEscape_3();
-        }
+            // SampleString
+            QuoteEscapeTemplate(SampleString, false, false, "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"");
 
-        public static void QuoteEscape_1()
-        {
-            string src = SampleString;
-            string dest = StringEscaper.QuoteEscape(src, false, false);
-            const string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void QuoteEscape_2()
-        {
             string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            List<string> dests = StringEscaper.QuoteEscape(srcs);
-            string[] comps = new string[]
+            string[] expects = new string[]
             {
                "\"Comma [,]\"",
                "\"Space [ ]\"",
                "\"DoubleQuote [#$q]\"",
             };
-
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+            QuoteEscapeArrayTemplate(srcs, false, false, expects);
         }
 
-        public static void QuoteEscape_3()
+        public static void QuoteEscapeTemplate(string srcStr, bool fullEscape, bool escapePercent, string expected)
         {
-            string[] srcStrs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            List<string> destStrs = StringEscaper.QuoteEscape(srcStrs);
-            string[] comps = new string[]
-            {
-               "\"Comma [,]\"",
-               "\"Space [ ]\"",
-               "\"DoubleQuote [#$q]\"",
-            };
+            string dest = StringEscaper.QuoteEscape(srcStr, fullEscape, escapePercent);
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
+        }
 
+        public static void QuoteEscapeArrayTemplate(string[] srcStrs, bool fullEscape, bool escapePercent, string[] expected)
+        {
+            List<string> destStrs = StringEscaper.QuoteEscape(srcStrs, fullEscape, escapePercent);
             for (int i = 0; i < destStrs.Count; i++)
-                Assert.IsTrue(destStrs[i].Equals(comps[i], StringComparison.Ordinal));
+                Assert.IsTrue(destStrs[i].Equals(expected[i], StringComparison.Ordinal));
         }
         #endregion
 
@@ -143,71 +122,38 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void Unescape()
         {
-            Unescape_1();
-            Unescape_2();
-            Unescape_3();
-            Unescape_4();
-            Unescape_5();
-            Unescape_6();
-        }
+            UnescapeTemplate("Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]", false, SampleString);
+            UnescapeTemplate("Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]", true, SampleString);
+            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]", false, SampleString);
+            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]", true, SampleString);
+            UnescapeTemplate("Incomplete#$", false, "Incomplete#$");
 
-        public static void Unescape_1()
-        {
-            const string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
-            string dest = StringEscaper.Unescape(src, false);
-            string comp = SampleString;
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Unescape_2()
-        {
-            const string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
-            string dest = StringEscaper.Unescape(src, true);
-            string comp = SampleString;
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Unescape_3()
-        {
-            const string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
-            string dest = StringEscaper.Unescape(src, false);
-            string comp = SampleString;
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Unescape_4()
-        {
-            const string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
-            string dest = StringEscaper.Unescape(src, true);
-            string comp = SampleString;
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Unescape_5()
-        {
             string[] srcs = new string[]
             {
                "Comma#$s[#$c]",
                "Space#$s[#$s]",
                "DoubleQuote#$s[#$q]",
             };
-            List<string> dests = StringEscaper.Unescape(srcs);
-            string[] comps = new string[]
+            string[] expects = new string[]
             {
                 "Comma [,]",
                 "Space [ ]",
                 "DoubleQuote [\"]",
             };
-
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+            UnescapeArrayTemplate(srcs, false, expects);
         }
 
-        public static void Unescape_6()
+        public static void UnescapeTemplate(string src, bool escapePercent, string expected)
         {
-            const string src = "Incomplete#$";
-            string dest = StringEscaper.Unescape(src);
-            Assert.IsTrue(dest.Equals(src, StringComparison.Ordinal));
+            string dest = StringEscaper.Unescape(src, escapePercent);
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
+        }
+
+        public static void UnescapeArrayTemplate(string[] srcs, bool escapePercent, string[] expects)
+        {
+            List<string> dests = StringEscaper.Unescape(srcs, escapePercent);
+            for (int i = 0; i < dests.Count; i++)
+                Assert.IsTrue(dests[i].Equals(expects[i], StringComparison.Ordinal));
         }
         #endregion
 
@@ -215,37 +161,77 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void QuoteUnescape()
         {
-            QuoteUnescape_1();
-            QuoteUnescape_2();
-        }
+            QuoteUnescapeTemplate("\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"", false, SampleString);
 
-        public static void QuoteUnescape_1()
-        {
-            string src = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
-            string dest = StringEscaper.QuoteUnescape(src);
-            string comp = SampleString;
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void QuoteUnescape_2()
-        {
             string[] srcs = new string[]
             {
                "\"Comma [#$c]\"",
                "\"Space [ ]\"",
                "\"DoubleQuote [#$q]\"",
             };
-            List<string> dests = StringEscaper.QuoteUnescape(srcs);
-            string[] comps = new string[]
+            string[] expects = new string[]
             {
                 "Comma [,]",
                 "Space [ ]",
                 "DoubleQuote [\"]",
             };
-
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+            QuoteUnescapeArrayTemplate(srcs, false, expects);
         }
+
+        public static void QuoteUnescapeTemplate(string src, bool escapePercent, string expected)
+        {
+            string dest = StringEscaper.QuoteUnescape(src, escapePercent);
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
+        }
+
+        public static void QuoteUnescapeArrayTemplate(string[] srcs, bool escapePercent, string[] expects)
+        {
+            List<string> dests = StringEscaper.QuoteUnescape(srcs, escapePercent);
+            for (int i = 0; i < dests.Count; i++)
+                Assert.IsTrue(dests[i].Equals(expects[i], StringComparison.Ordinal));
+        }
+        #endregion
+
+        #region EscapeThenUnescape
+        /// <summary>
+        /// Check if escaping and then unescaping given string results the same string
+        /// </summary>
+        [TestMethod]
+        public void EscapeThenUnescape()
+        {
+            EscapeThenUnescapeTemplate(SampleString, false, false);
+            EscapeThenUnescapeTemplate(SampleString, true, false);
+            EscapeThenUnescapeTemplate(SampleString, false, true);
+            EscapeThenUnescapeTemplate(SampleString, true, true);
+            EscapeThenUnescapeTemplate("Hello#$xWorld", false, false);
+
+            string[] srcs = new string[]
+            {
+               "\"Comma [#$c]\"",
+               "\"Space [ ]\"",
+               "\"DoubleQuote [#$q]\"",
+            };
+            EscapeThenUnescapeArrayTemplate(srcs, false, false);
+            EscapeThenUnescapeArrayTemplate(srcs, true, false);
+            EscapeThenUnescapeArrayTemplate(srcs, false, true);
+            EscapeThenUnescapeArrayTemplate(srcs, true, false);
+        }
+
+        public static void EscapeThenUnescapeTemplate(string src, bool fullEscape, bool escapePercent)
+        {
+            string escaped = StringEscaper.Escape(src, fullEscape, escapePercent);
+            string unescaped = StringEscaper.Unescape(escaped, escapePercent);
+            Assert.IsTrue(unescaped.Equals(src, StringComparison.Ordinal));
+        }
+
+        public static void EscapeThenUnescapeArrayTemplate(string[] srcs, bool fullEscape, bool escapePercent)
+        {
+            List<string> escaped = StringEscaper.Escape(srcs, escapePercent);
+            List<string> unescaped = StringEscaper.Unescape(escaped, escapePercent);
+            for (int i = 0; i < unescaped.Count; i++)
+                Assert.IsTrue(unescaped[i].Equals(srcs[i], StringComparison.Ordinal));
+        }
+
         #endregion
 
         #region ExpandSectionParams
