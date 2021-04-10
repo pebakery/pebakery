@@ -13,7 +13,7 @@
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ManagedWimLib" Version="2.0.1" />
+    <PackageReference Include="ManagedWimLib" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />

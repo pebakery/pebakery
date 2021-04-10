@@ -36,6 +36,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 
@@ -69,7 +70,7 @@ namespace PEBakery.Core
         // Start-time variables
         public static string[] Args { get; set; }
         public static string BaseDir { get; set; }
-        public static string MagicFile { get; set; }
+
 
         // Buffer Pool
         public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
@@ -80,7 +81,29 @@ namespace PEBakery.Core
         public static Setting Setting { get; set; }
         public static ProjectCollection Projects { get; set; }
         public static ScriptCache ScriptCache { get; set; }
-        public static FileTypeDetector FileTypeDetector { get; set; }        
+
+        // FileTypeDetector / LibMagic
+        public static string MagicFile { get; set; }
+        private static readonly object _fileTypeDetectorLock = new object();
+        private static FileTypeDetector _fileTypeDetector;
+        public static FileTypeDetector FileTypeDetector
+        { 
+            get
+            {
+                // Wait until _fileTypeDetector is loaded
+                while (true)
+                {
+                    lock (_fileTypeDetectorLock)
+                    {
+                        if (_fileTypeDetector != null)
+                            break;
+                    }
+                    Task.Delay(TimeSpan.FromMilliseconds(50)).Wait();
+                }
+
+                return _fileTypeDetector;
+            }
+        }
         #endregion
 
         #region Init
@@ -101,8 +124,8 @@ namespace PEBakery.Core
             NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Prepare libmagic database
-            MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
-            FileTypeDetector = new FileTypeDetector(MagicFile);
+            // MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
+            // FileTypeDetector = new FileTypeDetector(MagicFile);
 
             // Load BuildDate
             BuildDate = BuildTimestamp.ReadDateTime();
@@ -240,7 +263,7 @@ namespace PEBakery.Core
         public static void NativeGlobalInit(string baseDir)
         {
             string magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
-            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
+            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi-ng.dll");
             string xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
             string wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
             string sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
@@ -261,6 +284,10 @@ namespace PEBakery.Core
                 else
                     Environment.Exit(1);
             }
+
+            // Decompress and load magic.mgc.gz in the background
+            string magicGzipFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc.gz");
+            LoadMagicFileAsync(magicGzipFile);
         }
 
         public static void NativeGlobalCleanup()
@@ -321,6 +348,29 @@ namespace PEBakery.Core
 
             // Error!
             return null;
+        }
+
+        public static Task LoadMagicFileAsync(string magicGzipPath)
+        {
+            // Decompress and load magic.mgc.gz in the background
+            return Task.Run(() =>
+            {
+                string magicFile = FileHelper.GetTempFile("magic", "mgc");
+
+                Joveler.Compression.ZLib.ZLibDecompressOptions opts = new Joveler.Compression.ZLib.ZLibDecompressOptions();
+                using (FileStream sfs = new FileStream(magicGzipPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (FileStream dfs = new FileStream(magicFile, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (Joveler.Compression.ZLib.GZipStream gz = new Joveler.Compression.ZLib.GZipStream(sfs, opts))
+                {
+                    gz.CopyTo(dfs);
+                }
+
+                lock (_fileTypeDetectorLock)
+                {
+                    MagicFile = magicFile;
+                    _fileTypeDetector = new FileTypeDetector(MagicFile);
+                }
+            });
         }
         #endregion
     }

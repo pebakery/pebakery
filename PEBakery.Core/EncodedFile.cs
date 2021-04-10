@@ -52,7 +52,7 @@ namespace PEBakery.Core
     [Attachment Format]
     Streams are encoded in base64 format.
     Concat all lines into one long string, append '=', '==' or nothing according to length.
-    (Need '=' padding to be appended to be .Net acknowledged base64 format)
+    (Need '=' padding to be appended to be .NET acknowledged base64 format)
     Decode base64 encoded string to get binary, which follows these 2 types.
     
     Note)
@@ -94,8 +94,8 @@ namespace PEBakery.Core
     0x00 - 0x04   : 4B  -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
     0x04 - 0x08   : 4B  -> Unknown - Always 1 
     0x08 - 0x0B   : 4B  -> WB082 ZLBArchive Component version - Always 2
-    0x0C - 0x0F   : 4B  -> Zlib Compressed FirstFooter Length
-    0x10 - 0x17   : 8B  -> Zlib Compressed File Length
+    0x0C - 0x0F   : 4B  -> zlib Compressed FirstFooter Length
+    0x10 - 0x17   : 8B  -> zlib Compressed File Length
     0x18 - 0x1B   : 4B  -> Unknown - Always 1
     0x1C - 0x23   : 8B  -> Unknown - Always 0
     

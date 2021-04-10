@@ -47,7 +47,7 @@
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.1.0" />
     <PackageReference Include="Joveler.FileMagician" Version="2.1.0" />
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.8.0" />
-    <PackageReference Include="ManagedWimLib" Version="2.0.1" />
+    <PackageReference Include="ManagedWimLib" Version="2.1.0" />
     <PackageReference Include="MessagePack" Version="2.2.85" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.0.0" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
@@ -60,12 +60,19 @@
     <PackageReference Include="Timestamp" Version="1.0.2" />
     <PackageReference Include="UACHelper" Version="1.3.0.5" />
   </ItemGroup>
-  <!-- Native Libraries -->
+  <!-- Native Libraries : 7z, zlib-ng -->
   <ItemGroup>
-    <None Update="runtimes\win-x64\native\7z.dll">
+    <None Update="runtimes\win-x86\native\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="runtimes\win-x86\native\7z.dll">
+    <None Update="runtimes\win-x64\native\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="runtimes\win-arm64\native\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="runtimes\magic.mgc.gz">
+      <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
