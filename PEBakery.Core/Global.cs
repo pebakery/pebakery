@@ -114,21 +114,17 @@ namespace PEBakery.Core
         /// <param name="initMainViewModel">Set this to true when PEBakery.Core is used outside of PEBakery</param>
         public static void PreInit(string[] args, bool initMainViewModel)
         {
-            // Regsiter Non-Unicode Encodings
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
             // Process arguments
             Args = args;
 
-            // Initialize native libraries
-            NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
-
-            // Prepare libmagic database
-            // MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
-            // FileTypeDetector = new FileTypeDetector(MagicFile);
+            // Regsiter Non-Unicode Encodings
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             // Load BuildDate
             BuildDate = BuildTimestamp.ReadDateTime();
+
+            // Initialize native libraries
+            NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Create MainViewModel
             if (initMainViewModel)
@@ -286,7 +282,7 @@ namespace PEBakery.Core
             }
 
             // Decompress and load magic.mgc.gz in the background
-            string magicGzipFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc.gz");
+            string magicGzipFile = Path.Combine(baseDir, "magic.mgc.gz");
             LoadMagicFileAsync(magicGzipFile);
         }
 

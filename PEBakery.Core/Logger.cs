@@ -1006,9 +1006,11 @@ namespace PEBakery.Core
         #endregion
 
         #region LogExceptionMessage
-        public static string LogExceptionMessage(Exception e)
+        public static string LogExceptionMessage(Exception e) => LogExceptionMessage(e, DebugLevel);
+
+        public static string LogExceptionMessage(Exception e, LogDebugLevel debugLevel)
         {
-            switch (DebugLevel)
+            switch (debugLevel)
             {
                 case LogDebugLevel.Production:
                     {

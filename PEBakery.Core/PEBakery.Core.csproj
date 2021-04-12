@@ -17,6 +17,7 @@
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SignAssembly>false</SignAssembly>
+    <TrimMode>copyused</TrimMode>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702;CA2235</NoWarn>
@@ -24,6 +25,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;CA2235</NoWarn>
   </PropertyGroup>
+  <!-- Do not trim these Assemblies -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="System" />
+  </ItemGroup>
   <!-- In-Solution ProjectReference -->
   <ItemGroup>
     <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj" />
