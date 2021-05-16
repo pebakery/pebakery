@@ -265,7 +265,7 @@ namespace PEBakery.Core
                 {
                     // Failed to send a request, such as network not available
                     if (httpReport.StatusCode == 0)
-                        return new ResultReport<Script>(false, null, $"Unable to connect to the server");
+                        return new ResultReport<Script>(false, null, $"Unable to connect to the server [${updateUrl}]");
 
                     // Try downloading .deleted to check if a script is deleted
                     string errorMsg;
@@ -284,7 +284,7 @@ namespace PEBakery.Core
                         else
                         {
                             if (httpReport.StatusCode == 0) // Failed to send a request, such as network not available
-                                errorMsg = $"Unable to connect to the server";
+                                errorMsg = $"Unable to connect to the server [${updateUrl}]";
                             else
                                 errorMsg = $"Update is not available for [{sc.Title}]";
                         }
