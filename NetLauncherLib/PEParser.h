@@ -26,7 +26,7 @@
 #pragma once
 
 // Custom Constants
-#include "Var.h"
+#include "targetver.h"
 
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
@@ -38,11 +38,21 @@
 // C Runtime Headers
 #include <cstdint>
 
+// Local Headers
+#include "SysArch.h"
+
+enum class PEFormat
+{
+	UNKNOWN = 0,
+	PE32 = 32,
+	PE32_PLUS = 64,
+};
+
 class PEParser
 {
 private:
 	PEFormat _format; // PE32 or PE32+?
-	ProcArch _arch; // Processor Architecutre
+	ArchVal _arch; // Processor Architecutre
 	uint16_t _subsys; // Windows Subsystem
 	uint16_t _characteristics; // Characteristics
 	bool _isNet; // Is .NET assembly?
@@ -58,16 +68,16 @@ public:
 	~PEParser();
 
 	// Parse
-	bool ParseFile(const std::wstring& filePath);
+	bool parseFile(const std::wstring& filePath);
 
 	// Getters
-	PEFormat GetFormat() { return _format; }
-	ProcArch GetArch() { return _arch; }
-	uint16_t GetSubSys() { return _subsys; }
-	uint16_t GetCharacteristics() { return _characteristics; }
+	PEFormat getFormat() { return _format; }
+	ArchVal getArch() { return _arch; }
+	uint16_t getSubSys() { return _subsys; }
+	uint16_t getCharacteristics() { return _characteristics; }
 
 	// Utilities
-	static int ArchToBitness(ProcArch arch);
-	bool IsDll() { return _characteristics & IMAGE_FILE_DLL; }
-	bool IsNet() { return _isNet; }
+	static int archToBitness(ArchVal arch);
+	bool isDll() { return _characteristics & IMAGE_FILE_DLL; }
+	bool isNet() { return _isNet; }
 };

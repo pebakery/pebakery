@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2016-2021 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -23,8 +23,7 @@
 	SOFTWARE.
 */
 
-// Constants
-#include "Var.h"
+#include "targetver.h"
 
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
@@ -36,13 +35,10 @@
 #include <iostream>
 
 // Local Headers
-#include "Helper.h"
-#include "PEParser.h"
-
-using namespace std;
+#include "NetLaunch.h"
 
 // Get start point of argv[1] from command line
-wchar_t* Helper::GetParameters(wchar_t* cmdLine)
+wchar_t* NetLaunch::getCmdParams(wchar_t* cmdLine)
 {
 	wchar_t* cmdParam = nullptr;
 
@@ -95,137 +91,71 @@ wchar_t* Helper::GetParameters(wchar_t* cmdLine)
 	return cmdParam;
 }
 
-void Helper::PrintError(const std::wstring& errMsg, bool exitAfter)
+void NetLaunch::printError(const std::wstring& errMsg, bool exitAfter)
 {
-	wcerr << errMsg << endl;
+	std::wcerr << errMsg << std::endl;
 	MessageBoxW(nullptr, errMsg.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	if (exitAfter)
 		exit(1);
 }
 
-void Helper::PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter)
+void NetLaunch::printError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter)
 {
-	wcerr << errMsg << endl;
+	std::wcerr << errMsg << std::endl;
 	MessageBoxW(nullptr, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
 	if (exitAfter)
 		exit(1);
 }
 
-void Helper::PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter)
+void NetLaunch::printErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter)
 {
-	wcerr << errMsg << endl;
+	std::wcerr << errMsg << std::endl;
 	MessageBoxW(nullptr, errMsg.c_str(), errCaption.c_str(), MB_OK | MB_ICONERROR);
-	OpenUrl(url);
+	openUrl(url);
 	if (exitAfter)
 		exit(1);
 }
 
-void Helper::OpenUrl(const std::wstring& url)
+void NetLaunch::openUrl(const std::wstring& url)
 {
 	if (0 < url.size())
 		ShellExecuteW(nullptr, nullptr, url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-ProcArch Helper::GetCpuArch()
-{
-	SYSTEM_INFO si;
-	GetNativeSystemInfo(&si);
 
-	ProcArch ret = ProcArch::UNKNOWN;
-	switch (si.wProcessorArchitecture)
+bool NetLaunch::launchExe(const std::wstring& exePath, const std::wstring& baseDir, const wchar_t* cmdParams, const std::wstring& errMsg)
+{
+	// According to MSDN, ShellExecute's return value can be casted only to int.
+	// In mingw, size_t casting should be used to evade [-Wpointer-to-int-cast] warning.
+	int hRes = (int)(size_t)ShellExecuteW(NULL, NULL, exePath.c_str(), cmdParams, baseDir.c_str(), SW_SHOWNORMAL);
+	if (hRes <= 32)
 	{
-	case PROCESSOR_ARCHITECTURE_INTEL:
-		ret = ProcArch::X86;
-		break;
-	case PROCESSOR_ARCHITECTURE_AMD64:
-		ret = ProcArch::X64;
-		break;
-	case PROCESSOR_ARCHITECTURE_ARM:
-		ret = ProcArch::ARM;
-		break;
-	case PROCESSOR_ARCHITECTURE_ARM64:
-		ret = ProcArch::ARM64;
-		break;
+		printError(errMsg, true);
+		return false;
 	}
-	return ret;
-}
-
-const wchar_t* Helper::GetProcArchStr()
-{
-	ProcArch procArch = GetCpuArch();
-	return GetProcArchStr(procArch);
-}
-
-const wchar_t* Helper::GetProcArchStr(ProcArch procArch)
-{
-	const wchar_t* str = nullptr;
-
-	switch (procArch)
+	else
 	{
-	case ProcArch::X86:
-		str = L"x86";
-		break;
-	case ProcArch::X64:
-		str = L"x64";
-		break;
-	case ProcArch::ARM:
-		str = L"arm";
-		break;
-	case ProcArch::ARM64:
-		str = L"arm64";
-		break;
+		return true;
 	}
-
-	return str;
 }
 
-const char* Helper::Tokenize(const char* str, const char token, std::string& out)
+bool NetLaunch::launchDll(const std::wstring& dllPath, const std::wstring& baseDir, const wchar_t* cmdParams, const std::wstring& errMsg)
 {
-	const char* before = str;
-	const char* after = before;
-
-	after = StrChrA(before, token);
-	if (after == nullptr)
-		return nullptr;
-	out = string(before, after - before);
-	return after + 1;
-}
-
-const wchar_t* Helper::Tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out)
-{
-	const wchar_t* before = wstr;
-	const wchar_t* after = before;
-
-	after = StrChrW(before, token);
-	if (after == nullptr)
-		return nullptr;
-	out = wstring(before, after - before);
-	return after + 1;
-}
-
-const char* Helper::Tokenize(const char* str, const string& token, std::string& out)
-{
-	if (str == nullptr)
-		return nullptr;
-
-	const char* before = str;
-	const char* after = before;
-
-	after = StrStrA(before, token.c_str());
-	if (after == nullptr)
-		return nullptr;
-	out = string(before, after - before);
-	return after + token.size();
-}
-
-const wchar_t* Helper::Tokenize(const wchar_t* wstr, const wstring& token, std::wstring& out)
-{
-	const wchar_t* before = wstr;
-	const wchar_t* after = before;
-
-	after = StrStrW(before, token.c_str());
-	if (after == nullptr)
-		return nullptr;
-	out = wstring(before, after - before);
-	return after + token.size();
+	std::wstring paramStr = dllPath;
+	if (cmdParams != nullptr)
+	{
+		paramStr.append(L" ");
+		paramStr.append(cmdParams);
+	}
+	// Run `dotnet <PEBakery.dll> <params>` as Administrator
+	int hRes = (int)(size_t)ShellExecuteW(NULL, L"runas", L"dotnet", paramStr.c_str(), baseDir.c_str(), SW_HIDE);
+	if (hRes <= 32)
+	{
+		printError(errMsg, true);
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }

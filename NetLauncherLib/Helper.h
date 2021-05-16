@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2016-2021 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,12 +25,16 @@
 
 #pragma once
 
-#ifndef WINVER
-	#define WINVER 0x0601
-#endif
-#ifndef _WIN32_WINNT
-	#define _WIN32_WINNT 0x0601
-#endif
+// C++ Runtime Headers
+#include <string>
 
-
-#include <SDKDDKVer.h>
+class Helper
+{
+private:
+public:
+	
+	static const char* tokenize(const char* str, const char token, std::string& out);
+	static const wchar_t* tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);
+	static const char* tokenize(const char* str, const std::string& token, std::string& out);
+	static const wchar_t* tokenize(const wchar_t* wstr, const std::wstring& token, std::wstring& out);
+};
