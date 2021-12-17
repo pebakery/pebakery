@@ -259,7 +259,7 @@ namespace PEBakery.Core
         public static void NativeGlobalInit(string baseDir)
         {
             string magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
-            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi-ng.dll");
+            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
             string xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
             string wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
             string sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
