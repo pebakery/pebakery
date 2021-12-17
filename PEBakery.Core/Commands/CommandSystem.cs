@@ -28,6 +28,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -575,9 +576,20 @@ namespace PEBakery.Core.Commands
 
                 try
                 {
+                    // [Temporary Hack]
+                    // In Windows 11 + .NET Core 3.1, setting UseShellExecute = true causes exception.
+                    // -> Win32Exception with "The operation was cancaled by the user" message
+                    // To mitigate this, use CreateProcess instead of UseShellExecute on exe files.
+                    bool isExeFile = filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+                    
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.UseShellExecute = true;
+                        proc.StartInfo.UseShellExecute = !isExeFile;
+                    }
+                    else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proc.StartInfo.UseShellExecute = !isExeFile;
+                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
                     }
                     else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
                     {
@@ -611,11 +623,6 @@ namespace PEBakery.Core.Commands
                             s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                             s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
                         }
-                    }
-                    else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
-                    {
-                        proc.StartInfo.UseShellExecute = true;
-                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
                     }
                     else
                     {
