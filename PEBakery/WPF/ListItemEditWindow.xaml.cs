@@ -53,8 +53,8 @@ namespace PEBakery.WPF
             // Prohibit '|', ','
             if (e.Text.Contains('|'))
                 e.Handled = true;
-            if (e.Text.Contains(','))
-                e.Handled = true;
+            //if (e.Text.Contains(','))
+            //    e.Handled = true;
 
             OnPreviewTextInput(e);
         }
