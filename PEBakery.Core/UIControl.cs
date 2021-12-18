@@ -1079,7 +1079,7 @@ namespace PEBakery.Core
     public class UIInfo_RadioGroup : UIInfo
     {
         public List<string> Items { get; set; }
-        public int Selected { get; set; }
+        public int Selected { get; set; } // Zero-based index
         public string SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
