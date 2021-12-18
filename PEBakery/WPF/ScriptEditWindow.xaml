@@ -1092,7 +1092,7 @@
                                     <Button Height="20"  Margin="0, 10, 0, 0"
                                             Visibility="{Binding ShowUICtrlListItemButton}" 
                                             Command="{Binding UICtrlListItemEditCommand}"
-                                            Content="Edit ListItem"/>
+                                            Content="{Binding UICtrlListItemEditButtonText, Mode=OneWay}"/>
                                     <!--
                                     <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>

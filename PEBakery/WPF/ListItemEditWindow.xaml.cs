@@ -48,7 +48,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event Handlers
-        private void ItemValue_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void ItemValueTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             // Prohibit '|', ','
             if (e.Text.Contains('|'))
@@ -154,16 +154,10 @@ namespace PEBakery.WPF
             {
                 string ctrlItem = ctrlItems[i];
 
-                ListViewEditItem editItem = new ListViewEditItem
-                {
-                    Value = ctrlItem,
-                    IsDefault = (i == ctrlItemDefault),
-                };
+                ListViewEditItem editItem = new ListViewEditItem(Items, ctrlItem, i == ctrlItemDefault);
                 Items.Add(editItem);
             }
             SelectedIndex = ctrlItemDefault;
-
-            
         }
 
         public void WriteListItems()
@@ -201,10 +195,8 @@ namespace PEBakery.WPF
 
         #region Commands for ListItemBox
         private ICommand _listItemAddCommand;
-        private ICommand _listItemEditCommand;
         private ICommand _listItemDeleteCommand;
         public ICommand ListItemAddCommand => GetRelayCommand(ref _listItemAddCommand, "Add item", ListItemAddCommand_Execute, ListItemAddCommand_CanExecuteFunc);
-        public ICommand ListItemEditCommand => GetRelayCommand(ref _listItemEditCommand, "Edit item", ListItemEditCommand_Execute, ListItemEditCommand_CanExecuteFunc);
         public ICommand ListItemDeleteCommand => GetRelayCommand(ref _listItemDeleteCommand, "Delete item", ListItemDeleteCommand_Execute, ListItemDeleteCommand_CanExecuteFunc);
 
         private ICommand _listItemMoveUpCommand;
@@ -223,12 +215,6 @@ namespace PEBakery.WPF
 
         private bool ListItemAddCommand_CanExecuteFunc(object parameter)
         {
-            return CanExecuteCommand;
-        }
-
-        private bool ListItemEditCommand_CanExecuteFunc(object parameter)
-        {
-            // return CanExecuteCommand && SelectedIndex != -1 && SelectedIndex < Items.Count;
             return CanExecuteCommand;
         }
 
@@ -252,93 +238,22 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemAddCommand_Execute)}";
-
-                Debug.Assert(_uiCtrl != null, internalErrorMsg);
-                Debug.Assert(SelectedIndex < Items.Count, internalErrorMsg);
-
-                ListViewEditItem item = Items[SelectedIndex];
-
-
-                /*
-                string newItem = Items;
-                switch (_uiCtrl.Type)
+                // Prevent duplicated value
+                int postfix = Items.Count + 1;
+                string newValue;
+                do
                 {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        UICtrlComboBoxInfo.Items.Add(newItem);
+                    newValue = $"Item{postfix:00}";
+                    if (Items.Any(x => x.Value.Equals(newValue, StringComparison.OrdinalIgnoreCase)) == false)
                         break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        UICtrlRadioGroupInfo.Items.Add(newItem);
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
+                    
+                    postfix += 1;
                 }
-                UICtrlListItemBoxItems.Add(newItem);
-                */
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
+                while (true);
 
-            
-        }
-
-        private void ListItemEditCommand_Execute(object parameter)
-        {
-            /*
-            switch (_uiCtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(_uiCtrlComboBoxInfo != null, internalErrorMsg);
-                    Debug.Assert(UICtrlComboBoxInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    UICtrlComboBoxInfo.Index = UICtrlListItemBoxSelectedIndex;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    Debug.Assert(UICtrlRadioGroupInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    UICtrlRadioGroupInfo.Selected = UICtrlListItemBoxSelectedIndex;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            */
-
-            CanExecuteCommand = false;
-            try
-            {
-                string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemEditCommand_Execute)}";
-
-                Debug.Assert(_uiCtrl != null, internalErrorMsg);
-                Debug.Assert(SelectedIndex < Items.Count, internalErrorMsg);
-
-                ListViewEditItem item = Items[SelectedIndex];
-
-                // Switch to edit mode
-                item.ViewModeSwitch = ItemViewEditSwitch.ItemEdit;
-
-
-
-                /*
-                string newItem = Items;
-                switch (_uiCtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        UICtrlComboBoxInfo.Items.Add(newItem);
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        UICtrlRadioGroupInfo.Items.Add(newItem);
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-                UICtrlListItemBoxItems.Add(newItem);
-                */
+                ListViewEditItem newItem = new ListViewEditItem(Items, newValue, false);
+                Items.Add(newItem);
+                SelectedIndex = Items.Count - 1;
             }
             finally
             {
@@ -349,8 +264,6 @@ namespace PEBakery.WPF
 
         private void ListItemDeleteCommand_Execute(object parameter)
         {
-            // string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemDeleteCommand_Execute)}";
-
             CanExecuteCommand = false;
             try
             {
@@ -361,11 +274,9 @@ namespace PEBakery.WPF
                     return;
 
                 int indexToDelete = SelectedIndex;
-                //ListViewEditItem itemToDelete = Items[SelectedIndex];
                 
-
                 // Delete selected item
-                // itemToDelete.IsDefault = false;
+                // If RemoveAt deletes current selected index, SelectedIndex becomes -1
                 Items.RemoveAt(indexToDelete);
 
                 // Change default selected item
@@ -382,61 +293,10 @@ namespace PEBakery.WPF
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
-
-            
-            /*
-            List<string> items;
-            switch (SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = UICtrlComboBoxInfo.Items;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = UICtrlRadioGroupInfo.Items;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-            if (items.Count < 2)
-            {
-                string errMsg = $"{SelectedUICtrl.Type} [{SelectedUICtrl.Key}] must contain at least one item";
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot Delete Value: {errMsg}"));
-                MessageBox.Show(errMsg + '.', "Cannot Delete Value", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            int idx = UICtrlListItemBoxSelectedIndex;
-
-            items.RemoveAt(idx);
-            UICtrlListItemBoxItems.RemoveAt(idx);
-
-            switch (SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    if (UICtrlComboBoxInfo.Index == idx)
-                        UICtrlComboBoxInfo.Index = 0;
-                    break;
-                case UIControlType.RadioGroup:
-                    if (UICtrlRadioGroupInfo.Selected == idx)
-                        UICtrlRadioGroupInfo.Selected = 0;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            UICtrlListItemBoxSelectedIndex = 0;
-            InvokeUIControlEvent(false);
-            */
         }
 
         private void ListItemMoveUpCommand_Execute(object parameter)
         {
-            // string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemMoveUpCommand_Execute)}";
-
             CanExecuteCommand = false;
             try
             {
@@ -451,62 +311,10 @@ namespace PEBakery.WPF
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
-
-            /*
-            
-
-            Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-            List<string> items;
-            switch (SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = UICtrlComboBoxInfo.Items;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = UICtrlRadioGroupInfo.Items;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-            int idx = UICtrlListItemBoxSelectedIndex;
-            if (0 < idx)
-            {
-                string item = items[idx];
-                items.RemoveAt(idx);
-                items.Insert(idx - 1, item);
-
-                string editItem = UICtrlListItemBoxItems[idx];
-                UICtrlListItemBoxItems.RemoveAt(idx);
-                UICtrlListItemBoxItems.Insert(idx - 1, editItem);
-
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        if (UICtrlComboBoxInfo.Index == idx)
-                            UICtrlComboBoxInfo.Index = idx - 1;
-                        break;
-                    case UIControlType.RadioGroup:
-                        if (UICtrlRadioGroupInfo.Selected == idx)
-                            UICtrlRadioGroupInfo.Selected = idx - 1;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                UICtrlListItemBoxSelectedIndex = idx - 1;
-                InvokeUIControlEvent(false);
-            }
-            */
         }
 
         private void ListItemMoveDownCommand_Execute(object parameter)
         {
-            // string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemMoveDownCommand_Execute)}";
-
             CanExecuteCommand = false;
             try
             {
@@ -521,58 +329,6 @@ namespace PEBakery.WPF
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
-            
-
-            /*
-            string internalErrorMsg = $"Internal Logic Error at {nameof(ListItemBoxMoveDownCommand_Execute)}";
-
-            Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-            List<string> items;
-            switch (SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = UICtrlComboBoxInfo.Items;
-                    Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = UICtrlRadioGroupInfo.Items;
-                    Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            int idx = UICtrlListItemBoxSelectedIndex;
-            if (idx + 1 < items.Count)
-            {
-                string item = items[idx];
-                items.RemoveAt(idx);
-                items.Insert(idx + 1, item);
-
-                string editItem = UICtrlListItemBoxItems[idx];
-                UICtrlListItemBoxItems.RemoveAt(idx);
-                UICtrlListItemBoxItems.Insert(idx + 1, editItem);
-
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        if (UICtrlComboBoxInfo.Index == idx)
-                            UICtrlComboBoxInfo.Index = idx + 1;
-                        break;
-                    case UIControlType.RadioGroup:
-                        if (UICtrlRadioGroupInfo.Selected == idx)
-                            UICtrlRadioGroupInfo.Selected = idx + 1;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                UICtrlListItemBoxSelectedIndex = idx + 1;
-                InvokeUIControlEvent(false);
-            }
-            */
         }
 
         #endregion
@@ -605,14 +361,15 @@ namespace PEBakery.WPF
     #region ListViewEditItem
     public class ListViewEditItem : ViewModelBase
     {
-        #region Constructor
-        public ListViewEditItem()
+        public ListViewEditItem(ObservableCollection<ListViewEditItem> itemList, string value, bool isDefault = false)
         {
-
+            _itemList = itemList;
+            Value = value;
+            IsDefault = isDefault;
         }
-        #endregion
 
-        #region Property
+        private ObservableCollection<ListViewEditItem> _itemList;
+
         private bool _isDefault = false;
         public bool IsDefault
         {
@@ -624,105 +381,31 @@ namespace PEBakery.WPF
         public string Value
         {
             get => _value;
-            set => SetProperty(ref _value, value);
-        }
-
-        private ItemViewEditSwitch _viewModeSwitch = ItemViewEditSwitch.ItemView;
-        public ItemViewEditSwitch ViewModeSwitch
-        {
-            get => _viewModeSwitch;
             set
-            {
-                SetProperty(ref _viewModeSwitch, value);
-                OnPropertyUpdate(nameof(ItemViewVisibility));
-                OnPropertyUpdate(nameof(ItemEditVisibility));
+            { // This code is only called when the TextBox lost focus.
+                // Check for duplicated value
+                string setValue = PreventDuplicateValue(value);
+                SetProperty(ref _value, setValue);
             }
         }
 
-        public Visibility ItemViewVisibility
+        private string PreventDuplicateValue(string setValue)
         {
-            get
+            // Prevent duplicated value
+            int postfix = 1;
+            string newValue = setValue;
+            do
             {
-                switch (ViewModeSwitch)
-                {
-                    case ItemViewEditSwitch.ItemView:
-                    default:
-                        return Visibility.Visible;
-                    case ItemViewEditSwitch.ItemEdit:
-                        return Visibility.Hidden;
-                }
-            }
-        }
+                if (_itemList.Any(x => x.Value.Equals(newValue, StringComparison.OrdinalIgnoreCase)) == false)
+                    break;
 
-        public Visibility ItemEditVisibility
-        {
-            get
-            {
-                switch (ViewModeSwitch)
-                {
-                    case ItemViewEditSwitch.ItemView:
-                    default:
-                        return Visibility.Hidden;
-                    case ItemViewEditSwitch.ItemEdit:
-                        return Visibility.Visible;
-                }
+                postfix += 1;
+                newValue = $"{setValue} ({postfix})";
             }
-        }
-        #endregion
+            while (true);
 
-        #region Commands for ListViewEditItem
-        private ICommand _editToViewCommand;
-        private ICommand _viewToEditCommand;
-        /// <summary>
-        /// Switch to view mode from edit mode
-        /// </summary>
-        public ICommand EditToViewCommand => GetRelayCommand(ref _editToViewCommand, "Add item", EditToViewCommand_Execute, Command_CanExecuteFunc);
-        /// <summary>
-        /// Switch to edit mode from view mode
-        /// </summary>
-        public ICommand ViewToEditCommand => GetRelayCommand(ref _viewToEditCommand, "Add item", ViewToEditCommand_Execute, Command_CanExecuteFunc);
-
-        private bool _canExecuteCommand;
-        public bool CanExecuteCommand
-        {
-            get => _canExecuteCommand;
-            set => SetProperty(ref _canExecuteCommand, value);
+            return newValue;
         }
-
-        private bool Command_CanExecuteFunc(object parameter)
-        {
-            return CanExecuteCommand;
-        }
-
-        private void EditToViewCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                ViewModeSwitch = ItemViewEditSwitch.ItemView;
-                // 
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void ViewToEditCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                ViewModeSwitch = ItemViewEditSwitch.ItemEdit;
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-        #endregion
     }
     #endregion 
 }

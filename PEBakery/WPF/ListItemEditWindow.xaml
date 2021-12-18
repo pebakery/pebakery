@@ -70,41 +70,13 @@
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
                         <RadioButton GroupName="ListViewEditItemRadios"
-                                     IsChecked="{Binding Path=IsDefault}"
-                                     Visibility="{Binding Path=ItemViewVisibility}" />
-                        <TextBlock Text="{Binding Path=Value}"
-                                   Visibility="{Binding Path=ItemViewVisibility}">
-                            <TextBlock.InputBindings>
-                                <MouseBinding Command="{Binding ViewToEditCommand}"
-                                              MouseAction="LeftDoubleClick" />
-                            </TextBlock.InputBindings>
-                        </TextBlock>
-                        <TextBox PreviewTextInput="ItemValue_PreviewTextInput"
-                                 Text="{Binding Path=ItemName}"
-                                 Visibility="{Binding Path=ItemEditVisibility}">
-                            <TextBox.InputBindings>
-                                <KeyBinding Key="Return"
-                                            Command="{Binding EditToViewCommand}" />
-                            </TextBox.InputBindings>
-                        </TextBox>
-                        <!--  CheckBox IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}"/>  -->
+                                     IsChecked="{Binding Path=IsDefault}" />
+                        <TextBox PreviewTextInput="ItemValueTextBox_PreviewTextInput"
+                                 Text="{Binding Path=Value, UpdateSourceTrigger=LostFocus}" />
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
-            <!--
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn CellTemplate="{StaticResource FirstCell}" Width="30"/>
-                </GridView>
-            </ListView.View>
-            -->
         </ListView>
-        <!--
-        <TextBox Grid.Row="5" Grid.Column="0"
-                     VerticalContentAlignment="Center"
-                     PreviewTextInput="ListNewItem_PreviewTextInput"
-                     Text="{Binding UICtrlListItemBoxNewItem}"/>
-        -->
 
         <!--  Right Panel Buttons  -->
         <StackPanel Grid.Row="1"
@@ -121,20 +93,6 @@
                                                 Kind="Plus" />
                     <TextBlock VerticalAlignment="Center"
                                Text="Add" />
-                </StackPanel>
-            </Button>
-            <Button x:Name="ListItemEditButton"
-                    Height="25"
-                    Margin="0,0,0,5"
-                    Command="{Binding ListItemEditCommand}"
-                    ToolTip="Edit">
-                <StackPanel Orientation="Horizontal">
-                    <iconPacks:PackIconMaterial Width="15"
-                                                Height="15"
-                                                Margin="0,5,5,5"
-                                                Kind="Pencil" />
-                    <TextBlock VerticalAlignment="Center"
-                               Text="Edit" />
                 </StackPanel>
             </Button>
             <Button x:Name="ListItemDeleteButton"

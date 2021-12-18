@@ -1512,12 +1512,6 @@ namespace PEBakery.WPF
             set
             {
                 _uiCtrlComboBoxInfo = value;
-                if (value == null)
-                    return;
-
-                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlComboBoxInfo.Items);
-                UICtrlListItemBoxSelectedIndex = _uiCtrlComboBoxInfo.Index;
-                UICtrlListItemBoxNewItem = string.Empty;
             }
         }
         #endregion
@@ -1814,46 +1808,23 @@ namespace PEBakery.WPF
             set
             {
                 _uiCtrlRadioGroupInfo = value;
-                if (value == null)
-                    return;
-
-                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlRadioGroupInfo.Items);
-                UICtrlListItemBoxSelectedIndex = _uiCtrlRadioGroupInfo.Selected;
-                UICtrlListItemBoxNewItem = string.Empty;
             }
         }
         #endregion
-        #region For (Common) ListItemBox
-        public ObservableCollection<string> _uiCtrlListItemBoxItems;
-        public ObservableCollection<string> UICtrlListItemBoxItems
+        #region For (Common) ListItemEdit
+        public int UICtrlListItemCount
         {
-            get => _uiCtrlListItemBoxItems;
             set
             {
-                _uiCtrlListItemBoxItems = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxItems));
-                InvokeUIControlEvent(true);
+                UICtrlListItemEditButtonText = $"Edit List ({value} item{(value == 1 ? string.Empty : "s")})";
             }
         }
-        private int _uiCtrlListItemBoxSelectedIndex;
-        public int UICtrlListItemBoxSelectedIndex
+
+        private string _uiCtrlListItemEditButtonText;
+        public string UICtrlListItemEditButtonText
         {
-            get => _uiCtrlListItemBoxSelectedIndex;
-            set
-            {
-                _uiCtrlListItemBoxSelectedIndex = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxSelectedIndex));
-            }
-        }
-        private string _uiCtrlListItemBoxNewItem;
-        public string UICtrlListItemBoxNewItem
-        {
-            get => _uiCtrlListItemBoxNewItem;
-            set
-            {
-                _uiCtrlListItemBoxNewItem = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxNewItem));
-            }
+            get => _uiCtrlListItemEditButtonText;
+            set => SetProperty(ref _uiCtrlListItemEditButtonText, value);
         }
         #endregion
         #region For (Common) RunOptional
@@ -4099,6 +4070,8 @@ namespace PEBakery.WPF
                         UICtrlComboBoxInfo = info;
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
+
+                        UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
                         break;
                     }
                 case UIControlType.Image:
@@ -4164,6 +4137,8 @@ namespace PEBakery.WPF
                         UICtrlRadioGroupInfo = info;
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
+
+                        UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
                         break;
                     }
             }
