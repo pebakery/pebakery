@@ -13,15 +13,11 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="CredentialDialog.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="CredentialDialog.cs" />
     <Compile Update="CredentialDialog.designer.cs">
       <DependentUpon>CredentialDialog.cs</DependentUpon>
     </Compile>
-    <Compile Update="ProgressDialog.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="ProgressDialog.cs" />
     <Compile Update="ProgressDialog.designer.cs">
       <DependentUpon>ProgressDialog.cs</DependentUpon>
     </Compile>
@@ -30,24 +26,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="TaskDialog.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="TaskDialog.cs" />
     <Compile Update="TaskDialog.designer.cs">
       <DependentUpon>TaskDialog.cs</DependentUpon>
     </Compile>
-    <Compile Update="TaskDialogButton.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TaskDialogItem.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="TaskDialogButton.cs" />
+    <Compile Update="TaskDialogItem.cs" />
     <Compile Update="TaskDialogItem.designer.cs">
       <DependentUpon>TaskDialogItem.cs</DependentUpon>
     </Compile>
-    <Compile Update="TaskDialogRadioButton.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Update="TaskDialogRadioButton.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="CredentialDialog.bmp" />

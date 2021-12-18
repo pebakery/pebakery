@@ -41,7 +41,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Printing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -373,7 +372,7 @@ namespace PEBakery.WPF
             IInputElement focusedControl = Keyboard.FocusedElement;
             if (!Equals(focusedControl, InterfaceScrollViewer))
                 return;
-            
+
             int delta;
             bool move;
             switch (e.KeyboardDevice.Modifiers)
@@ -446,23 +445,14 @@ namespace PEBakery.WPF
                     }
                     break;
             }
-            
+
             // Update control delta to the status bar
             m.InterfaceCursorPos = new Point(-1, -1); // Do not display cursor position
             m.InterfaceControlDragDelta += new Vector(deltaX, deltaY); // Accumulate delta set by keyboard
             m.UpdateCursorPosStatus(true, true);
         }
         #endregion
-        #region For (Common) ListItemBox
-        private void ListNewItem_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            // Prohibit '|'
-            if (e.Text.Contains('|'))
-                e.Handled = true;
-
-            OnPreviewTextInput(e);
-        }
-        #endregion
+        
         #region For (Common) RunOptional
         private void SectionName_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -1098,7 +1088,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlBevel));
                 OnPropertyUpdate(nameof(IsUICtrlFileBox));
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
-                OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
+                OnPropertyUpdate(nameof(ShowUICtrlListItemButton));
                 OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
 
                 CommandManager.InvalidateRequerySuggested();
@@ -1139,7 +1129,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlBevel));
                 OnPropertyUpdate(nameof(IsUICtrlFileBox));
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
-                OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
+                OnPropertyUpdate(nameof(ShowUICtrlListItemButton));
                 OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
 
                 CommandManager.InvalidateRequerySuggested();
@@ -1285,7 +1275,7 @@ namespace PEBakery.WPF
         public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility ShowUICtrlListItemBox
+        public Visibility ShowUICtrlListItemButton
         {
             get
             {
@@ -1522,12 +1512,6 @@ namespace PEBakery.WPF
             set
             {
                 _uiCtrlComboBoxInfo = value;
-                if (value == null)
-                    return;
-
-                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlComboBoxInfo.Items);
-                UICtrlListItemBoxSelectedIndex = _uiCtrlComboBoxInfo.Index;
-                UICtrlListItemBoxNewItem = string.Empty;
             }
         }
         #endregion
@@ -1824,46 +1808,23 @@ namespace PEBakery.WPF
             set
             {
                 _uiCtrlRadioGroupInfo = value;
-                if (value == null)
-                    return;
-
-                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlRadioGroupInfo.Items);
-                UICtrlListItemBoxSelectedIndex = _uiCtrlRadioGroupInfo.Selected;
-                UICtrlListItemBoxNewItem = string.Empty;
             }
         }
         #endregion
-        #region For (Common) ListItemBox
-        public ObservableCollection<string> _uiCtrlListItemBoxItems;
-        public ObservableCollection<string> UICtrlListItemBoxItems
+        #region For (Common) ListItemEdit
+        public int UICtrlListItemCount
         {
-            get => _uiCtrlListItemBoxItems;
             set
             {
-                _uiCtrlListItemBoxItems = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxItems));
-                InvokeUIControlEvent(true);
+                UICtrlListItemEditButtonText = $"Edit List ({value} item{(value == 1 ? string.Empty : "s")})";
             }
         }
-        private int _uiCtrlListItemBoxSelectedIndex;
-        public int UICtrlListItemBoxSelectedIndex
+
+        private string _uiCtrlListItemEditButtonText;
+        public string UICtrlListItemEditButtonText
         {
-            get => _uiCtrlListItemBoxSelectedIndex;
-            set
-            {
-                _uiCtrlListItemBoxSelectedIndex = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxSelectedIndex));
-            }
-        }
-        private string _uiCtrlListItemBoxNewItem;
-        public string UICtrlListItemBoxNewItem
-        {
-            get => _uiCtrlListItemBoxNewItem;
-            set
-            {
-                _uiCtrlListItemBoxNewItem = value;
-                OnPropertyUpdate(nameof(UICtrlListItemBoxNewItem));
-            }
+            get => _uiCtrlListItemEditButtonText;
+            set => SetProperty(ref _uiCtrlListItemEditButtonText, value);
         }
         #endregion
         #region For (Common) RunOptional
@@ -2574,259 +2535,28 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        #region For (Common) ListItemBox
-        private ICommand _uiCtrlListItemBoxUpCommand;
-        private ICommand _uiCtrlListItemBoxDownCommand;
-        private ICommand _uiCtrlListItemBoxSelectCommand;
-        private ICommand _uiCtrlListItemBoxDeleteCommand;
-        private ICommand _uiCtrlListItemBoxAddCommand;
-        public ICommand UICtrlListItemBoxUpCommand => GetRelayCommand(ref _uiCtrlListItemBoxUpCommand, "Move item one step up", UICtrlListItemBoxUpCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDownCommand => GetRelayCommand(ref _uiCtrlListItemBoxDownCommand, "Move item one step down", UICtrlListItemBoxDownCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxSelectCommand => GetRelayCommand(ref _uiCtrlListItemBoxSelectCommand, "Select default item", UICtrlListItemBoxSelectCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDeleteCommand => GetRelayCommand(ref _uiCtrlListItemBoxDeleteCommand, "Delete item", UICtrlListItemBoxDeleteCommand_Execute, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxAddCommand => GetRelayCommand(ref _uiCtrlListItemBoxAddCommand, "Add item", UICtrlListItemBoxAddCommand_Execute, CanExecuteFunc);
+        #region For ListItemEditWindow
+        private ICommand _uiCtrlListItemEditCommand;
+        public ICommand UICtrlListItemEditCommand => GetRelayCommand(ref _uiCtrlListItemEditCommand, "Edit ListItem of the selected control", UICtrlListItemEditCommand_Execute, CanExecuteFunc);
 
-        private void UICtrlListItemBoxUpCommand_Execute(object parameter)
+        private void UICtrlListItemEditCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUpCommand_Execute";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-                List<string> items;
-                switch (SelectedUICtrl.Type)
+
+                UIControl uiCtrl = SelectedUICtrl;
+                ListItemEditViewModel editViewModel = new ListItemEditViewModel(uiCtrl);
+                ListItemEditWindow editWindow = new ListItemEditWindow
                 {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        items = UICtrlComboBoxInfo.Items;
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        items = UICtrlRadioGroupInfo.Items;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-                Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-                int idx = UICtrlListItemBoxSelectedIndex;
-                if (0 < idx)
-                {
-                    string item = items[idx];
-                    items.RemoveAt(idx);
-                    items.Insert(idx - 1, item);
-
-                    string editItem = UICtrlListItemBoxItems[idx];
-                    UICtrlListItemBoxItems.RemoveAt(idx);
-                    UICtrlListItemBoxItems.Insert(idx - 1, editItem);
-
-                    switch (SelectedUICtrl.Type)
-                    {
-                        case UIControlType.ComboBox:
-                            if (UICtrlComboBoxInfo.Index == idx)
-                                UICtrlComboBoxInfo.Index = idx - 1;
-                            break;
-                        case UIControlType.RadioGroup:
-                            if (UICtrlRadioGroupInfo.Selected == idx)
-                                UICtrlRadioGroupInfo.Selected = idx - 1;
-                            break;
-                        default:
-                            throw new InvalidOperationException(internalErrorMsg);
-                    }
-
-                    UICtrlListItemBoxSelectedIndex = idx - 1;
+                    DataContext = editViewModel
+                };
+                bool? result = editWindow.ShowDialog();
+                if (result == true)
                     InvokeUIControlEvent(false);
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void UICtrlListItemBoxDownCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDownCommand_Execute";
-
-                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-                List<string> items;
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        items = UICtrlComboBoxInfo.Items;
-                        Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        items = UICtrlRadioGroupInfo.Items;
-                        Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                int idx = UICtrlListItemBoxSelectedIndex;
-                if (idx + 1 < items.Count)
-                {
-                    string item = items[idx];
-                    items.RemoveAt(idx);
-                    items.Insert(idx + 1, item);
-
-                    string editItem = UICtrlListItemBoxItems[idx];
-                    UICtrlListItemBoxItems.RemoveAt(idx);
-                    UICtrlListItemBoxItems.Insert(idx + 1, editItem);
-
-                    switch (SelectedUICtrl.Type)
-                    {
-                        case UIControlType.ComboBox:
-                            if (UICtrlComboBoxInfo.Index == idx)
-                                UICtrlComboBoxInfo.Index = idx + 1;
-                            break;
-                        case UIControlType.RadioGroup:
-                            if (UICtrlRadioGroupInfo.Selected == idx)
-                                UICtrlRadioGroupInfo.Selected = idx + 1;
-                            break;
-                        default:
-                            throw new InvalidOperationException(internalErrorMsg);
-                    }
-
-                    UICtrlListItemBoxSelectedIndex = idx + 1;
-                    InvokeUIControlEvent(false);
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void UICtrlListItemBoxSelectCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelectCommand_Execute";
-
-                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        Debug.Assert(UICtrlComboBoxInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                        UICtrlComboBoxInfo.Index = UICtrlListItemBoxSelectedIndex;
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        Debug.Assert(UICtrlRadioGroupInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-                        UICtrlRadioGroupInfo.Selected = UICtrlListItemBoxSelectedIndex;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                InvokeUIControlEvent(false);
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void UICtrlListItemBoxDeleteCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDelete_Click";
-
-                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-                List<string> items;
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        items = UICtrlComboBoxInfo.Items;
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        items = UICtrlRadioGroupInfo.Items;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-                Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-                if (items.Count < 2)
-                {
-                    string errMsg = $"{SelectedUICtrl.Type} [{SelectedUICtrl.Key}] must contain at least one item";
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot Delete Value: {errMsg}"));
-                    MessageBox.Show(errMsg + '.', "Cannot Delete Value", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                int idx = UICtrlListItemBoxSelectedIndex;
-
-                items.RemoveAt(idx);
-                UICtrlListItemBoxItems.RemoveAt(idx);
-
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        if (UICtrlComboBoxInfo.Index == idx)
-                            UICtrlComboBoxInfo.Index = 0;
-                        break;
-                    case UIControlType.RadioGroup:
-                        if (UICtrlRadioGroupInfo.Selected == idx)
-                            UICtrlRadioGroupInfo.Selected = 0;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                UICtrlListItemBoxSelectedIndex = 0;
-                InvokeUIControlEvent(false);
-            }
-            finally
-            {
-                CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void UICtrlListItemBoxAddCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAddCommand";
-
-                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
-
-                string newItem = UICtrlListItemBoxNewItem;
-                switch (SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
-                        UICtrlComboBoxInfo.Items.Add(newItem);
-                        break;
-                    case UIControlType.RadioGroup:
-                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
-                        UICtrlRadioGroupInfo.Items.Add(newItem);
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-                UICtrlListItemBoxItems.Add(newItem);
-
-                InvokeUIControlEvent(false);
             }
             finally
             {
@@ -2835,6 +2565,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
         #region For (Common) InterfaceEncoded 
         private ICommand _uiCtrlInterfaceAttachCommand;
         private ICommand _uiCtrlInterfaceExtractCommand;
@@ -4339,6 +4070,8 @@ namespace PEBakery.WPF
                         UICtrlComboBoxInfo = info;
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
+
+                        UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
                         break;
                     }
                 case UIControlType.Image:
@@ -4404,6 +4137,8 @@ namespace PEBakery.WPF
                         UICtrlRadioGroupInfo = info;
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
+
+                        UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
                         break;
                     }
             }
