@@ -820,8 +820,10 @@ namespace PEBakery.Core.ViewModels
             // Clear MainTreeItems
             MainTreeItems.Clear();
 
+#if FILESYSTEM_WATCHER
             // Clear FileSystemWatcher if has been subscribed.
             UnsubscribeFileSystemWatcher();
+#endif
 
             // Number of total scripts
             int scriptCount = 0;
@@ -1000,8 +1002,10 @@ namespace PEBakery.Core.ViewModels
                         if (Global.Setting.Script.EnableCache)
                             StartScriptCaching();
 
+#if FILESYSTEM_WATCHER
                         // Subscribe to FileSystemWatcher
                         SubscribeFileSystemWatcher();
+#endif
                     }
                     else
                     { // Load failure
@@ -1617,6 +1621,7 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region FileSystemWatcher Methods
+#if FILESYSTEM_WATCHER
         public void SubscribeFileSystemWatcher()
         {
             foreach (Project p in Global.Projects)
@@ -1652,6 +1657,7 @@ namespace PEBakery.Core.ViewModels
             CurMainTree = treeModel;
             StartRefreshScript();
         }
+#endif
         #endregion
 
         #region ShellExecute Alternative - OpenTextFile, OpenFolder
