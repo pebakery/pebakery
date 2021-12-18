@@ -820,6 +820,9 @@ namespace PEBakery.Core.ViewModels
             // Clear MainTreeItems
             MainTreeItems.Clear();
 
+            // Clear FileSystemWatcher if has been subscribed.
+            UnsubscribeFileSystemWatcher();
+
             // Number of total scripts
             int scriptCount = 0;
             int linkCount = 0;
@@ -996,6 +999,9 @@ namespace PEBakery.Core.ViewModels
                         // Do not use await, let it run aside.
                         if (Global.Setting.Script.EnableCache)
                             StartScriptCaching();
+
+                        // Subscribe to FileSystemWatcher
+                        SubscribeFileSystemWatcher();
                     }
                     else
                     { // Load failure
@@ -1607,6 +1613,44 @@ namespace PEBakery.Core.ViewModels
                     Thread.Sleep(500);
                 }
             }, token);
+        }
+        #endregion
+
+        #region FileSystemWatcher Methods
+        public void SubscribeFileSystemWatcher()
+        {
+            foreach (Project p in Global.Projects)
+            {
+                p.ScriptFileUpdated += Project_ScriptFileUpdated;
+            }
+        }
+
+        public void UnsubscribeFileSystemWatcher()
+        {
+            foreach (Project p in Global.Projects)
+            {
+                p.ClearFileSystemWatcherEvents();
+            }
+        }
+
+        private void Project_ScriptFileUpdated(object sender, string realPath)
+        {
+            //if (!(sender is Project p))
+            //    return;
+
+            ProjectTreeItemModel treeModel = CurMainTree.FindScriptByRealPath(realPath);
+            if (treeModel == null)
+                return;
+
+            MessageBoxResult result = MessageBox.Show($"Script [{treeModel.Script.Title}] has been modified in background.\r\nDo you want to reload it?",
+                "Script Reload",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            CurMainTree = treeModel;
+            StartRefreshScript();
         }
         #endregion
 
