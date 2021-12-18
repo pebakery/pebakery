@@ -51,11 +51,9 @@ namespace PEBakery.Core
         public const int LoadGCInterval = 64;
         #endregion
 
-        #region Fields
+        #region Fields and Properties
         private int _mainScriptIdx = -1; // -1 means not initialized
-        #endregion
 
-        #region Properties
         public string ProjectName { get; }
         public string BaseDir { get; }
         public string ProjectRoot { get; } // {BaseDir}\Projects
@@ -68,10 +66,25 @@ namespace PEBakery.Core
         public Variables Variables { get; set; }
         public CompatOption Compat { get; }
         public ProjectUpdateInfo UpdateInfo { get; private set; }
-        public bool IsUpdateable => UpdateInfo != null ? UpdateInfo.IsUpdateable : false;
+        public bool IsUpdateable => UpdateInfo != null && UpdateInfo.IsUpdateable;
 
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
+
+#if FILESYSTEM_WATCHER
+        // FileSystemWatcher to live-update changed script.
+        // Useful for live script development and testing.
+        // TODO: MUST FILTER OUT CHANGES MADE BY PEBAKERY ITSELF.
+        // https://stackoverflow.com/questions/64005005/filesystemwatcher-ignore-changes-made-by-own-process
+        private readonly FileSystemWatcher _fsWatcher;
+
+        private EventHandler<string> _scriptFileUpdated = null;
+        public event EventHandler<string> ScriptFileUpdated
+        {
+            add => _scriptFileUpdated += value;
+            remove => _scriptFileUpdated -= value;
+        }
+#endif
         #endregion
 
         #region Constructor
@@ -84,6 +97,17 @@ namespace PEBakery.Core
             ProjectDir = Path.Combine(baseDir, Names.Projects, projectName);
             BaseDir = baseDir;
             Compat = compat;
+
+#if FILESYSTEM_WATCHER
+            // Watch filesystem to catch edit of script-level file change.
+            _fsWatcher = new FileSystemWatcher(ProjectDir);
+            _fsWatcher.Filters.Add("*.script");
+            _fsWatcher.Filters.Add("script.project");
+            _fsWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            _fsWatcher.Changed += FileSystemWatcher_Changed;
+            _fsWatcher.IncludeSubdirectories = true;
+            _fsWatcher.EnableRaisingEvents = true; // Start running filesystem watcher
+#endif
         }
         #endregion
 
@@ -646,6 +670,33 @@ namespace PEBakery.Core
             return !valStr.Equals("False", StringComparison.OrdinalIgnoreCase) &&
                    !valStr.Equals("0", StringComparison.OrdinalIgnoreCase);
         }
+        #endregion
+
+        #region FileSystemWatcher
+#if FILESYSTEM_WATCHER
+        private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            // Check if the event is a change of file.
+            if (e.ChangeType != WatcherChangeTypes.Changed)
+                return;
+
+            // Check if the changed one is a file.
+            if (File.Exists(e.FullPath) == false)
+                return;
+
+            // Check if the changed file is one of the visible scripts
+            if (VisibleScripts.Any(x => x.RealPath.Equals(e.FullPath, StringComparison.OrdinalIgnoreCase)) == false)
+                return;
+
+            // Invoke event listeners
+            _scriptFileUpdated?.Invoke(this, e.FullPath);
+        }
+
+        public void ClearFileSystemWatcherEvents()
+        {
+            _scriptFileUpdated = null;
+        }
+#endif
         #endregion
 
         #region Clone
