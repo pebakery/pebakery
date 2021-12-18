@@ -1,4 +1,5 @@
 # Script Parameters
+# .\BinaryPublish.ps1 -nightly -noclean
 param (
     [switch]$nightly = $false,
     [switch]$noclean = $false
@@ -25,6 +26,8 @@ $PublishDir = "${BaseDir}\Publish"
 $ToolDir = "${PublishDir}\_tools"
 $SevenZipExe = "${ToolDir}\7za_x64.exe"
 # $UpxExe = "${ToolDir}\upx_x64.exe"
+
+$Cores = ${Env:NUMBER_OF_PROCESSORS}
 
 # Clean the solution and restore NuGet packages
 if ($noclean -eq $false) {
@@ -84,7 +87,11 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
         dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
-        dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
+        # dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
+        # PEBakery crashes if a PublishTrimmed=true is set
+        # Unhandled exception.
+        #   Cannot print exception string because Exception.ToString() failed.
+        dotnet publish -c Release -r win-x64 -o "${DestBinDir}" PEBakery
     }
     Pop-Location
 
@@ -92,12 +99,22 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
         Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
         New-Item "${DestBinDir}\runtimes" -ItemType Directory
+        Remove-Item "${DestBinDir}\runtimes_bak\win-arm" -Recurse
+        #Joveler.Compression.ZLib will refuse to run if `zlibwapi.dll` is not found
+        #Error:
+        #An assembly specified in the application dependencies manifest (PEBakery.deps.json) was not found:
+        #package: 'Joveler.Compression.ZLib', version: '4.1.0'
+        #path: 'runtimes/win-x64/native/zlibwapi.dll'
+        #Remove-Item "${DestBinDir}\runtimes_bak\win-x86\native\zlibwapi.dll"
+        #Remove-Item "${DestBinDir}\runtimes_bak\win-x64\native\zlibwapi.dll"
+        #Remove-Item "${DestBinDir}\runtimes_bak\win-arm64\native\zlibwapi.dll"
         Copy-Item "${DestBinDir}\runtimes_bak\win*" -Destination "${DestBinDir}\runtimes" -Recurse
         Remove-Item "${DestBinDir}\runtimes_bak" -Recurse
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         # Flatten the location of 7z.dll
-        Copy-Item "${DestBinDir}\runtimes\win-x64\native\7z.dll" -Destination "${DestBinDir}\7z.dll"
+        Copy-Item "${DestBinDir}\runtimes\win-x64\native\*" -Destination "${DestBinDir}"
         Remove-Item "${DestBinDir}\runtimes" -Recurse
+        #Remove-Item "${DestBinDir}\zlibwapi.dll"
     }
 
     # Delete unnecessary files
@@ -106,6 +123,7 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Remove-Item "${DestBinDir}\*.db" -ErrorAction SilentlyContinue
     Remove-Item "${DestBinDir}\Database" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
+    Remove-Item "${DestBinDir}\magic.mgc"  -ErrorAction SilentlyContinue
 
     # Copy license files
     Copy-Item "${BaseDir}\LICENSE" "${DestBinDir}"
@@ -115,6 +133,6 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Write-Output ""
     Write-Host "[*] Create ${PublishMode} ${BinaryName} archive" -ForegroundColor Yellow
     Push-Location "${PublishDir}"
-    & "${SevenZipExe}" a "${PublishName}.7z" ".\${PublishName}\*"
+    & "${SevenZipExe}" a "-mmt=${Cores}" "${PublishName}.7z" ".\${PublishName}\*"
     Pop-Location
 }

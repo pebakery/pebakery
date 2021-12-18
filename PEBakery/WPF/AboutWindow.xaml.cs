@@ -28,6 +28,8 @@
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
+using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Navigation;
 
@@ -67,6 +69,25 @@ namespace PEBakery.WPF
             InfoPEBakeryVersion = Global.Const.ProgramVersionStrFull;
             InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
 
+            string hostArch = "unknown";
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X86:
+                    hostArch = "x86";
+                    break;
+                case Architecture.X64:
+                    hostArch = "x64";
+                    break;
+                case Architecture.Arm64:
+                    hostArch = "ARM64";
+                    break;
+                // Technically speaking, Microsoft does not support WPF on ARMv7.
+                case Architecture.Arm:
+                    hostArch = "ARM";
+                    break;
+            }
+            InfoHostEnv = $"Host: {Environment.OSVersion.VersionString} {hostArch}";
+
             LicenseText = Properties.Resources.LicenseSimple;
         }
         #endregion
@@ -79,7 +100,14 @@ namespace PEBakery.WPF
             set => SetProperty(ref _infoPEBakeryVersion, value);
         }
 
-        private string _infoBuildDate = string.Empty;
+        private string _infoHostEnv = "Host OS Environment";
+        public string InfoHostEnv
+        {
+            get => _infoHostEnv;
+            set => SetProperty(ref _infoHostEnv, value);
+        }
+
+        private string _infoBuildDate = "BuildDate";
         public string InfoBuildDate
         {
             get => _infoBuildDate;

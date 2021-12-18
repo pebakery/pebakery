@@ -7,6 +7,7 @@ Publish/
 res/
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
+PEBakery/Properties/launchSettings.json
 
 # BenchmarkDotNet
 BenchmarkDotNet.Artifacts

@@ -100,6 +100,7 @@ namespace PEBakery.Core.Tests
                 string workScriptFile = Path.Combine(destDir, "PreserveInterface.script");
                 string workScriptTreePath = Path.Combine("TestSuite", "Updater", "PreserveInterface.script");
                 File.Copy(srcScriptFile, workScriptFile);
+                IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", @$"http://localhost:{TestSetup.ServerPort}/Updater/Standalone/PreserveInterface_r2.script");
 
                 Project p = EngineTests.Project;
                 Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
@@ -177,6 +178,7 @@ namespace PEBakery.Core.Tests
                 string workScriptFile = Path.Combine(destDir, "Removed.script");
                 string workScriptTreePath = Path.Combine("TestSuite", "Updater", "Removed.script");
                 File.Copy(srcScriptFile, workScriptFile);
+                IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", @$"http://localhost:{TestSetup.ServerPort}/Updater/Standalone/Removed.script");
 
                 Project p = EngineTests.Project;
                 Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions

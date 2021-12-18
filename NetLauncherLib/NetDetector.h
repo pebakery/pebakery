@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2016-2021 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "Var.h"
+#include "targetver.h"
 
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
@@ -37,19 +37,19 @@
 #include <map>
 
 // Local Headers
-#include "Version.h"
+#include "NetVersion.h"
 
 class NetDetector
 {
 protected:
-	Version _targetVer;
-	virtual const std::wstring GetInstallerUrl() = 0;
+	NetVersion _targetVer;
+	virtual const std::wstring getInstallerUrl() = 0;
 public:
-	NetDetector(Version& targetVer) : 
+	NetDetector(NetVersion& targetVer) :
 		_targetVer(targetVer) { }
 	virtual ~NetDetector() { }
-	virtual bool IsInstalled() = 0;
-	virtual void DownloadRuntime(bool exitAfter = true) = 0;
+	virtual bool isInstalled() = 0;
+	virtual void downloadRuntime(bool exitAfter = true) = 0;
 };
 
 /**
@@ -58,14 +58,14 @@ public:
 class NetFxDetector : public NetDetector
 {
 private:
-	DWORD GetReleaseMinValue();
+	DWORD getReleaseMinValue();
 protected:
-	virtual const std::wstring GetInstallerUrl();
+	virtual const std::wstring getInstallerUrl();
 public:
-	NetFxDetector(Version& targetVer);
+	NetFxDetector(NetVersion& targetVer);
 	virtual ~NetFxDetector();
-	virtual bool IsInstalled();
-	virtual void DownloadRuntime(bool exitAfter = true);
+	virtual bool isInstalled();
+	virtual void downloadRuntime(bool exitAfter = true);
 };
 
 /**
@@ -76,14 +76,14 @@ class NetCoreDetector : public NetDetector
 private:
 	bool _checkDesktopRuntime;
 
-	static std::map<std::string, std::vector<Version>> ListRuntimes();
-	static void ReadFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
-	static bool ParseRuntimeInfoLine(std::string& line, std::string& key, Version& ver);
+	static std::map<std::string, std::vector<NetVersion>> listRuntimes();
+	static void readFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
 protected:
-	virtual const std::wstring GetInstallerUrl();
+	virtual const std::wstring getInstallerUrl();
 public:	
-	NetCoreDetector(Version& targetVer, bool checkDesktopRuntime);
+	NetCoreDetector(NetVersion& targetVer, bool checkDesktopRuntime);
 	virtual ~NetCoreDetector();
-	virtual bool IsInstalled();
-	virtual void DownloadRuntime(bool exitAfter = true);
+	virtual bool isInstalled();
+	virtual void downloadRuntime(bool exitAfter = true);
+	static bool parseRuntimeInfoLine(const std::string& line, std::string& key, NetVersion& ver);
 };

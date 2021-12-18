@@ -320,6 +320,28 @@ namespace PEBakery.WPF
             return Binding.DoNothing;
         }
     }
+
+    /// <summary>
+    /// Convert an escaped string (Command, UIControl) into a raw string (interface).
+    /// </summary>
+    public class StringEscapeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is string escapedStr))
+                return string.Empty;
+
+            return StringEscaper.Unescape(escapedStr);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is string rawStr))
+                return Binding.DoNothing;
+
+            return StringEscaper.Escape(rawStr, false, true);
+        }
+    }
     #endregion
 
     #region LogWindow

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2016-2021 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -28,20 +28,15 @@
 // C++ Runtime Headers
 #include <string>
 
-class Helper
+class NetLaunch
 {
-private:
 public:
-	static wchar_t* GetParameters(wchar_t* cmdLine);
-	static void PrintError(const std::wstring& errMsg, bool exitAfter = true);
-	static void PrintError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter = true);
-	static void PrintErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter = true);
-	static void OpenUrl(const std::wstring& url);
-	static ProcArch GetCpuArch();
-	static const wchar_t* GetProcArchStr();
-	static const wchar_t* GetProcArchStr(ProcArch procArch);
-	static const char* Tokenize(const char* str, const char token, std::string& out);
-	static const wchar_t* Tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);
-	static const char* Tokenize(const char* str, const std::string& token, std::string& out);
-	static const wchar_t* Tokenize(const wchar_t* wstr, const std::wstring& token, std::wstring& out);
+	static wchar_t* getCmdParams(wchar_t* cmdLine);
+	static void printError(const std::wstring& errMsg, bool exitAfter = true);
+	static void printError(const std::wstring& errMsg, const std::wstring& errCaption, bool exitAfter = true);
+	static void printErrorAndOpenUrl(const std::wstring& errMsg, const std::wstring& errCaption, const std::wstring& url, bool exitAfter = true);
+	static void openUrl(const std::wstring& url);
+	static bool launchExe(const std::wstring& exePath, const std::wstring& baseDir, const wchar_t* cmdParams, const std::wstring& errMsg);
+	static bool launchDll(const std::wstring& dllPath, const std::wstring& baseDir, const wchar_t* cmdParams, const std::wstring& errMsg);
 };
+

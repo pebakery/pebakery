@@ -9,6 +9,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -126,7 +129,12 @@ namespace PEBakery.Core.Tests
         #endregion
 
         #region Web File Server
-        public const int ServerPort = 8380;
+        private static int _serverPort = 0;
+        public static int ServerPort
+        {
+            get => _serverPort;
+            private set => _serverPort = value;
+        }
 
         private static readonly object FileServerLock = new object();
         private static Task _fileServerTask;
@@ -151,11 +159,12 @@ namespace PEBakery.Core.Tests
                     return;
 
                 WebRoot = Path.Combine(EngineTests.BaseDir, "WebServer");
+                ServerPort = GetAvailableTcpPort();
 
                 IWebHost host = new WebHostBuilder()
                     .UseKestrel()
                     .UseWebRoot(WebRoot)
-                    .Configure(app =>
+                    .Configure(conf =>
                     {
                         // Set up custom content types - associating file extension to MIME type
                         FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
@@ -167,14 +176,14 @@ namespace PEBakery.Core.Tests
                             }
                         };
 
-                        app.UseStaticFiles(new StaticFileOptions
+                        conf.UseStaticFiles(new StaticFileOptions
                         {
                             // ServeUnknownFileTypes = true,
                             // DefaultContentType = "text/plain",
                             ContentTypeProvider = provider,
                         });
-                        app.UseDefaultFiles();
-                        app.UseDirectoryBrowser();
+                        conf.UseDefaultFiles();
+                        conf.UseDirectoryBrowser();
                     })
                     .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
                     .Build();
@@ -182,6 +191,8 @@ namespace PEBakery.Core.Tests
                 UrlRoot = $"http://localhost:{ServerPort}";
                 _fileServerCancel = new CancellationTokenSource();
                 _fileServerTask = host.RunAsync(_fileServerCancel.Token);
+
+                Console.WriteLine($"Launched web server at TCP {ServerPort}");
             }
         }
 
@@ -193,12 +204,28 @@ namespace PEBakery.Core.Tests
                     return;
 
                 _fileServerCancel.Cancel();
-                _fileServerTask.Wait();
 
                 _fileServerCancel = null;
                 _fileServerTask = null;
                 UrlRoot = null;
             }
+        }
+
+        public static int GetAvailableTcpPort()
+        {
+            TcpListener tcpListener = new TcpListener(IPAddress.Loopback, 0);
+
+            int port;
+            try
+            {
+                tcpListener.Start();
+                port = ((IPEndPoint)tcpListener.LocalEndpoint).Port;
+            }
+            finally
+            {
+                tcpListener.Stop();
+            }
+            return port;
         }
         #endregion
     }

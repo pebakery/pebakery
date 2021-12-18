@@ -10,7 +10,7 @@ Level=7
 
 [ScriptUpdate]
 UpdateType=Standalone
-Url=http://localhost:8380/Updater/Standalone/Removed.script
+Url=http://localhost:PORT/Updater/Standalone/Removed.script
 
 [Process]
 Run,%ScriptFile%,TestSection

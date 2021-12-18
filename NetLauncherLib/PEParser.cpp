@@ -24,7 +24,7 @@
 */
 
 // Custom Constants
-#include "Var.h"
+#include "targetver.h"
 
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
@@ -42,7 +42,6 @@
 
 // Local Headers
 #include "Helper.h"
-#include "Version.h"
 #include "NetDetector.h"
 #include "PEParser.h"
 
@@ -51,7 +50,7 @@ using namespace std;
 static constexpr size_t BUF_SiZE = 4096;
 
 PEParser::PEParser() :
-	_format(PEFormat::UNKNOWN), _arch(ProcArch::UNKNOWN), 
+	_format(PEFormat::UNKNOWN), _arch(ArchVal::UNKNOWN), 
 	_subsys(0), _characteristics(0),
 	_isNet(false)
 {
@@ -61,7 +60,7 @@ PEParser::~PEParser()
 {
 }
 
-bool PEParser::ParseFile(const wstring& filePath)
+bool PEParser::parseFile(const wstring& filePath)
 {
 	// Open the file handle.
 	HANDLE hFile = CreateFileW(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -79,7 +78,7 @@ bool PEParser::ParseFile(const wstring& filePath)
 	
 	// Read and parse PE COFF Header (PE signature and IMAGE_FILE_HEADER)
 	// IMAGE_NT_HEADER struct is different in Win32 / Win64 build, so let's directly access it.
-	uint32_t optHeaderPos = 0;
+	size_t optHeaderPos = 0;
 	size_t peOptHeaderSize = 0;
 	if (!ParsePECoffHeader(hFile, peHeaderPos, optHeaderPos))
 		return false;
@@ -159,16 +158,16 @@ bool PEParser::ParsePECoffHeader(const HANDLE hFile, const size_t peHeaderPos, s
 	switch (peFileHeader->Machine)
 	{
 	case IMAGE_FILE_MACHINE_I386:
-		_arch = ProcArch::X86;
+		_arch = ArchVal::X86;
 		break;
 	case IMAGE_FILE_MACHINE_AMD64:
-		_arch = ProcArch::X64;
+		_arch = ArchVal::X64;
 		break;
 	case IMAGE_FILE_MACHINE_ARMNT:
-		_arch = ProcArch::ARM;
+		_arch = ArchVal::ARM;
 		break;
 	case IMAGE_FILE_MACHINE_ARM64:
-		_arch = ProcArch::ARM64;
+		_arch = ArchVal::ARM64;
 		break;
 	}
 	_characteristics = peFileHeader->Characteristics;
@@ -221,7 +220,7 @@ bool PEParser::ParsePEOptionalHeader(const HANDLE hFile, const size_t optHeaderP
 
 	// Read PE optional header
 	DWORD readBytes = 0;
-	if (ReadFile(hFile, buffer, optHeaderSize, &readBytes, nullptr) == FALSE)
+	if (ReadFile(hFile, buffer, static_cast<DWORD>(optHeaderSize), &readBytes, nullptr) == FALSE)
 		return false;
 	if (readBytes != optHeaderSize)
 		return false;
@@ -254,17 +253,17 @@ bool PEParser::IsImageDataDirectoryValid(const IMAGE_DATA_DIRECTORY& dir)
 	return dir.VirtualAddress != 0 && dir.Size != 0;
 }
 
-int PEParser::ArchToBitness(ProcArch arch)
+int PEParser::archToBitness(ArchVal arch)
 {
 	int bitness = 0;
 	switch (arch)
 	{
-	case ProcArch::X86:
-	case ProcArch::ARM:
+	case ArchVal::X86:
+	case ArchVal::ARM:
 		bitness = 32;
 		break;
-	case ProcArch::X64:
-	case ProcArch::ARM64:
+	case ArchVal::X64:
+	case ArchVal::ARM64:
 		bitness = 64;
 		break;
 	}

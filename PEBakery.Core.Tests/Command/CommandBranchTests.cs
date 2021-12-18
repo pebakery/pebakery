@@ -250,20 +250,20 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.ExistRegSubKey;
 
-            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
+            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectX");
             Assert.IsTrue(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
+            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectXNotExist");
             Assert.IsFalse(CommandBranch.EvalBranchCondition(s, cond, out _));
 
-            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
+            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectX");
             Assert.IsFalse(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
+            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectXNotExist");
             Assert.IsTrue(CommandBranch.EvalBranchCondition(s, cond, out _));
 
-            SingleTemplate(s, @"If,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "T");
-            SingleTemplate(s, @"If,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "F");
-            SingleTemplate(s, @"If,Not,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "F");
-            SingleTemplate(s, @"If,Not,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectX,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectXNotExist,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectX,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectXNotExist,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -276,26 +276,26 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.ExistRegValue;
 
-            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
+            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectX", "Version");
             Assert.IsTrue(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
+            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "Version");
             Assert.IsFalse(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
+            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectX", "NoFilePath");
             Assert.IsFalse(CommandBranch.EvalBranchCondition(s, cond, out _));
 
-            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
+            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectX", "Version");
             Assert.IsFalse(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
+            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "Version");
             Assert.IsTrue(CommandBranch.EvalBranchCondition(s, cond, out _));
-            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
+            cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectX", "NoFilePath");
             Assert.IsTrue(CommandBranch.EvalBranchCondition(s, cond, out _));
 
-            SingleTemplate(s, @"If,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "T");
-            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "F");
-            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "F");
-            SingleTemplate(s, @"If,Not,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "F");
-            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "T");
-            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectX,Version,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,Version,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectX,NoFilePath,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectX,Version,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,Version,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectX,NoFilePath,Set,%Dest%,T", "T");
         }
         #endregion
 

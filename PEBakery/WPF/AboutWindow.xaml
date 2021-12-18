@@ -84,13 +84,17 @@
                                    FontStretch="Condensed"/>
                     </Grid>
                     <TextBlock HorizontalAlignment="Center" 
-                               Margin="0, 0, 0, 20"
+                               Margin="0, 0, 0, 5"
                                FontSize="18"
                                Text="The Builder for Windows Preinstalled Environment"/>
                     <TextBlock HorizontalAlignment="Center" 
                                Margin="0, 0, 0, 20"
                                FontSize="15"
                                Text="{Binding InfoBuildDate}"/>
+                    <TextBlock HorizontalAlignment="Center" 
+                               Margin="0, 0, 0, 20"
+                               FontSize="13"
+                               Text="{Binding InfoHostEnv}"/>
                     <Grid Margin="0, 0, 0, 0"
                           HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>

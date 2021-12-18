@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2020 Hajin Jang
+	Copyright (C) 2016-2021 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,23 +25,7 @@
 
 #pragma once
 
-#include "targetver.h"
-
-// Build & Publish mode
-#define BUILD_NETFX						1
-#define BUILD_NETCORE_RT_DEPENDENT		2
-#define BUILD_NETCORE_SELF_CONTAINED	3
-// Development only
-#define BUILD_MODE		BUILD_NETCORE_SELF_CONTAINED
-
-#ifdef PUBLISH_MODE
-	// Force given build mode when publishing
-	#undef BUILD_MODE
-	#define BUILD_MODE PUBLISH_MODE
-#endif
-
-// Enums
-enum class ProcArch
+enum class ArchVal
 {
 	UNKNOWN = 0,
 	X86,
@@ -50,9 +34,11 @@ enum class ProcArch
 	ARM64,
 };
 
-enum class PEFormat
+class SysArch
 {
-	UNKNOWN = 0,
-	PE32 = 32,
-	PE32_PLUS = 64,
+private:
+public:
+	static ArchVal getCpuArch();
+	static ArchVal getProcArch();
+	static const wchar_t* toStr(ArchVal arch);
 };

@@ -552,7 +552,7 @@ namespace PEBakery.Core
                 case UIControlType.FileBox:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 1;
+                        const int maxOpCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -565,7 +565,30 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
                         }
 
-                        return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);
+                        string title = null;
+                        string tooltip = null;
+                        for (int i = 1; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string splitKey = "Title=";
+                            if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (title != null)
+                                    throw new InvalidCommandException("Argument <Title> cannot be duplicated");
+                                title = arg.Substring(splitKey.Length);
+                            }
+                            else if (arg.StartsWith("__", StringComparison.OrdinalIgnoreCase)) // ToolTip
+                            {
+                                tooltip = GetInfoTooltip(args, i);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]");
+                            }
+                        }
+
+                        return new UIInfo_FileBox(tooltip, isFile, title);
                     }
                 #endregion
                 #region RadioGroup

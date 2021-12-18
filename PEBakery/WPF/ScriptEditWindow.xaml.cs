@@ -1760,6 +1760,7 @@ namespace PEBakery.WPF
 
                 OnPropertyUpdate(nameof(UICtrlFileBoxFileChecked));
                 OnPropertyUpdate(nameof(UICtrlFileBoxDirChecked));
+                OnPropertyUpdate(nameof(UICtrlFileBoxTitle));
             }
         }
         public bool UICtrlFileBoxFileChecked
@@ -1787,6 +1788,20 @@ namespace PEBakery.WPF
                 _uiCtrlFileBoxInfo.IsFile = !value;
                 OnPropertyUpdate(nameof(UICtrlFileBoxFileChecked));
                 OnPropertyUpdate(nameof(UICtrlFileBoxDirChecked));
+                InvokeUIControlEvent(true);
+            }
+        }
+
+        public string UICtrlFileBoxTitle
+        {
+            get => _uiCtrlFileBoxInfo?.Title ?? string.Empty;
+            set
+            {
+                if (_uiCtrlFileBoxInfo == null)
+                    return;
+
+                _uiCtrlFileBoxInfo.Title = value;
+                OnPropertyUpdate(nameof(UICtrlFileBoxTitle));
                 InvokeUIControlEvent(true);
             }
         }

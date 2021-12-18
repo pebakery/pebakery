@@ -122,7 +122,7 @@ namespace PEBakery.Core
                      [FontSize]   : Default 8 (Added in PEBakery) 
                      [FontWeight] : Normal, Bold (Added in PEBakery) 
                      [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
-    13 FileBox     = [file|dir]
+    13 FileBox     = [file|dir][Title=<StringValue>]
     14 RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                      // IntegerIndex : selected index, starting from 0
 
@@ -142,23 +142,21 @@ namespace PEBakery.Core
     [Serializable]
     public class UIControl
     {
-        #region Fields
-        public string RawLine;
-        public ScriptSection Section;
+        #region Fields and Properties
+        public string RawLine { get; set; }
+        public ScriptSection Section { get; set; }
 
-        public string Key;
-        public string Text;
-        public bool Visibility;
-        public UIControlType Type;
-        public int X;
-        public int Y;
-        public int Width;
-        public int Height;
-        public UIInfo Info;
-        public int LineIdx;
-        #endregion
+        public string Key { get; set; }
+        public string Text { get; set; } // Escaped
+        public bool Visibility { get; set; }
+        public UIControlType Type { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public UIInfo Info { get; set; }
+        public int LineIdx { get; set; }
 
-        #region Properties
         public Rect Rect => new Rect(X, Y, Width, Height);
         public Point Point => new Point(X, Y);
         #endregion
@@ -181,7 +179,10 @@ namespace PEBakery.Core
             LineIdx = 0;
         }
 
-        public UIControl(string rawLine, ScriptSection section, string key, string text, bool visibility, UIControlType type, int x, int y, int width, int height, UIInfo info, int lineIdx)
+        public UIControl(string rawLine, ScriptSection section, string key, 
+            string text, bool visibility, UIControlType type, 
+            int x, int y, int width, int height, 
+            UIInfo info, int lineIdx)
         {
             RawLine = rawLine;
             Section = section;
@@ -589,7 +590,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo
     {
-        public string ToolTip; // optional
+        public string ToolTip { get; set; } // optional
 
         public UIInfo(string tooltip)
         {
@@ -631,18 +632,17 @@ namespace PEBakery.Core
         /// <returns></returns>
         public virtual string ForgeRawLine()
         {
+            return ForgeToolTip();
+        }
+
+        public string ForgeToolTip()
+        {
             if (ToolTip != null)
-                return "," + StringEscaper.DoubleQuote($"__{ToolTip}");
+                return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
             return string.Empty;
         }
 
         public override string ToString() => ForgeRawLine();
-        #endregion
-
-        #region Template
-#pragma warning disable IDE0060
-        public static string Template(string key) => string.Empty;
-#pragma warning restore IDE0060
         #endregion
     }
 
@@ -659,7 +659,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_TextBox : UIInfo
     {
-        public string Value;
+        public string Value { get; set; }
 
         public UIInfo_TextBox(string tooltip, string str)
             : base(tooltip)
@@ -672,13 +672,13 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(",");
             b.Append(StringEscaper.DoubleQuote(Value));
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
+        public static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
 
         #region Const
         public const double AddWidth = UIControl.PointToDeviceIndependentPixel * UIControl.DefaultFontPoint * 1.2;
@@ -688,9 +688,9 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_TextLabel : UIInfo
     {
-        public int FontSize;
-        public UIFontWeight FontWeight;
-        public UIFontStyle? FontStyle;
+        public int FontSize { get; set; }
+        public UIFontWeight FontWeight { get; set; }
+        public UIFontStyle? FontStyle { get; set; }
 
         public UIInfo_TextLabel(string tooltip, int fontSize, UIFontWeight fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
@@ -712,22 +712,22 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(FontStyle);
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=Caption,1,1,10,10,200,16,8,Normal";
+        public static string Template(string key) => $"{key}=Caption,1,1,10,10,200,16,8,Normal";
     }
 
     [Serializable]
     public class UIInfo_NumberBox : UIInfo
     {
-        public int Value;
-        public int Min;
-        public int Max;
-        public int Tick;
+        public int Value { get; set; }
+        public int Min { get; set; }
+        public int Max { get; set; }
+        public int Tick { get; set; }
 
         public UIInfo_NumberBox(string tooltip, int value, int min, int max, int tick)
             : base(tooltip)
@@ -749,21 +749,21 @@ namespace PEBakery.Core
             builder.Append(Max);
             builder.Append(",");
             builder.Append(Tick);
-            builder.Append(base.ForgeRawLine());
+            builder.Append(ForgeToolTip());
             return builder.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,2,10,10,40,22,1,1,100,1";
+        public static string Template(string key) => $"{key}={key},1,2,10,10,40,22,1,1,100,1";
     }
 
     [Serializable]
     public class UIInfo_CheckBox : UIInfo
     {
-        public bool Value;
-        public string SectionName; // Optional
-        public bool HideProgress; // Optional
+        public bool Value { get; set; }
+        public string SectionName { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
         public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
@@ -784,22 +784,22 @@ namespace PEBakery.Core
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,3,10,10,200,18,True";
+        public static string Template(string key) => $"{key}={key},1,3,10,10,200,18,True";
     }
 
     [Serializable]
     public class UIInfo_ComboBox : UIInfo
     {
-        public List<string> Items;
-        public int Index; // Zero based index
-        public string SectionName; // Optional
-        public bool HideProgress; // Optional
+        public List<string> Items { get; set; }
+        public int Index { get; set; } // Zero based index
+        public string SectionName { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
         public UIInfo_ComboBox(string tooltip, List<string> items, int index, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
@@ -825,19 +825,19 @@ namespace PEBakery.Core
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C";
+        public static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C";
     }
 
     [Serializable]
     public class UIInfo_Image : UIInfo
     {
-        public string Url; // Optional
+        public string Url { get; set; } // Optional
 
         public UIInfo_Image(string toolTip, string url)
             : base(toolTip)
@@ -853,13 +853,13 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(StringEscaper.DoubleQuote(Url));
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
+        public static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
 
         #region Const None
         public const string NoResource = "none";
@@ -877,7 +877,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
+        public static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
 
         #region Const None
         public const string NoResource = "none";
@@ -887,9 +887,9 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Button : UIInfo
     {
-        public string SectionName;
-        public string Picture; // Optional
-        public bool HideProgress; // Optional
+        public string SectionName { get; set; }
+        public string Picture { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
         public UIInfo_Button(string tooltip, string sectionName, string picture, bool hideProgress)
             : base(tooltip)
@@ -905,15 +905,15 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.DoubleQuote(SectionName));
             b.Append(",");
-            b.Append(Picture == null ? "0" : StringEscaper.DoubleQuote(Picture));
+            b.Append(Picture == null ? "0" : StringEscaper.QuoteEscape(Picture));
             b.Append(HideProgress ? ",True" : ",False");
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
+        public static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
         #region Const 0
         public const string NoPicture = "0";
         #endregion
@@ -922,7 +922,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_WebLabel : UIInfo
     {
-        public string Url;
+        public string Url { get; set; }
 
         public UIInfo_WebLabel(string tooltip, string url)
             : base(tooltip)
@@ -935,21 +935,21 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(",");
             b.Append(StringEscaper.DoubleQuote(Url));
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=Caption,1,10,10,10,200,18,https://github.com/pebakery/pebakery";
+        public static string Template(string key) => $"{key}=Caption,1,10,10,10,200,18,https://github.com/pebakery/pebakery";
     }
 
     [Serializable]
     public class UIInfo_RadioButton : UIInfo
     {
-        public bool Selected;
-        public string SectionName; // Optional
-        public bool HideProgress; // Optional
+        public bool Selected { get; set; }
+        public string SectionName { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
         public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
@@ -971,21 +971,21 @@ namespace PEBakery.Core
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
+        public static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
     }
 
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
-        public int? FontSize;
-        public UIFontWeight? FontWeight;
-        public UIFontStyle? FontStyle;
+        public int? FontSize { get; set; }
+        public UIFontWeight? FontWeight { get; set; }
+        public UIFontStyle? FontStyle { get; set; }
 
         public UIInfo_Bevel(string tooltip, int? fontSize, UIFontWeight? fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
@@ -1013,13 +1013,13 @@ namespace PEBakery.Core
                     }
                 }
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,12,10,10,160,60";
+        public static string Template(string key) => $"{key}={key},1,12,10,10,160,60";
 
         public bool CaptionEnabled
         {
@@ -1046,34 +1046,42 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_FileBox : UIInfo
     {
-        public bool IsFile;
+        public bool IsFile { get; set; }
+        // Optional
+        public string Title { get; set; }
 
-        public UIInfo_FileBox(string tooltip, bool isFile)
+        public UIInfo_FileBox(string tooltip, bool isFile, string title)
             : base(tooltip)
         {
             IsFile = isFile;
+            Title = title;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(IsFile ? ",file" : ",dir");
-            b.Append(base.ForgeRawLine());
+            if (Title != null)
+            {
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"Title={Title}"));
+            }
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file";
+        public static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file";
     }
 
     [Serializable]
     public class UIInfo_RadioGroup : UIInfo
     {
-        public List<string> Items;
-        public int Selected;
-        public string SectionName; // Optional
-        public bool HideProgress; // Optional
+        public List<string> Items { get; set; }
+        public int Selected { get; set; }
+        public string SectionName { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
         public UIInfo_RadioGroup(string tooltip, List<string> items, int selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
@@ -1101,13 +1109,13 @@ namespace PEBakery.Core
                 b.Append("_");
                 b.Append(HideProgress ? ",True" : ",False");
             }
-            b.Append(base.ForgeRawLine());
+            b.Append(ForgeToolTip());
             return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,14,10,10,150,60,A,B,C,1";
+        public static string Template(string key) => $"{key}={key},1,14,10,10,150,60,A,B,C,1";
     }
     #endregion
 }

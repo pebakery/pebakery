@@ -52,7 +52,6 @@ using System.Windows.Navigation;
 namespace PEBakery.Core
 {
     #region UIRenderer
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class UIRenderer
     {
         #region Fields and Properties
@@ -110,8 +109,7 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="sc">Script to get interface.</param>
         /// <param name="sectionName">Set to null for auto detection.</param>
-        /// <returns></returns>
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
+        /// <returns>A list of parsed UIControls, and a list of error logs.</returns>
         public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, string sectionName = null)
         {
             // Check if script has custom interface section
@@ -138,7 +136,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Render
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void Render()
         {
             if (UICtrls == null) // This script does not have 'Interface' section
@@ -151,7 +148,7 @@ namespace PEBakery.Core
                 try
                 {
                     // Render and add event
-                    RenderCleanInfo? clean = null;
+                    RenderCleanInfo clean = null;
                     switch (uiCtrl.Type)
                     {
                         case UIControlType.TextBox:
@@ -587,7 +584,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Image
-        public RenderCleanInfo? RenderImage(UIControl uiCtrl)
+        public RenderCleanInfo RenderImage(UIControl uiCtrl)
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
@@ -776,7 +773,6 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void Image_Click_OpenImage(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
@@ -899,7 +895,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Button
-        public RenderCleanInfo? RenderButton(UIControl uiCtrl)
+        public RenderCleanInfo RenderButton(UIControl uiCtrl)
         {
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
@@ -1356,6 +1352,12 @@ namespace PEBakery.Core
                     Filter = "All Files|*.*",
                     InitialDirectory = currentPath,
                 };
+
+                if (info.Title != null)
+                {
+                    dialog.Title = StringEscaper.Unescape(info.Title);
+                }
+
                 if (dialog.ShowDialog() == true)
                 {
                     box.Text = dialog.FileName;
@@ -1370,6 +1372,12 @@ namespace PEBakery.Core
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
                 if (Directory.Exists(currentPath))
                     dialog.SelectedPath = currentPath;
+
+                if (info.Title != null)
+                {
+                    dialog.UseDescriptionForTitle = true;
+                    dialog.Description = StringEscaper.Unescape(info.Title);
+                }
 
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
@@ -1687,7 +1695,7 @@ namespace PEBakery.Core
     #endregion
 
     #region struct RenderCleanInfo
-    public struct RenderCleanInfo
+    public class RenderCleanInfo
     {
         public readonly UIControl UICtrl;
         public readonly object Element;
