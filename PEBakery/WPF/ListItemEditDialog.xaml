@@ -32,7 +32,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         d:DataContext="{d:DesignInstance Type=local:ListItemEditViewModel}"
-        Title="Attach File"
+        Title="Edit List"
         Width="480"
         Height="320"
         Icon="/Resources/Donut.ico"
@@ -55,6 +55,8 @@
         <TextBlock Grid.Row="0"
                    Grid.Column="0"
                    Grid.ColumnSpan="2"
+                   FontWeight="Bold"
+                   FontSize="13"
                    Text="{Binding Banner}" />
 
         <!--  Left Panel - ListView  -->
@@ -85,10 +87,10 @@
                     Height="25"
                     Margin="0,0,0,5"
                     Command="{Binding ListItemAddCommand}"
-                    ToolTip="Add">
+                    ToolTip="Add a new list item">
                 <StackPanel Orientation="Horizontal">
-                    <iconPacks:PackIconMaterial Width="15"
-                                                Height="15"
+                    <iconPacks:PackIconMaterial Width="Auto" 
+                                                Height="Auto"
                                                 Margin="0,5,5,5"
                                                 Kind="Plus" />
                     <TextBlock VerticalAlignment="Center"
@@ -99,9 +101,9 @@
                     Height="25"
                     Margin="0,0,0,15"
                     Command="{Binding ListItemDeleteCommand}"
-                    ToolTip="Delete">
+                    ToolTip="Delete the selected item">
                 <StackPanel Orientation="Horizontal">
-                    <iconPacks:PackIconMaterial Width="15"
+                    <iconPacks:PackIconMaterial Width="12"
                                                 Height="15"
                                                 Margin="0,5,5,5"
                                                 Kind="Minus" />
@@ -113,7 +115,7 @@
                     Height="25"
                     Margin="0,0,0,5"
                     Command="{Binding ListItemMoveUpCommand}"
-                    ToolTip="Up">
+                    ToolTip="Move the selected item up">
                 <StackPanel Orientation="Horizontal">
                     <iconPacks:PackIconMaterial Width="Auto"
                                                 Height="Auto"
@@ -127,7 +129,7 @@
                     Height="25"
                     Margin="0,0,0,5"
                     Command="{Binding ListItemMoveDownCommand}"
-                    ToolTip="Down">
+                    ToolTip="Move the selected item down">
                 <StackPanel Orientation="Horizontal">
                     <iconPacks:PackIconMaterial Width="Auto"
                                                 Height="Auto"

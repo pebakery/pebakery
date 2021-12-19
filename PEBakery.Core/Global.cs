@@ -193,7 +193,7 @@ namespace PEBakery.Core
                 }
                 catch (SQLiteException e)
                 { // Unable to continue -> raise an error message
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted and not repairable.\r\nPlease delete PEBakeryLog.db and restart.";
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nThe Log database is corrupted and was not able to be repaired.\r\nPlease delete {dbDir}\\PEBakeryLog.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     if (Application.Current != null)
                         Application.Current.Shutdown(1);
@@ -236,7 +236,7 @@ namespace PEBakery.Core
                 }
                 catch (SQLiteException e)
                 { // Unable to continue -> raise an error message
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted and not repairable.\r\nPlease delete PEBakeryCache.db and restart.";
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nThe Cache database is corrupted and was not able to be repaired.\r\nPlease delete {dbDir}\\PEBakeryCache.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     if (Application.Current != null)
                         Application.Current.Shutdown(1);
@@ -252,7 +252,7 @@ namespace PEBakery.Core
             if (!(e.ExceptionObject is Exception ex))
                 return;
 
-            const string firstMessage = "PEBakery cannot continue due to internal error.\r\nPlease send crash log to PEBakery issue tracker.";
+            const string firstMessage = "PEBakery cannot continue due to an internal error.\r\nPlease post the crash log to the PEBakery issue tracker.";
 
             DateTime now = DateTime.Now;
             string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");

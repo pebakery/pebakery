@@ -2554,7 +2554,8 @@ namespace PEBakery.WPF
                 ListItemEditViewModel editViewModel = new ListItemEditViewModel(uiCtrl);
                 ListItemEditDialog editWindow = new ListItemEditDialog
                 {
-                    DataContext = editViewModel
+                    DataContext = editViewModel,
+                    Owner = _window
                 };
                 bool? result = editWindow.ShowDialog();
                 if (result == true)
