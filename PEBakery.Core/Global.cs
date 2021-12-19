@@ -136,6 +136,7 @@ namespace PEBakery.Core
         /// </summary>
         public static void Init()
         {
+            // Setup baseDir
             string baseDir = Environment.CurrentDirectory;
             for (int i = 0; i < Args.Length; i++)
             {
@@ -166,6 +167,9 @@ namespace PEBakery.Core
                 }
             }
             BaseDir = baseDir;
+
+            // Setup AppDomain.UnhandledException handler
+            AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
 
             // Database directory
             string dbDir = Path.Combine(BaseDir, "Database");
@@ -240,6 +244,35 @@ namespace PEBakery.Core
                         Environment.Exit(1);
                 }
             }
+        }
+
+        // Catch and log uncatched Exception thrown from everywhere
+        private static void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (!(e.ExceptionObject is Exception ex))
+                return;
+
+            const string firstMessage = "PEBakery cannot continue due to internal error.\r\nPlease send crash log to PEBakery issue tracker.";
+
+            DateTime now = DateTime.Now;
+            string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
+            using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
+            {
+                string exceptionTrace = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
+                s.WriteLine(firstMessage);
+                s.WriteLine();
+                s.WriteLine("[PEBakery]");
+                s.WriteLine($"Version   | {Const.ProgramVersionStrFull} ({BuildDate:yyyyMMdd})");
+                s.WriteLine($"CrashTime | {now:yyyy.MM.dd HH:mm:ss K}");
+                s.WriteLine();
+                s.Write(SystemHelper.TraceEnvironmentInfo());
+                s.WriteLine();
+                s.WriteLine("[Exception Trace]");
+                s.WriteLine(exceptionTrace);
+            }
+
+            MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+            FileHelper.OpenPath(crashLogFile);
         }
         #endregion
 

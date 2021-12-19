@@ -272,11 +272,13 @@ namespace PEBakery.WPF
             }
             else if (e.MultiSelect)
             { // Selected multiple controls
+                m.SelectedUICtrl = null;
                 m.SelectedUICtrls = e.UIControls;
                 m.InterfaceUICtrlIndex = -1;
             }
             else
             { // Selected single control
+                m.SelectedUICtrls = null;
                 m.SelectedUICtrl = e.UIControl;
                 m.ReadUIControlInfo(m.SelectedUICtrl);
 
@@ -2550,7 +2552,7 @@ namespace PEBakery.WPF
 
                 UIControl uiCtrl = SelectedUICtrl;
                 ListItemEditViewModel editViewModel = new ListItemEditViewModel(uiCtrl);
-                ListItemEditWindow editWindow = new ListItemEditWindow
+                ListItemEditDialog editWindow = new ListItemEditDialog
                 {
                     DataContext = editViewModel
                 };

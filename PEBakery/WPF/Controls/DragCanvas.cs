@@ -196,6 +196,9 @@ namespace PEBakery.WPF.Controls
                         { // St to SingleMove
                             _dragMode = DragMode.SingleMove;
                             SelectedElement selected = new SelectedElement(focusedElement);
+                            // TODO: 한 번 클릭한 다음 다시 클릭하면 꼭 여기서 걸린다
+                            // -> _selectedElements 처리에 문제가 있다
+                            // 하나만 클릭하고 드래그하는건데, 2개로 카운트되어 있다 (같은게 2번 체크됨)
                             Debug.Assert(_selectedElements.Count == 0);
                             AddSelectedElements(selected);
                         }
@@ -1447,6 +1450,13 @@ namespace PEBakery.WPF.Controls
             Debug.Assert(element.Tag.GetType() == typeof(UIControl), "Incorrect Element.Tag");
             Element = element;
             ElementInitialRect = DragCanvas.GetElementRect(element);
+        }
+
+        public override string ToString()
+        {
+            if (UIControl == null)
+                return base.ToString();
+            return $"SelectedElement [{UIControl}]";
         }
     }
     #endregion

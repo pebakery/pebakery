@@ -37,11 +37,11 @@ using System.Windows.Input;
 
 namespace PEBakery.WPF
 {
-    #region ListItemEditWindow
-    public partial class ListItemEditWindow : Window
+    #region ListItemEditDialog
+    public partial class ListItemEditDialog : Window
     {
         #region Constructor
-        public ListItemEditWindow()
+        public ListItemEditDialog()
         {
             InitializeComponent();
         }
@@ -144,7 +144,7 @@ namespace PEBakery.WPF
                     }
                     break;
                 default:
-                    throw new InvalidOperationException($"{nameof(ListItemEditWindow)} does not support [{_uiCtrl.Type}]");
+                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support [{_uiCtrl.Type}]");
             }
 
             Debug.Assert(ctrlItems != null, internalErrorMsg);
@@ -188,7 +188,7 @@ namespace PEBakery.WPF
                     }
                     break;
                 default:
-                    throw new InvalidOperationException($"{nameof(ListItemEditWindow)} does not support [{_uiCtrl.Type}]");
+                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support [{_uiCtrl.Type}]");
             }
         }
         #endregion

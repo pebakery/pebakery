@@ -24,11 +24,13 @@
 */
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PEBakery.Helper
 {
+    #region MemorySnapshot
     /// <summary>
     /// Abbreviated version of MEMORYSTATUSEX
     /// </summary>
@@ -53,9 +55,11 @@ namespace PEBakery.Helper
             return b.ToString();
         }
     }
+    #endregion
 
     public static class SystemHelper
     {
+        #region MemorySnapshot
         /// <remarks>
         /// It works only on Windows.  
         /// </remarks>
@@ -160,5 +164,23 @@ namespace PEBakery.Helper
             // Every try failed, fail-safe to 1 threads
             return 1;
         }
+        #endregion
+
+        #region TraceEnvironmentInfo
+        public static string TraceEnvironmentInfo()
+        {
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Environment]");
+            b.AppendLine($"Windows       | {Environment.OSVersion.Version}");
+            b.AppendLine($".NET Runtime  | {Environment.Version}");
+            b.AppendLine($"Architecture  | {RuntimeInformation.OSArchitecture.ToString().ToLower()}");
+            b.AppendLine($"Language      | {CultureInfo.CurrentCulture.EnglishName}");
+            Encoding ansiEncoding = EncodingHelper.DefaultAnsi;
+            b.AppendLine($"ANSI Encoding | {ansiEncoding.EncodingName} ({ansiEncoding.CodePage})");
+            Encoding oemEncoding = Console.OutputEncoding;
+            b.AppendLine($"OEM Encoding  | {oemEncoding.EncodingName} ({oemEncoding.CodePage})");
+            return b.ToString();
+        }
+        #endregion
     }
 }
