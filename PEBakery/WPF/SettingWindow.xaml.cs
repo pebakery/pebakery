@@ -1607,8 +1607,11 @@ namespace PEBakery.WPF
         public void UpdateLogDbState()
         {
             int systemLogCount = Global.Logger.Db.Table<LogModel.SystemLog>().Count();
+            int buildLogCount = Global.Logger.Db.Table<LogModel.BuildInfo>().Count();
             int codeLogCount = Global.Logger.Db.Table<LogModel.BuildLog>().Count();
-            LogDatabaseState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
+            long logBytes = PEBakery.Helper.FileHelper.GetFileSize(Global.Logger.Db.DatabasePath.ToString());
+            string humanReadableLogSize = NumberHelper.ByteSizeToSIUnit(logBytes,1);
+            LogDatabaseState = $"System Log: {systemLogCount} entries, Build Logs: {buildLogCount} ({codeLogCount} entries), Size: {humanReadableLogSize}";
         }
 
         public void UpdateCacheDbState()
@@ -1620,7 +1623,9 @@ namespace PEBakery.WPF
             else
             {
                 int cacheCount = Global.ScriptCache.CacheCount;
-                ScriptCacheState = $"{cacheCount} scripts cached";
+                long cacheBytes = PEBakery.Helper.FileHelper.GetFileSize(Global.ScriptCache.DatabasePath.ToString());
+                string humanReadableCacheSize = NumberHelper.ByteSizeToSIUnit(cacheBytes,1);
+                ScriptCacheState = $"{cacheCount} scripts cached, {humanReadableCacheSize}";
             }
         }
         #endregion
