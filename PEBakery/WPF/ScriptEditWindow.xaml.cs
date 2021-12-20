@@ -2558,15 +2558,15 @@ namespace PEBakery.WPF
 
                 UIControl uiCtrl = SelectedUICtrl;
                 ListItemEditViewModel editViewModel = new ListItemEditViewModel(uiCtrl);
-                ListItemEditDialog editWindow = new ListItemEditDialog
+                ListItemEditDialog editDialog = new ListItemEditDialog
                 {
                     DataContext = editViewModel,
                     Owner = _window
                 };
-                bool? result = editWindow.ShowDialog();
+                bool? result = editDialog.ShowDialog();
                 if (result == true)
                 {
-                    UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
+                    UICtrlListItemCount = editViewModel.Items.Count;
                     InvokeUIControlEvent(false);
                 }
             }
@@ -4150,7 +4150,7 @@ namespace PEBakery.WPF
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
 
-                        UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
+                        UICtrlListItemCount = UICtrlRadioGroupInfo.Items.Count;
                         break;
                     }
             }

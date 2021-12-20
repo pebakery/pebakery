@@ -84,7 +84,7 @@ namespace PEBakery.WPF
         public ListItemEditViewModel(UIControl uiCtrl)
         {
             _uiCtrl = uiCtrl;
-            _banner = $"{uiCtrl.Type}: {uiCtrl.Key}";
+            _banner = $"[{uiCtrl.Type}] {uiCtrl.Key}";
 
             // Read list items
             ReadListItems();
