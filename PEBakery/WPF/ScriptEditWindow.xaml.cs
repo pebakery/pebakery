@@ -308,7 +308,7 @@ namespace PEBakery.WPF
                     break;
                 case DragState.Finished:
                     { // Dragging finished, refresh dragged UIControl
-                        if (!e.MultiSelect)
+                        if (e.MultiSelect == false)
                         {
                             // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
                             Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
@@ -1067,6 +1067,7 @@ namespace PEBakery.WPF
 
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
+                OnPropertyUpdate(nameof(UICtrlType));
                 OnPropertyUpdate(nameof(UICtrlKey));
                 OnPropertyUpdate(nameof(UICtrlText));
                 OnPropertyUpdate(nameof(UICtrlVisible));
@@ -1108,6 +1109,7 @@ namespace PEBakery.WPF
 
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
+                OnPropertyUpdate(nameof(UICtrlType));
                 OnPropertyUpdate(nameof(UICtrlKey));
                 OnPropertyUpdate(nameof(UICtrlText));
                 OnPropertyUpdate(nameof(UICtrlVisible));
@@ -1140,6 +1142,10 @@ namespace PEBakery.WPF
 
         #region Shared Arguments
         public bool UICtrlEditEnabled => _selectedUICtrl != null;
+        public string UICtrlType
+        {
+            get => _selectedUICtrl != null ? _selectedUICtrl.Type.ToString() : "None";
+        }
         public string UICtrlKey
         {
             get => _selectedUICtrl != null ? _selectedUICtrl.Key : string.Empty;
@@ -2559,7 +2565,10 @@ namespace PEBakery.WPF
                 };
                 bool? result = editWindow.ShowDialog();
                 if (result == true)
+                {
+                    UICtrlListItemCount = UICtrlComboBoxInfo.Items.Count;
                     InvokeUIControlEvent(false);
+                }
             }
             finally
             {

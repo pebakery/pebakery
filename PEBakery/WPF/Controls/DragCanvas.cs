@@ -193,14 +193,35 @@ namespace PEBakery.WPF.Controls
                 switch (_dragMode)
                 {
                     case DragMode.None:
-                        { // St to SingleMove
-                            _dragMode = DragMode.SingleMove;
+                        {
                             SelectedElement selected = new SelectedElement(focusedElement);
-                            // TODO: 한 번 클릭한 다음 다시 클릭하면 꼭 여기서 걸린다
-                            // -> _selectedElements 처리에 문제가 있다
-                            // 하나만 클릭하고 드래그하는건데, 2개로 카운트되어 있다 (같은게 2번 체크됨)
-                            Debug.Assert(_selectedElements.Count == 0);
-                            AddSelectedElements(selected);
+                            if (_selectedElements.Count == 0)
+                            { // Nothing is selected, and new control was clicked (-> SingleMove)
+                                _dragMode = DragMode.SingleMove;
+                                AddSelectedElements(selected);
+                            }
+                            else
+                            {
+                                bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
+                                if (alreadySelected)
+                                {  // The clicked control is already selected (-> SingleMove, MultiMove)
+                                    if (_selectedElements.Count == 1)
+                                        _dragMode = DragMode.SingleMove;
+                                    else
+                                        _dragMode = DragMode.MultiMove;
+                                }
+                                else if (multiClick)
+                                { // Add clicked control to selected list (-> MultiMove)
+                                    _dragMode = DragMode.MultiMove;
+                                    AddSelectedElements(selected);
+                                }
+                                else
+                                { // Change selected control to clicked one (-> SingleMove)
+                                    _dragMode = DragMode.SingleMove;
+                                    ClearSelectedElements(true);
+                                    AddSelectedElements(selected);
+                                }
+                            }
                         }
                         break;
                     case DragMode.SingleMove:
@@ -225,6 +246,8 @@ namespace PEBakery.WPF.Controls
                                 AddSelectedElements(selected);
                             }
                         }
+                        break;
+                    default:
                         break;
                 }
 
@@ -305,8 +328,8 @@ namespace PEBakery.WPF.Controls
                 case DragMode.MultiMove:
                     {
                         Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
-                        Rect[] elementRectList = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
-                        (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRectList);
+                        Rect[] elementRects = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
+                        (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRects);
 
                         for (int i = 0; i < _selectedElements.Count; i++)
                         {
@@ -443,6 +466,8 @@ namespace PEBakery.WPF.Controls
                         uiCtrl.Width = (int)newCtrlRect.Width;
                         uiCtrl.Height = (int)newCtrlRect.Height;
 
+                        _dragMode = DragMode.None;
+
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
@@ -466,6 +491,8 @@ namespace PEBakery.WPF.Controls
                             uiCtrl.Height = (int)newCtrlRect.Height;
                         }
 
+                        _dragMode = DragMode.None;
+
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
@@ -477,7 +504,7 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region (public) SelectedElements
+        #region (public) SelectedElementsAddSelectedElements
         /// <summary>
         /// Clear border and drag handles around selected element
         /// </summary>

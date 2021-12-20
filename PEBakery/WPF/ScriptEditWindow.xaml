@@ -525,56 +525,64 @@
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
 
                                         <!-- General Properties -->
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
+                                                   Text="Type" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 IsReadOnly="True"
+                                                 IsEnabled="{Binding UICtrlEditEnabled}"
+                                                 Text="{Binding UICtrlType, Mode=OneWay}" />
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
                                                    Text="Visible" />
-                                        <CheckBox Grid.Row="0" Grid.Column="1"
+                                        <CheckBox Grid.Row="1" Grid.Column="1"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   IsChecked="{Binding UICtrlVisible}"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
-                                                   Text="X" />
-                                        <ccc:NumberBox Grid.Row="1" Grid.Column="1"
-                                                          VerticalContentAlignment="Center"
-                                                          FontSize="11"
-                                                          Minimum="0"
-                                                          IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Y"/>
+                                                   Text="X" />
                                         <ccc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                          Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Width"/>
+                                                   Text="Y"/>
                                         <ccc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                          Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Height" />
+                                                   Text="Width"/>
                                         <ccc:NumberBox Grid.Row="4" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                          Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="5" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
+                                                   Text="Height" />
+                                        <ccc:NumberBox Grid.Row="5" Grid.Column="1"
+                                                          VerticalContentAlignment="Center"
+                                                          FontSize="11"
+                                                          Minimum="0"
+                                                          IsEnabled="{Binding UICtrlEditEnabled}"
+                                                          Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
                                                    Text="ToolTip" />
-                                        <TextBox Grid.Row="5" Grid.Column="1"
+                                        <TextBox Grid.Row="6" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"
@@ -1089,79 +1097,11 @@
                                                  Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- Common - ListItemBox -->
-                                    <Button Height="20"  Margin="0, 10, 0, 0"
-                                            Visibility="{Binding ShowUICtrlListItemButton}" 
+                                    <Button Height="25"
+                                            Margin="0, 10, 0, 0"
+                                            Visibility="{Binding ShowUICtrlListItemButton}"
                                             Command="{Binding UICtrlListItemEditCommand}"
-                                            Content="{Binding UICtrlListItemEditButtonText, Mode=OneWay}"/>
-                                    <!--
-                                    <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition />
-                                            <ColumnDefinition Width="25" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="20" />
-                                            <RowDefinition Height="25" />
-                                            <RowDefinition Height="25" />
-                                            <RowDefinition Height="25" />
-                                            <RowDefinition Height="25" />
-                                            <RowDefinition Height="25" />
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Grid.ColumnSpan="2"
-                                                   Text="Items"/>
-                                        <ListBox Grid.Row="1" Grid.Column="0"
-                                                 Grid.RowSpan="4"
-                                                 SelectedIndex="{Binding UICtrlListItemBoxSelectedIndex}"
-                                                 ItemsSource="{Binding UICtrlListItemBoxItems}"/>
-                                        <TextBox Grid.Row="5" Grid.Column="0"
-                                                 VerticalContentAlignment="Center"
-                                                 PreviewTextInput="ListNewItem_PreviewTextInput"
-                                                 Text="{Binding UICtrlListItemBoxNewItem, Converter={StaticResource StringEscapeConverter}}"/>
-                                        <Button Grid.Row="1" Grid.Column="1"
-                                                x:Name="UICtrlListItemBoxUp"
-                                                Command="{Binding UICtrlListItemBoxUpCommand}"
-                                              ToolTip="Up">
-                                            <iconPacks:PackIconMaterial Kind="ChevronUp"
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                        </Button>
-                                        <Button Grid.Row="2" Grid.Column="1"
-                                                x:Name="UICtrlListItemBoxDown"
-                                                Command="{Binding UICtrlListItemBoxDownCommand}"
-                                                ToolTip="Down">
-                                            <iconPacks:PackIconMaterial Kind="ChevronDown"
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                        </Button>
-                                        <Button Grid.Row="3" Grid.Column="1"
-                                                x:Name="UICtrlListItemBoxSelect"
-                                                Command="{Binding UICtrlListItemBoxSelectCommand}"
-                                                ToolTip="Select" >
-                                            <TextBlock Text="S" FontWeight="Bold"/>
-                                        </Button>
-                                        <Button Grid.Row="4" Grid.Column="1"
-                                                x:Name="UICtrlListItemBoxDelete"
-                                                Command="{Binding UICtrlListItemBoxDeleteCommand}"
-                                                ToolTip="Delete">
-                                            <iconPacks:PackIconMaterial Kind="Minus" 
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                        </Button>
-                                        <Button Grid.Row="5" Grid.Column="1"
-                                                x:Name="UICtrlListItemBoxAdd"
-                                                Command="{Binding UICtrlListItemBoxAddCommand}"
-                                                ToolTip="Add">
-                                            <iconPacks:PackIconMaterial Kind="Plus" 
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                        </Button>
-                                    </Grid>
-                                    -->
+                                            Content="{Binding UICtrlListItemEditButtonText, Mode=OneWay}" />
                                     <!-- Common - RunOptional-->
                                     <TextBlock Visibility="{Binding ShowUICtrlRunOptional}"
                                                Text="Optional Engine Run"
