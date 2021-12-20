@@ -308,7 +308,7 @@ namespace PEBakery.WPF
                     break;
                 case DragState.Finished:
                     { // Dragging finished, refresh dragged UIControl
-                        if (!e.MultiSelect)
+                        if (e.MultiSelect == false)
                         {
                             // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
                             Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
