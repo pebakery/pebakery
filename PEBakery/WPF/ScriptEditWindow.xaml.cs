@@ -317,7 +317,8 @@ namespace PEBakery.WPF
                         m.InterfaceControlDragging = false;
                         m.InterfaceControlDragDelta = new Vector(0, 0);
 
-                        if (e.ForceUpdate || 5 <= Math.Abs(e.Delta.X) || 5 <= Math.Abs(e.Delta.Y))
+                        // If delta.X or delta.Y is less than 3, do not update UIControl
+                        if (e.ForceUpdate || 3 < Math.Abs(e.Delta.X) || 3 < Math.Abs(e.Delta.Y))
                             m.InvokeUIControlEvent(true);
                     }
                     break;
@@ -3361,50 +3362,6 @@ namespace PEBakery.WPF
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show(_window, $"File attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                /*
-                string srcFilePath = dialog.FilePath;
-                string srcFileName = dialog.FileName;
-
-
-                try
-                {
-                    if (EncodedFile.ContainsFile(Script, folder.FolderName, srcFileName))
-                    {
-                        MessageBoxResult result = MessageBox.Show(
-                            $"The attached file [{srcFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
-                            "Confirm Overwrite",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Error);
-                        if (result == MessageBoxResult.No)
-                            return;
-                    }
-
-                    try
-                    {
-                        CanExecuteCommand = false;
-                        AttachProgressValue = 0;
-                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                        await EncodedFile.AttachFileAsync(Script, folder.FolderName, srcFileName, srcFilePath, mode, progress);
-                    }
-                    finally
-                    {
-                        AttachProgressValue = -1;
-                        CanExecuteCommand = true;
-                    }
-                    MessageBox.Show(_window, "File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    ScriptAttachUpdated = true;
-                    ReadScriptAttachment();
-
-                    SelectScriptAttachedFolder(folder.FolderName);
-                    SelectScriptAttachedFile(srcFileName);
-                }
-                catch (Exception ex)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                */
             }
             finally
             {
