@@ -199,27 +199,28 @@ namespace PEBakery.WPF.Controls
                             { // Nothing is selected, and new control was clicked (-> SingleMove)
                                 _dragMode = DragMode.SingleMove;
                                 AddSelectedElements(selected);
-                                goto default;
-                            }
-                           
-                            bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
-                            if (alreadySelected)
-                            {  // The clicked control is already selected (-> SingleMove, MultiMove)
-                                if (_selectedElements.Count == 1)
-                                    _dragMode = DragMode.SingleMove;
-                                else
-                                    _dragMode = DragMode.MultiMove;
-                            }
-                            else if (multiClick)
-                            { // Add clicked control to selected list (-> MultiMove)
-                                _dragMode = DragMode.MultiMove;
-                                AddSelectedElements(selected);
                             }
                             else
-                            { // Change selected control to clicked one (-> SingleMove)
-                                _dragMode = DragMode.SingleMove;
-                                ClearSelectedElements(true);
-                                AddSelectedElements(selected);
+                            {
+                                bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
+                                if (alreadySelected)
+                                {  // The clicked control is already selected (-> SingleMove, MultiMove)
+                                    if (_selectedElements.Count == 1)
+                                        _dragMode = DragMode.SingleMove;
+                                    else
+                                        _dragMode = DragMode.MultiMove;
+                                }
+                                else if (multiClick)
+                                { // Add clicked control to selected list (-> MultiMove)
+                                    _dragMode = DragMode.MultiMove;
+                                    AddSelectedElements(selected);
+                                }
+                                else
+                                { // Change selected control to clicked one (-> SingleMove)
+                                    _dragMode = DragMode.SingleMove;
+                                    ClearSelectedElements(true);
+                                    AddSelectedElements(selected);
+                                }
                             }
                         }
                         break;
