@@ -159,8 +159,9 @@ namespace PEBakery.WPF.Controls
                 // In which stage the dragging is being processed?
                 _dragState = DragState.Dragging;
 
-                // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
+                // Do not call UIRenderer.DrawToCanvas, we don't need to expand canvas here
                 Debug.Assert(_dragAreaRectangle != null);
+                SetZIndex(_dragAreaRectangle, MaxZIndex);
                 Children.Add(_dragAreaRectangle);
 
                 ClearSelectedElements(true);
@@ -403,6 +404,8 @@ namespace PEBakery.WPF.Controls
                         Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
                         Debug.Assert(_dragAreaRectangle != null);
                         Children.Remove(_dragAreaRectangle);
+                        // Make _dragAreaRectangle invisible, or the rectangle will bleep on next click.
+                        SetElementRect(_dragAreaRectangle, new Rect(0, 0, 0, 0));
 
                         // Check if any element was caught by drag-to-select
                         Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
