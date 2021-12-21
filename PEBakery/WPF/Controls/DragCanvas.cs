@@ -425,7 +425,7 @@ namespace PEBakery.WPF.Controls
                         {
                             Rect elementRect = GetElementRect(element);
                             if (dragRect.Contains(elementRect) && element.Tag is UIControl)
-                                _selectedElements.Add(new SelectedElement(element));
+                                AddSelectedElements(new SelectedElement(element));
                         }
 
                         DrawSelectedElements();
@@ -680,7 +680,7 @@ namespace PEBakery.WPF.Controls
                     if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                         continue;
 
-                    _selectedElements.Add(new SelectedElement(child));
+                    AddSelectedElements(new SelectedElement(child));
                     break;
                 }
             }
