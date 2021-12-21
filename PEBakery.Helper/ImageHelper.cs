@@ -245,7 +245,16 @@ namespace PEBakery.Helper
         /// <param name="src"></param>
         /// <returns></returns>
         public static BitmapSource MaskWhiteAsTransparent(BitmapSource src)
-        { // D:\Jang\Build\Source\PEBakery\pebakery\PEBakery.Helper.Tests\Samples\ImageHelper\MaskWhiteAsTransport
+        {
+            // [Supported BMP pixel format]
+            // - BGRA32
+            // - BGRX32
+            // - BGR24
+            // - BGR555
+            // - BGR565
+            // [16bit to 24bit conversion]
+            // https://stackoverflow.com/questions/2442576/how-does-one-convert-16-bit-rgb565-to-24-bit-rgb888
+
             if (src.Format.Equals(PixelFormats.Bgra32))
             { // Pixel is 4B, B-G-R-A
                 int stride = src.PixelWidth * 4;
@@ -371,10 +380,11 @@ namespace PEBakery.Helper
                         else
                             a = 255;
 
+                        // Simulate iOS vImage conversion algorithm
                         int fourIdx = (x + y * src.PixelWidth) * 4;
-                        destPixels[fourIdx] = (byte)(r * 8); // 32 * 8 = 256
-                        destPixels[fourIdx + 1] = (byte)(g * 8); // 32 * 8 = 256
-                        destPixels[fourIdx + 2] = (byte)(b * 8); // 32 * 8 = 256
+                        destPixels[fourIdx] = (byte)((r * 255 + 15) / 31);
+                        destPixels[fourIdx + 1] = (byte)((g * 255 + 15) / 31);
+                        destPixels[fourIdx + 2] = (byte)((b * 255 + 15) / 31);
                         destPixels[fourIdx + 3] = a;
                     }
                 }
@@ -412,10 +422,11 @@ namespace PEBakery.Helper
                         else
                             a = 255;
 
+                        // Simulate iOS vImage conversion algorithm
                         int fourIdx = (x + y * src.PixelWidth) * 4;
-                        destPixels[fourIdx] = (byte)(r * 8); // 32 * 8 = 256
-                        destPixels[fourIdx + 1] = (byte)(g * 4); // 64 * 4 = 256
-                        destPixels[fourIdx + 2] = (byte)(b * 8); // 32 * 8 = 256
+                        destPixels[fourIdx] = (byte)((r * 255 + 15) / 31);
+                        destPixels[fourIdx + 1] = (byte)((g * 255 + 31) / 63);
+                        destPixels[fourIdx + 2] = (byte)((b * 255 + 15) / 31);
                         destPixels[fourIdx + 3] = a;
                     }
                 }

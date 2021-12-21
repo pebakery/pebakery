@@ -68,8 +68,8 @@ namespace PEBakery.Helper.Tests
             Template("BeforeBGRA32.bmp", "AfterBGRA32.bmp");
             Template("BeforeBGR32.bmp", "AfterBGRA32.bmp");
             Template("BeforeBGR24.bmp", "AfterBGRA32.bmp");
-            //Template("BeforeBGR565.bmp", "AfterBGRA32.bmp");
-            //Template("BeforeBGR555.bmp", "AfterBGRA32.bmp");
+            Template("BeforeBGR565.bmp", "AfterBGRA32.bmp");
+            Template("BeforeBGR555.bmp", "AfterBGRA32.bmp");
         }
     }
 }

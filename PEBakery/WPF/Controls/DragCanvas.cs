@@ -1312,7 +1312,7 @@ namespace PEBakery.WPF.Controls
     }
     #endregion
 
-    #region enum DragMode, ResizeClickPosition
+    #region enum DragMode, DragState, ResizeClickPosition
     public enum DragMode
     {
         /// <summary>

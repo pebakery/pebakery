@@ -8,6 +8,7 @@ res/
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
 PEBakery/Properties/launchSettings.json
+.editorconfig
 
 # BenchmarkDotNet
 BenchmarkDotNet.Artifacts
