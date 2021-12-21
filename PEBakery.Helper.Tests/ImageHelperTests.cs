@@ -36,9 +36,9 @@ namespace PEBakery.Helper.Tests
     public class ImageHelperTests
     {
         [TestMethod]
-        public void MaskWhiteAsTransport()
+        public void MaskWhiteAsTransparent()
         {
-            string srcDir = Path.Combine(TestSetup.SampleDir, "ImageHelper", "MaskWhiteAsTransport");
+            string srcDir = Path.Combine(TestSetup.SampleDir, "ImageHelper", "MaskWhiteAsTransparent");
 
             void Template(string srcFileName, string expectFileName)
             {
@@ -68,8 +68,8 @@ namespace PEBakery.Helper.Tests
             Template("BeforeBGRA32.bmp", "AfterBGRA32.bmp");
             Template("BeforeBGR32.bmp", "AfterBGRA32.bmp");
             Template("BeforeBGR24.bmp", "AfterBGRA32.bmp");
-            Template("BeforeBGR565.bmp", "BeforeBGR565.bmp");
-            Template("BeforeBGR555.bmp", "BeforeBGR555.bmp");
+            //Template("BeforeBGR565.bmp", "AfterBGRA32.bmp");
+            //Template("BeforeBGR555.bmp", "AfterBGRA32.bmp");
         }
     }
 }
