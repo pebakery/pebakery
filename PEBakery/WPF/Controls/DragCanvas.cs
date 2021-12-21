@@ -206,6 +206,7 @@ namespace PEBakery.WPF.Controls
                                 bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
                                 if (alreadySelected)
                                 {  // The clicked control is already selected (-> SingleMove, MultiMove)
+                                    Debug.Assert(_selectedElementIndex != -1, $"{nameof(_selectedElementIndex)} must not be -1");
                                     if (_selectedElements.Count == 1)
                                         _dragMode = DragMode.SingleMove;
                                     else
@@ -268,6 +269,17 @@ namespace PEBakery.WPF.Controls
             else
             { // Clicked background -> Reset selected elements, prepare to enter drag-to-select
                 SetDragToSelect();
+            }
+
+            // Assert for debugging
+            switch (_dragMode)
+            {
+                case DragMode.SingleMove:
+                    Debug.Assert(_selectedElements.Count == 1, "Mouse event handling error");
+                    break;
+                case DragMode.MultiMove:
+                    Debug.Assert(1 < _selectedElements.Count , "Mouse event handling error");
+                    break;
             }
 
             e.Handled = true;
@@ -643,7 +655,7 @@ namespace PEBakery.WPF.Controls
                     continue;
 
                 _selectedElements.Clear();
-                _selectedElements.Add(new SelectedElement(child));
+                AddSelectedElements(new SelectedElement(child));
                 break;
             }
 

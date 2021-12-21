@@ -256,7 +256,7 @@ namespace PEBakery.Helper
             // https://stackoverflow.com/questions/2442576/how-does-one-convert-16-bit-rgb565-to-24-bit-rgb888
 
             if (src.Format.Equals(PixelFormats.Bgra32))
-            { // Pixel is 4B, B-G-R-A
+            { // Pixel is 4B, B(8)-G(8)-R(8)-A(8)
                 int stride = src.PixelWidth * 4;
                 int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
                 byte[] srcPixels = new byte[pixelFourBytes];
@@ -286,7 +286,7 @@ namespace PEBakery.Helper
                 return dest;
             }
             else if (src.Format.Equals(PixelFormats.Bgr32))
-            { // Pixel is 4B, B-G-R-X
+            { // Pixel is 4B, B(8)-G(8)-R(8)-X(8)
                 int stride = src.PixelWidth * 4;
                 int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
                 byte[] srcPixels = new byte[pixelFourBytes];
@@ -316,7 +316,7 @@ namespace PEBakery.Helper
                 return dest;
             }
             else if (src.Format.Equals(PixelFormats.Bgr24))
-            { // Pixel is 3B, B-G-R
+            { // Pixel is 3B, B(8)-G(8)-R(8)-x(8)
                 int threeStride = src.PixelWidth * 3;
                 int fourStride = src.PixelWidth * 4;
                 int pixelThreeBytes = src.PixelWidth * src.PixelHeight * 3;
