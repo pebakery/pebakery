@@ -191,66 +191,40 @@ namespace PEBakery.WPF.Controls
                 int idx = _selectedElements.FindIndex(x => x.UIControl.KeyEquals(uiCtrl));
                 bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
-                switch (_dragMode)
-                {
-                    case DragMode.None:
-                        {
-                            SelectedElement selected = new SelectedElement(focusedElement);
-                            if (_selectedElements.Count == 0)
-                            { // Nothing is selected, and new control was clicked (-> SingleMove)
-                                _dragMode = DragMode.SingleMove;
-                                AddSelectedElements(selected);
-                            }
-                            else
-                            {
-                                bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
-                                if (alreadySelected)
-                                {  // The clicked control is already selected (-> SingleMove, MultiMove)
-                                    Debug.Assert(_selectedElementIndex != -1, $"{nameof(_selectedElementIndex)} must not be -1");
-                                    if (_selectedElements.Count == 1)
-                                        _dragMode = DragMode.SingleMove;
-                                    else
-                                        _dragMode = DragMode.MultiMove;
-                                }
-                                else if (multiClick)
-                                { // Add clicked control to selected list (-> MultiMove)
-                                    _dragMode = DragMode.MultiMove;
-                                    AddSelectedElements(selected);
-                                }
-                                else
-                                { // Change selected control to clicked one (-> SingleMove)
-                                    _dragMode = DragMode.SingleMove;
-                                    ClearSelectedElements(true);
-                                    AddSelectedElements(selected);
-                                }
-                            }
-                        }
-                        break;
-                    case DragMode.SingleMove:
-                    case DragMode.MultiMove:
-                        {
-                            // 1) Clicked selected UIControl           : Do nothing
-                            // 2) Clicked new UIControl with Shift/Ctrl: Keep/Enter MultiMove mode, add clicked UIControl into _selectedElements.
-                            // 3) Clicked new UIControl w/o  Shift/Ctrl: Keep/Enter SingleMove mode, clear _selectedElements, and set clicked UIControl as unique _selectedElements.
-                            if (idx != -1)
-                                break;
+                Debug.Assert(_dragMode == DragMode.None, $"{nameof(_dragMode)} [{_dragMode}] must be [None]");
 
-                            SelectedElement selected = new SelectedElement(focusedElement);
-                            if (multiClick)
-                            {
-                                _dragMode = DragMode.MultiMove;
-                                AddSelectedElements(selected);
-                            }
-                            else
-                            {
-                                _dragMode = DragMode.SingleMove;
-                                ClearSelectedElements(true);
-                                AddSelectedElements(selected);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
+                // (P1) Clicked new UIControl                 : Enter SingleMove mode, clear _selectedElements, and then add clicked UIControl.
+                // (P2) Clicked selected UIControl            : Enter SingleMove/MultiMove mode.
+                // (P3) Clicked new UIControl with Shift/Ctrl : Enter MultiMove mode, add clicked UIControl into _selectedElements.
+
+                SelectedElement selected = new SelectedElement(focusedElement);
+                if (_selectedElements.Count == 0)
+                { // (P1) Nothing is selected, and new control was clicked (-> SingleMove)
+                    _dragMode = DragMode.SingleMove;
+                    AddSelectedElements(selected);
+                }
+                else
+                {
+                    bool alreadySelected = _selectedElements.Any(x => x.UIControl.Key.Equals(selected.UIControl.Key, StringComparison.OrdinalIgnoreCase));
+                    if (alreadySelected)
+                    {  // (P2) The clicked control is already selected (-> SingleMove, MultiMove)
+                        Debug.Assert(_selectedElementIndex != -1, $"{nameof(_selectedElementIndex)} must not be -1");
+                        if (_selectedElements.Count == 1)
+                            _dragMode = DragMode.SingleMove;
+                        else
+                            _dragMode = DragMode.MultiMove;
+                    }
+                    else if (multiClick)
+                    { // (P3) Add clicked control to selected list (-> MultiMove)
+                        _dragMode = DragMode.MultiMove;
+                        AddSelectedElements(selected);
+                    }
+                    else
+                    { // (P1) Change selected control to clicked one (-> SingleMove)
+                        _dragMode = DragMode.SingleMove;
+                        ClearSelectedElements(true);
+                        AddSelectedElements(selected);
+                    }
                 }
 
                 // Record select information
@@ -275,10 +249,12 @@ namespace PEBakery.WPF.Controls
             switch (_dragMode)
             {
                 case DragMode.SingleMove:
-                    Debug.Assert(_selectedElements.Count == 1, "Mouse event handling error");
+                    Debug.Assert(_selectedElements.Count == 1, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElements)}.Count in DragMode.SingleMove");
+                    Debug.Assert(_selectedElementIndex != -1, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElementIndex)} in DragMode.SingleMove");
                     break;
                 case DragMode.MultiMove:
-                    Debug.Assert(1 < _selectedElements.Count , "Mouse event handling error");
+                    Debug.Assert(1 < _selectedElements.Count , $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElements)}.Count in DragMode.MultiMove");
+                    Debug.Assert(_selectedElementIndex != -1, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElementIndex)} in DragMode.MultiMove");
                     break;
             }
 
@@ -544,6 +520,9 @@ namespace PEBakery.WPF.Controls
                 _selectedElements.Clear();
         }
 
+        /// <summary>
+        /// Add selected UIControl to list, and auto select its index.
+        /// </summary>
         public void AddSelectedElements(SelectedElement selected)
         {
             _selectedElements.Add(selected);
