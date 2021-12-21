@@ -239,46 +239,6 @@ namespace PEBakery.Helper
         #endregion
 
         #region MaskWhiteAsTrapsarent
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WriteToBrga32Bitmap(byte[] pixels, int idx, byte r, byte g, byte b, byte a)
-        {
-            pixels[idx] = r;
-            pixels[idx + 1] = g;
-            pixels[idx + 2] = b;
-            pixels[idx + 3] = a;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (byte r, byte g, byte b, byte a) ReadFromBgra32Bitmap(byte[] pixels, int idx)
-        {
-            byte r = pixels[idx];
-            byte g = pixels[idx + 1];
-            byte b = pixels[idx + 2];
-            byte a = pixels[idx + 3];
-
-            return (r, g, b, a);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (byte g, byte b, byte a) ReadFromBgr32Bitmap(byte[] pixels, int idx)
-        {
-            byte r = pixels[idx];
-            byte g = pixels[idx + 1];
-            byte b = pixels[idx + 2];
-
-            return (r, g, b);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (byte r, byte g, byte b) ReadFromBrg24Bitmap(byte[] pixels, int idx)
-        {
-            byte r = pixels[idx];
-            byte g = pixels[idx + 1];
-            byte b = pixels[idx + 2];
-
-            return (r, g, b);
-        }
-
         /// <summary>
         /// If a pixel is #FFFFFFFF (White), convert it to #00FFFFFF (transparent)
         /// </summary>
@@ -305,6 +265,7 @@ namespace PEBakery.Helper
                         byte g = srcPixels[i + 1];
                         byte b = srcPixels[i + 2];
                         byte a = srcPixels[i + 3];
+
                         if (r == 255 && g == 255 && b == 255 & a == 255)
                             destPixels[i + 3] = 0; // Max transparency
                     }
@@ -373,6 +334,88 @@ namespace PEBakery.Helper
                         destPixels[fourIdx] = r;
                         destPixels[fourIdx + 1] = g;
                         destPixels[fourIdx + 2] = b;
+                        destPixels[fourIdx + 3] = a;
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                dest.WritePixels(rect, destPixels, fourStride, 0);
+                return dest;
+            }
+            else if (src.Format.Equals(PixelFormats.Bgr555))
+            { // Pixel is 2B, B(5)-G(5)-R(5)-X(1)
+                int twoStride = src.PixelWidth * 2;
+                int fourStride = src.PixelWidth * 4;
+                int pixelTwoBytes = src.PixelWidth * src.PixelHeight * 2;
+                int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
+                byte[] srcPixels = new byte[pixelTwoBytes];
+                byte[] destPixels = new byte[pixelFourBytes];
+                src.CopyPixels(srcPixels, twoStride, 0);
+
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int twoIdx = (x + y * src.PixelWidth) * 2;
+
+                        ushort val = BitConverter.ToUInt16(srcPixels, twoIdx);
+
+                        // val = xRrrrrGggggBbbbb
+                        byte r = (byte)((val & 0b0111110000000000) >> 10); // 0 ~ 31
+                        byte g = (byte)((val & 0b0000001111100000) >> 5); // 0 ~ 31
+                        byte b = (byte)(val & 0b0000000000011111); // 0 ~ 31
+                        byte a;
+                        if (r == 31 && g == 31 && b == 31)
+                            a = 0; // Max transparency
+                        else
+                            a = 255;
+
+                        int fourIdx = (x + y * src.PixelWidth) * 4;
+                        destPixels[fourIdx] = (byte)(r * 8); // 32 * 8 = 256
+                        destPixels[fourIdx + 1] = (byte)(g * 8); // 32 * 8 = 256
+                        destPixels[fourIdx + 2] = (byte)(b * 8); // 32 * 8 = 256
+                        destPixels[fourIdx + 3] = a;
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                WriteableBitmap dest = new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                dest.WritePixels(rect, destPixels, fourStride, 0);
+                return dest;
+            }
+            else if (src.Format.Equals(PixelFormats.Bgr565))
+            { // Pixel is 2B, B(5)-G(6)-R(5)
+                int twoStride = src.PixelWidth * 2;
+                int fourStride = src.PixelWidth * 4;
+                int pixelTwoBytes = src.PixelWidth * src.PixelHeight * 2;
+                int pixelFourBytes = src.PixelWidth * src.PixelHeight * 4;
+                byte[] srcPixels = new byte[pixelTwoBytes];
+                byte[] destPixels = new byte[pixelFourBytes];
+                src.CopyPixels(srcPixels, twoStride, 0);
+
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int twoIdx = (x + y * src.PixelWidth) * 2;
+
+                        ushort val = BitConverter.ToUInt16(srcPixels, twoIdx);
+
+                        // val = RrrrrGgggggBbbbb
+                        byte r = (byte)((val & 0b1111100000000000) >> 11); // 0 ~ 31
+                        byte g = (byte)((val & 0b0000011111100000) >> 5); // 0 ~ 63
+                        byte b = (byte)(val & 0b0000000000011111); // 0 ~ 31
+                        byte a;
+                        if (r == 31 && g == 63 && b == 31)
+                            a = 0; // Max transparency
+                        else
+                            a = 255;
+
+                        int fourIdx = (x + y * src.PixelWidth) * 4;
+                        destPixels[fourIdx] = (byte)(r * 8); // 32 * 8 = 256
+                        destPixels[fourIdx + 1] = (byte)(g * 4); // 64 * 4 = 256
+                        destPixels[fourIdx + 2] = (byte)(b * 8); // 32 * 8 = 256
                         destPixels[fourIdx + 3] = a;
                     }
                 }
