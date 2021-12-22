@@ -211,11 +211,12 @@ namespace PEBakery.Helper
             if (encoding == null)
                 throw new ArgumentNullException(nameof(encoding));
 
-            // If encoding 
-            byte[] bom = encoding.GetPreamble();
+            // Unicode Encoding: returns span of BOM
+            // Non-Unicode Encoding: return span of length zero
+            ReadOnlySpan<byte> bom = encoding.Preamble;
             if (bom.Length == 0)
                 return;
-            stream.Write(bom, 0, bom.Length);
+            stream.Write(bom);
         }
         #endregion
 
