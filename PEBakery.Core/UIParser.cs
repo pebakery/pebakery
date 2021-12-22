@@ -367,9 +367,8 @@ namespace PEBakery.Core
                         for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
 
+                        // Allow even if an index is -1. (At least SyntaxChecker will raise an error later)
                         int idx = items.IndexOf(fullArgs[0]);
-                        if (idx == -1)
-                            throw new InvalidCommandException($"[{type}] has wrong selected value [{fullArgs[0]}]");
 
                         return new UIInfo_ComboBox(toolTip, items, idx, sectionName, hideProgress);
                     }

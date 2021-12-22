@@ -1694,7 +1694,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct RenderCleanInfo
+    #region class RenderCleanInfo
     public class RenderCleanInfo
     {
         public readonly UIControl UICtrl;

@@ -370,6 +370,15 @@ namespace PEBakery.Core
                             }
                         }
                         break;
+                    case UIControlType.ComboBox:
+                        {
+                            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+
+                            // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
+                            if (info.Index < 0 || info.Items.Count <= info.Index) 
+                                logs.Add(new LogInfo(LogState.Error, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
+                        }
+                        break;
                     case UIControlType.Image:
                         {
                             // Check encoded image
@@ -390,7 +399,7 @@ namespace PEBakery.Core
                                     if (url.IndexOf("://", StringComparison.Ordinal) != -1)
                                         logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                     else
-                                        logs.Add(new LogInfo(LogState.Warning, "URL does not have scheme. Did you omit \"http(s)://\"?", uiCtrl));
+                                        logs.Add(new LogInfo(LogState.Warning, "URL does not have a scheme. Did you omit \"http(s)://\"?", uiCtrl));
                                 }
                             }
                         }
@@ -467,6 +476,10 @@ namespace PEBakery.Core
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
+
+                            // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
+                            if (info.Selected < 0 || info.Items.Count <= info.Selected)
+                                logs.Add(new LogInfo(LogState.Error, $"Incorrect selected index [{info.Selected}]", uiCtrl));
                         }
                         break;
                 }

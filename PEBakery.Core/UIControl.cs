@@ -797,7 +797,7 @@ namespace PEBakery.Core
     public class UIInfo_ComboBox : UIInfo
     {
         public List<string> Items { get; set; }
-        public int Index { get; set; } // Zero based index
+        public int Index { get; set; } // Zero based index, -1 if nothing is set
         public string SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
