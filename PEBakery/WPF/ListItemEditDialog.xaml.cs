@@ -50,11 +50,9 @@ namespace PEBakery.WPF
         #region Event Handlers
         private void ItemValueTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Prohibit '|', ','
+            // Prohibit '|'
             if (e.Text.Contains('|'))
                 e.Handled = true;
-            //if (e.Text.Contains(','))
-            //    e.Handled = true;
 
             OnPreviewTextInput(e);
         }
@@ -64,8 +62,15 @@ namespace PEBakery.WPF
             // DialogResult = false;
             if (DataContext is ListItemEditViewModel vm)
             {
+                vm.PreRequestClose += ViewModel_PreRequestClose;
                 vm.OnRequestClose += ViewModel_OnRequestClose;
             }
+        }
+
+        private void ViewModel_PreRequestClose(object sender, EventArgs e)
+        {
+            // Get focus from ListViewEditItem, to trigger LostFocus data binding
+            ApplyButton.Focus();
         }
 
         private void ViewModel_OnRequestClose(object sender, bool e)
@@ -374,6 +379,13 @@ namespace PEBakery.WPF
         private ICommand _applyCommand;
         public ICommand ApplyCommand => GetRelayCommand(ref _applyCommand, "Apply changes", ApplyCommand_Execute, ApplyCommand_CanExecuteFunc);
 
+        private EventHandler _preRequestClose;
+        public event EventHandler PreRequestClose
+        {
+            add => _preRequestClose += value;
+            remove => _preRequestClose -= value;
+        }
+
         private EventHandler<bool> _onRequestClose;
         public event EventHandler<bool> OnRequestClose
         {
@@ -388,6 +400,7 @@ namespace PEBakery.WPF
 
         private void ApplyCommand_Execute(object parameter)
         {
+            _preRequestClose?.Invoke(this, new EventArgs());
             WriteListItems();
             _onRequestClose?.Invoke(this, true);
         }
@@ -414,6 +427,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _isDefault, value);
         }
 
+        // Binding is set to UpdateSourceTrigger=LostFocus, to force dupliacte check happen in the last moment
         private string _value = string.Empty;
         public string Value
         {
