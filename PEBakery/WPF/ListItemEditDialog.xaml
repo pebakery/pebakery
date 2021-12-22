@@ -73,8 +73,7 @@
                     <StackPanel Orientation="Horizontal">
                         <RadioButton GroupName="ListViewEditItemRadios"
                                      IsChecked="{Binding Path=IsDefault}" />
-                        <TextBox PreviewTextInput="ItemValueTextBox_PreviewTextInput"
-                                 Text="{Binding Path=Value, UpdateSourceTrigger=LostFocus}" />
+                        <TextBox Text="{Binding Path=Value, UpdateSourceTrigger=LostFocus}" />
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>

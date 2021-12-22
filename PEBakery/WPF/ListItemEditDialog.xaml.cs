@@ -48,15 +48,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event Handlers
-        private void ItemValueTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            // Prohibit '|'
-            if (e.Text.Contains('|'))
-                e.Handled = true;
-
-            OnPreviewTextInput(e);
-        }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             // DialogResult = false;
