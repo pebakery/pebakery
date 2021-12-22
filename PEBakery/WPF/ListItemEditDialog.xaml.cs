@@ -144,7 +144,7 @@ namespace PEBakery.WPF
                     }
                     break;
                 default:
-                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support [{_uiCtrl.Type}]");
+                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support editing [{_uiCtrl.Type}]");
             }
 
             Debug.Assert(ctrlItems != null, internalErrorMsg);
@@ -188,15 +188,17 @@ namespace PEBakery.WPF
                     }
                     break;
                 default:
-                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support [{_uiCtrl.Type}]");
+                    throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support editing [{_uiCtrl.Type}]");
             }
         }
         #endregion
 
         #region Commands for ListItemBox
         private ICommand _listItemAddCommand;
+        private ICommand _listItemInsertCommand;
         private ICommand _listItemDeleteCommand;
         public ICommand ListItemAddCommand => GetRelayCommand(ref _listItemAddCommand, "Add item", ListItemAddCommand_Execute, ListItemAddCommand_CanExecuteFunc);
+        public ICommand ListItemInsertCommand => GetRelayCommand(ref _listItemInsertCommand, "Insert item", ListItemInsertCommand_Execute, ListItemInsertCommand_CanExecuteFunc);
         public ICommand ListItemDeleteCommand => GetRelayCommand(ref _listItemDeleteCommand, "Delete item", ListItemDeleteCommand_Execute, ListItemDeleteCommand_CanExecuteFunc);
 
         private ICommand _listItemMoveUpCommand;
@@ -214,6 +216,11 @@ namespace PEBakery.WPF
         }
 
         private bool ListItemAddCommand_CanExecuteFunc(object parameter)
+        {
+            return CanExecuteCommand;
+        }
+
+        private bool ListItemInsertCommand_CanExecuteFunc(object parameter)
         {
             return CanExecuteCommand;
         }
@@ -254,6 +261,35 @@ namespace PEBakery.WPF
                 ListViewEditItem newItem = new ListViewEditItem(Items, newValue, false);
                 Items.Add(newItem);
                 SelectedIndex = Items.Count - 1;
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void ListItemInsertCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                // Prevent duplicated value
+                int postfix = Items.Count + 1;
+                string newValue;
+                do
+                {
+                    newValue = $"Item{postfix:00}";
+                    if (Items.Any(x => x.Value.Equals(newValue, StringComparison.OrdinalIgnoreCase)) == false)
+                        break;
+
+                    postfix += 1;
+                }
+                while (true);
+
+                ListViewEditItem newItem = new ListViewEditItem(Items, newValue, false);
+                Items.Insert(SelectedIndex, newItem);
+                SelectedIndex -= 1;
             }
             finally
             {

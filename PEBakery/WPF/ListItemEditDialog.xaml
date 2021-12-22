@@ -97,6 +97,20 @@
                                Text="Add" />
                 </StackPanel>
             </Button>
+            <Button x:Name="ListItemInsertButton"
+                    Height="25"
+                    Margin="0,0,0,5"
+                    Command="{Binding ListItemInsertCommand}"
+                    ToolTip="Insert a new list item before the selected item">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Width="Auto" 
+                                                Height="Auto"
+                                                Margin="0,5,5,5"
+                                                Kind="ArrowRightBox" />
+                    <TextBlock VerticalAlignment="Center"
+                               Text="Insert" />
+                </StackPanel>
+            </Button>
             <Button x:Name="ListItemDeleteButton"
                     Height="25"
                     Margin="0,0,0,15"
