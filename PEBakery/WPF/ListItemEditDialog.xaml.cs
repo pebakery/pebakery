@@ -165,7 +165,8 @@ namespace PEBakery.WPF
             string internalErrorMsg = $"Internal Logic Error at {nameof(WriteListItems)}";
 
             List<string> ctrlItems = Items.Select(x => x.Value).ToList();
-            int ctrlItemDefault = SelectedIndex;
+            int ctrlItemDefault = Items.IndexOf(Items.Where(i => i.IsDefault == true).FirstOrDefault());
+            Debug.Assert(ctrlItemDefault != -1, internalErrorMsg); // no default item found
 
             switch (_uiCtrl.Type)
             {
