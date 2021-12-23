@@ -422,13 +422,15 @@
                                 <Button Grid.Column="1"
                                         Margin="5, 0, 0, 0"
                                         x:Name="InterfaceSectionAddButton"
-                                        Command="{Binding InterfaceSectionAddCommand}">
+                                        Command="{Binding InterfaceSectionAddCommand}"
+                                        ToolTip="Add Interface">
                                     <iconPacks:PackIconMaterial Kind="Plus" Width="Auto" Height="Auto" Margin="5"/>
                                 </Button>
                                 <Button Grid.Column="2"
                                         Margin="5, 0, 0, 0"
                                         x:Name="InterfaceSectionDeleteButton"
-                                        Command="{Binding InterfaceSectionDeleteCommand}">
+                                        Command="{Binding InterfaceSectionDeleteCommand}"
+                                        ToolTip="Delete Interface">
                                     <iconPacks:PackIconMaterial Kind="Minus" Width="Auto" Height="Auto" Margin="5"/>
                                 </Button>
                             </Grid>
@@ -452,24 +454,25 @@
                                           VerticalContentAlignment="Center"
                                           x:Name="UICtrlAddType"
                                           SelectedIndex="{Binding UICtrlAddTypeIndex}">
-                                    <ComboBoxItem Content="TextBox"/>
-                                    <ComboBoxItem Content="TextLabel"/>
-                                    <ComboBoxItem Content="NumberBox"/>
+                                    <ComboBoxItem Content="Bevel"/>
+                                    <ComboBoxItem Content="Button"/>
                                     <ComboBoxItem Content="CheckBox"/>
                                     <ComboBoxItem Content="ComboBox"/>
-                                    <ComboBoxItem Content="Image"/>
-                                    <ComboBoxItem Content="TextFile"/>
-                                    <ComboBoxItem Content="Button"/>
-                                    <ComboBoxItem Content="WebLabel"/>
-                                    <ComboBoxItem Content="RadioButton"/>
-                                    <ComboBoxItem Content="Bevel"/>
                                     <ComboBoxItem Content="FileBox"/>
+                                    <ComboBoxItem Content="Image"/>
+                                    <ComboBoxItem Content="NumberBox"/>
+                                    <ComboBoxItem Content="RadioButton"/>
                                     <ComboBoxItem Content="RadioGroup"/>
+                                    <ComboBoxItem Content="TextBox"/>
+                                    <ComboBoxItem Content="TextFile"/>
+                                    <ComboBoxItem Content="TextLabel"/>
+                                    <ComboBoxItem Content="WebLabel"/>
                                 </ComboBox>
                                 <Button Grid.Column="1"
                                         Margin="5, 0, 0, 0"
                                         x:Name="UICtrlAddButton"
-                                        Command="{Binding UICtrlAddCommand}">
+                                        Command="{Binding UICtrlAddCommand}"
+                                        ToolTip="Add UIControl">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus" Width="Auto" Height="Auto" Margin="5"/>
                                     </StackPanel>
@@ -488,7 +491,7 @@
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="3, 0, 3, 0" Orientation="Vertical">
-                                    <!-- UIControl Selection -->
+                                    <!-- Edit UIControl Selection -->
                                     <Grid Height="25">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition/>
@@ -580,13 +583,13 @@
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="6" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="ToolTip" />
                                         <TextBox Grid.Row="6" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"
-                                                 Text="{Binding UICtrlToolTip, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlToolTip, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0"/>
                                     </Grid>
                                     <!-- TextBox -->
                                     <Grid Visibility="{Binding IsUICtrlTextBox}" Margin="0, 10, 0, 0">
@@ -606,12 +609,12 @@
                                                  VerticalContentAlignment="Center"
                                                  Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Value" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  FontSize="11"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlTextBoxValue, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlTextBoxValue, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0"/>
                                     </Grid>
                                     <!-- TextLabel -->
                                     <Grid Visibility="{Binding IsUICtrlTextLabel}" Margin="0, 10, 0, 0">
@@ -642,24 +645,24 @@
                                                           IncrementUnit="1"
                                                           Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Weight" />
                                         <ComboBox Grid.Row="2" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
                                                   FontSize="11"
-                                                  SelectedIndex="{Binding UICtrlTextLabelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0">
                                             <ComboBoxItem Content="Normal"/>
                                             <ComboBoxItem Content="Bold"/>
                                         </ComboBox>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Style" />
                                         <ComboBox Grid.Row="3" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
                                                   FontSize="11"
-                                                  SelectedIndex="{Binding UICtrlTextLabelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0">
                                             <ComboBoxItem Content="None"/>
                                             <ComboBoxItem Content="Italic"/>
                                             <ComboBoxItem Content="Underline"/>
@@ -768,7 +771,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceExtractCommand}"
                                                     CommandParameter="ImageExtract"
-                                                    ToolTip="Export image">
+                                                    ToolTip="Extract image to file">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight" Width="Auto" Height="Auto" Margin="3"/>
                                                     <TextBlock Text="Extract"
@@ -779,7 +782,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceResetCommand}"
                                                     CommandParameter="ImageReset"
-                                                    ToolTip="Reset image">
+                                                    ToolTip="Reset image" Margin="0,1,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone" Width="Auto" Height="Auto" Margin="3"/>
                                                     <TextBlock Text="Reset"
@@ -790,7 +793,7 @@
                                             <Button Width="Auto" Height="25"
                                                     x:Name="UICtrlImageAutoResizeButton"
                                                     Command="{Binding UICtrlImageAutoResizeCommand}"
-                                                    ToolTip="Auto Resize">
+                                                    ToolTip="Auto Resize" Margin="0,1,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
                                                                                 Width="Auto"
@@ -803,11 +806,11 @@
                                             </Button>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="URL" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlImageUrl, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlImageUrl, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0"/>
                                     </Grid>
                                     <!-- TextFile -->
                                     <Grid Visibility="{Binding IsUICtrlTextFile}" Margin="0, 10, 0, 0">
@@ -824,7 +827,7 @@
                                                 Width="Auto" Height="25"
                                                 Command="{Binding UICtrlInterfaceAttachCommand}"
                                                 CommandParameter="TextFileAttach"
-                                                ToolTip="Import image">
+                                                ToolTip="Import text file">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                             Width="Auto"
@@ -841,7 +844,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceExtractCommand}"
                                                     CommandParameter="TextFileExtract"
-                                                    ToolTip="Export image">
+                                                    ToolTip="Extract text file">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
@@ -855,7 +858,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceResetCommand}"
                                                     CommandParameter="TextFileReset"
-                                                    ToolTip="Reset image">
+                                                    ToolTip="Remove text file" Margin="0,1,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
                                                                             Width="Auto"
@@ -885,14 +888,14 @@
                                                  VerticalContentAlignment="Center"
                                                  Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Image" />
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 Visibility="{Binding UICtrlButtonPictureUnloaded}"
                                                 Width="Auto" Height="25"
                                                 Command="{Binding UICtrlInterfaceAttachCommand}"
                                                 CommandParameter="ButtonPictureAttach"
-                                                ToolTip="Import image">
+                                                ToolTip="Import image" Margin="0,1,0,0">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                             Width="Auto"
@@ -909,7 +912,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceExtractCommand}"
                                                     CommandParameter="ButtonPictureExtract"
-                                                    ToolTip="Export image">
+                                                    ToolTip="Extract image to file" Margin="0,1,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
@@ -923,7 +926,7 @@
                                             <Button Width="Auto" Height="25"
                                                     Command="{Binding UICtrlInterfaceResetCommand}"
                                                     CommandParameter="ButtonPictureReset"
-                                                    ToolTip="Reset image">
+                                                    ToolTip="Remove image" Margin="0,1,0,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
                                                                                 Width="Auto"
@@ -953,11 +956,11 @@
                                                  VerticalContentAlignment="Center"
                                                  Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="URL" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlWebLabelUrl}"/>
+                                                 Text="{Binding UICtrlWebLabelUrl}" Margin="0,1,0,0"/>
                                     </Grid>
                                     <!-- RadioButton -->
                                     <Grid Visibility="{Binding IsUICtrlRadioButton}" Margin="0, 10, 0, 0">
@@ -967,7 +970,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="20" />
-                                            <RowDefinition Height="20" />
+                                            <RowDefinition />
                                         </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
@@ -976,12 +979,23 @@
                                                  VerticalContentAlignment="Center"
                                                  Text="{Binding UICtrlText, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Select" />
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlRadioButtonSelect"
+                                                Width="Auto" Height="25"
                                                 Command="{Binding UICtrlRadioButtonSelectCommand}"
-                                                Content="Select"/>
+                                                ToolTip="Mark as selected item" Margin="0,1,0,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="CheckCircle"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                <TextBlock Text="Select"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
                                     </Grid>
                                     <!-- Bevel -->
                                     <Grid Visibility="{Binding IsUICtrlBevel}" Margin="0, 10, 0, 0">
@@ -1010,32 +1024,32 @@
                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
                                                  Text="{Binding UICtrlBevelCaption, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="FontSize" />
                                         <ccc:NumberBox Grid.Row="2" Grid.Column="1"
                                                        Minimum="0"
                                                        IncrementUnit="1"
                                                        IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                       Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                       Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Weight" />
                                         <ComboBox Grid.Row="3" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                  SelectedIndex="{Binding UICtrlBevelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlBevelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0">
                                             <ComboBoxItem Content="Normal"/>
                                             <ComboBoxItem Content="Bold"/>
                                         </ComboBox>
                                         <TextBlock Grid.Row="4" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
+                                                   Margin="0,1,5,0"
                                                    Text="Style" />
                                         <ComboBox Grid.Row="4" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                  SelectedIndex="{Binding UICtrlBevelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlBevelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0">
                                             <ComboBoxItem Content="None"/>
                                             <ComboBoxItem Content="Italic"/>
                                             <ComboBoxItem Content="Underline"/>
@@ -1254,6 +1268,18 @@
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="DeleteFolderButton"
+                                        Margin="0, 0, 0, 5"                                        
+                                        Height="25"
+                                        Command="{Binding DeleteFolderCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                Width="Auto" Height="Auto"
+                                                                Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Delete Folder"
+                                               VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button x:Name="RenameFolderButton"
                                         Margin="0, 0, 0, 5"
                                         Height="25"
@@ -1267,7 +1293,6 @@
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="ExtractFolderButton"
-                                        Margin="0, 0, 0, 5"
                                         Height="25"
                                         Command="{Binding ExtractFolderCommand}">
                                     <StackPanel Orientation="Horizontal">
@@ -1276,17 +1301,6 @@
                                                                     Margin="0, 5, 5, 5"/>
                                         <TextBlock Text="Extract Folder"
                                                    VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="DeleteFolderButton"
-                                        Height="25"
-                                        Command="{Binding DeleteFolderCommand}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Close"
-                                                                Width="Auto" Height="Auto"
-                                                                Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Delete Folder"
-                                               VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -1314,6 +1328,18 @@
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="DeleteFileButton"
+                                        Margin="0, 0, 0, 5"
+                                        Height="25"
+                                        Command="{Binding DeleteFileCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                    Width="Auto" Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Delete File"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button x:Name="RenameFileButton"
                                         Margin="0, 0, 0, 5"
                                         Height="25"
@@ -1335,18 +1361,6 @@
                                                                     Width="Auto" Height="Auto"
                                                                     Margin="0, 5, 5, 5"/>
                                         <TextBlock Text="Extract File"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="DeleteFileButton"
-                                        Margin="0, 0, 0, 5"
-                                        Height="25"
-                                        Command="{Binding DeleteFileCommand}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Close"
-                                                                    Width="Auto" Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Delete File"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -1378,7 +1392,7 @@
                         </StackPanel>
                         <!-- Advanced View -->
                         <DockPanel Margin="0, 0, 0, 10"
-                                   ToolTip="Intended for expert users only!">
+                                   ToolTip="Show script resources. (Expert users only!)">
                             <CheckBox DockPanel.Dock="Right"
                                       VerticalAlignment="Bottom"
                                       Command="{Binding EnableAdvancedViewCommand}"
@@ -1397,6 +1411,39 @@
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <!-- Add Folder -->
+                                <cc:CorrectMenuItem Header="Add Folder" 
+                                                Command="{Binding AddFolderCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Plus"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <!-- Delete Folder -->
+                                <cc:CorrectMenuItem Header="Delete Folder" 
+                                                Command="{Binding DeleteFolderCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Close"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <!-- Rename Folder -->
+                                <cc:CorrectMenuItem Header="Rename Folder" 
+                                                Command="{Binding RenameFolderCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <Separator></Separator>
+                                <!-- Extract Folder -->
+                                <cc:CorrectMenuItem Header="Extract Folder" 
+                                                Command="{Binding ExtractFolderCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Export"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="FolderName"
@@ -1416,6 +1463,54 @@
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2"
                               SelectionMode="Extended">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <!-- Attach File -->
+                                <cc:CorrectMenuItem Header="Attach File" 
+                                                Command="{Binding AttachFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Plus"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <!-- Delete File -->
+                                <cc:CorrectMenuItem Header="Delete File" 
+                                                Command="{Binding DeleteFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Close"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <!-- Rename File -->
+                                <cc:CorrectMenuItem Header="Rename File" 
+                                                Command="{Binding RenameFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <Separator></Separator>
+                                <!-- Extract File -->
+                                <cc:CorrectMenuItem Header="Extract File" 
+                                                Command="{Binding ExtractFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Export"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <!-- Open File -->
+                                <cc:CorrectMenuItem Header="Open File" 
+                                                Command="{Binding OpenFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="OpenInNew"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <Separator></Separator>
+                                <!-- Inspect File -->
+                                <cc:CorrectMenuItem Header="Inspect File" 
+                                                Command="{Binding InspectFileCommand}">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Magnify"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="FileName"
