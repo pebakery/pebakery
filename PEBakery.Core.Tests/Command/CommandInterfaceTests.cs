@@ -238,6 +238,7 @@ namespace PEBakery.Core.Tests.Command
 
             // 5 - Image
             SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pImage1,%Dest%", @"Logo.jpg");
+            SingleTemplate($@"ReadInterface,Resource,{scriptFile},Interface,pImage1,%Dest%", @"Logo.jpg");
             SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pImage1,%Dest%", @"True");
             SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pImage1,%Dest%", @"20");
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pImage1,%Dest%", @"230");
@@ -260,6 +261,8 @@ namespace PEBakery.Core.Tests.Command
             // 8 - Button
             SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pButton1,%Dest%", @"ShowProgress");
             SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pButton2,%Dest%", @"HideProgress");
+            SingleTemplate($@"ReadInterface,Resource,{scriptFile},Interface,pButton1,%Dest%", "");
+            SingleTemplate($@"ReadInterface,Resource,{scriptFile},Interface,pButton2,%Dest%", @"Logo.jpg");
             SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pButton1,%Dest%", @"True");
             SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pButton1,%Dest%", @"240");
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pButton1,%Dest%", @"115");
@@ -500,14 +503,32 @@ namespace PEBakery.Core.Tests.Command
             // 5 - Image
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pImage1,PEBakery", @"pImage1",
                 null, null, ErrorCheck.RuntimeError);
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pImage1,Logo2.jpg", @"pImage1",
+                null, @"Logo2.jpg,1,5,20,230,40,40");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pImage1,", @"pImage1",
+                null, @"none,1,5,20,230,40,40");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pImage1,Nil", @"pImage1",
+                null, @"none,1,5,20,230,40,40");
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pImage1,https://github.com/pebakery/pebakery", @"pImage1",
                 null, @"Logo.jpg,1,5,20,230,40,40,https://github.com/pebakery/pebakery");
 
             // 6 - TextFile
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextFile1,PEBakery", @"pTextFile1",
                 null, null, ErrorCheck.RuntimeError);
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pTextFile1,", @"pTextFile1",
+                null, @"none,1,6,240,20,200,86");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pTextFile1,Nil", @"pTextFile1",
+                null, @"none,1,6,240,20,200,86");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pTextFile1,Dummy.txt", @"pTextFile1",
+                null, @"Dummy.txt,1,6,240,20,200,86");
 
             // 8 - Button
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pButton1,Logo.jpg", @"pButton1",
+                null, @"ShowProgress,1,8,240,115,80,25,Hello,Logo.jpg,False");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pButton1,", @"pButton1",
+                null, @"ShowProgress,1,8,240,115,80,25,Hello,0,False");
+            SingleTemplate($@"WriteInterface,Resource,{scriptFile},Interface,pButton1,Nil", @"pButton1",
+                null, @"ShowProgress,1,8,240,115,80,25,Hello,0,False");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pButton1,PEBakery", @"pButton1",
                 null, null, ErrorCheck.RuntimeError);
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,World", @"pButton1",

@@ -2495,6 +2495,8 @@ namespace PEBakery.Core
         NumberMin, NumberMax, NumberTick,
         // Image, WebLabel
         Url,
+        // Button, Image, TextFile
+        Resource,
         // Items - ComboBox, RadioGroup
         Items,
         // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup

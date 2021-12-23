@@ -329,6 +329,35 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 #endregion
+                #region Resource - Button, Image, TextFile
+                case InterfaceElement.Resource:
+                    switch (uiCtrl.Type)
+                    {
+                        case UIControlType.Button:
+                            {
+                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+
+                                if (subInfo.Picture == null)
+                                    destStr = string.Empty;
+                                else
+                                    destStr = StringEscaper.Unescape(subInfo.Picture);
+                            }
+                            break;
+                        case UIControlType.Image:
+                            {
+                                destStr = StringEscaper.Unescape(uiCtrl.Text);
+                            }
+                            break;
+                        case UIControlType.TextFile:
+                            {
+                                destStr = StringEscaper.Unescape(uiCtrl.Text);
+                            }
+                            break;
+                        default:
+                            return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
+                    }
+                    break;
+                #endregion
                 #region Items - ComboBox, RadioGroup
                 case InterfaceElement.Items:
                     {
@@ -803,6 +832,41 @@ namespace PEBakery.Core.Commands
                                 UIInfo_WebLabel subInfo = uiCtrl.Info.Cast<UIInfo_WebLabel>();
 
                                 subInfo.Url = finalValue;
+                            }
+                            break;
+                        default:
+                            return ReturnErrorLog($"Writing [{element}] to [{uiCtrl.Type}] is not supported");
+                    }
+                    break;
+                #endregion
+                #region Resource - Button, Image
+                case InterfaceElement.Resource:
+                    switch (uiCtrl.Type)
+                    {
+                        case UIControlType.Button:
+                            {
+                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+
+                                if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                                    subInfo.Picture = null;
+                                else
+                                    subInfo.Picture = finalValue;
+                            }
+                            break;
+                        case UIControlType.Image:
+                            {
+                                if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                                    uiCtrl.Text = "none";
+                                else
+                                    uiCtrl.Text = finalValue;
+                            }
+                            break;
+                        case UIControlType.TextFile:
+                            {
+                                if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                                    uiCtrl.Text = "none";
+                                else
+                                    uiCtrl.Text = finalValue;
                             }
                             break;
                         default:
