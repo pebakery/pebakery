@@ -1347,15 +1347,28 @@ namespace PEBakery.Core
                     currentPath = string.Empty;
                 Debug.Assert(currentPath != null);
 
+                string filter = "All Files|*.*";
+                if (info.Filter != null)
+                {
+                    // TODO: Should we verify we have a valid Description/Filter Pattern pair or just throw the system exception and fallack to "All Files|*.*"
+                    filter = info.Filter;
+                }
+
                 Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Filter = "All Files|*.*",
                     InitialDirectory = currentPath,
                 };
 
                 if (info.Title != null)
                 {
                     dialog.Title = StringEscaper.Unescape(info.Title);
+                }
+
+                try { dialog.Filter = filter; }
+                catch (ArgumentException argEx) // Invalid Filter string
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{argEx.Message}\r\n{uiCtrl.RawLine} (Line {uiCtrl.LineIdx})"));
+                    dialog.Filter = "All Files|*.*"; // Fallback to default filter
                 }
 
                 if (dialog.ShowDialog() == true)

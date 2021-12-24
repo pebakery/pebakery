@@ -122,7 +122,7 @@ namespace PEBakery.Core
                      [FontSize]   : Default 8 (Added in PEBakery) 
                      [FontWeight] : Normal, Bold (Added in PEBakery) 
                      [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
-    13 FileBox     = [file|dir][Title=<StringValue>]
+    13 FileBox     = [file|dir][Title=<StringValue>][Filter=<StringValue>]
     14 RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                      // IntegerIndex : selected index, starting from 0
 
@@ -1070,12 +1070,14 @@ namespace PEBakery.Core
         public bool IsFile { get; set; }
         // Optional
         public string Title { get; set; }
+        public string Filter { get; set; }
 
-        public UIInfo_FileBox(string tooltip, bool isFile, string title)
+        public UIInfo_FileBox(string tooltip, bool isFile, string title, string filter)
             : base(tooltip)
         {
             IsFile = isFile;
             Title = title;
+            Filter = filter;
         }
 
         public override string ForgeRawLine()
@@ -1086,6 +1088,11 @@ namespace PEBakery.Core
             {
                 b.Append(',');
                 b.Append(StringEscaper.DoubleQuote($"Title={Title}"));
+            }
+            if (IsFile && Filter != null)
+            {
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"Filter={Filter}"));
             }
             b.Append(ForgeToolTip());
             return b.ToString();
