@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2020 Hajin Jang
+    Copyright (C) 2016-2022 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -134,7 +134,7 @@
                         <TextBlock VerticalAlignment="Bottom"
                                    Margin="0, 0, 0, 0"
                                    FontSize="14"
-                                   Text="Copyright (C) 2016-2020 Hajin Jang, PEBakery Contributors"/>
+                                   Text="Copyright (C) 2016-2022 Hajin Jang, PEBakery Contributors"/>
                         
                     </StackPanel>
                     
