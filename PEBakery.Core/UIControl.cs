@@ -638,7 +638,7 @@ namespace PEBakery.Core
         public string ForgeToolTip()
         {
             if (ToolTip != null)
-                return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
+                return "," + StringEscaper.DoubleQuote($"__{ToolTip}");
             return string.Empty;
         }
 

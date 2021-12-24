@@ -587,6 +587,7 @@
                                                    Text="ToolTip" />
                                         <TextBox Grid.Row="6" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
+                                                 AcceptsReturn="True"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"
                                                  Text="{Binding UICtrlToolTip, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}" Margin="0,1,0,0"/>
