@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2020 Hajin Jang
+    Copyright (C) 2018-2022 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -38,7 +38,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -49,7 +48,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-// ReSharper disable InconsistentNaming
 namespace PEBakery.WPF
 {
     #region UIControlModifiedEvent
@@ -76,7 +74,6 @@ namespace PEBakery.WPF
     #endregion
 
     #region ScriptEditWindow
-    // ReSharper disable once RedundantExtendsListEntry
     public partial class ScriptEditWindow : Window
     {
         #region Field and Property
@@ -376,6 +373,16 @@ namespace PEBakery.WPF
             if (!Equals(focusedControl, InterfaceScrollViewer))
                 return;
 
+            // [*] Delete UIControl
+            if (e.Key == Key.Delete && e.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                if ((m.SelectMode == ScriptEditViewModel.ControlSelectMode.SingleSelect || 
+                    m.SelectMode == ScriptEditViewModel.ControlSelectMode.MultiSelect))
+                    m.UICtrlDeleteCommand.Execute(null);
+                return;
+            }
+
+            // [*] Move/Resize by keyboard
             int delta;
             bool move;
             switch (e.KeyboardDevice.Modifiers)
@@ -666,7 +673,6 @@ namespace PEBakery.WPF
             }
         }
 
-        [SuppressMessage("ReSharper", "RedundantCaseLabel")]
         public bool? ScriptSelected
         {
             get
