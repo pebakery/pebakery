@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using SevenZip;
 using System;
 
 namespace PEBakery.Core
@@ -80,10 +79,10 @@ namespace PEBakery.Core
             switch (format)
             {
                 case ArchiveFile.ArchiveCompressFormat.Zip:
-                    outFormat = OutArchiveFormat.Zip;
+                    outFormat = SevenZip.OutArchiveFormat.Zip;
                     break;
                 case ArchiveFile.ArchiveCompressFormat.SevenZip:
-                    outFormat = OutArchiveFormat.SevenZip;
+                    outFormat = SevenZip.OutArchiveFormat.SevenZip;
                     break;
                 default:
                     throw new ArgumentException($"Invalid ArchiveHelper.ArchiveFormat [{format}]");

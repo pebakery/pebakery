@@ -514,7 +514,9 @@ namespace PEBakery.WPF
             // Init ObservableCollection
             AttachedFolders = new ObservableCollection<AttachFolderItem>();
             AttachedFiles = new ObservableCollection<AttachFileItem>();
-            // SelectedAttachedFiles = new List<AttachFileItem>();
+            UICtrlAddTypeSource = new ObservableCollection<string>(UIControl.UIControlLexiDict
+                .Where(x => x.Value != UIControlType.None)
+                .Select(x => x.Value.ToString()));
 
             // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
@@ -863,6 +865,15 @@ namespace PEBakery.WPF
         }
 
         // Add Control
+        // UIControl.UIControlLexiDict is converted to UiCtrlAddTypeSource on constructor
+        private ObservableCollection<string> _uiCtrlAddTypeSource = new ObservableCollection<string>();
+        private readonly object _uiCtrlAddTypeSourceLock = new object();
+        public ObservableCollection<string> UICtrlAddTypeSource
+        {
+            get => _uiCtrlAddTypeSource;
+            set => SetCollectionProperty(ref _uiCtrlAddTypeSource, _uiCtrlAddTypeSourceLock, value);
+        }
+
         private int _uiCtrlAddTypeIndex = -1;
         public int UICtrlAddTypeIndex
         {
@@ -2297,7 +2308,7 @@ namespace PEBakery.WPF
 
         private bool UICtrlAddCommand_CanExecute(object sender)
         {
-            return CanExecuteCommand && (int)UIControlType.None < UICtrlAddTypeIndex;
+            return CanExecuteCommand && (0 <= UICtrlAddTypeIndex && UICtrlAddTypeIndex < UIControl.UIControlLexiDict.Count);
         }
 
         private void UICtrlAddCommand_Execute(object sender)
@@ -2305,7 +2316,9 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                UIControlType type = UIControl.UIControlZeroBasedDict[UICtrlAddTypeIndex];
+                Debug.Assert(UIControl.UIControlLexiDict.ContainsKey(UICtrlAddTypeIndex), "Invalid UIControl AddType index");
+
+                UIControlType type = UIControl.UIControlLexiDict[UICtrlAddTypeIndex];
                 if (type == UIControlType.None)
                 {
                     MessageBox.Show(_window, "You must specify a control type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

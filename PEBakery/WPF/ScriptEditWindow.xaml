@@ -452,22 +452,9 @@
 
                                 <ComboBox Grid.Column="0"
                                           VerticalContentAlignment="Center"
-                                          x:Name="UICtrlAddType"
-                                          SelectedIndex="{Binding UICtrlAddTypeIndex}">
-                                    <ComboBoxItem Content="Bevel"/>
-                                    <ComboBoxItem Content="Button"/>
-                                    <ComboBoxItem Content="CheckBox"/>
-                                    <ComboBoxItem Content="ComboBox"/>
-                                    <ComboBoxItem Content="FileBox"/>
-                                    <ComboBoxItem Content="Image"/>
-                                    <ComboBoxItem Content="NumberBox"/>
-                                    <ComboBoxItem Content="RadioButton"/>
-                                    <ComboBoxItem Content="RadioGroup"/>
-                                    <ComboBoxItem Content="TextBox"/>
-                                    <ComboBoxItem Content="TextFile"/>
-                                    <ComboBoxItem Content="TextLabel"/>
-                                    <ComboBoxItem Content="WebLabel"/>
-                                </ComboBox>
+                                          x:Name="UICtrlAddComboBox"
+                                          SelectedIndex="{Binding UICtrlAddTypeIndex}"
+                                          ItemsSource="{Binding UICtrlAddTypeSource, Mode=OneWay}"/>
                                 <Button Grid.Column="1"
                                         Margin="5, 0, 0, 0"
                                         x:Name="UICtrlAddButton"

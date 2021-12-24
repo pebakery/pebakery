@@ -529,7 +529,28 @@ namespace PEBakery.Core
                 [10] = UIControlType.Bevel,
                 [11] = UIControlType.FileBox,
                 [12] = UIControlType.RadioGroup,
-            });
+            }
+        );
+
+        public static ReadOnlyDictionary<int, UIControlType> UIControlLexiDict = new ReadOnlyDictionary<int, UIControlType>(
+            new Dictionary<int, UIControlType>
+            {
+                [-1] = UIControlType.None,
+                [0] = UIControlType.Bevel,
+                [1] = UIControlType.Button,
+                [2] = UIControlType.CheckBox,
+                [3] = UIControlType.ComboBox,
+                [4] = UIControlType.FileBox,
+                [5] = UIControlType.Image,
+                [6] = UIControlType.NumberBox,
+                [7] = UIControlType.RadioButton,
+                [8] = UIControlType.RadioGroup,
+                [9] = UIControlType.TextBox,
+                [10] = UIControlType.TextFile,
+                [11] = UIControlType.TextLabel,
+                [12] = UIControlType.WebLabel,
+            }
+        );
 
         public static string GetUIControlTemplate(UIControlType type, string key)
         {

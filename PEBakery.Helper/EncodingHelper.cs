@@ -470,7 +470,7 @@ namespace PEBakery.Helper
 
         /// <summary>
         /// Detect Encoding of the text file, considering the content to write.
-        /// If the fils is ASCII-only but the content to write is not compatible with ANSI, it will be treated as UTF-8 wo BOM.
+        /// If the file is ASCII-only but the content to write is not compatible with ANSI, it will be treated as UTF-8 wo BOM.
         /// </summary>
         /// <param name="filePath">The text file to detect encoding</param>
         /// <param name="isContentAnsiCompat">Check if content to write is compatible with ANSI encoding</param>
