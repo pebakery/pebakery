@@ -471,8 +471,9 @@ namespace PEBakery.Core
 
                             if (info.Filter != null)
                             {
-                                if (StringEscaper.IsFileFilterValid(info.Filter) == false)
-                                    logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{info.Filter}] is invalid", uiCtrl));
+                                string filter = StringEscaper.Unescape(info.Filter);
+                                if (StringEscaper.IsFileFilterValid(filter) == false)
+                                    logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{filter}] is invalid", uiCtrl));
                             }
                         }
                         break;

@@ -1352,8 +1352,8 @@ namespace PEBakery.Core
                 if (info.Filter != null)
                 {
                     // info.Filter is independently validated at SyntaxChecker.
-                    // Let UIControl displayed even at worst case, so do not call StringEscaper.IsFileFilterValid() here.
-                    filter = info.Filter;
+                    // Let UIControl be displayed even at worst case, so do not call StringEscaper.IsFileFilterValid() here.
+                    filter = StringEscaper.Unescape(info.Filter);
                 }
 
                 Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
@@ -1385,7 +1385,8 @@ namespace PEBakery.Core
             else
             { // Directory
                 // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
-                // But it requires HWND to be displayed properly.
+                // But it requires HWND to be displayed properly, which UIRenderer does not have.
+                // Use Ookii's VistaFolderBrowserDialog instead.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
