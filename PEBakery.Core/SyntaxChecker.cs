@@ -465,6 +465,26 @@ namespace PEBakery.Core
                             }
                         }
                         break;
+                    case UIControlType.FileBox:
+                        {
+                            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+
+                            if (info.IsFile)
+                            { // Select File
+                                if (info.Filter != null)
+                                {
+                                    string filter = StringEscaper.Unescape(info.Filter);
+                                    if (StringEscaper.IsFileFilterValid(filter) == false)
+                                        logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{filter}] is invalid", uiCtrl));
+                                }
+                            }
+                            else
+                            { // Select Folder
+                                if (info.Filter != null)
+                                    logs.Add(new LogInfo(LogState.Warning, $"File filter not supported on folder selection", uiCtrl));
+                            }
+                        }
+                        break;
                     case UIControlType.RadioGroup:
                         {
                             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();

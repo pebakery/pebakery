@@ -1347,15 +1347,34 @@ namespace PEBakery.Core
                     currentPath = string.Empty;
                 Debug.Assert(currentPath != null);
 
+                const string fallbackFilter = "All Files|*.*";
+                string filter = fallbackFilter;
+                if (info.Filter != null)
+                {
+                    // info.Filter is independently validated at SyntaxChecker.
+                    // Let UIControl be displayed even at worst case, so do not call StringEscaper.IsFileFilterValid() here.
+                    filter = StringEscaper.Unescape(info.Filter);
+                }
+
                 Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Filter = "All Files|*.*",
                     InitialDirectory = currentPath,
                 };
 
                 if (info.Title != null)
                 {
                     dialog.Title = StringEscaper.Unescape(info.Title);
+                }
+
+                try
+                {
+                    // WPF will throw ArgumentException if file filter pattern is invalid.
+                    dialog.Filter = filter;
+                }
+                catch (ArgumentException argEx) // Invalid Filter string
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, argEx, uiCtrl));
+                    dialog.Filter = fallbackFilter; // Fallback to default filter
                 }
 
                 if (dialog.ShowDialog() == true)
@@ -1366,7 +1385,8 @@ namespace PEBakery.Core
             else
             { // Directory
                 // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
-                // But it requires HWND to be displayed properly.
+                // But it requires HWND to be displayed properly, which UIRenderer does not have.
+                // Use Ookii's VistaFolderBrowserDialog instead.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);

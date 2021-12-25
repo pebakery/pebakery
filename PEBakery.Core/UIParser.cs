@@ -551,7 +551,7 @@ namespace PEBakery.Core
                 case UIControlType.FileBox:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 2;
+                        const int maxOpCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -565,17 +565,29 @@ namespace PEBakery.Core
                         }
 
                         string title = null;
+                        string filter = null;
                         string tooltip = null;
+
+                        const string titleKey = "Title=";
+                        const string filterKey = "Filter=";
+
                         for (int i = 1; i < args.Count; i++)
                         {
                             string arg = args[i];
 
-                            const string splitKey = "Title=";
-                            if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
+                            if (arg.StartsWith(titleKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (title != null)
                                     throw new InvalidCommandException("Argument <Title> cannot be duplicated");
-                                title = arg.Substring(splitKey.Length);
+                                title = arg.Substring(titleKey.Length);
+                            }
+                            else if (arg.StartsWith(filterKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (!isFile)
+                                    throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
+                                if (filter != null)
+                                    throw new InvalidCommandException("Argument <Filter> cannot be duplicated");
+                                filter = arg.Substring(filterKey.Length);
                             }
                             else if (arg.StartsWith("__", StringComparison.OrdinalIgnoreCase)) // ToolTip
                             {
@@ -587,7 +599,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new UIInfo_FileBox(tooltip, isFile, title);
+                        return new UIInfo_FileBox(tooltip, isFile, title, filter);
                     }
                 #endregion
                 #region RadioGroup

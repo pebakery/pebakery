@@ -666,7 +666,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void IsFileNameValid()
         {
-            void Template(string path, bool result, IEnumerable<char> more = null)
+            static void Template(string path, bool result, IEnumerable<char> more = null)
             {
                 Assert.IsTrue(StringEscaper.IsFileNameValid(path, more) == result);
             }
@@ -686,6 +686,28 @@ namespace PEBakery.Core.Tests
             Template(@"A[BC", false, new char[] { '[' });
             Template(@"\A[BC", false, new char[] { '[' });
             Template(@"A:\A[BC", false, new char[] { '[' });
+        }
+        #endregion
+
+        #region IsFileFilterValid
+        [TestMethod]
+        public void IsFileFilterValid()
+        {
+            static void Template(string filter, bool result)
+            {
+                Assert.IsTrue(StringEscaper.IsFileFilterValid(filter) == result);
+            }
+
+            Template(@"Txt Files|*.txt;*.log|All Files|*.*", true);
+            Template(@"Txt Files", false);
+            Template(@"Txt Files|", false);
+            Template(@"Office Files|*.doc;*.xls*.ppt", true);
+            Template(@"Office Files|*.doc;*.xls;*.ppt;", true);
+            Template(@"Office Files|*.doc;*.xls;*.ppt;;;;;dummy", true);
+            Template(@"Word Documents|*.doc|Excel Worksheets|*.xls|PowerPoint Presentations|*.ppt", true);
+            Template(@"Word Documents|*.doc|Excel Worksheets|filename", true);
+            Template(@"Word Documents|*.doc|Excel Worksheets", false);
+            Template(@"Word Documents|*.doc|Excel Worksheets|", false);
         }
         #endregion
 
