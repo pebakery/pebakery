@@ -62,6 +62,7 @@
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
         <local:StringEscapeConverter x:Key="StringEscapeConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="MultiSelectAlternativeListViewColor" BasedOn="{StaticResource AlternativeListViewColor}" TargetType="{x:Type ListViewItem}">
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
@@ -1084,9 +1085,10 @@
                                                  Text="{Binding UICtrlFileBoxTitle, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Filter" />
+                                                   Text="File Filter" />
                                         <TextBox Grid.Row="4" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
+                                                 IsEnabled="{Binding UICtrlFileBoxFileChecked, UpdateSourceTrigger=PropertyChanged}"
                                                  Text="{Binding UICtrlFileBoxFilter, Converter={StaticResource StringEscapeConverter}, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- RadioGroup -->
