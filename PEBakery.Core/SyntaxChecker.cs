@@ -465,6 +465,17 @@ namespace PEBakery.Core
                             }
                         }
                         break;
+                    case UIControlType.FileBox:
+                        {
+                            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+
+                            if (info.Filter != null)
+                            {
+                                if (StringEscaper.IsFileFilterValid(info.Filter) == false)
+                                    logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{info.Filter}] is invalid", uiCtrl));
+                            }
+                        }
+                        break;
                     case UIControlType.RadioGroup:
                         {
                             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();

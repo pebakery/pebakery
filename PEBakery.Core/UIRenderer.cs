@@ -1347,10 +1347,12 @@ namespace PEBakery.Core
                     currentPath = string.Empty;
                 Debug.Assert(currentPath != null);
 
-                string filter = "All Files|*.*";
+                const string fallbackFilter = "All Files|*.*";
+                string filter = fallbackFilter;
                 if (info.Filter != null)
                 {
-                    // TODO: Should we verify we have a valid Description/Filter Pattern pair or just throw the system exception and fallack to "All Files|*.*"
+                    // info.Filter is independently validated at SyntaxChecker.
+                    // Let UIControl displayed even at worst case, so do not call StringEscaper.IsFileFilterValid() here.
                     filter = info.Filter;
                 }
 
@@ -1364,11 +1366,15 @@ namespace PEBakery.Core
                     dialog.Title = StringEscaper.Unescape(info.Title);
                 }
 
-                try { dialog.Filter = filter; }
+                try
+                {
+                    // WPF will throw ArgumentException if file filter pattern is invalid.
+                    dialog.Filter = filter;
+                }
                 catch (ArgumentException argEx) // Invalid Filter string
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{argEx.Message}\r\n{uiCtrl.RawLine} (Line {uiCtrl.LineIdx})"));
-                    dialog.Filter = "All Files|*.*"; // Fallback to default filter
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, argEx, uiCtrl));
+                    dialog.Filter = fallbackFilter; // Fallback to default filter
                 }
 
                 if (dialog.ShowDialog() == true)

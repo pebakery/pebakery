@@ -171,6 +171,23 @@ namespace PEBakery.Core
         {
             return Uri.TryCreate(url, UriKind.Absolute, out _);
         }
+
+        /// <summary>
+        /// Check if given filter is a valid Microsoft.Win32.OpenFileDialog.Filter format.
+        /// </summary>
+        /// <param name="filter">File filter string to test</param>
+        /// <returns>True if valid</returns>
+        public static bool IsFileFilterValid(string filter)
+        {
+            // https://docs.microsoft.com/ko-kr/dotnet/api/microsoft.win32.filedialog.filter?view=windowsdesktop-6.0
+            // Ex) Valid -> Txt Files|*.txt;*.log|All Files|*.*
+            //   Invalid -> Txt Files
+
+            // Valid format = [<DisplayText>|<wildcard1>;<wildcard2>;...] | [<DisplayText>|<wildcard1>;<wildcard2>;...]
+            //                           Txt Files     | *.txt;*.log   | All Files   | *.*
+            const string filterRegex = @"^([^\|\r\n]+)\|([^\|\r\n]+)+(\|([^\|\r\n]+)\|([^\|\r\n]+))*$";
+            return Regex.IsMatch(filter, filterRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
         #endregion
 
         #region EscapeString

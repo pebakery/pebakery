@@ -376,8 +376,8 @@ namespace PEBakery.WPF
             // [*] Delete UIControl
             if (e.Key == Key.Delete && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
-                if ((m.SelectMode == ScriptEditViewModel.ControlSelectMode.SingleSelect || 
-                    m.SelectMode == ScriptEditViewModel.ControlSelectMode.MultiSelect))
+                if (m.SelectMode == ScriptEditViewModel.ControlSelectMode.SingleSelect || 
+                    m.SelectMode == ScriptEditViewModel.ControlSelectMode.MultiSelect)
                     m.UICtrlDeleteCommand.Execute(null);
                 return;
             }
