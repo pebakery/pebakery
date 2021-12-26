@@ -15,7 +15,7 @@
     <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
     <Version>0.9.7.0</Version>
     <Authors>Team PEBakery</Authors>
-    <Copyright>Copyright © 2016-2020</Copyright>
+    <Copyright>Copyright © 2016-2022</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
     <ErrorReport>send</ErrorReport>

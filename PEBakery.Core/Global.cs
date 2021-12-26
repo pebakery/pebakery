@@ -27,6 +27,7 @@
 
 using Microsoft.IO;
 using PEBakery.Core.ViewModels;
+using PEBakery.Core.Arguments;
 using PEBakery.Helper;
 using SQLite;
 using System;
@@ -87,7 +88,7 @@ namespace PEBakery.Core
         private static readonly object _fileTypeDetectorLock = new object();
         private static FileTypeDetector _fileTypeDetector;
         public static FileTypeDetector FileTypeDetector
-        { 
+        {
             get
             {
                 // Wait until _fileTypeDetector is loaded
@@ -136,40 +137,29 @@ namespace PEBakery.Core
         /// </summary>
         public static void Init()
         {
-            // Setup baseDir
-            string baseDir = Environment.CurrentDirectory;
-            for (int i = 0; i < Args.Length; i++)
-            {
-                if (Args[i].Equals("/basedir", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (i + 1 < Args.Length)
-                    {
-                        baseDir = Path.GetFullPath(Args[i + 1]);
-                        if (!Directory.Exists(baseDir))
-                        {
-                            MessageBox.Show($"Directory [{baseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
-                            Environment.Exit(1); // Force Shutdown
-                        }
-                        Environment.CurrentDirectory = baseDir;
-                    }
-                    else
-                    {
-                        // ReSharper disable once LocalizableElement
-                        Console.WriteLine("\'/basedir\' must be used with path\r\n");
-                    }
-                }
-                else if (Args[i].Equals("/?", StringComparison.OrdinalIgnoreCase) ||
-                         Args[i].Equals("/help", StringComparison.OrdinalIgnoreCase) ||
-                         Args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
-                {
-                    // ReSharper disable once LocalizableElement
-                    Console.WriteLine("Sorry, help message not implemented\r\n");
-                }
-            }
-            BaseDir = baseDir;
+            // Set fallback BaseDir
+            string baseDir = BaseDir = Environment.CurrentDirectory;
 
-            // Setup AppDomain.UnhandledException handler
+            // Setup unhandled exception handler (requires BaseDir to be set)
             AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
+
+            // Run ArgumentParser
+            ArgumentParser argParser = new ArgumentParser();
+            PEBakeryOptions opts = argParser.Parse(Args);
+            if (opts == null) // Arguments parse fail
+                Environment.Exit(1); // Force Shutdown
+
+            // Setup BaseDir
+            if (opts.BaseDir != null)
+            {
+                baseDir = Path.GetFullPath(opts.BaseDir);
+                if (Directory.Exists(baseDir) == false)
+                {
+                    MessageBox.Show($"Directory [{baseDir}] does not exist.\r\nRun [PEBkaery --help] for commnad line help message.", "PEBakery CommandLine Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Environment.Exit(1); // Force Shutdown
+                }
+                Environment.CurrentDirectory = BaseDir = baseDir;
+            }
 
             // Database directory
             string dbDir = Path.Combine(BaseDir, "Database");

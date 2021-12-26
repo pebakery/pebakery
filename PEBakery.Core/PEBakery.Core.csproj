@@ -13,7 +13,7 @@
     <Authors>Team PEBakery</Authors>
     <Version>0.9.7.0</Version>
     <Company>Team PEBakery</Company>
-    <Copyright>Copyright © 2016-2020</Copyright>
+    <Copyright>Copyright © 2016-2022</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SignAssembly>false</SignAssembly>
@@ -48,6 +48,7 @@
   </ItemGroup>
   <!-- NuGet Packages -->
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Joveler.Compression.XZ" Version="4.1.0" />
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.1.0" />
     <PackageReference Include="Joveler.FileMagician" Version="2.1.0" />
