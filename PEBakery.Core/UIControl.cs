@@ -511,8 +511,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region UIControl Dictionary 
-        public static ReadOnlyDictionary<int, UIControlType> UIControlZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
+        #region UIControl Dictionary/HashSet
+        public static ReadOnlyDictionary<int, UIControlType> ZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
             new Dictionary<int, UIControlType>
             {
                 [-1] = UIControlType.None,
@@ -532,7 +532,7 @@ namespace PEBakery.Core
             }
         );
 
-        public static ReadOnlyDictionary<int, UIControlType> UIControlLexiDict = new ReadOnlyDictionary<int, UIControlType>(
+        public static ReadOnlyDictionary<int, UIControlType> LexicalDict = new ReadOnlyDictionary<int, UIControlType>(
             new Dictionary<int, UIControlType>
             {
                 [-1] = UIControlType.None,
@@ -552,6 +552,15 @@ namespace PEBakery.Core
             }
         );
 
+        public static HashSet<UIControlType> HasInterfaceEncodedFile = new HashSet<UIControlType>()
+        {
+            UIControlType.Image,
+            UIControlType.TextFile,
+            UIControlType.Button,
+        };
+        #endregion
+
+        #region Template
         public static string GetUIControlTemplate(UIControlType type, string key)
         {
             switch (type)

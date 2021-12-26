@@ -147,7 +147,7 @@ namespace PEBakery.WPF
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
-                        if (m.WriteScriptInterface(m.SelectedInterfaceSectionName, false))
+                        if (m.WriteScriptInterface(m.SelectedInterfaceSectionName))
                             scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
@@ -188,7 +188,7 @@ namespace PEBakery.WPF
             m.DrawScript();
         }
 
-        private async void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Run only if selected interface section is different from active interface section
             if (m.SelectedInterfaceSectionName == null ||
@@ -202,7 +202,7 @@ namespace PEBakery.WPF
                 MessageBoxResult result = MessageBox.Show(this, "The script must be saved before switching to another interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
-                    await m.WriteScriptInterfaceAsync(m.SelectedInterfaceSectionName, false);
+                    m.WriteScriptInterface(m.SelectedInterfaceSectionName);
                 }
                 else
                 {
@@ -493,13 +493,13 @@ namespace PEBakery.WPF
         {
             switch (m.TabIndex)
             {
-                case 0:
+                case 0: // Script [General]
                     // Changing focus is required to make sure changes in UI updated to ViewModel
                     MainSaveButton.Focus();
                     m.WriteScriptGeneral();
                     break;
-                case 1:
-                    m.WriteScriptInterface();
+                case 1: // Script [Interface]
+                    m.WriteScriptInterface(m.SelectedInterfaceSectionName);
                     break;
             }
         }
@@ -521,7 +521,7 @@ namespace PEBakery.WPF
             // Init ObservableCollection
             AttachedFolders = new ObservableCollection<AttachFolderItem>();
             AttachedFiles = new ObservableCollection<AttachFileItem>();
-            UICtrlAddTypeSource = new ObservableCollection<string>(UIControl.UIControlLexiDict
+            UICtrlAddTypeSource = new ObservableCollection<string>(UIControl.LexicalDict
                 .Where(x => x.Value != UIControlType.None)
                 .Select(x => x.Value.ToString()));
 
@@ -2166,7 +2166,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(_window, "The script must be saved before adding a new interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        await WriteScriptInterfaceAsync(null, false);
+                        WriteScriptInterface(null);
                     else
                         return;
                 }
@@ -2252,7 +2252,7 @@ namespace PEBakery.WPF
                     "Delete Confirmation",
                     MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
-                    await WriteScriptInterfaceAsync(null, false);
+                    WriteScriptInterface(null);
                 else
                     return;
 
@@ -2279,7 +2279,7 @@ namespace PEBakery.WPF
                     List<IniKey> delKeys = new List<IniKey>();
 
                     // If only one interface is left, delete InterfaceList.
-                    // If don't, overwrite InterfaceList with new section names.
+                    // If not, overwrite InterfaceList with new section names.
                     if (InterfaceSectionNames.Count == 1)
                     {
                         delKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList));
@@ -2328,7 +2328,7 @@ namespace PEBakery.WPF
 
         private bool UICtrlAddCommand_CanExecute(object sender)
         {
-            return CanExecuteCommand && (0 <= UICtrlAddTypeIndex && UICtrlAddTypeIndex < UIControl.UIControlLexiDict.Count);
+            return CanExecuteCommand && (0 <= UICtrlAddTypeIndex && UICtrlAddTypeIndex < UIControl.LexicalDict.Count);
         }
 
         private void UICtrlAddCommand_Execute(object sender)
@@ -2336,9 +2336,9 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                Debug.Assert(UIControl.UIControlLexiDict.ContainsKey(UICtrlAddTypeIndex), "Invalid UIControl AddType index");
+                Debug.Assert(UIControl.LexicalDict.ContainsKey(UICtrlAddTypeIndex), "Invalid UIControl AddType index");
 
-                UIControlType type = UIControl.UIControlLexiDict[UICtrlAddTypeIndex];
+                UIControlType type = UIControl.LexicalDict[UICtrlAddTypeIndex];
                 if (type == UIControlType.None)
                 {
                     MessageBox.Show(_window, "You must specify a control type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -2409,6 +2409,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
+                List<UIControl> toScrubEncodedFile = new List<UIControl>();
                 if (SelectMode == ControlSelectMode.SingleSelect)
                 {
                     // Single-Select
@@ -2416,10 +2417,19 @@ namespace PEBakery.WPF
                         return;
 
                     UIControl uiCtrl = SelectedUICtrl;
-                    UICtrlToBeDeleted.Add(uiCtrl);
 
-                    // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
-                    DeleteInterfaceEncodedFile(uiCtrl);
+                    // If uiCtrl to delete has encoded file, alert user to save
+                    if (UIControl.HasInterfaceEncodedFile.Contains(uiCtrl.Type))
+                    {
+                        // Must save current edits to switch active interface section
+                        MessageBoxResult result = MessageBox.Show(_window, $"The script must be saved when deleting [{uiCtrl.Type}].\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                        if (result == MessageBoxResult.Yes)
+                            toScrubEncodedFile.Add(uiCtrl);
+                        else
+                            return;
+                    }
+
+                    UICtrlToBeDeleted.Add(uiCtrl);
 
                     Renderer.UICtrls.Remove(uiCtrl);
                 }
@@ -2431,11 +2441,23 @@ namespace PEBakery.WPF
 
                     UICtrlToBeDeleted.AddRange(SelectedUICtrls);
 
+                    // If uiCtrl to delete has encoded file, alert user to save
+                    UIControl[] hasEncodedFiles = SelectedUICtrls.Where(x => UIControl.HasInterfaceEncodedFile.Contains(x.Type)).ToArray();
+                    if (0 < hasEncodedFiles.Length)
+                    {
+                        UIControlType[] msgTypes = hasEncodedFiles.Select(x => x.Type).Distinct().ToArray();
+                        string msgTypeStr = string.Join(", ", msgTypes);
+
+                        // Must save current edits to switch active interface section
+                        MessageBoxResult result = MessageBox.Show(_window, $"The script must be saved when deleting [{msgTypeStr}].\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                        if (result == MessageBoxResult.Yes)
+                            toScrubEncodedFile.AddRange(hasEncodedFiles);
+                        else
+                            return;
+                    }
+
                     foreach (UIControl uiCtrl in SelectedUICtrls)
                     {
-                        // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
-                        DeleteInterfaceEncodedFile(uiCtrl);
-
                         Renderer.UICtrls.Remove(uiCtrl);
                     }
                 }
@@ -2447,8 +2469,26 @@ namespace PEBakery.WPF
                 SelectedUICtrl = null;
                 SelectedUICtrls = null;
 
-                WriteScriptInterface(null, true);
-                InterfaceNotSaved = true;
+                if (0 < toScrubEncodedFile.Count)
+                { // Includes Image, FileBox, Button - Interface-Encoded attachment should be deleted, interface should be saved
+                    foreach (UIControl uiCtrl in toScrubEncodedFile)
+                    {
+                        // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments.
+                        DeleteInterfaceEncodedFile(uiCtrl);
+                    }
+
+                    // Save into script file (InterfaceNotSaved is set to false inside function)
+                    WriteScriptInterface();
+                }
+                else
+                { // No need to save
+                    //// Update MainWindow only
+                    //RefreshMainWindow();
+
+                    // TODO
+                    InterfaceNotSaved = true;
+                }
+
                 InterfaceUpdated = true;
             }
             finally
@@ -2506,7 +2546,7 @@ namespace PEBakery.WPF
                         "Save Confirmation",
                         MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(null, false);
+                        WriteScriptInterface(null);
                     else
                         return;
                 }
@@ -2528,7 +2568,7 @@ namespace PEBakery.WPF
                     uiCtrl.Width = width;
                     uiCtrl.Height = height;
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(null, false);
+                    WriteScriptInterface(null);
                 }
             }
             finally
@@ -2663,7 +2703,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(null, false);
+                        WriteScriptInterface(null);
                     else
                         return;
                 }
@@ -2756,7 +2796,8 @@ namespace PEBakery.WPF
                     }
 
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(null, true);
+                    WriteScriptInterface(null);
+                    RefreshMainWindow();
                 }
                 catch (Exception ex)
                 {
@@ -2903,7 +2944,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(null, false);
+                        WriteScriptInterface(null);
                     else
                         return;
                 }
@@ -2929,7 +2970,8 @@ namespace PEBakery.WPF
                         break;
                 }
                 InvokeUIControlEvent(false);
-                WriteScriptInterface(null, true);
+                WriteScriptInterface(null);
+                RefreshMainWindow();
             }
             finally
             {
@@ -3920,7 +3962,12 @@ namespace PEBakery.WPF
             if (refreshSectionNames)
             {
                 InterfaceSectionNames = new ObservableCollection<string>(Script.GetInterfaceSectionNames(true));
-                SelectedInterfaceSectionName = InterfaceSectionName = Script.InterfaceSectionName;
+                Debug.Assert(InterfaceSectionNames.Contains(ScriptSection.Names.Interface, StringComparer.OrdinalIgnoreCase), "Invalid interface section selected");
+
+                if (InterfaceSectionNames.Contains(Script.InterfaceSectionName, StringComparer.OrdinalIgnoreCase))
+                    SelectedInterfaceSectionName = InterfaceSectionName = Script.InterfaceSectionName;
+                else
+                    SelectedInterfaceSectionName = InterfaceSectionName = ScriptSection.Names.Interface;
             }
             else
             {
@@ -3953,6 +4000,8 @@ namespace PEBakery.WPF
 
             InterfaceNotSaved = false;
             InterfaceUpdated = false;
+
+            InterfaceStatusBarText = $"Interface [{SelectedInterfaceSectionName}] loaded";
 
             DrawScript();
             ResetSelectedUICtrl();
@@ -4187,12 +4236,12 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public Task<bool> WriteScriptInterfaceAsync(string activeInterfaceSection = null, bool refreshMainWindow = true)
+        public Task<bool> WriteScriptInterfaceAsync(string activeInterfaceSection = null)
         {
-            return Task.Run(() => WriteScriptInterface(activeInterfaceSection, refreshMainWindow));
+            return Task.Run(() => WriteScriptInterface(activeInterfaceSection));
         }
 
-        public bool WriteScriptInterface(string activeInterfaceSection = null, bool refreshMainWindow = true)
+        public bool WriteScriptInterface(string activeInterfaceSection = null)
         {
             if (Renderer == null)
                 return false;
@@ -4207,16 +4256,19 @@ namespace PEBakery.WPF
                 UICtrlToBeDeleted.Clear();
                 IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
-
-                if (activeInterfaceSection != null)
-                {
+                
+                if (activeInterfaceSection == null || 
+                    activeInterfaceSection.Equals(Script.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
+                { // [Interface] is active -> Remove "Interface=" key
+                    IniReadWriter.DeleteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.Interface);
+                }
+                else
+                { // Other than [Interface] is active -> Set "Interface=" key
                     IniReadWriter.WriteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.Interface, activeInterfaceSection);
                 }
 
+                InterfaceStatusBarText = $"Interface [{SelectedInterfaceSectionName}] loaded";
                 Script = Script.Project.RefreshScript(Script);
-
-                if (refreshMainWindow)
-                    RefreshMainWindow();
             }
             catch (Exception e)
             {
