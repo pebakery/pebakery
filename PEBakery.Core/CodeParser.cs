@@ -2668,7 +2668,7 @@ namespace PEBakery.Core
         public static CodeInfo_UserInput ParseCodeInfoUserInput(string rawCode, List<string> args)
         {
             const int minArgCount = 3;
-            const int maxArgCount = 4;
+            const int maxArgCount = 5;
             if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                 throw new InvalidCommandException($"Command [UserInput] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -2685,22 +2685,34 @@ namespace PEBakery.Core
                 case UserInputType.FilePath:
                     {
                         // UserInput,DirPath,<Path>,<DestVar>,[Title=<Str>]
-                        // UserInput,FilePath,<Path>,<DestVar>,[Title=<Str>]
+                        // UserInput,FilePath,<Path>,<DestVar>,[Title=<Str>][Filter=<Str>]
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
 
                         string title = null;
+                        string filter = null;
+
+                        const string titleKey = "Title=";
+                        const string filterKey = "Filter=";
+
                         for (int i = argCount; i < args.Count; i++) 
                         {
                             string arg = args[i];
 
-                            const string splitKey = "Title=";
-                            if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
+                            if (arg.StartsWith(titleKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (title != null)
                                     throw new InvalidCommandException("Argument <Title> cannot be duplicated", rawCode);
-                                title = arg.Substring(splitKey.Length);
+                                title = arg.Substring(titleKey.Length);
+                            }
+                            else if (arg.StartsWith(filterKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (type == UserInputType.DirPath)
+                                    throw new InvalidCommandException("Argument <Filter> can only be used for file selection", rawCode);
+                                if (filter != null)
+                                    throw new InvalidCommandException("Argument <Filter> cannot be duplicated", rawCode);
+                                filter = arg.Substring(filterKey.Length);
                             }
                             else
                             {
@@ -2708,7 +2720,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        info = new UserInputInfo_DirFile(args[0], args[1], title);
+                        info = new UserInputInfo_DirFile(args[0], args[1], title, filter);
                     }
                     break;
                 default: // Error

@@ -2758,17 +2758,19 @@ namespace PEBakery.Core
     [Serializable]
     public class UserInputInfo_DirFile : UserInputInfo
     {
-        // UserInput,File,<InitPath>,<%DestVar%>[,Title=<Str>]
+        // UserInput,File,<InitPath>,<%DestVar%>[,Title=<Str>][,Filter=<Str>]
         // UserInput,Dir,<InitPath>,<%DestVar%>[,Title=<Str>]
         public string InitPath;
         public string DestVar;
         public string Title; // Optional
+        public string Filter; // Optional
 
-        public UserInputInfo_DirFile(string initPath, string destVar, string title)
+        public UserInputInfo_DirFile(string initPath, string destVar, string title, string filter)
         {
             InitPath = initPath;
             DestVar = destVar;
             Title = title;
+            Filter = filter;
         }
 
         public override string ToString()
@@ -2780,8 +2782,12 @@ namespace PEBakery.Core
             if (Title != null)
             {
                 b.Append(",");
-                b.Append("Title=");
-                b.Append(Title);
+                b.Append($"Title={Title}");
+            }
+            if (Filter != null)
+            {
+                b.Append(",");
+                b.Append($"Filter={Filter}");
             }
             return b.ToString();
         }

@@ -1352,29 +1352,74 @@ namespace PEBakery.Core.Commands
                             Debug.Assert(initPath != null, $"{nameof(initPath)} != null");
 
                             string selectedPath = initPath;
+                            const string fallbackFilter = "All Files|*.*";
+                            string filter = fallbackFilter;
+
                             if (type == UserInputType.FilePath)
                             {
-                                string filter = "All Files|*.*";
-                                string initFile = Path.GetFileName(initPath);
-                                if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))
-                                { // If wildcard exists, apply to filter.
-                                    string ext = Path.GetExtension(initFile);
-                                    if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
-                                        ext = ext.Substring(1);
-                                    filter = $"{ext} Files|{initFile}";
+                                #region (Docs) File Filter Info
+                                /*
+                                Winbuilder syntax ony allows for one file filter defined by appending *.<ext> to initPath.
+                                example)
+                                  Specify initial dir and filter:
+                                    UserInput,File,C:\*.txt,%var%
+                                  
+                                  Specify default dir with filter
+                                     UserInput,File,*.txt,%var%
+
+                                if no filter is defined the default is "All Files|*.*"
+                                
+                                PEBakery adds the Filter= argument to allow filtering for more then one file type.
+                                If Filter= is defined any Winbuilder style filter will be ignored
+                                */
+                                #endregion
+                                if (subInfo.Filter != null)
+                                {
+                                    // Use the vaule of the Filter= argument and ignore any WB style filter 
+                                    // subInfo.Filter is independently validated at SyntaxChecker.
+                                    filter = subInfo.Filter;
+                                }
+                                else
+                                {  
+                                    // Winbuilder Style filter
+                                    string initFile = Path.GetFileName(initPath);
+                                    if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))
+                                    { // If wildcard exists, apply to filter.
+                                        string ext = Path.GetExtension(initFile);
+                                        if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
+                                            ext = ext.Substring(1);
+                                        filter = $"{ext} Files|{initFile}";
+                                    }
                                 }
 
-                                string initDir = Path.GetDirectoryName(initPath);
-                                if (initDir == null)
+                                string initDir = FileHelper.GetDirNameEx(initPath); // Use FileHelper.GetDirNameEx to prevent returning null if initPath is a root such as "C:\"
+                                if (initDir == ".")
+                                {
+                                    // FileHelper.GetDirNameEx returns "." for current dir if no root is supplied, however Win32.OpenFileDialog expects
+                                    // an empty string to represent current dir and "." causes it to throw an Invalid range exception
+                                    initDir = string.Empty;
+                                }
+                                else if (initDir == null)
                                     throw new InternalException("Internal Logic Error at UserInput");
+
                                 Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                                 {
-                                    Filter = filter,
                                     InitialDirectory = initDir,
                                 };
 
                                 if (subInfo.Title != null)
                                     dialog.Title = subInfo.Title;
+
+                                try
+                                {
+                                    // WPF will throw ArgumentException if file filter pattern is invalid.
+                                    dialog.Filter = filter;
+                                }
+                                catch (ArgumentException argEx) // Invalid Filter string
+                                {
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, argEx, cmd));
+                                    dialog.Filter = fallbackFilter; // Fallback to default filter
+                                }
 
                                 bool? result = dialog.ShowDialog();
 
@@ -1392,7 +1437,8 @@ namespace PEBakery.Core.Commands
                             else
                             {
                                 // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
-                                // But it requires HWND to be displayed properly.
+                                // But it requires HWND to be displayed properly, which UIRenderer does not have.
+                                // Use Ookii's VistaFolderBrowserDialog instead.
                                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                                 {
                                     SelectedPath = initPath,

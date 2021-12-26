@@ -263,8 +263,40 @@ namespace PEBakery.Core
                                 targetCodeSection = info.SectionName;
                         }
                         break;
+                    case CodeType.UserInput:
+                        {
+                            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
+
+                            UserInputType type = info.Type;
+                            switch (type)
+                            {
+                                case UserInputType.DirPath:
+                                case UserInputType.FilePath:
+                                    {
+
+                                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
+
+                                        if (info.Type == UserInputType.FilePath)
+                                        { // Select File
+                                            if (subInfo.Filter != null)
+                                            {
+                                                string filter = StringEscaper.Unescape(subInfo.Filter);
+                                                if (StringEscaper.IsFileFilterValid(filter) == false)
+                                                    logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{filter}] is invalid", cmd));
+                                            }
+                                        }
+                                        else
+                                        { // Select Folder
+                                            if (subInfo.Filter != null)
+                                                logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", cmd));
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
                     #endregion
-                    #region Check InterfaceSections
+                            #region Check InterfaceSections
                     case CodeType.AddInterface:
                         {
                             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
@@ -481,7 +513,7 @@ namespace PEBakery.Core
                             else
                             { // Select Folder
                                 if (info.Filter != null)
-                                    logs.Add(new LogInfo(LogState.Warning, $"File filter not supported on folder selection", uiCtrl));
+                                    logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", uiCtrl));
                             }
                         }
                         break;
