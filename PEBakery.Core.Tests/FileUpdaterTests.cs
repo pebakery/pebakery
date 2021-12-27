@@ -60,7 +60,7 @@ namespace PEBakery.Core.Tests
 #pragma warning restore IDE0060
         #endregion
 
-        #region ServerStatus - Is ASP .Net Core successfully running?
+        #region ServerStatus - Is kestrel server successfully running?
         [TestMethod]
         [TestCategory("FileUpdater")]
         public void ServerStatus()

@@ -226,7 +226,7 @@ namespace PEBakery.Core.Tests
 
         public static void EscapeThenUnescapeArrayTemplate(string[] srcs, bool fullEscape, bool escapePercent)
         {
-            List<string> escaped = StringEscaper.Escape(srcs, escapePercent);
+            List<string> escaped = StringEscaper.Escape(srcs, fullEscape, escapePercent);
             List<string> unescaped = StringEscaper.Unescape(escaped, escapePercent);
             for (int i = 0; i < unescaped.Count; i++)
                 Assert.IsTrue(unescaped[i].Equals(srcs[i], StringComparison.Ordinal));
@@ -581,7 +581,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void PathSecurityCheck()
         {
-            void Template(string path, bool expected)
+            static void Template(string path, bool expected)
             {
                 bool result = StringEscaper.PathSecurityCheck(path, out _);
                 Assert.AreEqual(expected, result);
@@ -623,7 +623,6 @@ namespace PEBakery.Core.Tests
             // %ProgramFiles(x86)%
             switch (RuntimeInformation.ProcessArchitecture)
             {
-                // Not sure about ARM64, please submit an issue/PR if anyone have ARM64 Windows device!
                 case Architecture.Arm64:
                 case Architecture.X64:
                     // Only in 64bit process
@@ -639,7 +638,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void IsPathValid()
         {
-            void Template(string path, bool result, IEnumerable<char> more = null)
+            static void Template(string path, bool result, IEnumerable<char> more = null)
             {
                 Assert.IsTrue(StringEscaper.IsPathValid(path, more) == result);
             }
@@ -812,7 +811,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void UnpackListStr()
         {
-            void Template(string listStr, string delimiter, List<string> compList)
+            static void Template(string listStr, string delimiter, List<string> compList)
             {
                 List<string> destList = StringEscaper.UnpackListStr(listStr, delimiter);
                 Assert.AreEqual(compList.Count, destList.Count);
@@ -876,7 +875,7 @@ namespace PEBakery.Core.Tests
 
         public void PackListStr()
         {
-            void Template(List<string> list, string delimiter, string comp)
+            static void Template(List<string> list, string delimiter, string comp)
             {
                 string dest = StringEscaper.PackListStr(list, delimiter);
                 Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));

@@ -46,6 +46,7 @@ namespace PEBakery.Core
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             // Equal to Environment.SpecialFolder.ProgramFiles in x86 Windows (32bit)
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            // ARM64 Windows has ProgramFiles(Arm) == "C:\Program Files (Arm)"
         };
         #endregion
 
