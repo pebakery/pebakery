@@ -408,7 +408,7 @@ namespace PEBakery.Core
 
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Index < 0 || info.Items.Count <= info.Index) 
-                                logs.Add(new LogInfo(LogState.Error, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
+                                logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
                         }
                         break;
                     case UIControlType.Image:
@@ -507,7 +507,7 @@ namespace PEBakery.Core
                                 {
                                     string filter = StringEscaper.Unescape(info.Filter);
                                     if (StringEscaper.IsFileFilterValid(filter) == false)
-                                        logs.Add(new LogInfo(LogState.Error, $"File filter pattern [{filter}] is invalid", uiCtrl));
+                                        logs.Add(new LogInfo(LogState.Warning, $"File filter pattern [{filter}] is invalid", uiCtrl));
                                 }
                             }
                             else
@@ -531,7 +531,7 @@ namespace PEBakery.Core
 
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Selected < 0 || info.Items.Count <= info.Selected)
-                                logs.Add(new LogInfo(LogState.Error, $"Incorrect selected index [{info.Selected}]", uiCtrl));
+                                logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected index [{info.Selected}]", uiCtrl));
                         }
                         break;
                 }
