@@ -2269,17 +2269,18 @@ namespace PEBakery.Core
     #region CodeInfo 07 - Network
     [Serializable]
     public class CodeInfo_WebGet : CodeInfo
-    { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
-        // This command was rebuilt in PEBakery, not following WB082 spec.
-        public string URL;
-        public string DestPath;
-        public HashHelper.HashType HashType; // Optional Argument
-        public string HashDigest; // Optional Argument
-        public string TimeOut; // Optional Argument
-        public string Referer; // Optional Argument
-        public bool NoErrFlag; // Optional Flag
+    { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,UserAgent=<Agent>][,NOERR]
+        // This command was rebuilt in PEBakery, regardless of broken WB082 spec.
+        public string URL { get; set; }
+        public string DestPath { get; set; }
+        public HashHelper.HashType HashType { get; set; } // Optional Argument
+        public string HashDigest { get; set; } // Optional Argument
+        public string TimeOut { get; set; } // Optional Argument
+        public string Referer { get; set; } // Optional Argument
+        public string UserAgent { get; set; } // Optional Argument
+        public bool NoErrFlag { get; set; } // Optional Flag
 
-        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, string timeOut, string referer, bool noErr)
+        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, string timeOut, string referer, string userAgent, bool noErr)
         {
             URL = url;
             DestPath = destPath;
@@ -2287,6 +2288,7 @@ namespace PEBakery.Core
             HashDigest = hashDigest;
             TimeOut = timeOut;
             Referer = referer;
+            UserAgent = userAgent;
             NoErrFlag = noErr;
         }
 
@@ -2300,18 +2302,23 @@ namespace PEBakery.Core
             {
                 b.Append(",");
                 b.Append(HashType);
-                b.Append(",");
+                b.Append("=");
                 b.Append(HashDigest);
             }
             if (TimeOut != null)
             {
-                b.Append(",");
+                b.Append(",Timeout=");
                 b.Append(TimeOut);
             }
             if (Referer != null)
             {
-                b.Append(",");
+                b.Append(",Referer=");
                 b.Append(Referer);
+            }
+            if (UserAgent != null)
+            {
+                b.Append(",UserAgent=");
+                b.Append(UserAgent);
             }
             if (NoErrFlag)
                 b.Append(",NOERR");

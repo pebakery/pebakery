@@ -38,7 +38,7 @@ namespace PEBakery.Core.Commands
     public static class CommandNetwork
     {
         public static List<LogInfo> WebGet(EngineState s, CodeCommand cmd)
-        { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
+        { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,UserAgent=<Agent>][,NOERR]
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WebGet info = cmd.Info.Cast<CodeInfo_WebGet>();
@@ -93,11 +93,21 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.SetBuildCommandProgress("WebGet Progress");
             try
             {
+                // Set User-Agent to use
+                // (1) Use Command's custom User-Agent
+                // (2) Use EngineState's custom User-Agent
+                // (3) Use PEBakery's default User-Agent
+                string userAgent = null;
+                if (info.UserAgent != null)
+                    userAgent = info.UserAgent;
+                else
+                    userAgent = s.CustomUserAgent;
+
                 if (info.HashType == HashHelper.HashType.None)
                 { // Standard WebGet
                     string tempPath = FileHelper.GetTempFile(destFileExt);
 
-                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent, refererUrl);
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, userAgent, refererUrl);
                     HttpFileDownloader.Report report;
                     try
                     {
@@ -151,7 +161,7 @@ namespace PEBakery.Core.Commands
 
                     string tempPath = FileHelper.GetTempFile(destFileExt);
 
-                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, s.CustomUserAgent, refererUrl);
+                    HttpFileDownloader downloader = new HttpFileDownloader(s.MainViewModel, timeOut, userAgent, refererUrl);
                     HttpFileDownloader.Report report;
                     try
                     {

@@ -1828,6 +1828,7 @@ namespace PEBakery.Core
                         string hashDigest = null;
                         string timeOut = null;
                         string referer = null;
+                        string userAgent = null;
                         bool noErr = false;
 
                         const string md5Key = "MD5=";
@@ -1837,6 +1838,7 @@ namespace PEBakery.Core
                         const string sha512Key = "SHA512=";
                         const string timeOutKey = "TimeOut=";
                         const string refererKey = "Referer=";
+                        const string userAgentKey = "UserAgent=";
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1887,6 +1889,12 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Referer> cannot be duplicated", rawCode);
                                 referer = arg.Substring(refererKey.Length);
                             }
+                            else if (arg.StartsWith(userAgentKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (referer != null)
+                                    throw new InvalidCommandException("Argument <UserAgent> cannot be duplicated", rawCode);
+                                userAgent = arg.Substring(userAgentKey.Length);
+                            }
                             else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noErr)
@@ -1899,7 +1907,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, timeOut, referer, noErr);
+                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, timeOut, referer, userAgent, noErr);
                     }
                 #endregion
                 #region 08 Hash

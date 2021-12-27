@@ -304,6 +304,31 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
+        public void WebGet_UserAgent(EngineState s)
+        {
+            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
+            string destFile = FileHelper.ReserveTempFile("html");
+            try
+            {
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+
+                // Download index.html - Success
+                s.ReturnValue = string.Empty;
+
+                string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",\"UserAgent=Wget/1.20.3 (linux-gnu)\"";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
+
+                Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
+            }
+        }
+
         public void WebGet_HashSuccess(EngineState s)
         {
             foreach (HashHelper.HashType hashType in SampleDigestDict.Keys)
