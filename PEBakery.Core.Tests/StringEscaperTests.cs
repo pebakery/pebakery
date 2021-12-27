@@ -53,10 +53,10 @@ namespace PEBakery.Core.Tests
             EscapeTemplate("Hello#$xWorld", false, false, "Hello##$xWorld");
 
             // Overload of IEnumerable<string>
-            string[] srcStrs = 
-            { 
-                "Comma [,]", 
-                "Space [ ]", 
+            string[] srcStrs =
+            {
+                "Comma [,]",
+                "Space [ ]",
                 "DoubleQuote [\"]"
             };
             string[] comps =

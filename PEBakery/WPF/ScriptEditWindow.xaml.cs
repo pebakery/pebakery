@@ -376,7 +376,7 @@ namespace PEBakery.WPF
             // [*] Delete UIControl
             if (e.Key == Key.Delete && e.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
-                if (m.SelectMode == ScriptEditViewModel.ControlSelectMode.SingleSelect || 
+                if (m.SelectMode == ScriptEditViewModel.ControlSelectMode.SingleSelect ||
                     m.SelectMode == ScriptEditViewModel.ControlSelectMode.MultiSelect)
                     m.UICtrlDeleteCommand.Execute(null);
                 return;
@@ -462,7 +462,7 @@ namespace PEBakery.WPF
             m.UpdateCursorPosStatus(true, true);
         }
         #endregion
-        
+
         #region For (Common) RunOptional
         private void SectionName_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -4256,8 +4256,8 @@ namespace PEBakery.WPF
                 UICtrlToBeDeleted.Clear();
                 IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
-                
-                if (activeInterfaceSection == null || 
+
+                if (activeInterfaceSection == null ||
                     activeInterfaceSection.Equals(Script.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
                 { // [Interface] is active -> Remove "Interface=" key
                     IniReadWriter.DeleteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.Interface);

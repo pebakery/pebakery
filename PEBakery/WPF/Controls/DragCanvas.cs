@@ -253,7 +253,7 @@ namespace PEBakery.WPF.Controls
                     Debug.Assert(_selectedElementIndex != -1, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElementIndex)} in DragMode.SingleMove");
                     break;
                 case DragMode.MultiMove:
-                    Debug.Assert(1 < _selectedElements.Count , $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElements)}.Count in DragMode.MultiMove");
+                    Debug.Assert(1 < _selectedElements.Count, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElements)}.Count in DragMode.MultiMove");
                     Debug.Assert(_selectedElementIndex != -1, $"{nameof(OnPreviewMouseLeftButtonDown)}: invalid {nameof(_selectedElementIndex)} in DragMode.MultiMove");
                     break;
             }

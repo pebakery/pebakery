@@ -28,7 +28,6 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -581,7 +580,7 @@ namespace PEBakery.Core.Commands
                     // -> Win32Exception with "The operation was cancaled by the user" message
                     // To mitigate this, use CreateProcess instead of UseShellExecute on exe files.
                     bool isExeFile = filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
-                    
+
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
                     {
                         proc.StartInfo.UseShellExecute = !isExeFile;

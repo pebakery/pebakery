@@ -26,8 +26,8 @@
 */
 
 using Microsoft.IO;
-using PEBakery.Core.ViewModels;
 using PEBakery.Core.Arguments;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using SQLite;
 using System;
@@ -39,7 +39,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace PEBakery.Core
 {

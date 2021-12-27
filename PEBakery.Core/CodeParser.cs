@@ -2704,7 +2704,7 @@ namespace PEBakery.Core
                         const string titleKey = "Title=";
                         const string filterKey = "Filter=";
 
-                        for (int i = argCount; i < args.Count; i++) 
+                        for (int i = argCount; i < args.Count; i++)
                         {
                             string arg = args[i];
 

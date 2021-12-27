@@ -1380,7 +1380,7 @@ namespace PEBakery.Core.Commands
                                     filter = subInfo.Filter;
                                 }
                                 else
-                                {  
+                                {
                                     // Winbuilder Style filter
                                     string initFile = Path.GetFileName(initPath);
                                     if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))

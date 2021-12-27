@@ -296,7 +296,7 @@ namespace PEBakery.Core
                         }
                         break;
                     #endregion
-                            #region Check InterfaceSections
+                    #region Check InterfaceSections
                     case CodeType.AddInterface:
                         {
                             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
@@ -407,7 +407,7 @@ namespace PEBakery.Core
                             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
-                            if (info.Index < 0 || info.Items.Count <= info.Index) 
+                            if (info.Index < 0 || info.Items.Count <= info.Index)
                                 logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
                         }
                         break;

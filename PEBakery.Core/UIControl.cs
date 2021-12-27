@@ -179,9 +179,9 @@ namespace PEBakery.Core
             LineIdx = 0;
         }
 
-        public UIControl(string rawLine, ScriptSection section, string key, 
-            string text, bool visibility, UIControlType type, 
-            int x, int y, int width, int height, 
+        public UIControl(string rawLine, ScriptSection section, string key,
+            string text, bool visibility, UIControlType type,
+            int x, int y, int width, int height,
             UIInfo info, int lineIdx)
         {
             RawLine = rawLine;

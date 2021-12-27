@@ -1,12 +1,8 @@
 ﻿using CommandLine;
 using CommandLine.Text;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Windows;
 
 namespace PEBakery.Core.Arguments
@@ -70,8 +66,8 @@ namespace PEBakery.Core.Arguments
                     MessageBox.Show(helpMessage, "PEBakery CommandLine Help", MessageBoxButton.OK, MessageBoxImage.Information);
                 });
             return _opts;
-        }    
-        
+        }
+
         public string BuildHelpMessage(string appendMessage = null)
         {
             HelpText helpText = HelpText.AutoBuild(_parserResult, h =>

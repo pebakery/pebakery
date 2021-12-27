@@ -203,7 +203,7 @@ namespace PEBakery.WPF
         public ICommand ListItemMoveUpCommand => GetRelayCommand(ref _listItemMoveUpCommand, "Move item one step up", ListItemMoveUpCommand_Execute, ListItemMoveUpCommand_CanExecuteFunc);
         public ICommand ListItemMoveDownCommand => GetRelayCommand(ref _listItemMoveDownCommand, "Move item one step down", ListItemMoveDownCommand_Execute, ListItemMoveDownCommand_CanExecuteFunc);
 
-        
+
 
         private bool _canExecuteCommand = true;
         public bool CanExecuteCommand
@@ -250,7 +250,7 @@ namespace PEBakery.WPF
                     newValue = $"Item{postfix:00}";
                     if (Items.Any(x => x.Value.Equals(newValue, StringComparison.OrdinalIgnoreCase)) == false)
                         break;
-                    
+
                     postfix += 1;
                 }
                 while (true);
@@ -307,7 +307,7 @@ namespace PEBakery.WPF
                     return;
 
                 int indexToDelete = SelectedIndex;
-                
+
                 // Delete selected item
                 // If RemoveAt deletes current selected index, SelectedIndex becomes -1
                 Items.RemoveAt(indexToDelete);

@@ -202,7 +202,7 @@ namespace PEBakery.Helper
                         fileName += $".{ext}";
 
                     tempFile = Path.Combine(baseTempDir, fileName);
-                    
+
                 }
                 while (Directory.Exists(tempFile) || File.Exists(tempFile));
 

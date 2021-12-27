@@ -1610,7 +1610,7 @@ namespace PEBakery.WPF
             int buildLogCount = Global.Logger.Db.Table<LogModel.BuildInfo>().Count();
             int codeLogCount = Global.Logger.Db.Table<LogModel.BuildLog>().Count();
             long logBytes = PEBakery.Helper.FileHelper.GetFileSize(Global.Logger.Db.DatabasePath.ToString());
-            string humanReadableLogSize = NumberHelper.ByteSizeToSIUnit(logBytes,1);
+            string humanReadableLogSize = NumberHelper.ByteSizeToSIUnit(logBytes, 1);
             LogDatabaseState = $"System Log: {systemLogCount} entries, Build Logs: {buildLogCount} ({codeLogCount} entries), Size: {humanReadableLogSize}";
         }
 
@@ -1624,7 +1624,7 @@ namespace PEBakery.WPF
             {
                 int cacheCount = Global.ScriptCache.CacheCount;
                 long cacheBytes = PEBakery.Helper.FileHelper.GetFileSize(Global.ScriptCache.DatabasePath.ToString());
-                string humanReadableCacheSize = NumberHelper.ByteSizeToSIUnit(cacheBytes,1);
+                string humanReadableCacheSize = NumberHelper.ByteSizeToSIUnit(cacheBytes, 1);
                 ScriptCacheState = $"{cacheCount} scripts cached, {humanReadableCacheSize}";
             }
         }

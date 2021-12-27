@@ -26,7 +26,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
