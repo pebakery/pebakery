@@ -143,15 +143,43 @@ namespace PEBakery.Helper
             }
         }
 
+        public static DrawingGroup SvgToDrawingGroup(string svgStr)
+        {
+            WpfDrawingSettings settings = new WpfDrawingSettings
+            {
+                CultureInfo = CultureInfo.InvariantCulture,
+                IncludeRuntime = true,
+            };
+
+            using (FileSvgReader reader = new FileSvgReader(settings))
+            {
+                reader.Read(svgStr);
+                return reader.Drawing;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DrawingBrush SvgToDrawingBrush(Stream stream)
         {
             return new DrawingBrush { Drawing = SvgToDrawingGroup(stream) };
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DrawingBrush SvgToDrawingBrush(string svgStr)
+        {
+            return new DrawingBrush { Drawing = SvgToDrawingGroup(svgStr) };
+        }
+
         public static (double Width, double Height) GetSvgSizeDouble(Stream stream)
         {
             DrawingGroup drawingGroup = SvgToDrawingGroup(stream);
+            Rect rect = drawingGroup.Bounds;
+            return (rect.Width, rect.Height);
+        }
+
+        public static (double Width, double Height) GetSvgSizeDouble(string svgStr)
+        {
+            DrawingGroup drawingGroup = SvgToDrawingGroup(svgStr);
             Rect rect = drawingGroup.Bounds;
             return (rect.Width, rect.Height);
         }
@@ -163,6 +191,16 @@ namespace PEBakery.Helper
             int newHeight = (int)Math.Round(height, 0);
             return (newWidth, newHeight);
         }
+
+        public static (int Width, int Height) GetSvgSizeInt(string svgStr)
+        {
+            (double width, double height) = GetSvgSizeDouble(svgStr);
+            int newWidth = (int)Math.Round(width, 0);
+            int newHeight = (int)Math.Round(height, 0);
+            return (newWidth, newHeight);
+        }
+
+
         #endregion
 
         #region StretchSizeAspectRatio

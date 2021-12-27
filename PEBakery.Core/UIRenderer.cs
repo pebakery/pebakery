@@ -591,47 +591,27 @@ namespace PEBakery.Core
             string imageSection = uiCtrl.Text;
             if (imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
             { // Empty image
-                PackIconMaterial noImage = new PackIconMaterial
-                {
-                    Kind = PackIconMaterialKind.BorderNone,
-                    Width = double.NaN,
-                    Height = double.NaN,
-                    Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0))
-                };
-                Border border = new Border
+                Border noImageBorder = new Border
                 {
                     Focusable = true,
                     Width = double.NaN,
                     Height = double.NaN,
-                    Background = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
-                    BorderThickness = new Thickness(0),
-                    Child = noImage,
+                    Background = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
                 };
-                SetToolTip(border, info.ToolTip);
-                SetEditModeProperties(border, uiCtrl);
-                DrawToCanvas(border, uiCtrl);
+                SetToolTip(noImageBorder, info.ToolTip);
+                SetEditModeProperties(noImageBorder, uiCtrl);
+                DrawToCanvas(noImageBorder, uiCtrl);
                 return null;
             }
 
             if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, imageSection))
             { // Encoded image does not exist
-                PackIconMaterial alertImage = new PackIconMaterial
-                {
-                    Kind = PackIconMaterialKind.Alert,
-                    Width = double.NaN,
-                    Height = double.NaN,
-                    Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0)),
-                };
                 Border border = new Border
                 {
                     Focusable = true,
                     Width = double.NaN,
                     Height = double.NaN,
-                    Background = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
-                    BorderThickness = new Thickness(0),
-                    Child = alertImage,
+                    Background = new SolidColorBrush(Color.FromArgb(32, 255, 0, 0)),
                 };
                 SetToolTip(border, info.ToolTip);
                 SetEditModeProperties(border, uiCtrl);
