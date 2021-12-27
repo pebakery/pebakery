@@ -142,7 +142,7 @@ namespace Benchmark
 
         public TextEncoding DetectAutoIt(ReadOnlySpan<byte> rawData, int sizeLimit)
         {
-            return _autoitDetect.DetectEncoding(rawData.Slice(0, sizeLimit));
+            return _autoitDetect.DetectEncoding(rawData.Slice(0, Math.Min(sizeLimit, rawData.Length)));
         }
 
         public DetectionResult DetectUtfUnknown(byte[] rawData, int sizeLimit)

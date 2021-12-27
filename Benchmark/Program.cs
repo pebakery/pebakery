@@ -57,30 +57,40 @@ namespace Benchmark
         #region Init and Cleanup
         public static void NativeGlobalInit()
         {
-            string arch = null;
-            switch (RuntimeInformation.OSArchitecture)
+            string baseDir = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", ".."));
+
+            string libDir = Path.Combine(baseDir, "runtimes");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                libDir = Path.Combine(libDir, "win-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                libDir = Path.Combine(libDir, "linux-");
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                libDir = Path.Combine(libDir, "osx-");
+
+            switch (RuntimeInformation.ProcessArchitecture)
             {
                 case Architecture.X86:
-                    arch = "x86";
+                    libDir += "x86";
                     break;
                 case Architecture.X64:
-                    arch = "x64";
+                    libDir += "x64";
                     break;
                 case Architecture.Arm:
-                    arch = "armhf";
+                    libDir += "arm";
                     break;
                 case Architecture.Arm64:
-                    arch = "arm64";
+                    libDir += "arm64";
                     break;
             }
+            libDir = Path.Combine(libDir, "native");
 
             string magicLibPath, gzipLibPath, xzLibPath, lz4LibPath;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                magicLibPath = Path.Combine(arch, "libmagic-1.dll");
-                gzipLibPath = Path.Combine(arch, "zlibwapi.dll");
-                xzLibPath = Path.Combine(arch, "liblzma.dll");
-                lz4LibPath = Path.Combine(arch, "liblz4.dll");
+                magicLibPath = Path.Combine(libDir, "libmagic-1.dll");
+                gzipLibPath = Path.Combine(libDir, "zlibwapi.dll");
+                xzLibPath = Path.Combine(libDir, "liblzma.dll");
+                lz4LibPath = Path.Combine(libDir, "liblz4.dll");
             }
             else
             {
@@ -137,14 +147,15 @@ namespace Benchmark
             switch (opts)
             {
                 case EncDetectBenchOptions _:
-                    Console.WriteLine("EncDetect");
+                    Console.WriteLine("[*] EncDetect");
                     encDetectBench = true;
                     break;
                 case DecompMgcBenchOptions _:
-                    Console.WriteLine("DecompMgc");
+                    Console.WriteLine("[*] DecompMgc");
                     decompMgcBench = true;
                     break;
                 case AllBenchOptions _:
+                    Console.WriteLine("[*] All");
                     encDetectBench = true;
                     decompMgcBench = true;
                     break;
