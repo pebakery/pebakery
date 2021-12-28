@@ -48,10 +48,10 @@ If you are using Windows 10 v1803 or later, no action is necessary. If not, plea
 
 ### Nightly Builds
 
-Starting from beta 7, PEBakery runs on .NET Core 3.1. 
+Starting from beta 7, PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
-- *Runtime Dependent Nightly* runs on both **x64** and **x86** Windows, but requires **[.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARm64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 
@@ -77,13 +77,13 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ### Requirement
 
-- [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) to build and test `PEBakery.exe`.
+- [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) to build and test `PEBakery.exe`.
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
-    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
 If you are a contributor, we recommend using a full-featured Visual Studio for the best development experience.
 
-- [Visual Studio 2019](https://visualstudio.microsoft.com/vs/)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 
 ### Compiling
 

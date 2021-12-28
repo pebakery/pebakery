@@ -85,13 +85,13 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Write-Output ""
     Write-Host "[*] Build PEBakery" -ForegroundColor Yellow
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
-        dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         # dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
         # PEBakery crashes if a PublishTrimmed=true is set
         # Unhandled exception.
         #   Cannot print exception string because Exception.ToString() failed.
-        dotnet publish -c Release -r win-x64 -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -r win-x64 --self-contained -o "${DestBinDir}" PEBakery
     }
     Pop-Location
 

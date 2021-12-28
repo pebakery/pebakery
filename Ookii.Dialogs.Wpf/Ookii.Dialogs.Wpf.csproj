@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWpf>true</UseWpf>
@@ -11,6 +11,7 @@
     <Copyright>Copyright © Sven Groot(Ookii.org)/Vladimir Svyatski 2009-2015</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Configurations>Debug;Release</Configurations>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="CredentialDialog.cs" />

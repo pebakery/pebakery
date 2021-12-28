@@ -76,8 +76,8 @@ namespace PEBakery.Helper
 
         #region Temp Path
         private static int _tempPathCounter = 0;
-        private static readonly object TempPathLock = new object();
-        private static readonly RNGCryptoServiceProvider SecureRandom = new RNGCryptoServiceProvider();
+        private static readonly object TempPathLock = new();
+        private static readonly RandomNumberGenerator SecureRandom = RandomNumberGenerator.Create();
 
         private static FileStream _lockFileStream = null;
         private static string _baseTempDir = null;

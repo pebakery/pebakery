@@ -9,7 +9,6 @@ using System.Security.Permissions;
 
 namespace Ookii.Dialogs.Wpf
 {
-    [SecurityPermission(SecurityAction.Demand, UnmanagedCode = true)]
     class SafeModuleHandle : SafeHandle
     {
         public SafeModuleHandle()
@@ -22,14 +21,12 @@ namespace Ookii.Dialogs.Wpf
             get { return handle == IntPtr.Zero; }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected override bool ReleaseHandle()
         {
             return NativeMethods.FreeLibrary(handle);
         }
     }
 
-    [SecurityPermission(SecurityAction.Demand, UnmanagedCode = true)]
     class ActivationContextSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public ActivationContextSafeHandle()
@@ -37,7 +34,6 @@ namespace Ookii.Dialogs.Wpf
         {
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected override bool ReleaseHandle()
         {
             NativeMethods.ReleaseActCtx(handle);
