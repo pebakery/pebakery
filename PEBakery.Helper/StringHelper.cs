@@ -23,6 +23,8 @@
     SOFTWARE.
 */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -158,11 +160,11 @@ namespace PEBakery.Helper
                 int vIdx = str.IndexOf(seperator, idx, comp);
                 if (vIdx == -1)
                 {
-                    split.Add(str.Substring(idx));
+                    split.Add(str[idx..]);
                     break;
                 }
 
-                split.Add(str.Substring(idx, vIdx - idx));
+                split.Add(str[idx..vIdx]);
                 idx = vIdx + seperator.Length;
             }
             return split;
@@ -184,12 +186,12 @@ namespace PEBakery.Helper
                 int vIdx = str.IndexOf(oldValue, idx, comp);
                 if (vIdx == -1)
                 {
-                    b.Append(str.Substring(idx));
+                    b.Append(str[idx..]);
                     break;
                 }
                 else
                 {
-                    b.Append(str.Substring(idx, vIdx - idx));
+                    b.Append(str[idx..vIdx]);
                     b.Append(newValue);
                     idx = vIdx + oldValue.Length;
                 }
@@ -214,7 +216,7 @@ namespace PEBakery.Helper
                 int matchIdx = Array.FindIndex(vIndices, x => x != -1);
                 if (matchIdx == -1)
                 {
-                    b.Append(str.Substring(idx));
+                    b.Append(str[idx..]);
                     break;
                 }
                 else
@@ -222,7 +224,7 @@ namespace PEBakery.Helper
                     int vIdx = vIndices[matchIdx];
                     (string oldValue, string newValue) = replaceValues[matchIdx];
 
-                    b.Append(str.Substring(idx, vIdx - idx));
+                    b.Append(str[idx..vIdx]);
                     b.Append(newValue);
                     idx = vIdx + oldValue.Length;
                 }
@@ -244,7 +246,7 @@ namespace PEBakery.Helper
             {
                 if (x == 0)
                 {
-                    b.Append(str.Substring(0, matches[0].Index));
+                    b.Append(str[..matches[0].Index]);
                 }
                 else
                 {
@@ -257,7 +259,8 @@ namespace PEBakery.Helper
 
                 if (x + 1 == matches.Count)
                 {
-                    b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                    int startOffset = matches[x].Index + matches[x].Value.Length;
+                    b.Append(str[startOffset..]);
                 }
             }
             return b.ToString();
@@ -267,16 +270,16 @@ namespace PEBakery.Helper
         {
             if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
-            return str.Substring(0, index) + newValue + str.Substring(index + length);
+            return str[..index] + newValue + str[(index + length)..];
         }
         #endregion
 
         #region GetUriProtocol, FormatOpenCommand
-        public static string GetUriProtocol(string str)
+        public static string? GetUriProtocol(string str)
         {
             int idx = str.IndexOf(@"://", StringComparison.Ordinal);
             if (0 <= idx && idx < str.Length)
-                return str.Substring(0, idx);
+                return str[..idx];
             else
                 return null;
         }
@@ -285,8 +288,8 @@ namespace PEBakery.Helper
         {
             string formatted = ReplaceEx(str, "%1", openFile, StringComparison.Ordinal);
             int exeEndIdx = formatted.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
-            string exe = formatted.Substring(0, exeEndIdx).Trim().Trim('\"').Trim();
-            string arguments = formatted.Substring(exeEndIdx).Trim().Trim('\"').Trim();
+            string exe = formatted[..exeEndIdx].Trim().Trim('\"').Trim();
+            string arguments = formatted[exeEndIdx..].Trim().Trim('\"').Trim();
 
             return (exe, arguments);
         }
@@ -342,4 +345,59 @@ namespace PEBakery.Helper
         }
         #endregion
     }
+
+    #region DelphiShortString
+    /// <summary>
+    /// PascalString with 255 byte value.
+    /// </summary>
+    public class DelphiShortString
+    {
+        private readonly Encoding _encoding;
+        private byte _length = 0;
+        private readonly byte[] _value = new byte[byte.MaxValue];
+
+        public byte Length => _length;
+        public byte[] Value => _value;
+
+        public DelphiShortString()
+        {
+            _encoding = new UTF8Encoding(false);
+        }
+
+        public DelphiShortString(Encoding encoding)
+        {
+            _encoding = encoding;
+        }
+
+        public DelphiShortString(string val)
+        {
+            _encoding = new UTF8Encoding(false);
+            FromString(val);
+        }
+
+        public DelphiShortString(string val, Encoding encoding)
+        {
+            _encoding = encoding;
+            FromString(val);
+        }
+
+        public override string ToString()
+        {
+            return _encoding.GetString(_value, 0, _length);
+        }
+
+        /// <summary>
+        /// Convert .NET string to PascalString. Truncates if a string is larger than 255 bytes.
+        /// </summary>
+        public void FromString(string val)
+        {
+            byte[] bytes = _encoding.GetBytes(val);
+            _length = (byte)Math.Min(bytes.Length, byte.MaxValue);
+
+            Array.Copy(bytes, 0, _value, 0, _length);
+            for (int i = _length; i < _value.Length; i++)
+                _value[i] = 0;
+        }
+    }
+    #endregion
 }
