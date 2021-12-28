@@ -155,21 +155,7 @@ bool PEParser::ParsePECoffHeader(const HANDLE hFile, const size_t peHeaderPos, s
 
 	// Parse NT COFF header
 	IMAGE_FILE_HEADER* peFileHeader = reinterpret_cast<IMAGE_FILE_HEADER*>(bufReadPtr);
-	switch (peFileHeader->Machine)
-	{
-	case IMAGE_FILE_MACHINE_I386:
-		_arch = ArchVal::X86;
-		break;
-	case IMAGE_FILE_MACHINE_AMD64:
-		_arch = ArchVal::X64;
-		break;
-	case IMAGE_FILE_MACHINE_ARMNT:
-		_arch = ArchVal::ARM;
-		break;
-	case IMAGE_FILE_MACHINE_ARM64:
-		_arch = ArchVal::ARM64;
-		break;
-	}
+	_arch = SysArch::toArchVal(peFileHeader->Machine);
 	_characteristics = peFileHeader->Characteristics;
 	bufReadPtr += sizeof(IMAGE_FILE_HEADER);
 

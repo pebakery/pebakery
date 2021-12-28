@@ -264,8 +264,12 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 {
 	std::wstring url = getInstallerUrl();
 
+	const NetVersion nameChangeVer(5, 0);
+
 	std::wostringstream woss;
-	woss << L"PEBakery requires .NET Core ";
+	woss << L"PEBakery requires .NET ";
+	if (_targetVer < nameChangeVer)
+		woss << L"Core ";
 	if (_checkDesktopRuntime)
 		woss << L"Desktop ";
 	woss << L"Runtime ";
