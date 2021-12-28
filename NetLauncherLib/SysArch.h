@@ -37,8 +37,13 @@ enum class ArchVal
 class SysArch
 {
 private:
+	
+
+	static ArchVal getCpuArchGetNativeSystemInfo();
+	static ArchVal getCpuArchIsWow64Process2();
 public:
 	static ArchVal getCpuArch();
 	static ArchVal getProcArch();
+	static ArchVal toArchVal(WORD wIamgeFileMachine);
 	static const wchar_t* toStr(ArchVal arch);
 };

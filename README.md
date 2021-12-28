@@ -29,12 +29,12 @@ A nightly build is provided for testing purposes.
 - [Lastest Nightly (develop)](https://ci.appveyor.com/project/ied206/pebakery/build/artifacts?branch=develop)
     - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop)
       - No dependency
-      - Sizes about 110MB
+      - Sizes about 170MB
       - Built for x64 architecture
-    - **[Runtime-dependent Nightly (x64, x86)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
-      - Requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1)
-      - Sizes about 32MB
-      - Supports both x86, x64 architecture
+    - **[Runtime-dependent Nightly (x64, x86, ARM64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
+      - Requires [.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
+      - Sizes about 40MB
+      - Supports both x64, x86, ARM64 architecture
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
@@ -48,10 +48,10 @@ If you are using Windows 10 v1803 or later, no action is necessary. If not, plea
 
 ### Nightly Builds
 
-Starting from beta 7, PEBakery runs on .NET Core 3.1. 
+Starting from beta 7, PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
-- *Runtime Dependent Nightly* runs on both **x64** and **x86** Windows, but requires **[.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARm64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 
@@ -77,13 +77,13 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ### Requirement
 
-- [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) to build and test `PEBakery.exe`.
+- [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) to build and test `PEBakery.exe`.
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
-    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
-If you are a contributor, we recommend using a full-featured Visual Studio for the best development experience.
+If you are a contributor, we recommend using a full-featured Visual Studio Community for the best development experience.
 
-- [Visual Studio 2019](https://visualstudio.microsoft.com/vs/)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 
 ### Compiling
 
@@ -99,11 +99,11 @@ To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XP
 **NOTE**: `<ProjectPath>` is the directory that contains `Projects` directory from the PE building project.
 
 1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` inside `<ProjectPath>`, and run `PEBakeryLauncher.exe`.
-2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `/baseDir` parameter.
+2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `--baseDir` parameter.
     ```powershell
-    $ .\PEBakeryLauncher.exe /baseDir <ProjectPath>
+    $ .\PEBakeryLauncher.exe --baseDir <ProjectPath>
     # or
-    $ .\Binary\PEBakery.exe /baseDir <ProjectPath>
+    $ .\Binary\PEBakery.exe --baseDir <ProjectPath>
     ```
 
 ## Screenshots

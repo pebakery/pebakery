@@ -263,9 +263,11 @@ bool NetCoreDetector::isInstalled()
 void NetCoreDetector::downloadRuntime(bool exitAfter)
 {
 	std::wstring url = getInstallerUrl();
+	std::wstring netCoreStr = getNetCoreString();
 
 	std::wostringstream woss;
-	woss << L"PEBakery requires .NET Core ";
+	woss << L"PEBakery requires ";
+	woss << netCoreStr << L" ";
 	if (_checkDesktopRuntime)
 		woss << L"Desktop ";
 	woss << L"Runtime ";
@@ -275,7 +277,8 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 
 	woss.clear();
 	woss.str(L"");
-	woss << L"Install .NET Core ";
+	woss << L"Install ";
+	woss << netCoreStr << L" ";
 	woss << _targetVer.toStr(true);
 	if (_checkDesktopRuntime)
 		woss << L" Desktop";
@@ -435,6 +438,17 @@ bool NetCoreDetector::parseRuntimeInfoLine(const std::string& line, std::string&
 		return false;
 
 	return true;
+}
+
+std::wstring NetCoreDetector::getNetCoreString()
+{
+	const NetVersion nameChangeVer(5, 0);
+
+	std::wostringstream woss;
+	woss << L".NET";
+	if (_targetVer < nameChangeVer)
+		woss << L" Core";
+	return woss.str();
 }
 
 // Return installer url of .NET Core Windows Desktop Runtime.

@@ -37,8 +37,7 @@ namespace Ookii.Dialogs.Wpf
             LoadLibraryExFlags dwFlags
             );
 
-        [DllImport("kernel32", SetLastError = true),
-        ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        [DllImport("kernel32", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool FreeLibrary(IntPtr hModule);
 
@@ -208,7 +207,7 @@ namespace Ookii.Dialogs.Wpf
 
         [DllImport("Kernel32.dll", SetLastError = true)]
         public extern static ActivationContextSafeHandle CreateActCtx(ref ACTCTX actctx);
-        [DllImport("kernel32.dll"), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        [DllImport("kernel32.dll")]
         public extern static void ReleaseActCtx(IntPtr hActCtx);
         [DllImport("Kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -530,7 +529,7 @@ namespace Ookii.Dialogs.Wpf
         [return: MarshalAs(UnmanagedType.Bool)]
         extern static internal bool CredRead(string TargetName, CredTypes Type, int Flags, out IntPtr Credential);
 
-        [DllImport("advapi32.dll"), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        [DllImport("advapi32.dll")]
         extern static internal void CredFree(IntPtr Buffer);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "CredDeleteW", SetLastError = true)]

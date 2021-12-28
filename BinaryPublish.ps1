@@ -85,36 +85,24 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
     Write-Output ""
     Write-Host "[*] Build PEBakery" -ForegroundColor Yellow
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
-        dotnet publish -c Release --self-contained=false -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -o "${DestBinDir}" PEBakery
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         # dotnet publish -c Release -r win-x64 --self-contained=true /p:PublishTrimmed=true -o "${DestBinDir}" PEBakery
         # PEBakery crashes if a PublishTrimmed=true is set
         # Unhandled exception.
         #   Cannot print exception string because Exception.ToString() failed.
-        dotnet publish -c Release -r win-x64 -o "${DestBinDir}" PEBakery
+        dotnet publish -c Release -r win-x64 --self-contained -o "${DestBinDir}" PEBakery
     }
     Pop-Location
 
     # Handle native bnaries
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
-        Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
-        New-Item "${DestBinDir}\runtimes" -ItemType Directory
-        Remove-Item "${DestBinDir}\runtimes_bak\win-arm" -Recurse
-        #Joveler.Compression.ZLib will refuse to run if `zlibwapi.dll` is not found
-        #Error:
-        #An assembly specified in the application dependencies manifest (PEBakery.deps.json) was not found:
-        #package: 'Joveler.Compression.ZLib', version: '4.1.0'
-        #path: 'runtimes/win-x64/native/zlibwapi.dll'
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-x86\native\zlibwapi.dll"
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-x64\native\zlibwapi.dll"
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-arm64\native\zlibwapi.dll"
-        Copy-Item "${DestBinDir}\runtimes_bak\win*" -Destination "${DestBinDir}\runtimes" -Recurse
-        Remove-Item "${DestBinDir}\runtimes_bak" -Recurse
+        # PEBakery does not support armhf
+        Remove-Item "${DestBinDir}\runtimes\win-arm" -Recurse
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         # Flatten the location of 7z.dll
         Copy-Item "${DestBinDir}\runtimes\win-x64\native\*" -Destination "${DestBinDir}"
         Remove-Item "${DestBinDir}\runtimes" -Recurse
-        #Remove-Item "${DestBinDir}\zlibwapi.dll"
     }
 
     # Delete unnecessary files
