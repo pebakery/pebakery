@@ -193,7 +193,6 @@ namespace PEBakery.WPF
             Model.StartLoadingProjects(true, false);
         }
 
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
         private void SettingWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
