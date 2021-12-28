@@ -97,24 +97,12 @@ foreach ($PublishMode in [PublishModes].GetEnumValues())
 
     # Handle native bnaries
     if ($PublishMode -eq [PublishModes]::RuntimeDependent) {
-        Move-Item "${DestBinDir}\runtimes" -Destination "${DestBinDir}\runtimes_bak"
-        New-Item "${DestBinDir}\runtimes" -ItemType Directory
-        Remove-Item "${DestBinDir}\runtimes_bak\win-arm" -Recurse
-        #Joveler.Compression.ZLib will refuse to run if `zlibwapi.dll` is not found
-        #Error:
-        #An assembly specified in the application dependencies manifest (PEBakery.deps.json) was not found:
-        #package: 'Joveler.Compression.ZLib', version: '4.1.0'
-        #path: 'runtimes/win-x64/native/zlibwapi.dll'
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-x86\native\zlibwapi.dll"
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-x64\native\zlibwapi.dll"
-        #Remove-Item "${DestBinDir}\runtimes_bak\win-arm64\native\zlibwapi.dll"
-        Copy-Item "${DestBinDir}\runtimes_bak\win*" -Destination "${DestBinDir}\runtimes" -Recurse
-        Remove-Item "${DestBinDir}\runtimes_bak" -Recurse
+        # PEBakery does not support armhf
+        Remove-Item "${DestBinDir}\runtimes\win-arm" -Recurse
     } elseif ($PublishMode -eq [PublishModes]::SelfContained) {
         # Flatten the location of 7z.dll
         Copy-Item "${DestBinDir}\runtimes\win-x64\native\*" -Destination "${DestBinDir}"
         Remove-Item "${DestBinDir}\runtimes" -Recurse
-        #Remove-Item "${DestBinDir}\zlibwapi.dll"
     }
 
     # Delete unnecessary files

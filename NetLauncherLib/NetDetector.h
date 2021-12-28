@@ -86,4 +86,5 @@ public:
 	virtual bool isInstalled();
 	virtual void downloadRuntime(bool exitAfter = true);
 	static bool parseRuntimeInfoLine(const std::string& line, std::string& key, NetVersion& ver);
+	std::wstring getNetCoreString();
 };

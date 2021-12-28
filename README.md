@@ -29,12 +29,12 @@ A nightly build is provided for testing purposes.
 - [Lastest Nightly (develop)](https://ci.appveyor.com/project/ied206/pebakery/build/artifacts?branch=develop)
     - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop)
       - No dependency
-      - Sizes about 110MB
+      - Sizes about 170MB
       - Built for x64 architecture
-    - **[Runtime-dependent Nightly (x64, x86)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
-      - Requires [.NET Core 3.1 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet-core/3.1)
-      - Sizes about 32MB
-      - Supports both x86, x64 architecture
+    - **[Runtime-dependent Nightly (x64, x86, ARM64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
+      - Requires [.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
+      - Sizes about 40MB
+      - Supports both x64, x86, ARM64 architecture
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
@@ -81,7 +81,7 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
     - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
-If you are a contributor, we recommend using a full-featured Visual Studio for the best development experience.
+If you are a contributor, we recommend using a full-featured Visual Studio Community for the best development experience.
 
 - [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 

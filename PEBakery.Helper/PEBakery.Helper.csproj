@@ -3,7 +3,6 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>Debug;Release</Configurations>
