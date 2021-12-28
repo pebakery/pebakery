@@ -35,8 +35,6 @@ using System.Text;
 
 namespace PEBakery.Helper
 {
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class NativeMethods
     {
         #region FileHelper
@@ -293,8 +291,6 @@ namespace PEBakery.Helper
         public static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool CloseHandle(IntPtr hObject);
 

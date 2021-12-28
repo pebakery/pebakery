@@ -30,6 +30,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -103,6 +104,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region Parse
+        [SupportedOSPlatform("windows")]
         public static RegistryKey ParseStringToRegKey(string rootKey)
         {
             RegistryKey regRoot;
@@ -126,6 +128,7 @@ namespace PEBakery.Helper
             return regRoot;
         }
 
+        [SupportedOSPlatform("windows")]
         public static string RegKeyToString(RegistryKey regKey)
         {
             string rootKey;
@@ -144,6 +147,7 @@ namespace PEBakery.Helper
             return rootKey;
         }
 
+        [SupportedOSPlatform("windows")]
         public static string RegKeyToFullString(RegistryKey regKey)
         {
             string rootKey;
@@ -162,6 +166,7 @@ namespace PEBakery.Helper
             return rootKey;
         }
 
+        [SupportedOSPlatform("windows")]
         public static SafeRegistryHandle ParseStringToHandle(string rootKey)
         {
             SafeRegistryHandle hKey;
@@ -286,10 +291,9 @@ namespace PEBakery.Helper
         /// <summary>
         /// Wrapper of Win32 RegSetValueEx, which bypass value type checking.
         /// </summary>
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public static unsafe void RegSetValue(RegistryKey key, string subKeyPath, string valueName, object value, uint valueType)
         {
-            void CheckReturnValue(int ret)
+            static void CheckReturnValue(int ret)
             {
                 if (ret != WindowsErrorCode.ERROR_SUCCESS)
                     throw new Win32Exception(ret, "RegSetValueEx failed");
@@ -390,6 +394,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region GetDefaultExecutablePath, GetDefaultWebBrowserPath
+        [SupportedOSPlatform("windows")]
         public static string GetDefaultExecutablePath(string ext, bool onlyExePath)
         {
             const string exePathKeyTemplate = @"{0}\shell\open\command";
@@ -431,6 +436,7 @@ namespace PEBakery.Helper
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public static string GetDefaultWebBrowserPath(bool onlyExePath)
         {
             const string progIdKey = "ProgId";

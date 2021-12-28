@@ -380,7 +380,6 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="CredentialException">An error occurred while showing the credentials dialog.</exception>
         /// <exception cref="InvalidOperationException"><see cref="Target"/> is an empty string ("").</exception>
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public bool ShowDialog()
         {
             return ShowDialog(null);
@@ -421,7 +420,6 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="CredentialException">An error occurred while showing the credentials dialog.</exception>
         /// <exception cref="InvalidOperationException"><see cref="Target"/> is an empty string ("").</exception>
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public bool ShowDialog(Window owner)
         {
             if (string.IsNullOrEmpty(_target))
