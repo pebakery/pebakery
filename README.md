@@ -99,11 +99,11 @@ To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XP
 **NOTE**: `<ProjectPath>` is the directory that contains `Projects` directory from the PE building project.
 
 1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` inside `<ProjectPath>`, and run `PEBakeryLauncher.exe`.
-2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `/baseDir` parameter.
+2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `--baseDir` parameter.
     ```powershell
-    $ .\PEBakeryLauncher.exe /baseDir <ProjectPath>
+    $ .\PEBakeryLauncher.exe --baseDir <ProjectPath>
     # or
-    $ .\Binary\PEBakery.exe /baseDir <ProjectPath>
+    $ .\Binary\PEBakery.exe --baseDir <ProjectPath>
     ```
 
 ## Screenshots
