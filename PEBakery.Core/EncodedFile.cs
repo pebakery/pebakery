@@ -52,16 +52,22 @@ namespace PEBakery.Core
     [Attachment Format]
     Streams are encoded in base64 format.
     Concat all lines into one long string, append '=', '==' or nothing according to length.
-    (Need '=' padding to be appended to be .NET acknowledged base64 format)
+    (Need to append '=' padding because .NET BCL base64 decoder requires it.)
     Decode base64 encoded string to get binary, which follows these 2 types.
     
     Note)
-    All bytes is ordered in little endian.
-    WB082-generated zlib magic number always starts with 0x78.
-    CodecWBZip is a combination of Type 1 and 2, choosing algorithm based on file extension.
+    * All bytes are ordered in little endian.
+    * CodecWBZip[1] (Type 1 and 2) is equal to ZLBArchive v2 format[1].
+    * WB082 only understands Type 1 and 2. 
+    * Type 3 is a PEBakery externsion.
 
-    See here for possible zlib stream magic numbers.
-    https://groups.google.com/forum/#!msg/comp.compression/_y2Wwn_Vq_E/EymIVcQ52cEJ
+    [1] This binary format was originally describe by extensive blackbox testing, without breaking WB082 EULA.
+        It was later revealed that this format was defined by ZLBArchive v2.
+        ZLBArchive2 supported embedding multiple files into one archive.
+        And it is why it has two header format, one for each file and the other for entire archive.
+        However, WB082 used ZLBArchive2 only to compress single file.
+        - FirstFooter corresponds to TZLBFileRec2, which ZLBArchive v2 calls as 'registry'.
+        - FinalFooter corresponds to TZLBArchiveRec2.
 
     [Type 1]
     Zlib Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
@@ -70,36 +76,53 @@ namespace PEBakery.Core
     [Type 2]
     Raw File + Zlib Compressed FirstFooter + Raw FinalFooter
     - Used in already compressed file (Ex 7z, zip).
+    - WB082 used Type 2 to pre-selected extensions such as archive format.
+    - PEBakery let script developer to decide.
 
     [Type 3] (PEBakery Only!)
     XZ Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
     - Use this for ultimate compress ratio.
 
+    [Body]
+    - Type 1 : zlib-compressed file
+    - Type 2 : Raw file
+    - Type 3 : XZ-compressed file
+
     [FirstFooter]
-    550Byte (0x226) (When decompressed)
-    0x000 - 0x1FF (512B) -> L-V (Length - Value)
+    550Byte (0x226) (When uncompressed)
+    0x000 - 0x0FF (256B) -> L-V (Length - Value) PascalString
         1B : [Length of FileName]
-        511B : [FileName]
+        255B : [FileName]
+    0x100 - 0x1FF (256B) -> L-V (Length - Value) PascalString
+        1B : [Length of Path] - Always 0
+        255B : [Path] - Always 0
     0x200 - 0x207 : 8B  -> Length of Raw File
-    0x208 - 0x20F : 8B  -> (Type 1) Length of zlib-compressed File
+    0x208 - 0x20F : 8B  -> (Type 1, 3) Length of body
                            (Type 2) Null-padded
-                           (Type 3) Length of XZ-compressed File
-    0x210 - 0x21F : 16B -> Null-padded
+    0x210 - 0x217 : 8B  -> Length of encrypted body[2] - Always 0
+    0x21A - 0x21F : 8B  -> Location of body[3] - Always 0
     0x220 - 0x223 : 4B  -> CRC32 of Raw File
     0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01, Type 3 : 02)
-    0x225         : 1B  -> Compress Level (Type 1, 3 : 01 ~ 09, Type 2 : 00)
+    0x225         : 1B  -> Compress Level[4] (Type 1, 3 : 01 ~ 09, Type 2 : 00)
+
+    [2] Length of encrypted body field is used when ZLBArchive2 encrypts a file.
+        WB082 did not use encryption feature, so this field is always 0.
+    [3] Location of body field is used when ZLBArchive2 stores multiple files into one archive.
+        WB082 always stored/compressed single file, so this field is always 0.
+    [4] Compress level field is not required to be valid for decompressison.
 
     [FinalFooter]
     Not compressed, 36Byte (0x24)
     0x00 - 0x04   : 4B  -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
-    0x04 - 0x08   : 4B  -> Unknown - Always 1 
-    0x08 - 0x0B   : 4B  -> WB082 ZLBArchive Component version - Always 2
+    0x04 - 0x08   : 4B  -> File count[5] - Always 1 
+    0x08 - 0x0B   : 4B  -> WB082 ZLBArchive Component version[5] - Always 2
     0x0C - 0x0F   : 4B  -> zlib Compressed FirstFooter Length
     0x10 - 0x17   : 8B  -> zlib Compressed File Length
-    0x18 - 0x1B   : 4B  -> Unknown - Always 1
-    0x1C - 0x23   : 8B  -> Unknown - Always 0
+    0x18          : 1B  -> Is FirstFooter compressed[5] - Always 1
+    0x19          : 1B  -> Is body encrypted[5] - Always 0
+    0x1A - 0x23   : 12B -> Reserved[5] - Always 0
     
-    Note) Which purpose do Unknown entries have?
+    [5] WB082 blackbox testing result
     0x04 : When changed, WB082 cannot recognize filename. Maybe related to filename encoding?
     0x08 : When changed to higher value than 2, WB082 refuses to decompress with error message
         Error Message = $"The archive was created with a different version of ZLBArchive v{value}"
