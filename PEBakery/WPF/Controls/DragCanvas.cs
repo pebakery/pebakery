@@ -840,22 +840,46 @@ namespace PEBakery.WPF.Controls
         {
             double deltaX = cursorNow.X - cursorStart.X;
             double deltaY = cursorNow.Y - cursorStart.Y;
+            double caliDeltaX = deltaX;
+            double caliDeltaY = deltaY;
 
-            double x = elementStart.X + deltaX;
-            double y = elementStart.Y + deltaY;
+            // Calibrate delta
+            {
+                double x = elementStart.X + deltaX;
+                double y = elementStart.Y + deltaY;
 
-            // Do not use Width and Height here, or canvas cannot be expanded
-            // Guard new X and Y in 0 ~ 600
-            if (x < 0)
-                x = 0;
-            else if (CanvasLengthLimit < x + elementStart.Width)
-                x = CanvasLengthLimit - elementStart.Width;
-            if (y < 0)
-                y = 0;
-            else if (CanvasLengthLimit < y + elementStart.Height)
-                y = CanvasLengthLimit - elementStart.Height;
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                    caliDeltaX = Math.Max(caliDeltaX, deltaX - x);
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    caliDeltaX = Math.Min(caliDeltaX, deltaX + CanvasLengthLimit - (x + elementStart.Width));
+                if (y < 0)
+                    caliDeltaY = Math.Max(caliDeltaY, deltaY - y);
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - (y + elementStart.Height));
+            }
 
-            return (new Point(x, y), new Vector(deltaX, deltaY));
+            // Calculate new position
+            Point newElementPos;
+            {
+                double x = elementStart.X + caliDeltaX;
+                double y = elementStart.Y + caliDeltaY;
+
+                // Do not use Width and Height here, or canvas cannot be expanded
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                    x = 0;
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    x = CanvasLengthLimit - elementStart.Width;
+                if (y < 0)
+                    y = 0;
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    y = CanvasLengthLimit - elementStart.Height;
+
+                newElementPos = new Point(x, y);
+            }
+
+            return (newElementPos, new Vector(caliDeltaX, caliDeltaY));
         }
 
         private static (List<Point> NewPosList, Vector CaliDelta) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementStartList)
