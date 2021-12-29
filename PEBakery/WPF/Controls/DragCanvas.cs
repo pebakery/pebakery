@@ -35,7 +35,6 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 
-// ReSharper disable InconsistentNaming
 namespace PEBakery.WPF.Controls
 {
     #region DragCanvas
@@ -298,7 +297,7 @@ namespace PEBakery.WPF.Controls
                 case DragMode.SingleMove:
                     {
                         Debug.Assert(Selected != null, "SelectedElement is null");
-                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
+                        (Point newElementPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
                         Rect r = new Rect
                         {
                             X = newElementPos.X,
@@ -310,7 +309,6 @@ namespace PEBakery.WPF.Controls
 
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
-                        Vector delta = new Vector(newElementPos.X - uiCtrl.X, newElementPos.Y - uiCtrl.Y);
                         UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
                     }
                     break;
@@ -412,8 +410,7 @@ namespace PEBakery.WPF.Controls
                         Debug.Assert(Selected != null, "SelectedElement was not set");
                         UIControl uiCtrl = Selected.UIControl;
 
-                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
-                        Vector delta = new Vector(newCtrlPos.X - uiCtrl.X, newCtrlPos.Y - uiCtrl.Y);
+                        (Point newCtrlPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
 
                         // UIControl should have position/size of int
                         uiCtrl.X = (int)newCtrlPos.X;
@@ -457,8 +454,6 @@ namespace PEBakery.WPF.Controls
                         uiCtrl.Width = (int)newCtrlRect.Width;
                         uiCtrl.Height = (int)newCtrlRect.Height;
 
-                        _dragMode = DragMode.None;
-
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
                     break;
@@ -481,8 +476,6 @@ namespace PEBakery.WPF.Controls
                             uiCtrl.Width = (int)newCtrlRect.Width;
                             uiCtrl.Height = (int)newCtrlRect.Height;
                         }
-
-                        _dragMode = DragMode.None;
 
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
@@ -843,10 +836,13 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) Move Utility
-        private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
+        private static (Point NewPos, Vector Delta) CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
         {
-            double x = elementStart.X + cursorNow.X - cursorStart.X;
-            double y = elementStart.Y + cursorNow.Y - cursorStart.Y;
+            double deltaX = cursorNow.X - cursorStart.X;
+            double deltaY = cursorNow.Y - cursorStart.Y;
+
+            double x = elementStart.X + deltaX;
+            double y = elementStart.Y + deltaY;
 
             // Do not use Width and Height here, or canvas cannot be expanded
             // Guard new X and Y in 0 ~ 600
@@ -859,7 +855,7 @@ namespace PEBakery.WPF.Controls
             else if (CanvasLengthLimit < y + elementStart.Height)
                 y = CanvasLengthLimit - elementStart.Height;
 
-            return new Point(x, y);
+            return (new Point(x, y), new Vector(deltaX, deltaY));
         }
 
         private static (List<Point> NewPosList, Vector CaliDelta) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementStartList)
