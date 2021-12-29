@@ -280,7 +280,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public static List<LogInfo> Encode(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -291,16 +290,16 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            EncodedFile.EncodeMode mode = EncodedFile.EncodeMode.ZLib;
+            EncodeMode mode = EncodeMode.ZLib;
             if (info.Compression != null)
             {
                 string encodeModeStr = StringEscaper.Preprocess(s, info.Compression);
                 if (encodeModeStr.Equals("None", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.Raw;
+                    mode = EncodeMode.Raw;
                 else if (encodeModeStr.Equals("Deflate", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.ZLib;
+                    mode = EncodeMode.ZLib;
                 else if (encodeModeStr.Equals("LZMA2", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.XZ;
+                    mode = EncodeMode.XZ;
                 else
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
             }
