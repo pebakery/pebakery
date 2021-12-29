@@ -3355,7 +3355,7 @@ namespace PEBakery.WPF
                 {
                     srcFiles = new (string, string)[] { (dialog.FileName, dialog.FilePath) };
                 }
-                EncodedFile.EncodeMode mode = dialog.EncodeMode;
+                EncodeMode mode = dialog.EncodeMode;
 
                 // Check validity of srcFile
                 foreach ((string srcFileName, string srcFilePath) in srcFiles)
@@ -4487,11 +4487,11 @@ namespace PEBakery.WPF
             {
                 switch (Info.EncodeMode)
                 {
-                    case EncodedFile.EncodeMode.Raw:
+                    case EncodeMode.Raw:
                         return "None";
-                    case EncodedFile.EncodeMode.ZLib:
+                    case EncodeMode.ZLib:
                         return "Deflate";
-                    case EncodedFile.EncodeMode.XZ:
+                    case EncodeMode.XZ:
                         return "LZMA2";
                     case null:
                         return "Not Inspected";

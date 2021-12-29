@@ -55,7 +55,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void AttachFile()
         {
-            void Template(string fileName, EncodedFile.EncodeMode encodeMode)
+            void Template(string fileName, EncodeMode encodeMode)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
@@ -117,10 +117,10 @@ namespace PEBakery.Core.Tests
                 }
             }
 
-            Template("Type1.jpg", EncodedFile.EncodeMode.ZLib); // Type 1
-            Template("Type2.7z", EncodedFile.EncodeMode.Raw); // Type 2
-            Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
-            Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.ZLib);
+            Template("Type1.jpg", EncodeMode.ZLib); // Type 1
+            Template("Type2.7z", EncodeMode.Raw); // Type 2
+            Template("Type3.pdf", EncodeMode.XZ); // Type 3
+            Template("PEBakeryAlphaMemory.jpg", EncodeMode.ZLib);
         }
         #endregion
 
@@ -465,7 +465,7 @@ namespace PEBakery.Core.Tests
                 FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
-                EncodeMode = EncodedFile.EncodeMode.ZLib
+                EncodeMode = EncodeMode.ZLib
             });
             Template("type1.jpg", false, new EncodedFileInfo
             {
@@ -482,7 +482,7 @@ namespace PEBakery.Core.Tests
                 FileName = "Type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
-                EncodeMode = EncodedFile.EncodeMode.Raw
+                EncodeMode = EncodeMode.Raw
             });
             Template("Type2.7z", false, new EncodedFileInfo
             {
@@ -499,7 +499,7 @@ namespace PEBakery.Core.Tests
                 FileName = "Type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
-                EncodeMode = EncodedFile.EncodeMode.XZ
+                EncodeMode = EncodeMode.XZ
             });
             Template("Type3.pdf", false, new EncodedFileInfo
             {
@@ -545,7 +545,7 @@ namespace PEBakery.Core.Tests
                 FileName = "logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
-                EncodeMode = EncodedFile.EncodeMode.ZLib
+                EncodeMode = EncodeMode.ZLib
             });
             Template(logoScript, false, new EncodedFileInfo
             {
@@ -591,7 +591,7 @@ namespace PEBakery.Core.Tests
                     FileName = "Type1.jpg",
                     RawSize = 7683,
                     EncodedSize = 10244,
-                    EncodeMode = EncodedFile.EncodeMode.ZLib
+                    EncodeMode = EncodeMode.ZLib
                 },
                 new EncodedFileInfo
                 {
@@ -599,7 +599,7 @@ namespace PEBakery.Core.Tests
                     FileName = "Type2.7z",
                     RawSize = 1631,
                     EncodedSize = 2175,
-                    EncodeMode = EncodedFile.EncodeMode.Raw
+                    EncodeMode = EncodeMode.Raw
                 },
                 new EncodedFileInfo
                 {
@@ -607,7 +607,7 @@ namespace PEBakery.Core.Tests
                     FileName = "Type3.pdf",
                     RawSize = 88692,
                     EncodedSize = 102908,
-                    EncodeMode = EncodedFile.EncodeMode.XZ
+                    EncodeMode = EncodeMode.XZ
                 }
             };
 
@@ -666,7 +666,7 @@ namespace PEBakery.Core.Tests
                         FileName = "Type1.jpg",
                         RawSize = 7683,
                         EncodedSize = 10244,
-                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                        EncodeMode = EncodeMode.ZLib
                     },
                     new EncodedFileInfo
                     {
@@ -674,7 +674,7 @@ namespace PEBakery.Core.Tests
                         FileName = "Type2.7z",
                         RawSize = 1631,
                         EncodedSize = 2175,
-                        EncodeMode = EncodedFile.EncodeMode.Raw
+                        EncodeMode = EncodeMode.Raw
                     },
                     new EncodedFileInfo
                     {
@@ -682,7 +682,7 @@ namespace PEBakery.Core.Tests
                         FileName = "Type3.pdf",
                         RawSize = 88692,
                         EncodedSize = 102908,
-                        EncodeMode = EncodedFile.EncodeMode.XZ
+                        EncodeMode = EncodeMode.XZ
                     }
                 },
                 ["FolderRun"] = new List<EncodedFileInfo>
@@ -693,7 +693,7 @@ namespace PEBakery.Core.Tests
                         FileName = "TestBatch.cmd",
                         RawSize = 34,
                         EncodedSize = 144,
-                        EncodeMode = EncodedFile.EncodeMode.Raw
+                        EncodeMode = EncodeMode.Raw
                     }
                 },
                 ["BannerImage"] = new List<EncodedFileInfo>
@@ -704,7 +704,7 @@ namespace PEBakery.Core.Tests
                         FileName = "Banner.bmp",
                         RawSize = 17626,
                         EncodedSize = 23502,
-                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                        EncodeMode = EncodeMode.ZLib
                     },
                     new EncodedFileInfo
                     {
@@ -712,7 +712,7 @@ namespace PEBakery.Core.Tests
                         FileName = "Banner.svg",
                         RawSize = 4715,
                         EncodedSize = 6287,
-                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                        EncodeMode = EncodeMode.ZLib
                     },
                 }
             };
