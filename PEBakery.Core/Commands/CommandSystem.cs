@@ -555,6 +555,10 @@ namespace PEBakery.Core.Commands
                     if (e.Data == null)
                         return;
 
+                    // ShellExecute console remains collapsed until there is output to display
+                    if (s.MainViewModel.BuildConOutRedirectVisibility != Visibility.Visible)
+                        s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
+
                     lock (bConOutLock)
                     {
                         bStdOut.AppendLine(e.Data);
@@ -565,6 +569,10 @@ namespace PEBakery.Core.Commands
                 {
                     if (e.Data == null)
                         return;
+
+                    // ShellExecute console remains collapsed until there is output to display
+                    if (s.MainViewModel.BuildConOutRedirectVisibility != Visibility.Visible)
+                        s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
 
                     lock (bConOutLock)
                     {
@@ -620,7 +628,6 @@ namespace PEBakery.Core.Commands
                             proc.StartInfo.RedirectStandardInput = true;
 
                             s.MainViewModel.BuildConOutRedirectTextLines.Clear();
-                            s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
                         }
                     }
                     else
