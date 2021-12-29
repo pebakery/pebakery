@@ -439,7 +439,7 @@
                 <TreeView x:Name="MainTreeView"
                           Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
                           Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
-                          FontSize="12"
+                          FontSize="{Binding ScriptTreeFontSize, Mode=OneWay, FallbackValue=12}"
                           ItemsSource="{Binding MainTreeItems}"
                           IsEnabled="{Binding EnableTreeItems}"
                           BorderThickness="0"

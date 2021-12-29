@@ -168,6 +168,7 @@ namespace PEBakery.Core.ViewModels
             // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
+            OnPropertyUpdate(nameof(ScriptTreeFontSize));
             OnPropertyUpdate(nameof(TopPanelHeight));
             OnPropertyUpdate(nameof(BannerIconSize));
             OnPropertyUpdate(nameof(BannerFontSize));
@@ -178,6 +179,7 @@ namespace PEBakery.Core.ViewModels
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
+        public int ScriptTreeFontSize => GetAdaptiveSize(12, 11);
         public int TopPanelHeight => GetAdaptiveSize(80, 60);
         public int BannerIconSize => GetAdaptiveSize(56, 36);
         public int BannerFontSize => GetAdaptiveSize(40, 32);
