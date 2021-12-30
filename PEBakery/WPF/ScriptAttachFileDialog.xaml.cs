@@ -55,7 +55,7 @@ namespace PEBakery.WPF
             set => FileNameTextBox.Text = value;
         }
 
-        public EncodedFile.EncodeMode EncodeMode
+        public EncodeMode EncodeMode
         {
             get
             {
@@ -63,11 +63,11 @@ namespace PEBakery.WPF
                 switch (idx)
                 {
                     case 0:
-                        return EncodedFile.EncodeMode.Raw;
+                        return EncodeMode.Raw;
                     case 1:
-                        return EncodedFile.EncodeMode.ZLib;
+                        return EncodeMode.ZLib;
                     case 2:
-                        return EncodedFile.EncodeMode.XZ;
+                        return EncodeMode.XZ;
                     default:
                         string msg = $"Invalid CompressionComboBox index [{idx}]";
                         MessageBox.Show(this, msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -78,13 +78,13 @@ namespace PEBakery.WPF
             {
                 switch (value)
                 {
-                    case EncodedFile.EncodeMode.Raw:
+                    case EncodeMode.Raw:
                         CompressionComboBox.SelectedIndex = 0;
                         break;
-                    case EncodedFile.EncodeMode.ZLib:
+                    case EncodeMode.ZLib:
                         CompressionComboBox.SelectedIndex = 1;
                         break;
-                    case EncodedFile.EncodeMode.XZ:
+                    case EncodeMode.XZ:
                         CompressionComboBox.SelectedIndex = 2;
                         break;
                     default:
@@ -101,7 +101,7 @@ namespace PEBakery.WPF
         {
             InitializeComponent();
 
-            EncodeMode = EncodedFile.EncodeMode.ZLib;
+            EncodeMode = EncodeMode.ZLib;
         }
         #endregion
 
