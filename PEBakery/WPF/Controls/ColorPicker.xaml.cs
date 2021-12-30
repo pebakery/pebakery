@@ -73,9 +73,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnColorChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is ColorPicker control))
+            if (obj is not ColorPicker control)
                 return;
-            if (!(args.NewValue is Color c))
+            if (args.NewValue is not Color c)
                 return;
 
             control.SampleColor.Background = new SolidColorBrush(c);
@@ -132,7 +132,7 @@ namespace PEBakery.WPF.Controls
         {
             if (!_dragSaturationValueCanvas)
                 return;
-            if (!(sender is IInputElement ie))
+            if (sender is not IInputElement ie)
                 return;
 
             // Get mouse position in the canvas
@@ -178,7 +178,7 @@ namespace PEBakery.WPF.Controls
         {
             if (!_dragHueCanvas)
                 return;
-            if (!(sender is IInputElement ie))
+            if (sender is not IInputElement ie)
                 return;
 
             // Get mouse position in the canvas

@@ -98,7 +98,7 @@ namespace PEBakery.WPF.Controls
         #region Callbacks
         private static void OnPackIconMaterialPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is IconButton button))
+            if (obj is not IconButton button)
                 return;
 
             if (button.Content is PackIconMaterial control)
@@ -107,9 +107,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnIconForegroundPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is IconButton button))
+            if (obj is not IconButton button)
                 return;
-            if (!(args.NewValue is SolidColorBrush newBrush))
+            if (args.NewValue is not SolidColorBrush newBrush)
                 return;
 
             if (button.Content is PackIconMaterial control)
@@ -118,9 +118,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnIconOpacityPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is IconButton button))
+            if (obj is not IconButton button)
                 return;
-            if (!(args.NewValue is double newOpacity))
+            if (args.NewValue is not double newOpacity)
                 return;
 
             if (button.Content is PackIconMaterial control)
@@ -129,9 +129,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnIconMarginPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is IconButton button))
+            if (obj is not IconButton button)
                 return;
-            if (!(args.NewValue is Thickness newMargin))
+            if (args.NewValue is not Thickness newMargin)
                 return;
 
             if (button.Content is PackIconMaterial control)

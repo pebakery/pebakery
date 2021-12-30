@@ -891,7 +891,7 @@ namespace PEBakery.WPF
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (!(sender is TreeView tree) || !(tree.SelectedItem is ProjectTreeItemModel selectedModel))
+            if (sender is not TreeView tree || tree.SelectedItem is not ProjectTreeItemModel selectedModel)
                 return;
 
             Model.CurMainTree = selectedModel;
@@ -966,7 +966,7 @@ namespace PEBakery.WPF
 
         private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (!(sender is ListBox listBox))
+            if (sender is not ListBox listBox)
                 return;
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);

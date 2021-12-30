@@ -59,7 +59,7 @@ namespace PEBakery.WPF.Controls
         /// <remarks>This used to attach the TreeViewItemSelected method to treeview item selected property</remarks>
         private static void BringIntoViewChanged(DependencyObject objControl, DependencyPropertyChangedEventArgs e)
         {
-            if (!(objControl is TreeViewItem treeitem) || !(e.NewValue is bool newVal))
+            if (objControl is not TreeViewItem treeitem || e.NewValue is not bool newVal)
                 return;
 
             if (newVal)

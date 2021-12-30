@@ -91,7 +91,7 @@ namespace PEBakery.WPF.Controls
             FrameworkElement element = null;
             foreach (FrameworkElement child in Children)
             {
-                if (!(child.Tag is UIControl ctrl))
+                if (child.Tag is not UIControl ctrl)
                     continue;
                 if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                     continue;
@@ -166,7 +166,7 @@ namespace PEBakery.WPF.Controls
             if (e.Source is DependencyObject dObj)
                 element = FindRootFrameworkElement(dObj);
 
-            if (!(element?.Tag is UIControl))
+            if (element?.Tag is not UIControl)
                 return;
 
             DrawSelectedBorder(element);

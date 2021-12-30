@@ -130,7 +130,7 @@ namespace PEBakery.WPF.Controls
 
         private static void BindableWidthCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             var action = new Action(() =>
@@ -167,7 +167,7 @@ namespace PEBakery.WPF.Controls
 
         private static void IsLargeChangedCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             ring.UpdateLargeState();
@@ -196,7 +196,7 @@ namespace PEBakery.WPF.Controls
 
         private static void IsActiveChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             ring.UpdateActiveState();

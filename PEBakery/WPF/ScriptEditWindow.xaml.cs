@@ -314,8 +314,8 @@ namespace PEBakery.WPF
                         m.InterfaceControlDragging = false;
                         m.InterfaceControlDragDelta = new Vector(0, 0);
 
-                        // If delta.X or delta.Y is less than 3, do not update UIControl
-                        if (e.ForceUpdate || 3 < Math.Abs(e.Delta.X) || 3 < Math.Abs(e.Delta.Y))
+                        // UIControl will not be updated if delta too small, to prevent unintended 1px shift.
+                        if (e.ForceUpdate || DragCanvas.IsDeltaRelevant(e.Delta))
                             m.InvokeUIControlEvent(true);
                     }
                     break;
@@ -2667,7 +2667,7 @@ namespace PEBakery.WPF
             {
                 const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceAttachButton_Click";
 
-                if (!(parameter is string sender))
+                if (parameter is not string sender)
                     throw new InvalidOperationException(internalErrorMsg);
 
                 UIControlType selectedType;
@@ -2818,7 +2818,7 @@ namespace PEBakery.WPF
             {
                 const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractCommand_Execute";
 
-                if (!(parameter is string sender))
+                if (parameter is not string sender)
                     throw new InvalidOperationException(internalErrorMsg);
 
                 UIControlType selectedType;
@@ -2911,7 +2911,7 @@ namespace PEBakery.WPF
             {
                 const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceResetButton_Click";
 
-                if (!(parameter is string sender))
+                if (parameter is not string sender)
                     throw new InvalidOperationException(internalErrorMsg);
 
                 UIControlType selectedType;

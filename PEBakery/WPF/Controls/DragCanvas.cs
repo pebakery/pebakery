@@ -48,6 +48,9 @@ namespace PEBakery.WPF.Controls
         // DragHandle
         private const int DragHandleLength = 6;
         private const int DragHandleShowThreshold = 20;
+
+        // DeltaThreshold
+        public const int DeltaRelevantThreshold = 3;
         #endregion
 
         #region Fields, Properties
@@ -75,7 +78,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Display which area is being drag-to-select (lasso).
         /// </summary>
-        private Rectangle _dragAreaRectangle = new Rectangle
+        private readonly Rectangle _dragAreaRectangle = new Rectangle
         {
             Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
         };
@@ -88,9 +91,7 @@ namespace PEBakery.WPF.Controls
                 int max = GetZIndex(this);
                 foreach (UIElement element in Children)
                 {
-                    int z = GetZIndex(element);
-                    if (max < z)
-                        max = z;
+                    max = Math.Max(max, GetZIndex(element));
                 }
                 return max;
             }
@@ -305,7 +306,7 @@ namespace PEBakery.WPF.Controls
                             Width = Selected.ElementInitialRect.Width,
                             Height = Selected.ElementInitialRect.Height,
                         };
-                        MoveSelectedElement(Selected, r);
+                        MoveSelectedElement(Selected, r, delta);
 
                         // Send UIControlDraggedEvent
                         UIControl uiCtrl = Selected.UIControl;
@@ -330,7 +331,7 @@ namespace PEBakery.WPF.Controls
                                 Width = selected.ElementInitialRect.Width,
                                 Height = selected.ElementInitialRect.Height,
                             };
-                            MoveSelectedElement(selected, r);
+                            MoveSelectedElement(selected, r, delta);
                         }
 
                         // Send UIControlDraggedEvent
@@ -621,7 +622,7 @@ namespace PEBakery.WPF.Controls
 
             foreach (FrameworkElement child in Children)
             {
-                if (!(child.Tag is UIControl ctrl))
+                if (child.Tag is not UIControl ctrl)
                     continue;
                 if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                     continue;
@@ -647,7 +648,7 @@ namespace PEBakery.WPF.Controls
             {
                 foreach (FrameworkElement child in Children)
                 {
-                    if (!(child.Tag is UIControl ctrl))
+                    if (child.Tag is not UIControl ctrl)
                         continue;
                     if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                         continue;
@@ -660,11 +661,15 @@ namespace PEBakery.WPF.Controls
             DrawSelectedElements();
         }
 
-        private static void MoveSelectedElement(SelectedElement selected, Rect newRect)
+        private static void MoveSelectedElement(SelectedElement selected, Rect newRect, Vector delta)
         {
             // Assertion
             Debug.Assert(selected.Element != null, "Incorrect SelectedElement handling");
             Debug.Assert(selected.Border != null, "Incorrect SelectedElement handling");
+
+            // Canvas will not be updated if delta too small, to prevent unintended 1px shift.
+            if (IsDeltaRelevant(delta) == false)
+                return;
 
             // Move element and border
             Point newPos = new Point(newRect.X, newRect.Y);
@@ -674,7 +679,7 @@ namespace PEBakery.WPF.Controls
             // Move drag handles
             foreach (Border dragHandle in selected.DragHandles)
             {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleTag), "Incorrect SelectedElement handling");
+                Debug.Assert(dragHandle.Tag is DragHandleTag, "Incorrect SelectedElement handling");
                 DragHandleTag info = (DragHandleTag)dragHandle.Tag;
 
                 SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
@@ -696,7 +701,7 @@ namespace PEBakery.WPF.Controls
             // Resize drag handles
             foreach (Border dragHandle in selected.DragHandles)
             {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleTag));
+                Debug.Assert(dragHandle.Tag is DragHandleTag, "Incorrect SelectedElement handling");
                 DragHandleTag info = (DragHandleTag)dragHandle.Tag;
 
                 SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
@@ -788,7 +793,7 @@ namespace PEBakery.WPF.Controls
                     y += elementRect.Height;
                     break;
                 default:
-                    throw new ArgumentException(nameof(clickPos));
+                    throw new ArgumentException($"Invalid ResizeClickPosition [{clickPos}]", nameof(clickPos));
             }
 
             return new Point(x, y);
@@ -817,7 +822,7 @@ namespace PEBakery.WPF.Controls
                     visible = true;
                     break;
                 default:
-                    throw new ArgumentException(nameof(clickPos));
+                    throw new ArgumentException($"Invalid ResizeClickPosition [{clickPos}]", nameof(clickPos));
             }
 
             if (visible)
@@ -835,7 +840,12 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region (private) Move Utility
+        #region (private) Move/Resize Utility
+        public static bool IsDeltaRelevant(Vector delta)
+        {
+            return DeltaRelevantThreshold < Math.Abs(delta.X) || DeltaRelevantThreshold < Math.Abs(delta.Y);
+        }
+
         private static (Point NewPos, Vector Delta) CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
         {
             double deltaX = cursorNow.X - cursorStart.X;
@@ -937,9 +947,7 @@ namespace PEBakery.WPF.Controls
             SetLeft(element, p.X);
             SetTop(element, p.Y);
         }
-        #endregion
 
-        #region (private) Resize Utility
         private static (Rect NewRect, double CaliDeltaX, double CaliDeltaY) InternalCalcNewSize(double deltaX, double deltaY, Rect elementRect, ResizeClickPosition clickPos)
         {
             // Do not touch Width and Height if border was not clicked

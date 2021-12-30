@@ -180,7 +180,7 @@ namespace PEBakery.WPF
                         { // Open BuildLogWindow
                             Application.Current?.Dispatcher?.Invoke(() =>
                             {
-                                if (!(Application.Current.MainWindow is MainWindow w))
+                                if (Application.Current.MainWindow is not MainWindow w)
                                     return;
 
                                 w.LogDialog = new LogWindow(1);
