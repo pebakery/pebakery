@@ -50,7 +50,7 @@ namespace PEBakery.WPF.Controls
         private const int DragHandleShowThreshold = 20;
 
         // DeltaThreshold
-        public const int DeltaRelevantThreshold = 3;
+        public const int DeltaRelevantThreshold = 5;
         #endregion
 
         #region Fields, Properties
@@ -299,18 +299,23 @@ namespace PEBakery.WPF.Controls
                     {
                         Debug.Assert(Selected != null, "SelectedElement is null");
                         (Point newElementPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
-                        Rect r = new Rect
+                       
+                        // If delta is too small, do not update Canvas and fire an event to prevent unintended 1px shift.
+                        if (IsDeltaRelevant(delta))
                         {
-                            X = newElementPos.X,
-                            Y = newElementPos.Y,
-                            Width = Selected.ElementInitialRect.Width,
-                            Height = Selected.ElementInitialRect.Height,
-                        };
-                        MoveSelectedElement(Selected, r, delta);
+                            Rect r = new Rect
+                            {
+                                X = newElementPos.X,
+                                Y = newElementPos.Y,
+                                Width = Selected.ElementInitialRect.Width,
+                                Height = Selected.ElementInitialRect.Height,
+                            };
+                            MoveSelectedElement(Selected, r);
 
-                        // Send UIControlDraggedEvent
-                        UIControl uiCtrl = Selected.UIControl;
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
+                            // Send UIControlDraggedEvent
+                            UIControl uiCtrl = Selected.UIControl;
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
+                        }
                     }
                     break;
                 case DragMode.MultiMove:
@@ -319,24 +324,28 @@ namespace PEBakery.WPF.Controls
                         Rect[] elementRects = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
                         (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRects);
 
-                        for (int i = 0; i < _selectedElements.Count; i++)
+                        // If delta is too small, do not update Canvas and fire an event to prevent unintended 1px shift.
+                        if (IsDeltaRelevant(delta))
                         {
-                            SelectedElement selected = _selectedElements[i];
-                            Point newElementPos = newPosList[i];
-
-                            Rect r = new Rect
+                            for (int i = 0; i < _selectedElements.Count; i++)
                             {
-                                X = newElementPos.X,
-                                Y = newElementPos.Y,
-                                Width = selected.ElementInitialRect.Width,
-                                Height = selected.ElementInitialRect.Height,
-                            };
-                            MoveSelectedElement(selected, r, delta);
-                        }
+                                SelectedElement selected = _selectedElements[i];
+                                Point newElementPos = newPosList[i];
 
-                        // Send UIControlDraggedEvent
-                        List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
+                                Rect r = new Rect
+                                {
+                                    X = newElementPos.X,
+                                    Y = newElementPos.Y,
+                                    Width = selected.ElementInitialRect.Width,
+                                    Height = selected.ElementInitialRect.Height,
+                                };
+                                MoveSelectedElement(selected, r);
+                            }
+
+                            // Send UIControlDraggedEvent
+                            List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
+                        }
                     }
                     break;
                 case DragMode.SingleResize:
@@ -413,11 +422,20 @@ namespace PEBakery.WPF.Controls
 
                         (Point newCtrlPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
 
-                        // UIControl should have position/size of int
-                        uiCtrl.X = (int)newCtrlPos.X;
-                        uiCtrl.Y = (int)newCtrlPos.Y;
+                        // If delta is too small, fire an event with no delta.
+                        if (IsDeltaRelevant(delta))
+                        {
+                            // UIControl should have position/size of int
+                            uiCtrl.X = (int)newCtrlPos.X;
+                            uiCtrl.Y = (int)newCtrlPos.Y;
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, DragState.Finished));
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, DragState.Finished));
+                        }
+                        else
+                        { // Delta is too small. Use zero delta to prevent unintended 1px shift.
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, new Vector(0, 0), false, DragState.Finished));
+                        }
+                        
                     }
                     break;
                 case DragMode.MultiMove:
@@ -427,18 +445,28 @@ namespace PEBakery.WPF.Controls
                         Rect[] uiCtrlRectList = _selectedElements.Select(se => se.UIControl.Rect).ToArray();
                         (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, uiCtrlRectList);
 
-                        for (int i = 0; i < _selectedElements.Count; i++)
+                        // If delta is too small, fire an event with no delta.
+                        if (IsDeltaRelevant(delta))
                         {
-                            SelectedElement selected = _selectedElements[i];
-                            UIControl uiCtrl = selected.UIControl;
-                            Point newCtrlPos = newPosList[i];
+                            for (int i = 0; i < _selectedElements.Count; i++)
+                            {
+                                SelectedElement selected = _selectedElements[i];
+                                UIControl uiCtrl = selected.UIControl;
+                                Point newCtrlPos = newPosList[i];
 
-                            // UIControl should have position/size of int
-                            uiCtrl.X = (int)newCtrlPos.X;
-                            uiCtrl.Y = (int)newCtrlPos.Y;
+                                // UIControl should have position/size of int
+                                uiCtrl.X = (int)newCtrlPos.X;
+                                uiCtrl.Y = (int)newCtrlPos.Y;
+                            }
+
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
+                        }
+                        else
+                        { // Delta is too small. Use zero delta to prevent unintended 1px shift.
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, new Vector(0, 0), false, DragState.Finished));
                         }
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
+                        
                     }
                     break;
                 case DragMode.SingleResize:
@@ -661,15 +689,11 @@ namespace PEBakery.WPF.Controls
             DrawSelectedElements();
         }
 
-        private static void MoveSelectedElement(SelectedElement selected, Rect newRect, Vector delta)
+        private static void MoveSelectedElement(SelectedElement selected, Rect newRect)
         {
             // Assertion
             Debug.Assert(selected.Element != null, "Incorrect SelectedElement handling");
             Debug.Assert(selected.Border != null, "Incorrect SelectedElement handling");
-
-            // Canvas will not be updated if delta too small, to prevent unintended 1px shift.
-            if (IsDeltaRelevant(delta) == false)
-                return;
 
             // Move element and border
             Point newPos = new Point(newRect.X, newRect.Y);
