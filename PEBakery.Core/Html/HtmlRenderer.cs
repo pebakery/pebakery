@@ -91,10 +91,10 @@ namespace PEBakery.Core.Html
             }
             catch (Exception e)
             {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
                 MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        #endregion
 
         public static string LogStateCssTrClass(LogState state)
         {
@@ -151,6 +151,9 @@ namespace PEBakery.Core.Html
             }
         }
 
+        /// <summary>
+        /// Return corresponding Font Awesome image
+        /// </summary>
         public static string LogStateFaIcon(LogState state)
         {
             switch (state)
@@ -170,6 +173,34 @@ namespace PEBakery.Core.Html
                     return @"<i class=""fas fa-fw fa-file""></i>";
                 case LogState.Muted:
                     return @"<i class=""fas fa-fw fa-lock""></i>";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Return corresponding bootstrap-icons image
+        /// </summary>
+        public static string LogStateBiIcon(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Success:
+                    return @"<i class=""bi bi-check""></i>";
+                case LogState.Warning:
+                    return @"<i class=""bi bi-exclamation-triangle-fill""></i>";
+                case LogState.Overwrite:
+                    return @"<i class=""bi bi-files""></i>";
+                case LogState.Error:
+                case LogState.CriticalError:
+                    return @"<i class=""bi bi-x-circle-fill""></i>";
+                    // return @"<i class=""bi bi-x""></i>";
+                case LogState.Info:
+                    return @"<i class=""bi bi-info-circle-fill""></i>";
+                case LogState.Ignore:
+                    return @"<i class=""bi bi-file-earmark-text""></i>";
+                case LogState.Muted:
+                    return @"<i class=""bi bi-lock-fill""></i>";
                 default:
                     return string.Empty;
             }
@@ -203,6 +234,7 @@ namespace PEBakery.Core.Html
             }
         }
     }
+    #endregion
 
     public class LogLayoutTemplateLoader : ITemplateLoader
     {
@@ -229,6 +261,4 @@ namespace PEBakery.Core.Html
             return new ValueTask<string>(templateBody);
         }
     }
-
-
 }

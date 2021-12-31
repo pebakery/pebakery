@@ -657,8 +657,6 @@ namespace PEBakery.Core
             }
         }
         #endregion
-
-
     }
 
     #region class BuildLogOptions
