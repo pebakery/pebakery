@@ -31,6 +31,7 @@ using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using SQLite;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -48,8 +49,8 @@ namespace PEBakery.Core
         #region Constants
         public static class Const
         {
-            public const int EngineVersion = 96;
             public const string ScriptCacheRevision = "r21";
+            public const int EngineVersion = 97;
             public const string ProgramVersionStr = "0.9.7";
             public const string ProgramVersionStrFull = "0.9.7 beta7";
 
@@ -380,16 +381,16 @@ namespace PEBakery.Core
                 EnvInfoBuilder envInfos = new EnvInfoBuilder();
 
                 // Banner Message
-                EnvInfoSection msgSection = new EnvInfoSection(EnvInfoSection.FirstSectionOrder);
-                msgSection.KeyValues.Add(new EnvInfoKeyValue(firstMessage));
+                EnvInfoSection msgSection = new EnvInfoSection(EnvInfoBuilder.FirstSectionOrder);
+                msgSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, firstMessage));
                 envInfos.AddSection(msgSection);
 
                 // [PEBakery] - CrashTime
-                envInfos.PEBakeryInfoSection.KeyValues.Add(new EnvInfoKeyValue("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
+                envInfos.PEBakeryInfoSection.KeyValues.Add(new KeyValuePair<string, string>("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
 
                 // [Exception Trace]
-                EnvInfoSection exceptionSection = new EnvInfoSection(EnvInfoSection.LastSectionOrder, "[Exception Trace]");
-                exceptionSection.KeyValues.Add(new EnvInfoKeyValue(exceptionMessage));
+                EnvInfoSection exceptionSection = new EnvInfoSection(EnvInfoBuilder.LastSectionOrder, "[Exception Trace]");
+                exceptionSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, exceptionMessage));
                 envInfos.AddSection(exceptionSection);
 
                 s.WriteLine(envInfos);

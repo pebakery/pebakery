@@ -12,7 +12,7 @@ namespace PEBakery.Core
 {
     #region EnvInfoBuilder
     /// <summary>
-    /// Gather and stores host environment information.
+    /// Generates host environment information text.
     /// Can be appnded by 
     /// </summary>
     /// <remarks>
@@ -20,10 +20,16 @@ namespace PEBakery.Core
     /// </remarks>
     public class EnvInfoBuilder
     {
-        private readonly List<EnvInfoSection> _infoSections = new List<EnvInfoSection>();
+        public const int FirstSectionOrder = -200;
+        public const int PEBakerySectionOrder = -100;
+        public const int MiddleSectionOrder = 0;
+        public const int HostSectionOrder = 100;
+        public const int LastSectionOrder = 200;
 
-        public ProgramInfoSection PEBakeryInfoSection { get; } = new ProgramInfoSection(EnvInfoSection.PEBakerySectionOrder);
-        public HostInfoSection HostInfoSection { get; } = new HostInfoSection(EnvInfoSection.HostSectionOrder);
+        private readonly List<EnvInfoSectionBase> _infoSections = new List<EnvInfoSectionBase>();
+
+        public ProgramInfoSection PEBakeryInfoSection { get; } = new ProgramInfoSection(PEBakerySectionOrder);
+        public HostInfoSection HostInfoSection { get; } = new HostInfoSection(HostSectionOrder);
 
 
         public EnvInfoBuilder()
@@ -35,7 +41,7 @@ namespace PEBakery.Core
             AddSection(HostInfoSection);
         }
 
-        public void AddSection(EnvInfoSection infoSection)
+        public void AddSection(EnvInfoSectionBase infoSection)
         {
             _infoSections.Add(infoSection);
         }
@@ -43,58 +49,54 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            foreach (EnvInfoSection section in _infoSections.OrderBy(x => x.Order))
-            {
+            foreach (EnvInfoSectionBase section in _infoSections.OrderBy(x => x.Order))
                 b.AppendLine(section.ToString());
-            }
             return b.ToString();
         }
     }
 
-    public class EnvInfoSection
+    /// <summary>
+    /// Represents environment infomation section.
+    /// </summary>
+    /// <remarks>
+    /// MUST NOT THROW EXCEPTIONS! This class is designed for in UnhandledException handler.
+    /// </remarks>
+    public abstract class EnvInfoSectionBase
     {
-        public const int FirstSectionOrder = -200;
-        public const int PEBakerySectionOrder = -100;
-        public const int MiddleSectionOrder = 0;
-        public const int HostSectionOrder = 100;
-        public const int LastSectionOrder = 200;
-
+        public int Order { get; } = EnvInfoBuilder.HostSectionOrder + 1;
         /// <summary>
-        /// 0 is [Environment] section.
-        /// -100 is [PEBakery] section.
+        /// Leave it as blank to hide [SectionName] banner.
         /// </summary>
-        public int Order { get; } = 1;
         public string SectionName { get; } = string.Empty;
-        public List<EnvInfoKeyValue> KeyValues { get; } = new();
-        // public List<KeyValuePair<string, string>> KeyValues { get; } = new();
+        /// <summary>
+        /// Leave key as blank to print plain message.
+        /// </summary>
+        public List<KeyValuePair<string, string>> KeyValues { get; } = new();
 
-        public EnvInfoSection(int order)
+        public EnvInfoSectionBase(int order)
         {
             Order = order;
         }
 
-        public EnvInfoSection(int order, string sectionName)
+        public EnvInfoSectionBase(int order, string sectionName)
         {
             Order = order;
             SectionName = sectionName;
         }
 
-        protected virtual List<EnvInfoKeyValue> PropertyToKeyValue()
-        {
-            return new List<EnvInfoKeyValue>();
-        }
+        protected abstract List<KeyValuePair<string, string>> PropertyToKeyValue();
 
         public override string ToString()
         {
-            List<EnvInfoKeyValue> propKeyValues = PropertyToKeyValue();
-            IEnumerable<EnvInfoKeyValue> mergeKeyValues = propKeyValues.Concat(KeyValues);
+            List<KeyValuePair<string, string>> propKeyValues = PropertyToKeyValue();
+            IEnumerable<KeyValuePair<string, string>> mergeKeyValues = propKeyValues.Concat(KeyValues);
 
             int maxKeyWidth = mergeKeyValues.Max(kv => kv.Key.Length);
 
             StringBuilder b = new StringBuilder();
             if (0 < SectionName.Length)
                 b.AppendLine($"[{SectionName}]");
-            foreach (EnvInfoKeyValue kv in mergeKeyValues)
+            foreach (var kv in mergeKeyValues)
             {
                 if (kv.Key.Length == 0)
                     b.AppendLine(kv.Value);
@@ -106,22 +108,41 @@ namespace PEBakery.Core
         }
     }
 
-    public class EnvInfoKeyValue
+    public sealed class EnvInfoSection : EnvInfoSectionBase
     {
-        public string Key { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
-
-        public EnvInfoKeyValue() { }
-
-        public EnvInfoKeyValue(string value)
+        public EnvInfoSection(int order)
+            : base(order)
         {
-            Value = value;
         }
 
-        public EnvInfoKeyValue(string key, string value)
+        public EnvInfoSection(int order, string sectionName)
+            : base(order, sectionName)
         {
-            Key = key;
-            Value = value;
+        }
+
+        protected override List<KeyValuePair<string, string>> PropertyToKeyValue() => new List<KeyValuePair<string, string>>();
+    }
+    #endregion
+
+    #region class ProgramInfoSection
+    public sealed  class ProgramInfoSection : EnvInfoSectionBase
+    {
+        public Version PEBakeryVersion { get; }
+        public DateTime PEBakeryBuildDate { get; }
+
+        public ProgramInfoSection(int order) :
+            base(order, "PEBakery")
+        {
+            PEBakeryVersion = Global.Const.ProgramVersionInst.ToVersion();
+            PEBakeryBuildDate = Global.BuildDate;
+        }
+
+        protected override List<KeyValuePair<string, string>> PropertyToKeyValue()
+        {
+            return new List<KeyValuePair<string, string>>()
+            {
+                new KeyValuePair<string, string>("Version", $"{PEBakeryVersion} (Build {PEBakeryBuildDate:yyyyMMdd})"),
+            };
         }
     }
     #endregion
@@ -133,7 +154,7 @@ namespace PEBakery.Core
     /// <remarks>
     /// MUST NOT THROW EXCEPTIONS! This class is designed for in UnhandledException handler.
     /// </remarks>
-    public class HostInfoSection : EnvInfoSection
+    public sealed class HostInfoSection : EnvInfoSectionBase
     {
         // [Environment] key-values
         public Version WindowsVersion { get; }
@@ -156,45 +177,15 @@ namespace PEBakery.Core
             OemEncoding = Console.OutputEncoding;
         }
 
-        protected override List<EnvInfoKeyValue> PropertyToKeyValue()
+        protected override List<KeyValuePair<string, string>> PropertyToKeyValue()
         {
-            return new List<EnvInfoKeyValue>
+            return new List<KeyValuePair<string, string>>
             {
-                new EnvInfoKeyValue("Windows", $"{WindowsVersion} ({SystemArch.ToString().ToLower()})"),
-                new EnvInfoKeyValue(".NET Runtime", $"{DotnetVersion} ({ProccessArch.ToString().ToLower()})"),
-                new EnvInfoKeyValue("Language", Language.EnglishName),
-                new EnvInfoKeyValue("ANSI Encoding", $"{AnsiEncoding.EncodingName} ({AnsiEncoding.CodePage})"),
-                new EnvInfoKeyValue("OEM Encoding", $"{OemEncoding.EncodingName} ({OemEncoding.CodePage})"),
-            };
-        }
-    }
-
-    #endregion
-
-    #region class ProgramInfoSection
-    /// <summary>
-    /// Trace PEBakery host environment infomation.
-    /// </summary>
-    /// <remarks>
-    /// MUST NOT THROW EXCEPTIONS! This class is designed for in UnhandledException handler.
-    /// </remarks>
-    public class ProgramInfoSection : EnvInfoSection
-    {
-        public Version PEBakeryVersion { get; }
-        public DateTime PEBakeryBuildDate { get; }
-
-        public ProgramInfoSection(int order) :
-            base(order, "PEBakery")
-        {
-            PEBakeryVersion = Global.Const.ProgramVersionInst.ToVersion();
-            PEBakeryBuildDate = Global.BuildDate;
-        }
-
-        protected override List<EnvInfoKeyValue> PropertyToKeyValue()
-        {
-            return new List<EnvInfoKeyValue>()
-            {
-                new EnvInfoKeyValue("Version", $"{PEBakeryVersion} (Build {PEBakeryBuildDate:yyyyMMdd})"),
+                new KeyValuePair<string, string>("Windows", $"{WindowsVersion} ({SystemArch.ToString().ToLower()})"),
+                new KeyValuePair<string, string>(".NET Runtime", $"{DotnetVersion} ({ProccessArch.ToString().ToLower()})"),
+                new KeyValuePair<string, string>("Language", Language.EnglishName),
+                new KeyValuePair<string, string>("ANSI Encoding", $"{AnsiEncoding.EncodingName} ({AnsiEncoding.CodePage})"),
+                new KeyValuePair<string, string>("OEM Encoding", $"{OemEncoding.EncodingName} ({OemEncoding.CodePage})"),
             };
         }
     }

@@ -121,13 +121,20 @@ namespace PEBakery.Core
                         _w.WriteLine($"Built    by PEBakery {dbBuild.PEBakeryVersion}");
                         _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
                         _w.WriteLine();
-                        _w.WriteLine($"Started  at {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Started  | {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
                         if (dbBuild.FinishTime != DateTime.MinValue)
                         { // Put these lines only if a build successfully finished
-                            _w.WriteLine($"Finished at {dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                            _w.WriteLine($"Finished | {dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
                             TimeSpan elapsed = dbBuild.FinishTime - dbBuild.StartTime;
                             _w.WriteLine($"Took {elapsed:h\\:mm\\:ss}");
                         }
+                        _w.WriteLine();
+                        _w.WriteLine();
+                        _w.WriteLine("<Host Environment>");
+                        if (dbBuild.HostWindowsVersion != null)
+                            _w.WriteLine($"Windows      | {dbBuild.HostWindowsVersion}");
+                        if (dbBuild.HostDotnetVersion != null)
+                            _w.WriteLine($".NET Runtime | {dbBuild.HostDotnetVersion}");
                         _w.WriteLine();
                         _w.WriteLine();
 
@@ -373,16 +380,17 @@ namespace PEBakery.Core
                             BuildEndTimeStr = dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
+                            // Host Environment
+                            BuildHostWindowsVersion = dbBuild.HostWindowsVersion,
+                            BuildHostDotnetVersion = dbBuild.HostDotnetVersion,
                             // Embed
                             EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
                             EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
                             EmbedBootstrapJs = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.bundle.min.js", assembly),
-                            // Data
-                            // LogStats = new List<LogStatItem>(),
                         };
 
                         // Log Statistics
-                        var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
+                        var states = Enum.GetValues<LogState>().Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);

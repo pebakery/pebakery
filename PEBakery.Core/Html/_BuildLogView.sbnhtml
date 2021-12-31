@@ -38,6 +38,27 @@
             </div>
         </header>
 
+        <!-- Host Environment -->
+        {{ if BuildHostWindowsVersion && BuildHostDotnetVersion }}
+        <section id="hostenv" class="container-fluid">
+            <h2 class="mt-2">Host Environment</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <tbody>
+                        <tr>
+                            <th class="table-dark">Windows</th>
+                            <td>{{ BuildHostWindowsVersion | html.escape }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-dark">.NET Runtime</th>
+                            <td>{{ BuildHostDotnetVersion | html.escape }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {{ end }}
+
         <!-- Statistics -->
         <section id="statistics" class="container-fluid mt-2">
             <h2 class="mt-2">Log Statistics</h2>

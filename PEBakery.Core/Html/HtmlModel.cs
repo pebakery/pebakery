@@ -69,6 +69,9 @@ namespace PEBakery.Core.Html
         public string BuildEndTimeStr { get; set; }
         public string BuildTookTimeStr { get; set; }
         public bool ShowLogFlags { get; set; }
+        // Host Environment
+        public string BuildHostWindowsVersion { get; set; }
+        public string BuildHostDotnetVersion { get; set; }
         // Data
         // type: LogStatItem[]
         public ScriptArray LogStats { get; private set; } = new ScriptArray();

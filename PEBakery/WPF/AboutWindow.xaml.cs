@@ -29,6 +29,7 @@ using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -70,8 +71,8 @@ namespace PEBakery.WPF
             InfoBuildDate = $"Build {Global.BuildDate:yyyyMMdd}";
 
             EnvInfoBuilder envInfos = new EnvInfoBuilder();
-            EnvInfoSection msgSection = new EnvInfoSection(EnvInfoSection.FirstSectionOrder);
-            msgSection.KeyValues.Add(new EnvInfoKeyValue("Please provide this info when posting to issue tracker."));
+            EnvInfoSection msgSection = new EnvInfoSection(EnvInfoBuilder.FirstSectionOrder);
+            msgSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, "Please provide this info when posting to issue tracker."));
             envInfos.AddSection(msgSection);
 
             StringBuilder b = new StringBuilder();

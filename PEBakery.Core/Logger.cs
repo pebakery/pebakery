@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -306,6 +307,8 @@ namespace PEBakery.Core
             LogModel.BuildInfo dbBuild = new LogModel.BuildInfo
             {
                 PEBakeryVersion = Global.Const.ProgramVersionStrFull,
+                HostWindowsVersion = $"{Environment.OSVersion.Version} ({RuntimeInformation.OSArchitecture.ToString().ToLower()})",
+                HostDotnetVersion = $"{Environment.Version} ({RuntimeInformation.ProcessArchitecture.ToString().ToLower()})",
                 StartTime = s.StartTime,
                 Name = name,
             };
@@ -1106,9 +1109,12 @@ namespace PEBakery.Core
         {
             [PrimaryKey, AutoIncrement]
             public int Id { get; set; }
-            // ReSharper disable once InconsistentNaming
             [MaxLength(32)]
             public string PEBakeryVersion { get; set; }
+            [MaxLength(32)]
+            public string HostWindowsVersion { get; set; }
+            [MaxLength(32)]
+            public string HostDotnetVersion { get; set; }
             public DateTime StartTime { get; set; }
             public DateTime FinishTime { get; set; }
             [MaxLength(256)]
