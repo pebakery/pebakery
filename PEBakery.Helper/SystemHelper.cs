@@ -23,7 +23,11 @@
     SOFTWARE.
 */
 
+#nullable enable
+
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -63,7 +67,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// It works only on Windows.  
         /// </remarks>
-        public static MemorySnapshot GetMemorySnapshot()
+        public static MemorySnapshot? GetMemorySnapshot()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -95,7 +99,9 @@ namespace PEBakery.Helper
         public static ulong AvailableSystemMemory(ulong maxReqMem, double usableSysMemPercent)
         {
             // Get the max capacity of physical memory we can use
-            MemorySnapshot m = GetMemorySnapshot();
+            MemorySnapshot? m = GetMemorySnapshot();
+            if (m is null) // Error
+                return 0;
             ulong reservedPhysical = (ulong)(m.TotalPhysical * (1 - usableSysMemPercent));
             if (m.AvailPhysical < reservedPhysical) // Possibly no free physical memory (aside from reserved memory)!
                 return 0;
@@ -163,23 +169,6 @@ namespace PEBakery.Helper
 
             // Every try failed, fail-safe to 1 threads
             return 1;
-        }
-        #endregion
-
-        #region TraceEnvironmentInfo
-        public static string TraceEnvironmentInfo()
-        {
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("[Environment]");
-            b.AppendLine($"Windows       | {Environment.OSVersion.Version}");
-            b.AppendLine($".NET Runtime  | {Environment.Version}");
-            b.AppendLine($"Architecture  | {RuntimeInformation.OSArchitecture.ToString().ToLower()}");
-            b.AppendLine($"Language      | {CultureInfo.CurrentCulture.EnglishName}");
-            Encoding ansiEncoding = EncodingHelper.DefaultAnsi;
-            b.AppendLine($"ANSI Encoding | {ansiEncoding.EncodingName} ({ansiEncoding.CodePage})");
-            Encoding oemEncoding = Console.OutputEncoding;
-            b.AppendLine($"OEM Encoding  | {oemEncoding.EncodingName} ({oemEncoding.CodePage})");
-            return b.ToString();
         }
         #endregion
     }

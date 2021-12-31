@@ -30,6 +30,7 @@ using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Navigation;
 
@@ -87,7 +88,14 @@ namespace PEBakery.WPF
             }
             InfoHostEnv = $"Host: {Environment.OSVersion.VersionString} {hostArch}";
 
+            EnvInfoBuilder envInfos = new EnvInfoBuilder();
+
+            StringBuilder b = new StringBuilder();
+            b.Append(envInfos.ToString());
+            EnvironmentText = b.ToString();
+
             LicenseText = Properties.Resources.LicenseSimple;
+
         }
         #endregion
 
@@ -111,6 +119,15 @@ namespace PEBakery.WPF
         {
             get => _infoBuildDate;
             set => SetProperty(ref _infoBuildDate, value);
+        }
+        #endregion
+
+        #region Environment
+        private string _environmentText = string.Empty;
+        public string EnvironmentText
+        {
+            get => _environmentText;
+            set => SetProperty(ref _environmentText, value);
         }
         #endregion
 

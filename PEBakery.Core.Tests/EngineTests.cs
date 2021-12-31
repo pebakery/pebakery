@@ -46,13 +46,13 @@ namespace PEBakery.Core.Tests
 
     public static class EngineTests
     {
-        #region Static Fields
-        public static Project Project;
-        public static Logger Logger;
-        public static string BaseDir;
-        public static string TestBench;
-        public static string MagicFile;
-        public static bool IsOnline;
+        #region Static Fields and Properties
+        public static Project Project { get; set; }
+        public static Logger Logger { get; set; }
+        public static string BaseDir { get; set; }
+        public static string TestBench { get; set; }
+        public static string MagicFile { get; set; }
+        public static bool IsOnline { get; set; }
         #endregion
 
         #region CreateEngineState, DummySection

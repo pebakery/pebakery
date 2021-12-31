@@ -212,6 +212,26 @@ namespace PEBakery.Helper
         }
         #endregion
 
+        #region ToVersion
+        public Version ToVersion()
+        {
+            Version ret;
+            if (Build <= 0)
+            {
+                ret = new Version(Major, Minor);
+            }
+            else if (Revision <= 0)
+            {
+                ret = new Version(Major, Minor, Build);
+            }
+            else
+            {
+                ret = new Version(Major, Minor, Build, Revision);
+            }
+            return ret;
+        }
+        #endregion
+
         #region (Override) ToString, GetHashCode
         public override string ToString()
         {
@@ -238,7 +258,7 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region Serailizable
+        #region Serializable
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Major), Major, typeof(int));

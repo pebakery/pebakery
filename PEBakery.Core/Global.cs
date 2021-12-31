@@ -31,6 +31,7 @@ using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using SQLite;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -234,35 +235,6 @@ namespace PEBakery.Core
                 }
             }
         }
-
-        // Catch and log uncatched Exception thrown from everywhere
-        private static void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            if (!(e.ExceptionObject is Exception ex))
-                return;
-
-            const string firstMessage = "PEBakery cannot continue due to an internal error.\r\nPlease post the crash log to the PEBakery issue tracker.";
-
-            DateTime now = DateTime.Now;
-            string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
-            using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
-            {
-                string exceptionTrace = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
-                s.WriteLine(firstMessage);
-                s.WriteLine();
-                s.WriteLine("[PEBakery]");
-                s.WriteLine($"Version   | {Const.ProgramVersionStrFull} ({BuildDate:yyyyMMdd})");
-                s.WriteLine($"CrashTime | {now:yyyy.MM.dd HH:mm:ss K}");
-                s.WriteLine();
-                s.Write(SystemHelper.TraceEnvironmentInfo());
-                s.WriteLine();
-                s.WriteLine("[Exception Trace]");
-                s.WriteLine(exceptionTrace);
-            }
-
-            MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-            FileHelper.OpenPath(crashLogFile);
-        }
         #endregion
 
         #region Cleanup
@@ -389,6 +361,36 @@ namespace PEBakery.Core
                     _fileTypeDetector = new FileTypeDetector(MagicFile);
                 }
             });
+        }
+        #endregion
+
+        #region UnhandledException Handler
+        // Catch and log uncatched Exception thrown from everywhere
+        private static void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject is not Exception ex)
+                return;
+
+            const string firstMessage = "PEBakery cannot continue due to an internal error.\r\nPlease post the crash log to the PEBakery issue tracker.";
+
+            DateTime now = DateTime.Now;
+            string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
+            using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
+            {
+                string exceptionTrace = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
+
+                s.WriteLine(firstMessage);
+
+                EnvInfoBuilder envInfos = new EnvInfoBuilder();
+                envInfos.ProgramInfoSection.KeyValues.Add(new EnvInfoKeyValue("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
+                s.WriteLine(envInfos);
+
+                s.WriteLine("[Exception Trace]");
+                s.WriteLine(exceptionTrace);
+            }
+
+            MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+            FileHelper.OpenPath(crashLogFile);
         }
         #endregion
     }

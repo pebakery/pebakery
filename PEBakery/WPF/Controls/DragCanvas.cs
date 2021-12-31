@@ -435,7 +435,6 @@ namespace PEBakery.WPF.Controls
                         { // Delta is too small. Use zero delta to prevent unintended 1px shift.
                             UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, new Vector(0, 0), false, DragState.Finished));
                         }
-                        
                     }
                     break;
                 case DragMode.MultiMove:
@@ -465,8 +464,6 @@ namespace PEBakery.WPF.Controls
                         { // Delta is too small. Use zero delta to prevent unintended 1px shift.
                             UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, new Vector(0, 0), false, DragState.Finished));
                         }
-
-                        
                     }
                     break;
                 case DragMode.SingleResize:

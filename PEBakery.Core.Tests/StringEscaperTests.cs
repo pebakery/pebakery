@@ -33,8 +33,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-
 namespace PEBakery.Core.Tests
 {
     [TestClass]
