@@ -67,28 +67,12 @@ namespace PEBakery.WPF
             MonospacedFont = monospacedFont;
 
             InfoPEBakeryVersion = Global.Const.ProgramVersionStrFull;
-            InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
-
-            string hostArch = "unknown";
-            switch (RuntimeInformation.ProcessArchitecture)
-            {
-                case Architecture.X86:
-                    hostArch = "x86";
-                    break;
-                case Architecture.X64:
-                    hostArch = "x64";
-                    break;
-                case Architecture.Arm64:
-                    hostArch = "ARM64";
-                    break;
-                // Technically speaking, Microsoft does not support WPF on ARMv7.
-                case Architecture.Arm:
-                    hostArch = "ARM";
-                    break;
-            }
-            InfoHostEnv = $"Host: {Environment.OSVersion.VersionString} {hostArch}";
+            InfoBuildDate = $"Build {Global.BuildDate:yyyyMMdd}";
 
             EnvInfoBuilder envInfos = new EnvInfoBuilder();
+            EnvInfoSection msgSection = new EnvInfoSection(EnvInfoSection.FirstSectionOrder);
+            msgSection.KeyValues.Add(new EnvInfoKeyValue("Please provide this info when posting to issue tracker."));
+            envInfos.AddSection(msgSection);
 
             StringBuilder b = new StringBuilder();
             b.Append(envInfos.ToString());
@@ -105,13 +89,6 @@ namespace PEBakery.WPF
         {
             get => _infoPEBakeryVersion;
             set => SetProperty(ref _infoPEBakeryVersion, value);
-        }
-
-        private string _infoHostEnv = "Host OS Environment";
-        public string InfoHostEnv
-        {
-            get => _infoHostEnv;
-            set => SetProperty(ref _infoHostEnv, value);
         }
 
         private string _infoBuildDate = "BuildDate";

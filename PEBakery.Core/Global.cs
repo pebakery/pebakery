@@ -31,7 +31,6 @@ using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using SQLite;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -72,9 +71,9 @@ namespace PEBakery.Core
         public static string[] Args { get; set; }
         public static string BaseDir { get; set; }
 
-
         // Buffer Pool
-        public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
+        private static readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+        public static RecyclableMemoryStreamManager MemoryStreamManager => _recyclableMemoryStreamManager;
 
         // Global Instances
         public static Logger Logger { get; set; }
@@ -372,21 +371,28 @@ namespace PEBakery.Core
                 return;
 
             const string firstMessage = "PEBakery cannot continue due to an internal error.\r\nPlease post the crash log to the PEBakery issue tracker.";
+            string exceptionMessage = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
 
             DateTime now = DateTime.Now;
             string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
             using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
-            {
-                string exceptionTrace = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
-
-                s.WriteLine(firstMessage);
-
+            { 
                 EnvInfoBuilder envInfos = new EnvInfoBuilder();
-                envInfos.ProgramInfoSection.KeyValues.Add(new EnvInfoKeyValue("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
-                s.WriteLine(envInfos);
 
-                s.WriteLine("[Exception Trace]");
-                s.WriteLine(exceptionTrace);
+                // Banner Message
+                EnvInfoSection msgSection = new EnvInfoSection(EnvInfoSection.FirstSectionOrder);
+                msgSection.KeyValues.Add(new EnvInfoKeyValue(firstMessage));
+                envInfos.AddSection(msgSection);
+
+                // [PEBakery] - CrashTime
+                envInfos.PEBakeryInfoSection.KeyValues.Add(new EnvInfoKeyValue("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
+
+                // [Exception Trace]
+                EnvInfoSection exceptionSection = new EnvInfoSection(EnvInfoSection.LastSectionOrder, "[Exception Trace]");
+                exceptionSection.KeyValues.Add(new EnvInfoKeyValue(exceptionMessage));
+                envInfos.AddSection(exceptionSection);
+
+                s.WriteLine(envInfos);
             }
 
             MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);

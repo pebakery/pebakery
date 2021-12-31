@@ -20,29 +20,32 @@ namespace PEBakery.Core
     /// </remarks>
     public class EnvInfoBuilder
     {
-        public Dictionary<string, EnvInfoSection> InfoDict { get; }
-        public ProgramInfoSection ProgramInfoSection { get; }
-        public HostInfoSection HostInfoSection { get; }
+        private readonly List<EnvInfoSection> _infoSections = new List<EnvInfoSection>();
+
+        public ProgramInfoSection PEBakeryInfoSection { get; } = new ProgramInfoSection(EnvInfoSection.PEBakerySectionOrder);
+        public HostInfoSection HostInfoSection { get; } = new HostInfoSection(EnvInfoSection.HostSectionOrder);
+
 
         public EnvInfoBuilder()
         {
-            InfoDict = new Dictionary<string, EnvInfoSection>();
-
             // [PEBakery] Section
-            ProgramInfoSection = new ProgramInfoSection(-100);
-            InfoDict[ProgramInfoSection.SectionName] = ProgramInfoSection;
+            AddSection(PEBakeryInfoSection);
 
             // [Environment] Section
-            HostInfoSection = new HostInfoSection(0);
-            InfoDict[HostInfoSection.SectionName] = HostInfoSection;
+            AddSection(HostInfoSection);
+        }
+
+        public void AddSection(EnvInfoSection infoSection)
+        {
+            _infoSections.Add(infoSection);
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            foreach (KeyValuePair<string, EnvInfoSection> kv in InfoDict.OrderBy(kv => kv.Value.Order))
+            foreach (EnvInfoSection section in _infoSections.OrderBy(x => x.Order))
             {
-                b.AppendLine(kv.Value.ToString());
+                b.AppendLine(section.ToString());
             }
             return b.ToString();
         }
@@ -50,16 +53,24 @@ namespace PEBakery.Core
 
     public class EnvInfoSection
     {
+        public const int FirstSectionOrder = -200;
+        public const int PEBakerySectionOrder = -100;
+        public const int MiddleSectionOrder = 0;
+        public const int HostSectionOrder = 100;
+        public const int LastSectionOrder = 200;
+
         /// <summary>
-        /// 0 is [Environment] section
+        /// 0 is [Environment] section.
+        /// -100 is [PEBakery] section.
         /// </summary>
-        public int Order { get; set; } = 1;
-        public string SectionName { get; set; } = string.Empty;
-        public List<EnvInfoKeyValue> KeyValues { get; set; } = new();
+        public int Order { get; } = 1;
+        public string SectionName { get; } = string.Empty;
+        public List<EnvInfoKeyValue> KeyValues { get; } = new();
+        // public List<KeyValuePair<string, string>> KeyValues { get; } = new();
 
-        public EnvInfoSection()
+        public EnvInfoSection(int order)
         {
-
+            Order = order;
         }
 
         public EnvInfoSection(int order, string sectionName)
@@ -81,9 +92,15 @@ namespace PEBakery.Core
             int maxKeyWidth = mergeKeyValues.Max(kv => kv.Key.Length);
 
             StringBuilder b = new StringBuilder();
-            b.AppendLine($"[{SectionName}]");
+            if (0 < SectionName.Length)
+                b.AppendLine($"[{SectionName}]");
             foreach (EnvInfoKeyValue kv in mergeKeyValues)
-                b.AppendLine($"{kv.Key.PadRight(maxKeyWidth)} | {kv.Value}");
+            {
+                if (kv.Key.Length == 0)
+                    b.AppendLine(kv.Value);
+                else
+                    b.AppendLine($"{kv.Key.PadRight(maxKeyWidth)} | {kv.Value}");
+            }
 
             return b.ToString();
         }
@@ -95,6 +112,11 @@ namespace PEBakery.Core
         public string Value { get; set; } = string.Empty;
 
         public EnvInfoKeyValue() { }
+
+        public EnvInfoKeyValue(string value)
+        {
+            Value = value;
+        }
 
         public EnvInfoKeyValue(string key, string value)
         {
@@ -122,11 +144,9 @@ namespace PEBakery.Core
         public Encoding AnsiEncoding { get; }
         public Encoding OemEncoding { get; }
 
-        public HostInfoSection(int order)
+        public HostInfoSection(int order) :
+            base(order, "Host")
         {
-            Order = order;
-            SectionName = "Host";
-
             WindowsVersion = Environment.OSVersion.Version;
             DotnetVersion = Environment.Version;
             SystemArch = RuntimeInformation.OSArchitecture;
@@ -140,8 +160,8 @@ namespace PEBakery.Core
         {
             return new List<EnvInfoKeyValue>
             {
-                new EnvInfoKeyValue("Windows", $"{WindowsVersion} {SystemArch.ToString().ToLower()}"),
-                new EnvInfoKeyValue(".NET Runtime", $"{DotnetVersion} {ProccessArch.ToString().ToLower()}"),
+                new EnvInfoKeyValue("Windows", $"{WindowsVersion} ({SystemArch.ToString().ToLower()})"),
+                new EnvInfoKeyValue(".NET Runtime", $"{DotnetVersion} ({ProccessArch.ToString().ToLower()})"),
                 new EnvInfoKeyValue("Language", Language.EnglishName),
                 new EnvInfoKeyValue("ANSI Encoding", $"{AnsiEncoding.EncodingName} ({AnsiEncoding.CodePage})"),
                 new EnvInfoKeyValue("OEM Encoding", $"{OemEncoding.EncodingName} ({OemEncoding.CodePage})"),
@@ -163,11 +183,9 @@ namespace PEBakery.Core
         public Version PEBakeryVersion { get; }
         public DateTime PEBakeryBuildDate { get; }
 
-        public ProgramInfoSection(int order) : base()
+        public ProgramInfoSection(int order) :
+            base(order, "PEBakery")
         {
-            Order = order;
-            SectionName = "PEBakery";
-
             PEBakeryVersion = Global.Const.ProgramVersionInst.ToVersion();
             PEBakeryBuildDate = Global.BuildDate;
         }
