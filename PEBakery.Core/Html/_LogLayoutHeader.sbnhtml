@@ -66,6 +66,6 @@
     <!-- Font Awesome CSS -->
     <!-- Always use CDN to avoid file size explosion. -->
     <!-- In a scale of PEBakery build log, Font Awesome JS is too slow. Use CSS for better performance. -->
-    <!-- Font Awesome icons are thicker than Bootstrap Icons, which is better suited for PEBakery LogState icons. -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" integrity="sha512-1PKOgIY59xJ8Co8+NE6FZ+LOAZKjy+KY8iq0G4B3CyeY6wYHN3yt9PW0XpSriVlkMXe40PTKnXrLnZ9+fkDaog==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Font Awesome solid icons are thicker than Bootstrap Icons, which is better suited for PEBakery LogState icons. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>

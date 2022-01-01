@@ -373,31 +373,38 @@ namespace PEBakery.Core
 
             const string firstMessage = "PEBakery cannot continue due to an internal error.\r\nPlease post the crash log to the PEBakery issue tracker.";
             string exceptionMessage = Logger.LogExceptionMessage(ex, LogDebugLevel.PrintExceptionStackTrace);
+            try
+            {
+                DateTime now = DateTime.Now;
+                string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
+                using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
+                {
+                    EnvInfoBuilder envInfos = new EnvInfoBuilder();
 
-            DateTime now = DateTime.Now;
-            string crashLogFile = Path.Combine(BaseDir, $"PEBakery-crashlog_{now:yyyyMMdd_HHmmss}.txt");
-            using (StreamWriter s = new StreamWriter(crashLogFile, false, Encoding.UTF8))
-            { 
-                EnvInfoBuilder envInfos = new EnvInfoBuilder();
+                    // Banner Message
+                    EnvInfoSection msgSection = new EnvInfoSection(EnvInfoBuilder.FirstSectionOrder);
+                    msgSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, firstMessage));
+                    envInfos.AddSection(msgSection);
 
-                // Banner Message
-                EnvInfoSection msgSection = new EnvInfoSection(EnvInfoBuilder.FirstSectionOrder);
-                msgSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, firstMessage));
-                envInfos.AddSection(msgSection);
+                    // [PEBakery] - CrashTime
+                    envInfos.PEBakeryInfoSection.KeyValues.Add(new KeyValuePair<string, string>("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
 
-                // [PEBakery] - CrashTime
-                envInfos.PEBakeryInfoSection.KeyValues.Add(new KeyValuePair<string, string>("CrashTime", $"{now:yyyy.MM.dd HH:mm:ss K}"));
+                    // [Exception Trace]
+                    EnvInfoSection exceptionSection = new EnvInfoSection(EnvInfoBuilder.LastSectionOrder, "Exception Trace");
+                    exceptionSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, exceptionMessage));
+                    envInfos.AddSection(exceptionSection);
 
-                // [Exception Trace]
-                EnvInfoSection exceptionSection = new EnvInfoSection(EnvInfoBuilder.LastSectionOrder, "[Exception Trace]");
-                exceptionSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, exceptionMessage));
-                envInfos.AddSection(exceptionSection);
+                    s.WriteLine(envInfos);
+                }
 
-                s.WriteLine(envInfos);
+                MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                FileHelper.OpenPath(crashLogFile);
             }
-
-            MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-            FileHelper.OpenPath(crashLogFile);
+            catch
+            {
+                // Even if EnvInfoBuilder throws exception, at least print exception message as MessageBox.
+                MessageBox.Show($"{firstMessage}\r\n\r\n{exceptionMessage}", "Critical Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         #endregion
     }
