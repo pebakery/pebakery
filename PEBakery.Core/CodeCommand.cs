@@ -232,7 +232,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestPath);
             if (Preserve)
                 b.Append(",PRESERVE");
@@ -292,13 +292,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
-    { // FileCreateBlank,<FilePath>,[Encoding],[PRESERVE],[NOWARN]
+    {
+        // Legacy: FileCreateBlank,<FilePath>,[Encoding],[PRESERVE],[NOWARN]
+        // New: FileCreateBlank,<FilePath>,[Encoding=<ENC>],[PRESERVE],[NOWARN]
         public string FilePath;
         public bool Preserve;
         public bool NoWarn;
-        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
+        // public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
+        public string Encoding; // Optional parameter - [UTF8|UTF16|UTF16BE|ANSI]
 
-        public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, Encoding encoding)
+        public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, string encoding)
         {
             FilePath = filePath;
             Preserve = preserve;
@@ -315,6 +318,9 @@ namespace PEBakery.Core
             if (NoWarn)
                 b.Append(",NOWARN");
             if (Encoding != null)
+                b.Append($",{Encoding}");
+            /*
+            if (Encoding != null)
             {
                 if (Encoding.Equals(Encoding.UTF8))
                     b.Append(",UTF8");
@@ -325,6 +331,7 @@ namespace PEBakery.Core
                 else if (Encoding.Equals(EncodingHelper.DefaultAnsi))
                     b.Append(",ANSI");
             }
+            */
             return b.ToString();
         }
     }
@@ -558,13 +565,13 @@ namespace PEBakery.Core
             b.Append(RegistryHelper.RegKeyToString(HKey));
             b.Append(",0x");
             b.Append(ValueTypeInt.ToString("X"));
-            b.Append(",");
+            b.Append(',');
             b.Append(KeyPath);
-            b.Append(",");
+            b.Append(',');
             if (ValueDataList == null)
             {
                 b.Append(ValueName);
-                b.Append(",");
+                b.Append(',');
             }
             else
             {
@@ -572,7 +579,7 @@ namespace PEBakery.Core
                 {
                     b.Append(ValueDataList[i]);
                     if (i + 1 < ValueDataList.Length)
-                        b.Append(",");
+                        b.Append(',');
                 }
             }
             if (NoWarn)
@@ -605,13 +612,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(HKey);
-            b.Append(",");
+            b.Append(',');
             b.Append(ValueType);
-            b.Append(",");
+            b.Append(',');
             b.Append(KeyPath);
             foreach (string valueData in ValueDataList)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(valueData);
             }
             if (NoWarn)
@@ -639,11 +646,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(RegistryHelper.RegKeyToString(HKey));
-            b.Append(",");
+            b.Append(',');
             b.Append(KeyPath);
             if (ValueName != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(ValueName);
             }
             return b.ToString();
@@ -682,15 +689,15 @@ namespace PEBakery.Core
 
             StringBuilder b = new StringBuilder();
             b.Append(HKeyStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(KeyPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(ActionType.ToString().ToUpper());
-            b.Append(",");
+            b.Append(',');
             b.Append(Arg1); // Always, should exist
             if (Arg2 != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Arg2);
             }
             return b.ToString();
@@ -794,9 +801,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Line);
-            b.Append(",");
+            b.Append(',');
             b.Append(Mode);
             return b.ToString();
         }
@@ -841,9 +848,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(OldStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(NewStr);
             return b.ToString();
         }
@@ -886,7 +893,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(DeleteLine);
             return b.ToString();
         }
@@ -973,16 +980,16 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
             b.Append(",%");
             b.Append(DestVar);
-            b.Append("%");
+            b.Append('%');
             if (DefaultValue != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(DefaultValue);
             }
             return b.ToString();
@@ -1030,11 +1037,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
-            b.Append(",");
+            b.Append(',');
             b.Append(Value);
             return b.ToString();
         }
@@ -1079,9 +1086,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
             return b.ToString();
         }
@@ -1128,13 +1135,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             if (Delim != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Delim);
             }
             return b.ToString();
@@ -1178,7 +1185,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
             return b.ToString();
         }
@@ -1221,7 +1228,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
             return b.ToString();
         }
@@ -1269,9 +1276,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Line);
             if (Append)
                 b.Append(",APPEND");
@@ -1389,11 +1396,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             if (NoErrFlag)
                 b.Append(",NOERR");
@@ -1427,13 +1434,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
             if (Split != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Split);
             }
             if (CheckFlag)
@@ -1499,17 +1506,17 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(ExtractPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
             if (Split != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Split);
             }
             if (CheckFlag)
@@ -1568,17 +1575,17 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(ListFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
             if (Split != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Split);
             }
             if (CheckFlag)
@@ -1631,9 +1638,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcDir);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(Compress);
 
             if (ImageName != null)
@@ -1698,7 +1705,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcDir);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestWim);
 
             if (ImageName != null)
@@ -1752,7 +1759,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
             if (CheckFlag)
                 b.Append(",CHECK");
@@ -1837,11 +1844,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(WimFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(SrcPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestPath);
             if (CheckFlag)
                 b.Append(",CHECK");
@@ -1920,9 +1927,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(WimFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(Path);
             if (CheckFlag)
                 b.Append(",CHECK");
@@ -1999,11 +2006,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(WimFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(SrcPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestPath);
             if (CheckFlag)
                 b.Append(",CHECK");
@@ -2046,7 +2053,7 @@ namespace PEBakery.Core
             b.Append(WimFile);
             if (Recompress != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Recompress);
             }
             if (CheckFlag != null)
@@ -2091,9 +2098,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcWim);
-            b.Append(",");
+            b.Append(',');
             b.Append(ImageIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestWim);
 
             if (ImageName != null)
@@ -2156,13 +2163,13 @@ namespace PEBakery.Core
                     b.Append("SevenZip");
                     break;
             }
-            b.Append(",");
+            b.Append(',');
             b.Append(SrcPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestArchive);
             if (CompressLevel != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(CompressLevel.ToString().ToUpper());
             }
             return b.ToString();
@@ -2187,11 +2194,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcArchive);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
             if (Password != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Password);
             }
             return b.ToString();
@@ -2220,11 +2227,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcCab);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestDir);
             if (SingleFile != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(SingleFile);
             }
             if (Preserve)
@@ -2255,7 +2262,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestPath);
             if (Preserve)
                 b.Append(",PRESERVE");
@@ -2296,13 +2303,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(URL);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestPath);
             if (HashType != HashHelper.HashType.None && HashDigest != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(HashType);
-                b.Append("=");
+                b.Append('=');
                 b.Append(HashDigest);
             }
             if (TimeOut != null)
@@ -2392,13 +2399,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(ScriptFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(DirName);
-            b.Append(",");
+            b.Append(',');
             b.Append(FileName);
             if (Params != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Params);
             }
             return b.ToString();
@@ -2544,13 +2551,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Element);
-            b.Append(",");
+            b.Append(',');
             b.Append(ScriptFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             if (Delim != null)
             {
@@ -2607,13 +2614,13 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Element);
-            b.Append(",");
+            b.Append(',');
             b.Append(ScriptFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(Section);
-            b.Append(",");
+            b.Append(',');
             b.Append(Key);
-            b.Append(",");
+            b.Append(',');
             b.Append(Value);
             if (Delim != null)
             {
@@ -2659,11 +2666,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Message);
-            b.Append(",");
+            b.Append(',');
             b.Append(Action);
             if (Timeout != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Timeout);
             }
             return b.ToString();
@@ -2784,16 +2791,16 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(InitPath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             if (Title != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append($"Title={Title}");
             }
             if (Filter != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append($"Filter={Filter}");
             }
             return b.ToString();
@@ -2880,7 +2887,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Integer);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -2925,7 +2932,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
-            b.Append(",");
+            b.Append(',');
             // This does not show original format string, but in .Net format string!
             b.Append(StringEscaper.DoubleQuote(FormatString));
             return b.ToString();
@@ -2951,7 +2958,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.DoubleQuote(FilePath));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -2975,9 +2982,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.DoubleQuote(DirPath));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(FileName));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3004,7 +3011,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Integer));
             return b.ToString();
         }
@@ -3030,9 +3037,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Count));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3058,11 +3065,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(StartPos));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Length));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3084,7 +3091,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3112,9 +3119,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(ToTrim));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVarName);
             return b.ToString();
         }
@@ -3136,7 +3143,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3161,7 +3168,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3188,9 +3195,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(SubStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3219,11 +3226,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(SearchStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(ReplaceStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3248,7 +3255,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3274,11 +3281,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(Delimiter));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(Index));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.QuoteEscape(DestVar));
             return b.ToString();
         }
@@ -3306,11 +3313,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(TotalWidth));
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(PadChar));
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             return b.ToString();
         }
@@ -3334,7 +3341,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Type);
-            b.Append(",");
+            b.Append(',');
             b.Append(SubInfo);
             return b.ToString();
         }
@@ -3645,9 +3652,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
-            b.Append(",");
+            b.Append(',');
             b.Append(Src);
-            b.Append(",");
+            b.Append(',');
             b.Append(BitSize);
             return b.ToString();
         }
@@ -3675,11 +3682,11 @@ namespace PEBakery.Core
             b.Append(DestVar);
             if (Min != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Min);
                 if (Max != null)
                 {
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Max);
                 }
             }
@@ -3705,7 +3712,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Type);
-            b.Append(",");
+            b.Append(',');
             b.Append(SubInfo);
             return b.ToString();
         }
@@ -4022,7 +4029,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Type);
-            b.Append(",");
+            b.Append(',');
             b.Append(SubInfo);
             return b.ToString();
         }
@@ -4178,9 +4185,9 @@ namespace PEBakery.Core
                     if (NotFlag)
                         b.Append("Not,");
                     b.Append(Arg1);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Type);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg2);
                     break;
                 case BranchConditionType.ExistFile:
@@ -4191,7 +4198,7 @@ namespace PEBakery.Core
                     if (NotFlag)
                         b.Append("Not,");
                     b.Append(Type);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg1);
                     break;
                 case BranchConditionType.ExistSection:
@@ -4201,9 +4208,9 @@ namespace PEBakery.Core
                     if (NotFlag)
                         b.Append("Not,");
                     b.Append(Type);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg1);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg2);
                     break;
                 case BranchConditionType.ExistRegKey:
@@ -4213,11 +4220,11 @@ namespace PEBakery.Core
                     if (NotFlag)
                         b.Append("Not,");
                     b.Append(Type);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg1);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg2);
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(Arg3);
                     break;
                 case BranchConditionType.Question: // can have 1 or 3 argument
@@ -4226,17 +4233,17 @@ namespace PEBakery.Core
                     if (Arg2 != null)
                     {
                         b.Append(Type);
-                        b.Append(",");
+                        b.Append(',');
                         b.Append(Arg1);
-                        b.Append(",");
+                        b.Append(',');
                         b.Append(Arg2);
-                        b.Append(",");
+                        b.Append(',');
                         b.Append(Arg3);
                     }
                     else
                     {
                         b.Append(Type);
-                        b.Append(",");
+                        b.Append(',');
                         b.Append(Arg1);
                     }
                     break;
@@ -4273,11 +4280,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(ScriptFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(SectionName);
             foreach (string inParam in InParams)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(inParam);
             }
             if (OutParams != null)
@@ -4336,15 +4343,15 @@ namespace PEBakery.Core
 
             StringBuilder b = new StringBuilder();
             b.Append(ScriptFile);
-            b.Append(",");
+            b.Append(',');
             b.Append(SectionName);
-            b.Append(",");
+            b.Append(',');
             b.Append(StartIdx);
-            b.Append(",");
+            b.Append(',');
             b.Append(EndIdx);
             foreach (string inParam in InParams)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(inParam);
             }
             if (OutParams != null)
@@ -4362,11 +4369,11 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_If : CodeInfo
     {
-        public BranchCondition Condition;
-        public CodeCommand Embed;
+        public BranchCondition Condition { get; set; }
+        public CodeCommand Embed { get; set; }
 
-        public bool LinkParsed;
-        public List<CodeCommand> Link;
+        public bool LinkParsed { get; set; }
+        public List<CodeCommand> Link { get; set; }
 
         public CodeInfo_If(BranchCondition cond, CodeCommand embed)
         {
@@ -4382,7 +4389,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Condition);
-            b.Append(",");
+            b.Append(',');
             b.Append(Embed);
             return b.ToString();
         }
@@ -4434,7 +4441,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append("%");
+            b.Append('%');
             b.Append(VarKey);
             b.Append("%,");
             b.Append(VarValue);
@@ -4466,7 +4473,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(MacroName);
-            b.Append(",");
+            b.Append(',');
             b.Append(MacroCommand);
             if (Permanent)
                 b.Append(",PERMANENT");
@@ -4527,11 +4534,11 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(StartIndex);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestVar);
             if (VarCount != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(VarCount);
             }
             return b.ToString();
@@ -4810,7 +4817,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder(8);
             b.Append("LoadNewScript,");
             b.Append(SrcFilePath);
-            b.Append(",");
+            b.Append(',');
             b.Append(DestTreeDir);
             if (PreserveFlag)
                 b.Append(",PRESERVE");
@@ -4864,7 +4871,7 @@ namespace PEBakery.Core
             b.Append(DestPath);
             if (LogFormat == null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(LogFormat);
             }
             return b.ToString();
@@ -4897,21 +4904,21 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Action);
-            b.Append(",");
+            b.Append(',');
             b.Append(FilePath);
             if (Params != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(Params);
             }
             if (WorkDir != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(WorkDir);
             }
             if (ExitOutVar != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(ExitOutVar);
             }
             return b.ToString();
@@ -4959,7 +4966,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Type);
-            b.Append(",");
+            b.Append(',');
             b.Append(SubInfo);
             return b.ToString();
         }
@@ -4983,12 +4990,12 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(MacroType);
-            b.Append(",");
+            b.Append(',');
             for (int i = 0; i < Args.Count; i++)
             {
                 b.Append(Args[i]);
                 if (i + 1 < Args.Count)
-                    b.Append(",");
+                    b.Append(',');
             }
             return b.ToString();
         }

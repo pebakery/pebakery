@@ -288,10 +288,9 @@ namespace PEBakery.Core.Commands
             CodeInfo_FileCreateBlank info = cmd.Info.Cast<CodeInfo_FileCreateBlank>();
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-
-            Encoding encoding = EncodingHelper.DefaultAnsi;
-            if (info.Encoding != null)
-                encoding = info.Encoding;
+            Encoding encoding = StringEscaper.ParseEncoding(info.Encoding);
+            if (encoding == null && info.Encoding != null)
+                return LogInfo.LogErrorMessage(logs, $"Encoding [{info.Encoding}] is invalid");
 
             if (File.Exists(filePath))
             {
