@@ -231,12 +231,18 @@ namespace PEBakery.Core
         /// <summary>
         /// Wrapper for one-line error terminate
         /// </summary>
-        /// <param name="logs"></param>
-        /// <param name="msg"></param>
-        /// <returns></returns>
         public static List<LogInfo> LogErrorMessage(List<LogInfo> logs, string msg)
         {
             logs.Add(new LogInfo(LogState.Error, msg));
+            return logs;
+        }
+
+        /// <summary>
+        /// Wrapper for one-line critical error terminate
+        /// </summary>
+        public static List<LogInfo> LogCriticalErrorMessage(List<LogInfo> logs, string msg)
+        {
+            logs.Add(new LogInfo(LogState.CriticalError, msg));
             return logs;
         }
         #endregion
