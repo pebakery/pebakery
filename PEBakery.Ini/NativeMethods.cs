@@ -51,9 +51,9 @@ namespace PEBakery.Ini
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="lpAppName"></param>
-        /// <param name="lpString"></param>
-        /// <param name="lpFileName"></param>
+        /// <param name="lpAppName">The name of the section in which data is written. This section name is typically the name of the calling application.</param>
+        /// <param name="lpString">The new key names and associated values that are to be written to the named section. This string is limited to 65,535 bytes.</param>
+        /// <param name="lpFileName">The name of the initialization file. If this parameter does not contain a full path for the file, the function searches the Windows directory for the file. If the file does not exist and lpFileName does not contain a full path, the function creates the file in the Windows directory.</param>
         /// <returns></returns>
         [DllImport(Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -73,6 +73,6 @@ namespace PEBakery.Ini
         /// </returns>
         [DllImport(Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal extern static bool WritePrivateProfileStringW(string lpAppName, string lpKeyName, string lpString, string lpFileName);
+        internal extern static bool WritePrivateProfileStringW(string lpAppName, string? lpKeyName, string? lpString, string lpFileName);
     }
 }
