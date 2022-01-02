@@ -219,18 +219,17 @@ namespace PEBakery.Ini
                         else
                         {
                             // search if current section reached its end
-                            if (IsLineSection(line))
+                            if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                             {
                                 // Only sections contained in iniKeys will be targeted
                                 inTargetSection = false;
                                 currentSection = null;
-                                ReadOnlySpan<char> foundSection = line[1..^1];
                                 for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processedKeyIdxs.Contains(i))
                                         continue;
 
-                                    if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                                     {
                                         inTargetSection = true;
                                         currentSection = foundSection.ToString();
@@ -243,16 +242,15 @@ namespace PEBakery.Ini
                     else
                     { // not in section
                       // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             // Only sections contained in iniKeys will be targeted
-                            ReadOnlySpan<char> foundSection = line[1..^1];
                             for (int i = 0; i < iniKeys.Length; i++)
                             {
                                 if (processedKeyIdxs.Contains(i))
                                     continue;
 
-                                if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection.ToString();
@@ -470,7 +468,7 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Section head like [Process] encountered
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             // Finalize section
                             if (inTargetSection)
@@ -485,11 +483,11 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                string foundSection = line[1..^1].ToString();
-                                if (inputKeys.Any(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
+                                string foundSectionStr = foundSection.ToString();
+                                if (inputKeys.Any(x => foundSectionStr.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     inTargetSection = true;
-                                    currentSection = foundSection;
+                                    currentSection = foundSectionStr;
                                 }
                                 else
                                 {
@@ -739,7 +737,7 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Section head like [Process] encountered
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             // Finalize section
                             if (inTargetSection)
@@ -754,11 +752,11 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                string foundSection = line[1..^1].ToString();
-                                if (inputKeys.Any(x => foundSection.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
+                                string foundSectionStr = foundSection.ToString();
+                                if (inputKeys.Any(x => foundSectionStr.Equals(x.Section, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     inTargetSection = true;
-                                    currentSection = foundSection;
+                                    currentSection = foundSectionStr;
                                 }
                                 else
                                 {
@@ -983,10 +981,8 @@ namespace PEBakery.Ini
                         else
                         {
                             // Check if encountered section head Ex) [Process]
-                            if (IsLineSection(line))
+                            if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                             {
-                                ReadOnlySpan<char> foundSection = line[1..^1];
-
                                 // Append Mode : Add to last line of section
                                 if (append && inTargetSection)
                                 { // End of targetSection and start of foundSection
@@ -1229,10 +1225,8 @@ namespace PEBakery.Ini
                         }
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
-
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
@@ -1386,10 +1380,8 @@ namespace PEBakery.Ini
                         }
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
-
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
@@ -1398,7 +1390,7 @@ namespace PEBakery.Ini
                                 if (processed[i])
                                     continue;
 
-                                if (foundSection.Equals(iniKeys[i].Section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -1534,10 +1526,8 @@ namespace PEBakery.Ini
                         }
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
-
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
@@ -1710,18 +1700,18 @@ namespace PEBakery.Ini
                         else
                         {
                             // Search if current section ended
-                            if (IsLineSection(line))
+                            if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                             {
                                 // Only sections contained in sectionNames will be targeted
                                 inTargetSection = false;
                                 currentSection = null;
 
-                                string foundSection = line[1..^1].ToString();
-                                int sIdx = Array.FindIndex(sections, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                                string foundSectionStr = foundSection.ToString();
+                                int sIdx = Array.FindIndex(sections, x => x.Equals(foundSectionStr, StringComparison.OrdinalIgnoreCase));
                                 if (sIdx != -1)
                                 {
                                     inTargetSection = true;
-                                    currentSection = foundSection;
+                                    currentSection = foundSectionStr;
                                     if (secDict[currentSection] == null)
                                         secDict[currentSection] = new List<IniKey>(16);
                                     currentIniKeys = secDict[currentSection];
@@ -1732,15 +1722,15 @@ namespace PEBakery.Ini
                     else
                     { // not in section
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             // Only sections contained in iniKeys will be targeted
-                            string foundSection = line[1..^1].ToString();
-                            int sIdx = Array.FindIndex(sections, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                            string foundSectionStr = foundSection.ToString();
+                            int sIdx = Array.FindIndex(sections, x => x.Equals(foundSectionStr, StringComparison.OrdinalIgnoreCase));
                             if (sIdx != -1)
                             {
                                 inTargetSection = true;
-                                currentSection = foundSection;
+                                currentSection = foundSectionStr;
                                 if (secDict[currentSection] == null)
                                     secDict[currentSection] = new List<IniKey>(16);
                                 currentIniKeys = secDict[currentSection];
@@ -1858,10 +1848,8 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
-
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < sections.Count; i++)
@@ -2020,11 +2008,10 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             passThisSection = false;
 
-                            ReadOnlySpan<char> foundSection = line[1..^1];
                             if (foundSection.Equals(section, StringComparison.OrdinalIgnoreCase))
                             {
                                 WriteContent(w);
@@ -2145,10 +2132,8 @@ namespace PEBakery.Ini
                         bool thisLineProcessed = false;
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
-
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < iniKeys.Length; i++)
@@ -2270,9 +2255,8 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line))
+                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
-                            ReadOnlySpan<char> foundSection = line[1..^1];
                             ignoreCurrentSection = false;
 
                             // Start of the section;
@@ -2436,16 +2420,16 @@ namespace PEBakery.Ini
                     if (IsLineComment(line)) // Ignore comment
                         continue;
 
-                    if (IsLineSection(line))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     {
                         inTargetSection = false;
 
-                        string foundSection = line[1..^1].ToString();
-                        int sIdx = sections.FindIndex(x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                        string foundSectionStr = foundSection.ToString();
+                        int sIdx = sections.FindIndex(x => x.Equals(foundSectionStr, StringComparison.OrdinalIgnoreCase));
                         if (sIdx != -1)
                         {
                             inTargetSection = true;
-                            currentSection = foundSection;
+                            currentSection = foundSectionStr;
 
                             secDict[currentSection] = new List<string>(16);
                             currentContents = secDict[currentSection];
@@ -2607,8 +2591,8 @@ namespace PEBakery.Ini
                 while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line)) // Count sections
-                        sections.Add(line[1..^1].ToString());
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection)) // Count sections
+                        sections.Add(foundSection.ToString());
                 }
             }
 
@@ -2632,9 +2616,8 @@ namespace PEBakery.Ini
                 while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     {
-                        ReadOnlySpan<char> foundSection = line[1..^1];
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
@@ -2738,20 +2721,16 @@ namespace PEBakery.Ini
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                     // Ignore comment
-                    if (line.StartsWith("#".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith(";".AsSpan(), StringComparison.Ordinal) ||
-                        line.StartsWith("//".AsSpan(), StringComparison.Ordinal))
+                    if (IsLineComment(line))
                         continue;
 
-                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
-                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     { // Start of section
                         if (appendState)
                             break;
 
                         // Remove [ and ]
-                        ReadOnlySpan<char> foundSection = line[1..^1];
-                        if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        if (foundSection.Equals(section, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
                     else if (appendState)
@@ -2809,16 +2788,15 @@ namespace PEBakery.Ini
                         break;
 
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     { // Start of section
                         bool isSectionFound = false;
-                        ReadOnlySpan<char> foundSection = line[1..^1];
                         for (int i = 0; i < sectionNames.Length; i++)
                         {
                             if (processedSectionIdxs.Contains(i))
                                 continue;
 
-                            if (foundSection.Equals(sectionNames[i].AsSpan(), StringComparison.Ordinal))
+                            if (foundSection.Equals(sectionNames[i], StringComparison.Ordinal))
                             {
                                 isSectionFound = true;
                                 processedSectionIdxs.Add(i);
@@ -2872,9 +2850,9 @@ namespace PEBakery.Ini
                         continue;
 
                     // Check if encountered section head Ex) [Process]
-                    if (IsLineSection(line))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     {
-                        section = line[1..^1].ToString();
+                        section = foundSection.ToString();
                         dict[section] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                         continue;
                     }
@@ -2922,10 +2900,8 @@ namespace PEBakery.Ini
                 if (IsLineComment(line))
                     continue;
 
-                if (IsLineSection(line))
+                if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                 { // Start of section
-                    ReadOnlySpan<char> foundSection = line[1..^1]; // Remove [ and ]
-
                     // Found target section, so return
                     if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         return;
@@ -2943,7 +2919,7 @@ namespace PEBakery.Ini
         /// <param name="tw">Destination TextWriter</param>
         /// <param name="section">Section to find. Specify null for full copy.</param>
         /// <param name="copyFromNewSection">If set to true, start copy after finding new section when tr was originally in the middle of a section.</param>
-        public static void FastForwardTextWriter(TextReader tr, TextWriter tw, string section, bool copyFromNewSection)
+        public static void FastForwardTextWriter(TextReader tr, TextWriter tw, string? section, bool copyFromNewSection)
         {
             bool enableCopy = !copyFromNewSection;
 
@@ -2965,14 +2941,13 @@ namespace PEBakery.Ini
                 else if (section != null)
                 {
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line))
+                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                     { // Start of section
                         if (!enableCopy)
                             tw.WriteLine(rawLine);
                         enableCopy = true;
 
                         // Found target section, so return
-                        ReadOnlySpan<char> foundSection = line[1..^1]; // Remove [ and ]
                         if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             return;
                     }
@@ -2992,17 +2967,6 @@ namespace PEBakery.Ini
         /// <summary>
         /// Check whether a text line is a comment or not.
         /// </summary>
-        /// <param name="line">A text line to check.</param>
-        /// <returns>Returns true if a text line is a comment.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsLineComment(string line)
-        {
-            return IsLineComment(line.AsSpan());
-        }
-
-        /// <summary>
-        /// Check whether a text line is a comment or not.
-        /// </summary>
         /// <param name="lineSpan">A text line to check.</param>
         /// <returns>Returns true if a text line is a comment.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3019,9 +2983,9 @@ namespace PEBakery.Ini
         /// <param name="line">A line to check.</param>
         /// <returns>Returns true if a line is a valid section.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsLineSection(string line)
+        public static bool IsLineSection(ReadOnlySpan<char> line)
         {
-            return IsLineSection(line);
+            return IsLineSection(line, out _);
         }
 
         /// <summary>
@@ -3030,10 +2994,17 @@ namespace PEBakery.Ini
         /// <param name="lineSpan">A line to check.</param>
         /// <returns>Returns true if a line is a valid section.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsLineSection(ReadOnlySpan<char> lineSpan)
+        public static bool IsLineSection(ReadOnlySpan<char> lineSpan, out ReadOnlySpan<char> sectionName)
         {
-            return lineSpan.StartsWith("[", StringComparison.Ordinal) &&
-                   lineSpan.EndsWith("]", StringComparison.Ordinal);
+            if (lineSpan.StartsWith("[", StringComparison.Ordinal) &&
+                lineSpan.EndsWith("]", StringComparison.Ordinal))
+            {
+                sectionName = lineSpan[1..^1];
+                return true;
+            }
+
+            sectionName = string.Empty;
+            return false;
         }
         #endregion
 

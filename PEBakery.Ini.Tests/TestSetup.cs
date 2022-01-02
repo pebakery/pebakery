@@ -33,8 +33,8 @@ namespace PEBakery.Ini.Tests
     [TestClass]
     public class TestSetup
     {
-        public static string BaseDir;
-        public static string SampleDir;
+        public static string BaseDir { get; private set; } = string.Empty;
+        public static string SampleDir { get; set; } = string.Empty;
 
         [AssemblyInitialize]
         public static void Init(TestContext context)

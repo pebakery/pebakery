@@ -29,7 +29,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Ini.Tests
 {
@@ -87,11 +86,31 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("Key=Value");
                     }
 
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
-                    Assert.IsFalse(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
+                    string? val = IniReadWriter.ReadKey(tempFile, "Section", "Key");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("Value", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section", "key");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("Value", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section", "Key");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("Value", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section", "key");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("Value", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section", "Key");
+                    Assert.IsNotNull(val);
+                    Assert.IsFalse(val.Equals("value", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "SectionNone", "Key");
+                    Assert.IsNull(val);
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section", "KeyNone");
+                    Assert.IsNull(val);
 
                     Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
                     Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
@@ -127,14 +146,43 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("8=H");
                     }
 
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+                    string? val = IniReadWriter.ReadKey(tempFile, "Section1", "1");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("A", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section1", "2");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("B", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section1", "3");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("C", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section2", "4");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("D", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section2", "5");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("E", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section3", "6");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("F", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section3", "7");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("G", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "section3", "8");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("H", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section999", "Key");
+                    Assert.IsNull(val);
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section", "999");
+                    Assert.IsNull(val);
 
                     Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
                     Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
@@ -162,9 +210,20 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("2=\"XY Z\"");
                     }
 
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("\"XY Z\"", StringComparison.Ordinal));
-                    Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR").Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
+                    string? val = IniReadWriter.ReadKey(tempFile, "Section1", "1");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("\"ABC\\DEF\"", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section1", "2");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("\"XY Z\"", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section1", "CUR_DIR");
+                    Assert.IsNotNull(val);
+                    Assert.IsTrue(val.Equals("\"Cursors\\Material Design Cursors\"", StringComparison.Ordinal));
+
+                    val = IniReadWriter.ReadKey(tempFile, "Section999", "2");
+                    Assert.IsNull(val);
 
                     Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
                     Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
@@ -222,16 +281,25 @@ namespace PEBakery.Ini.Tests
                     keys[9] = new IniKey("Section2", "4");
 
                     keys = IniReadWriter.ReadKeys(tempFile, keys);
-                    Assert.IsTrue(keys[0].Value.Equals("C", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("H", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[2].Value.Equals("E", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[3].Value.Equals("F", StringComparison.Ordinal));
+
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("C", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("H", StringComparison.Ordinal));
+                    iniKey = keys[2];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("E", StringComparison.Ordinal));
+                    iniKey = keys[3];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("F", StringComparison.Ordinal));
                     Assert.IsNull(keys[4].Value);
                     Assert.IsNull(keys[5].Value);
-                    Assert.IsTrue(keys[6].Value.Equals("B", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[7].Value.Equals("G", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[8].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[9].Value.Equals("D", StringComparison.Ordinal));
+                    iniKey = keys[6];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
+                    iniKey = keys[7];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("G", StringComparison.Ordinal));
+                    iniKey = keys[8];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[9];
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("D", StringComparison.Ordinal));
 
                     Encoding destEnc = EncodingHelper.DetectEncoding(tempFile);
                     Assert.IsTrue(EncodingHelper.EncodingEquals(srcEnc, destEnc));
@@ -1541,12 +1609,16 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("2=B");
                     }
 
-                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Section");
-
-                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                    IniKey[]? keys = IniReadWriter.ReadSection(tempFile, "Section");
+                    Assert.IsNotNull(keys);
+                    Assert.AreEqual(2, keys.Length);
+                    
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
                 }
                 finally
                 {
@@ -1570,8 +1642,7 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("2=B");
                     }
 
-                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, "Dummy");
-                    // Assert.IsTrue(keys.Count() == 0);
+                    IniKey[]? keys = IniReadWriter.ReadSection(tempFile, "Dummy");
                     Assert.IsTrue(keys == null);
                 }
                 finally
@@ -1604,25 +1675,39 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("21=國");
                     }
 
-                    IniKey[] keys = IniReadWriter.ReadSection(tempFile, new IniKey("Section1"));
-                    Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+                    IniKey[]? keys = IniReadWriter.ReadSection(tempFile, new IniKey("Section1"));
+                    Assert.IsNotNull(keys);
+                    Assert.AreEqual(3, keys.Length);
+
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("00", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("01", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
+                    iniKey = keys[2];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("02", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("C", StringComparison.Ordinal));
 
                     keys = IniReadWriter.ReadSection(tempFile, "Section2");
-                    Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+                    Assert.IsNotNull(keys);
+                    Assert.AreEqual(2, keys.Length);
+                    iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("10", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("한", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("11", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("국", StringComparison.Ordinal));
 
                     keys = IniReadWriter.ReadSection(tempFile, "Section3");
-                    Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
+                    Assert.IsNotNull(keys);
+                    Assert.AreEqual(2, keys.Length);
+                    iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("20", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("韓", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("21", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("國", StringComparison.Ordinal));
                 }
                 finally
                 {
@@ -1656,12 +1741,17 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("2=B");
                     }
 
-                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new IniKey[] { new IniKey("Section") });
-                    IniKey[] keys = keyDict["Section"];
-                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                    Dictionary<string, IniKey[]?> keyDict = IniReadWriter.ReadSections(tempFile, new IniKey[] { new IniKey("Section") });
+                    IniKey[]? keys = keyDict["Section"];
+                    Assert.IsNotNull(keys);
+                    Assert.AreEqual(2, keys.Length);
+
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
                 }
                 finally
                 {
@@ -1685,12 +1775,17 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("2=B");
                     }
 
-                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section", "Dummy" });
-                    IniKey[] keys = keyDict["Section"];
-                    Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                    Dictionary<string, IniKey[]?> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section", "Dummy" });
+                    Assert.IsTrue(keyDict.ContainsKey("Section"));
+                    IniKey[]? keys = keyDict["Section"];
+                    Assert.IsNotNull(keys);
+
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("1", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("2", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
 
                     keys = keyDict["Dummy"];
                     Assert.IsTrue(keys == null);
@@ -1725,30 +1820,40 @@ namespace PEBakery.Ini.Tests
                         w.WriteLine("21=國");
                     }
 
-                    Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section1", "Section2", "Section3" });
+                    Dictionary<string, IniKey[]?> keyDict = IniReadWriter.ReadSections(tempFile, new string[] { "Section1", "Section2", "Section3" });
 
                     Assert.IsTrue(keyDict.ContainsKey("Section1"));
-                    IniKey[] keys = keyDict["Section1"];
-                    Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+                    IniKey[]? keys = keyDict["Section1"];
+                    Assert.IsNotNull(keys);
+                    IniKey iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("00", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("01", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("B", StringComparison.Ordinal));
+                    iniKey = keys[2];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("02", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("C", StringComparison.Ordinal));
 
                     Assert.IsTrue(keyDict.ContainsKey("Section2"));
                     keys = keyDict["Section2"];
-                    Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+                    Assert.IsNotNull(keys);
+                    iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("10", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("한", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("11", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("국", StringComparison.Ordinal));
 
                     Assert.IsTrue(keyDict.ContainsKey("Section3"));
                     keys = keyDict["Section3"];
-                    Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
-                    Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
+                    Assert.IsNotNull(keys);
+                    iniKey = keys[0];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("20", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("韓", StringComparison.Ordinal));
+                    iniKey = keys[1];
+                    Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("21", StringComparison.Ordinal));
+                    Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("國", StringComparison.Ordinal));
                 }
                 finally
                 {
@@ -3827,7 +3932,7 @@ namespace PEBakery.Ini.Tests
         [TestMethod]
         public void FastForwardTextWriter()
         {
-            static void Template(string section, string src, string expected, bool copyFromNewSection)
+            static void Template(string? section, string src, string expected, bool copyFromNewSection)
             {
                 string result;
                 using (StringReader sr = new StringReader(src))
