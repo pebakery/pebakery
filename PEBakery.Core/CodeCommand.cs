@@ -34,8 +34,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-// ReSharper disable InconsistentNaming
-
 namespace PEBakery.Core
 {
     #region CodeType
@@ -98,11 +96,11 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeCommand
     {
-        public string RawCode;
-        public ScriptSection Section;
-        public CodeType Type;
-        public CodeInfo Info;
-        public int LineIdx;
+        public string RawCode { get; set; }
+        public ScriptSection Section { get; set; }
+        public CodeType Type { get; set; }
+        public CodeInfo Info { get; set; }
+        public int LineIdx { get; set; }
 
         public CodeCommand(string rawCode, CodeType type, CodeInfo info, int lineIdx)
         {
@@ -126,13 +124,15 @@ namespace PEBakery.Core
             return RawCode;
         }
 
-        public static readonly CodeType[] DeprecatedCodeType =
+        public bool IsTypeDeprecated => DeprecatedCodeType.Contains(Type);
+
+        public static CodeType[] DeprecatedCodeType { get; } =
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.PackParam,
         };
 
-        public static readonly CodeType[] OptimizedCodeType =
+        public static CodeType[] OptimizedCodeType { get; } =
         {
             CodeType.TXTAddLineOp,
             CodeType.TXTDelLineOp,
@@ -182,6 +182,11 @@ namespace PEBakery.Core
 
         #region Optimize
         public virtual bool OptimizeCompare(CodeInfo info) => false;
+        #endregion
+
+        #region Deprecate
+        public virtual bool IsInfoDeprecated => false;
+        public virtual string DeprecateMessage() => string.Empty;
         #endregion
     }
     #endregion
@@ -293,20 +298,32 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
     {
-        // Legacy: FileCreateBlank,<FilePath>,[Encoding],[PRESERVE],[NOWARN]
+        // Legacy: FileCreateBlank,<FilePath>,[UTF8|UTF16|UTF16BE|ANSI],[PRESERVE],[NOWARN]
         // New: FileCreateBlank,<FilePath>,[Encoding=<ENC>],[PRESERVE],[NOWARN]
         public string FilePath;
         public bool Preserve;
         public bool NoWarn;
-        // public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
-        public string Encoding; // Optional parameter - [UTF8|UTF16|UTF16BE|ANSI]
+        public string Encoding; // Optional parameter - [UTF8|UTF8BOM|UTF16|UTF16LE|UTF16BE|ANSI]
 
-        public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, string encoding)
+        private readonly bool _isEncodingFlagDeprecated = false;
+
+        public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, string encoding, bool isFlagDeprecated)
         {
             FilePath = filePath;
             Preserve = preserve;
             NoWarn = noWarn;
             Encoding = encoding;
+
+            _isEncodingFlagDeprecated = isFlagDeprecated;
+        }
+
+        public override bool IsInfoDeprecated => _isEncodingFlagDeprecated && Encoding != null;
+        public override string DeprecateMessage()
+        {
+            if (IsInfoDeprecated && Encoding != null)
+                return $"Flag [{Encoding}] is deprecated. Use optional parameter [Encoding={Encoding}] instead.";
+            else
+                return string.Empty;
         }
 
         public override string ToString()
@@ -319,19 +336,6 @@ namespace PEBakery.Core
                 b.Append(",NOWARN");
             if (Encoding != null)
                 b.Append($",{Encoding}");
-            /*
-            if (Encoding != null)
-            {
-                if (Encoding.Equals(Encoding.UTF8))
-                    b.Append(",UTF8");
-                else if (Encoding.Equals(Encoding.Unicode))
-                    b.Append(",UTF16");
-                else if (Encoding.Equals(Encoding.BigEndianUnicode))
-                    b.Append(",UTF16BE");
-                else if (Encoding.Equals(EncodingHelper.DefaultAnsi))
-                    b.Append(",ANSI");
-            }
-            */
             return b.ToString();
         }
     }

@@ -348,10 +348,10 @@ namespace PEBakery.Core
 
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
+                throw new InvalidCommandException($"Invalid CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
             bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
-                           !Enum.IsDefined(typeof(CodeType), type) ||
+                           !Enum.IsDefined(type) ||
                            type == CodeType.None ||
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
@@ -466,7 +466,9 @@ namespace PEBakery.Core
                         return new CodeInfo_FileRename(args[0], args[1]);
                     }
                 case CodeType.FileCreateBlank:
-                    { // FileCreateBlank,<FilePath>,[Encoding=<ENC>],[PRESERVE],[NOWARN]
+                    {
+                        // Legacy: FileCreateBlank,<FilePath>,[UTF8|UTF16|UTF16BE|ANSI],[PRESERVE],[NOWARN]
+                        // NEW   : FileCreateBlank,<FilePath>,[Encoding=<ENC>],[PRESERVE],[NOWARN]
                         const int minArgCount = 1;
                         const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -477,6 +479,7 @@ namespace PEBakery.Core
                         bool noWarn = false;
                         string encodingValue = null;
 
+                        bool isDeprecated = false;
                         const string encodingKey = "Encoding=";
                         for (int i = minArgCount; i < args.Count; i++)
                         {
@@ -499,13 +502,39 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException($"Argument <{encodingKey}> cannot be duplicated", rawCode);
                                 encodingValue = arg[encodingKey.Length..];
                             }
+                            else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF8";
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF16";
+                            }
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF16BE";
+                            }
+                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                            {
+                                isDeprecated = true;
+                                encodingValue = "ANSI";
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encodingValue);
+                        return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encodingValue, isDeprecated);
                     }
                 case CodeType.FileSize:
                     { // FileSize,<FileName>,<DestVar>
@@ -623,7 +652,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // Compatibility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         // It will be parsed in RegWriteLegacy
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
@@ -4400,7 +4429,7 @@ namespace PEBakery.Core
         {
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
             bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
-            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
             bool sectionInParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
             bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
