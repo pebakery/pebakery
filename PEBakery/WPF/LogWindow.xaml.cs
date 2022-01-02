@@ -41,7 +41,6 @@ using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
-    // ReSharper disable once RedundantExtendsListEntry
     public partial class LogWindow : Window
     {
         #region Field and Constructor

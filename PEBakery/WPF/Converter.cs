@@ -477,6 +477,32 @@ namespace PEBakery.WPF
             return LogModel.ParseBuildLogFlag(str);
         }
     }
+
+    public class LogStateToBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return Binding.DoNothing;
+
+            LogState state = (LogState)value;
+            switch (state)
+            {
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return new SolidColorBrush(Color.FromArgb(255, 248, 215, 218));
+                case LogState.Warning:
+                    return new SolidColorBrush(Color.FromArgb(255, 255, 238, 186));
+                default:
+                    return Binding.DoNothing;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
     #endregion
 
     #region Font
