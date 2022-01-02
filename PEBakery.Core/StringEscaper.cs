@@ -799,5 +799,31 @@ namespace PEBakery.Core
             return string.Join(separator, list);
         }
         #endregion
+
+        #region ParseEncoding
+        /// <summary>
+        /// Parse encoding designater string to Encoding instance
+        /// </summary>
+        /// <returns>Return null on invalid encodingStr</returns>
+        public static Encoding ParseEncoding(string encodingStr)
+        {
+            if (encodingStr == null)
+                return EncodingHelper.DefaultAnsi;
+
+            Encoding encoding = null;
+            if (encodingStr.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                encoding = EncodingHelper.DefaultAnsi;
+            else if (encodingStr.Equals("UTF16", StringComparison.OrdinalIgnoreCase) ||
+                encodingStr.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                encoding = Encoding.Unicode;
+            else if (encodingStr.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                encoding = Encoding.BigEndianUnicode;
+            else if (encodingStr.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                encoding = new UTF8Encoding(false);
+            else if (encodingStr.Equals("UTF8BOM", StringComparison.OrdinalIgnoreCase))
+                encoding = new UTF8Encoding(true);
+            return encoding;
+        }
+        #endregion
     }
 }

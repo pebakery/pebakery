@@ -315,22 +315,27 @@ namespace PEBakery.Core.Tests.Command
 
                         EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
 
-                        if (check == ErrorCheck.Success)
+                        if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                         {
                             Assert.IsTrue(File.Exists(destFullPath));
-                            Assert.IsTrue(EncodingHelper.DetectEncoding(destFullPath).Equals(encoding));
+                            Encoding detectEnc = EncodingHelper.DetectEncoding(destFullPath);
+                            Console.WriteLine($"Encoding Detect: {detectEnc.EncodingName} ({detectEnc.CodePage})");
                             switch (encoding)
                             {
                                 case UTF8Encoding utf8Enc:
                                     {
-                                        byte[] preamble = utf8Enc.GetPreamble();
-                                        Assert.AreEqual(3, preamble.Length);
-                                        Assert.IsTrue(preamble.SequenceEqual(Encoding.UTF8.GetPreamble()));
+                                        ReadOnlySpan<byte> preamble = utf8Enc.Preamble;
+                                        if (preamble.Length == 3)
+                                            Assert.IsTrue(preamble.SequenceEqual(new UTF8Encoding(true).Preamble));
+                                        else if (preamble.Length == 0)
+                                            Assert.IsTrue(new UTF8Encoding(false).Preamble.Length == 0);
+                                        else
+                                            Assert.Fail();
                                     }
                                     break;
                                 case UnicodeEncoding uniEnc:
                                     {
-                                        byte[] preamble = uniEnc.GetPreamble();
+                                        ReadOnlySpan<byte> preamble = uniEnc.Preamble;
                                         Assert.AreEqual(2, preamble.Length);
                                         if (encoding.Equals(Encoding.Unicode))
                                             Assert.IsTrue(preamble.SequenceEqual(Encoding.Unicode.GetPreamble()));
@@ -339,6 +344,9 @@ namespace PEBakery.Core.Tests.Command
                                         else
                                             Assert.Fail();
                                     }
+                                    break;
+                                default:
+                                    Assert.AreEqual(EncodingHelper.DefaultAnsi.CodePage, encoding.CodePage);
                                     break;
                             }
                         }
@@ -351,9 +359,11 @@ namespace PEBakery.Core.Tests.Command
                 }
 
                 Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, false);
-                Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
-                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
-                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,Encoding=UTF8", "A.txt", new UTF8Encoding(false), false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,Encoding=UTF8BOM", "A.txt", new UTF8Encoding(true), false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,Encoding=UTF16", "A.txt", Encoding.Unicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,Encoding=UTF16LE", "A.txt", Encoding.Unicode, false);
+                Template($@"FileCreateBlank,{destDir}\A.txt,Encoding=UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
                 Template($@"FileCreateBlank,{destDir}\A.txt", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
                 Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, true, ErrorCheck.Overwrite);
                 Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE", "A.txt", EncodingHelper.DefaultAnsi, false);
@@ -361,6 +371,13 @@ namespace PEBakery.Core.Tests.Command
                 Template($@"FileCreateBlank,{destDir}\A.txt,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
                 Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, true);
                 Template($@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", "A.txt", EncodingHelper.DefaultAnsi, false);
+
+                // Deprecated
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF8", "A.txt", Encoding.Unicode, false, ErrorCheck.Warning);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false, ErrorCheck.Warning);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16LE", "A.txt", Encoding.Unicode, false, ErrorCheck.Warning);
+                Template($@"FileCreateBlank,{destDir}\A.txt,UTF16BE", "A.txt", Encoding.Unicode, false, ErrorCheck.Warning);
+                Template($@"FileCreateBlank,{destDir}\A.txt,ANSI", "A.txt", Encoding.Unicode, false, ErrorCheck.Warning);
             }
             finally
             {
@@ -692,8 +709,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region PathMove
         [TestMethod]
-
-
         public void PathMove()
         {
             EngineState s = EngineTests.CreateEngineState();

@@ -451,8 +451,11 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
             EngineLocalState ls = s.PeekLocalState();
 
-            if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
+            // Check CodeType / CodeInfo deprecation
+            if (cmd.IsTypeDeprecated)
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
+            if (cmd.Info != null && cmd.Info.IsInfoDeprecated)
+                logs.Add(new LogInfo(LogState.Warning, cmd.Info.DeprecateMessage()));
 
             // If last command enabled ErrorOff, activate it now.
             // It is to prevent muting error of [System,ErrorOff] itself.

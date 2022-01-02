@@ -33,6 +33,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace PEBakery.Core.Commands
 {
     public static class CommandFile
@@ -137,8 +139,8 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten"));
                         }
 
-                        string destFullParent = Path.GetDirectoryName(destFullPath);
-                        if (destFullParent == null)
+                        string? destFullParent = Path.GetDirectoryName(destFullPath);
+                        if (destFullParent is null)
                             throw new InternalException("Internal Logic Error at FileCopy");
 
                         s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
@@ -291,7 +293,12 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = EncodingHelper.DefaultAnsi;
             if (info.Encoding != null)
-                encoding = info.Encoding;
+            {
+                string encodingStr = StringEscaper.Preprocess(s, info.Encoding);
+                encoding = StringEscaper.ParseEncoding(encodingStr);
+                if (encoding == null)
+                    return LogInfo.LogErrorMessage(logs, $"Encoding [{encodingStr}] is invalid");
+            }
 
             if (File.Exists(filePath))
             {
@@ -427,7 +434,7 @@ namespace PEBakery.Core.Commands
                 else
                     Directory.CreateDirectory(destDir);
 
-                string srcParentDir = Path.GetDirectoryName(srcDir);
+                string? srcParentDir = Path.GetDirectoryName(srcDir);
                 if (srcParentDir == null)
                     throw new InternalException("Internal Logic Error at DirCopy");
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
@@ -436,7 +443,7 @@ namespace PEBakery.Core.Commands
 
                 // Get total file count
                 int filesCount = 0;
-                FileInfo[] compatFiles = null;
+                FileInfo[]? compatFiles = null;
                 if (s.CompatDirCopyBug)
                 {
                     compatFiles = dirInfo.GetFiles(wildcard);
@@ -454,9 +461,8 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("DirCopy Progress", filesCount);
                 try
                 {
-                    if (s.CompatDirCopyBug)
+                    if (s.CompatDirCopyBug && compatFiles != null)
                     { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] FileCopy _bug_
-                        Debug.Assert(compatFiles != null, $"Wrong {nameof(compatFiles)}");
                         foreach (FileInfo f in compatFiles)
                         {
                             progress.Report(f.FullName);
