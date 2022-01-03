@@ -503,6 +503,38 @@ namespace PEBakery.WPF
             return Binding.DoNothing;
         }
     }
+
+    public class LogStateToAlternateBrushConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length != 2)
+                return Binding.DoNothing;
+            if (values[0] is not LogState state)
+                return Binding.DoNothing;
+            if (values[1] is not int alterIdx)
+                return Binding.DoNothing;
+
+            switch (state)
+            {
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return new SolidColorBrush(Color.FromArgb(255, 248, 215, 218));
+                case LogState.Warning:
+                    return new SolidColorBrush(Color.FromArgb(255, 255, 238, 186));
+            }
+
+            if (alterIdx % 2 == 0)
+                return new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            else
+                return new SolidColorBrush(Color.FromRgb(242, 242, 242));
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[2] { Binding.DoNothing, Binding.DoNothing };
+        }
+    }
     #endregion
 
     #region Font

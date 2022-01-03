@@ -24,7 +24,7 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.LogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -114,6 +114,7 @@
         <local:GridViewColumnWidthConverter x:Key="GridViewColumnWidthConverter"/>
         <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
         <local:LogStateToBrushConverter x:Key="LogStateToBrushConverter" />
+        <local:LogStateToAlternateBrushConverter x:Key="LogStateToAlternateBrushConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -129,14 +130,13 @@
                               HorizontalContentAlignment="Stretch"
                               SelectedIndex="{Binding SystemLogSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
-                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
                                 <GridViewColumn Header="Time"
                                                 Width="Auto"
-                                                DisplayMemberBinding="{Binding TimeStr}" />
+                                                DisplayMemberBinding="{Binding TimeStr}"/>
                                 <GridViewColumn Header="State"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding StateStr}" />
@@ -154,6 +154,20 @@
                                 </cc:CorrectMenuItem>
                             </ContextMenu>
                         </ListView.ContextMenu>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}"
+                                   BasedOn="{StaticResource ListViewItemFocusColor}">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                            <Binding Path="State"/>
+                                            <Binding Path="(ItemsControl.AlternationIndex)"
+                                                     RelativeSource="{RelativeSource Mode=Self}"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                     </ListView>
                 </Grid>
             </TabItem>
@@ -176,7 +190,7 @@
                         <ComboBox Name="SelectBuildComboBox"
                                   SelectedIndex="{Binding SelectedBuildIndex}"
                                   ItemsSource="{Binding BuildEntries}">
-                             <ComboBox.ItemTemplate>
+                            <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Text}"/>
                                 </DataTemplate>
@@ -192,7 +206,7 @@
                                    VerticalAlignment="Center"
                                    Text="Select Script">
                         </TextBlock>
-                         <ComboBox Name="SelectScriptComboBox"
+                        <ComboBox Name="SelectScriptComboBox"
                                    SelectedIndex="{Binding SelectedScriptIndex}"
                                    ItemsSource="{Binding ScriptEntries}">
                             <ComboBox.ItemTemplate>
@@ -229,12 +243,10 @@
                                       HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
-                                 <ListBox.ItemTemplate>
+                                <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Text}"
-                                                   Background="{Binding State, Converter={StaticResource LogStateToBrushConverter}}"/>
+                                        <TextBlock Text="{Binding Text}"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                                 <ListView.ContextMenu>
@@ -246,9 +258,22 @@
                                         </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                                    <Binding Path="State"/>
+                                                    <Binding Path="(ItemsControl.AlternationIndex)"
+                                                             RelativeSource="{RelativeSource Mode=Self}"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
-                        <!-- Style="{StaticResource ListItemFocusColorOverride}" -->
                         <TabItem Header="Full Logs" Width="90">
                             <ListView Name="BuildLogDetailListView"
                                       SelectedIndex="{Binding FullBuildLogSelectedIndex}"
@@ -425,10 +450,17 @@
                                     </GridView>
                                 </ListView.View>
                                 <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem"
-                                           BasedOn="{StaticResource AlternativeListViewColor}">
-                                        <Setter Property="Background"
-                                                Value="{Binding State, Converter={StaticResource LogStateToBrushConverter}}" />
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                            BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                                    <Binding Path="State"/>
+                                                    <Binding Path="(ItemsControl.AlternationIndex)"
+                                                    RelativeSource="{RelativeSource Mode=Self}"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                         <Setter Property="ContextMenu">
                                             <Setter.Value>
                                                 <ContextMenu>

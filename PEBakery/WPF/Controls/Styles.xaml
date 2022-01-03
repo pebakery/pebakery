@@ -78,6 +78,21 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+    <Style x:Key="ListViewItemFocusColor" TargetType="{x:Type ListViewItem}">
+        <Setter Property="TextBlock.Foreground" Value="Black" />
+        <Style.Triggers>
+            <Trigger Property="IsSelected"
+                     Value="True">
+                <Setter Property="Background"
+                        Value="LightBlue" />
+            </Trigger>
+            <Trigger Property="IsFocused"
+                     Value="True">
+                <Setter Property="Background"
+                        Value="LightBlue" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
     <Style x:Key="ListItemFocusColorOverride">
         <Style.Resources>
             <!-- For Windows 7 Classic Theme -->
