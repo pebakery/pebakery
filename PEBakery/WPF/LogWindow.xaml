@@ -113,8 +113,10 @@
         <local:RefScriptIdToTitleConverter x:Key="RefScriptIdToTitleConverter"/>
         <local:GridViewColumnWidthConverter x:Key="GridViewColumnWidthConverter"/>
         <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
-        <local:LogStateToBrushConverter x:Key="LogStateToBrushConverter" />
-        <local:LogStateToAlternateBrushConverter x:Key="LogStateToAlternateBrushConverter" />
+        <local:LogStateToForegroundConverter x:Key="LogStateToForegroundConverter"/>
+        <local:LogStateToStatBackgroundConverter x:Key="LogStateToStatBackgroundConverter"/>
+        <local:LogStateToAlternateBackgroundConverter x:Key="LogStateToAlternateBackgroundConverter"/>
+        <local:VarsTypeToBackgroundConverter x:Key="VarsTypeToBackgroundConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -157,9 +159,11 @@
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}"
                                    BasedOn="{StaticResource ListViewItemFocusColor}">
+                                <Setter Property="TextBlock.Foreground"
+                                        Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
                                 <Setter Property="Background">
                                     <Setter.Value>
-                                        <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                        <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
                                             <Binding Path="State"/>
                                             <Binding Path="(ItemsControl.AlternationIndex)"
                                                      RelativeSource="{RelativeSource Mode=Self}"/>
@@ -222,12 +226,10 @@
                         <TabItem Header="Statistics" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
-                                      ItemsSource="{Binding LogStats}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                      AlternationCount="2">
+                                      ItemsSource="{Binding LogStats}">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Type"
+                                        <GridViewColumn Header="State"
                                                         Width="70"
                                                         DisplayMemberBinding="{Binding Item1}" />
                                         <GridViewColumn Header="Count"
@@ -235,6 +237,13 @@
                                                         DisplayMemberBinding="{Binding Item2}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background"
+                                                Value="{Binding Item1, Converter={StaticResource LogStateToStatBackgroundConverter}}"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Simple Logs" Width="90">
@@ -261,9 +270,11 @@
                                 <ListView.ItemContainerStyle>
                                     <Style TargetType="{x:Type ListViewItem}"
                                            BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="TextBlock.Foreground"
+                                                Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
                                         <Setter Property="Background">
                                             <Setter.Value>
-                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
                                                     <Binding Path="State"/>
                                                     <Binding Path="(ItemsControl.AlternationIndex)"
                                                              RelativeSource="{RelativeSource Mode=Self}"/>
@@ -452,9 +463,11 @@
                                 <ListView.ItemContainerStyle>
                                     <Style TargetType="{x:Type ListViewItem}"
                                             BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="TextBlock.Foreground"
+                                                Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
                                         <Setter Property="Background">
                                             <Setter.Value>
-                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBrushConverter}">
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
                                                     <Binding Path="State"/>
                                                     <Binding Path="(ItemsControl.AlternationIndex)"
                                                     RelativeSource="{RelativeSource Mode=Self}"/>
@@ -482,9 +495,7 @@
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
                                       Style="{StaticResource ListItemFocusColorOverride}"
-                                      ItemsSource="{Binding VariableLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                      AlternationCount="2">
+                                      ItemsSource="{Binding VariableLogs}">
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn Header="Type"
@@ -498,6 +509,13 @@
                                                         DisplayMemberBinding="{Binding Value}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background"
+                                                Value="{Binding Path=Type, Converter={StaticResource VarsTypeToBackgroundConverter}}"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
                                         <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">

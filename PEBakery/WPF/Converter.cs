@@ -478,21 +478,53 @@ namespace PEBakery.WPF
         }
     }
 
-    public class LogStateToBrushConverter : IValueConverter
+    public class LogStateToForegroundConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not LogState state)
                 return Binding.DoNothing;
 
-            LogState state = (LogState)value;
             switch (state)
             {
+                case LogState.Ignore:
+                case LogState.Muted:
+                    return new SolidColorBrush(Color.FromRgb(108, 117, 125));
+                default:
+                    return new SolidColorBrush(Color.FromRgb(0, 0, 0));
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class LogStateToStatBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not LogState state)
+                return Binding.DoNothing;
+
+            switch (state)
+            {
+                case LogState.Success:
+                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
+                case LogState.Warning:
+                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
+                case LogState.Overwrite:
+                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
                 case LogState.CriticalError:
                 case LogState.Error:
-                    return new SolidColorBrush(Color.FromArgb(255, 248, 215, 218));
-                case LogState.Warning:
-                    return new SolidColorBrush(Color.FromArgb(255, 255, 238, 186));
+                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
+                case LogState.Info:
+                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
+                case LogState.Ignore:
+                    return new SolidColorBrush(Color.FromRgb(226, 227, 229));
+                case LogState.Muted:
+                    return new SolidColorBrush(Color.FromRgb(214, 216, 217));
                 default:
                     return Binding.DoNothing;
             }
@@ -504,7 +536,7 @@ namespace PEBakery.WPF
         }
     }
 
-    public class LogStateToAlternateBrushConverter : IMultiValueConverter
+    public class LogStateToAlternateBackgroundConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
@@ -519,9 +551,9 @@ namespace PEBakery.WPF
             {
                 case LogState.CriticalError:
                 case LogState.Error:
-                    return new SolidColorBrush(Color.FromArgb(255, 248, 215, 218));
+                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
                 case LogState.Warning:
-                    return new SolidColorBrush(Color.FromArgb(255, 255, 238, 186));
+                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
             }
 
             if (alterIdx % 2 == 0)
@@ -533,6 +565,31 @@ namespace PEBakery.WPF
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             return new object[2] { Binding.DoNothing, Binding.DoNothing };
+        }
+    }
+
+    public class VarsTypeToBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not VarsType varsType)
+                return Binding.DoNothing;
+
+            switch (varsType)
+            {
+                case VarsType.Fixed:
+                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
+                case VarsType.Global:
+                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
+                case VarsType.Local:
+                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
+            }
+            return Binding.DoNothing;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
         }
     }
     #endregion

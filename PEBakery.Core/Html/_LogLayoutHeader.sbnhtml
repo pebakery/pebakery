@@ -57,6 +57,10 @@
             color: #ff6600;
         }
 
+        .text-localvar {
+            color: #ff6600;
+        }
+
         .table-nonfluid {
             width: auto !important;
             word-wrap: break-word;
