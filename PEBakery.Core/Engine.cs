@@ -49,11 +49,10 @@ namespace PEBakery.Core
         private static bool _isRunning;
         public static bool IsRunning => _isRunning;
 
-        public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
+        public static Engine WorkingEngine { get; set; } // Only 1 instance allowed to run at one time
         private static readonly object WorkingLock = new object();
         private static readonly object EnterLock = new object();
 
-        // ReSharper disable once InconsistentNaming
         private readonly EngineState s;
         public EngineState State => s;
         private Task<int> _task;
@@ -445,7 +444,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ExecuteCommand
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();

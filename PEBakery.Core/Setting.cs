@@ -84,8 +84,8 @@ namespace PEBakery.Core
                 EnableLongFilePath = false;
                 EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
-                // Default custom User-Agent is set to Edge's on Windows 10 v1903
-                CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18362";
+                // Default custom User-Agent is set to wget (1.20.3 is version of Ubuntu 20.04 wget package)
+                CustomUserAgent = @"Wget/1.20.3";
             }
         }
 
