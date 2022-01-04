@@ -1,6 +1,7 @@
 ﻿// Copyright ?Sven Groot (Ookii.org) 2009
 // BSD license; see license.txt for details.
 
+using System;
 using System.ComponentModel;
 
 namespace Ookii.Dialogs.Wpf
@@ -71,7 +72,7 @@ namespace Ookii.Dialogs.Wpf
             {
                 if (Owner != null)
                     return Owner.RadioButtons;
-                return null;
+                return Array.Empty<TaskDialogRadioButton>();
             }
         }
     }

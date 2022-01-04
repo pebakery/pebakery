@@ -35,19 +35,18 @@ namespace PEBakery.Helper
     public static class SilentDictParser
     {
         #region ParseString
-        public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
+        public static string? ParseString(Dictionary<string, string?> dict, string key, string? defaultValue)
         {
             return ParseString(dict, key, defaultValue, out _);
         }
 
-        public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue, out bool notFound)
+        public static string? ParseString(Dictionary<string, string?> dict, string key, string? defaultValue, out bool notFound)
         {
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (valStr == null)
+            if (dict[key] is not string valStr)
                 return defaultValue;
 
             notFound = false;
@@ -56,20 +55,19 @@ namespace PEBakery.Helper
         #endregion
 
         #region ParseBoolean
-        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue)
+        public static bool ParseBoolean(Dictionary<string, string?> dict, string key, bool defaultValue)
         {
             return ParseBoolean(dict, key, defaultValue, out _);
         }
 
-        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue, out bool notFound)
+        public static bool ParseBoolean(Dictionary<string, string?> dict, string key, bool defaultValue, out bool notFound)
         {
             // Check ContainsKey and null
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (valStr == null)
+            if (dict[key] is not string valStr)
                 return defaultValue;
 
             bool val;
@@ -86,30 +84,29 @@ namespace PEBakery.Helper
         #endregion
 
         #region ParseInteger
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue)
+        public static int ParseInteger(Dictionary<string, string?> dict, string key, int defaultValue)
         {
             return ParseInteger(dict, key, defaultValue, null, null, out _);
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int? min, int? max)
+        public static int ParseInteger(Dictionary<string, string?> dict, string key, int defaultValue, int? min, int? max)
         {
             return ParseInteger(dict, key, defaultValue, min, max, out _);
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, out bool notFound)
+        public static int ParseInteger(Dictionary<string, string?> dict, string key, int defaultValue, out bool notFound)
         {
             return ParseInteger(dict, key, defaultValue, null, null, out notFound);
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int? min, int? max, out bool notFound)
+        public static int ParseInteger(Dictionary<string, string?> dict, string key, int defaultValue, int? min, int? max, out bool notFound)
         {
             // Check ContainsKey and null
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (valStr == null)
+            if (dict[key] is not string valStr)
                 return defaultValue;
 
             if (!NumberHelper.ParseInt32(valStr, out int valInt))
@@ -140,21 +137,20 @@ namespace PEBakery.Helper
         #endregion
 
         #region ParseEnum
-        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue)
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
             return ParseStrEnum(dict, key, defaultValue, out _);
         }
 
-        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool notFound)
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool notFound)
             where TEnum : struct, Enum
         {
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (dict[key] == null)
+            if (dict[key] is not string valStr)
                 return defaultValue;
 
             if (!Enum.TryParse(valStr, true, out TEnum kind) || !Enum.IsDefined(typeof(TEnum), kind))
@@ -164,21 +160,21 @@ namespace PEBakery.Helper
             return kind;
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue)
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
             where TEnum : Enum
         {
             return ParseIntEnum(dict, key, defaultValue, out _);
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool notFound)
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool notFound)
             where TEnum : Enum
         {
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (dict[key] == null)
+            string? valStr = dict[key];
+            if (valStr == null)
                 return defaultValue;
 
             if (!NumberHelper.ParseInt32(valStr, out int valInt))
@@ -193,19 +189,18 @@ namespace PEBakery.Helper
         #endregion
 
         #region ParseColor
-        public static Color ParseColor(Dictionary<string, string> dict, string key, Color defaultValue)
+        public static Color ParseColor(Dictionary<string, string?> dict, string key, Color defaultValue)
         {
             return ParseColor(dict, key, defaultValue, out _);
         }
 
-        public static Color ParseColor(Dictionary<string, string> dict, string key, Color defaultValue, out bool notFound)
+        public static Color ParseColor(Dictionary<string, string?> dict, string key, Color defaultValue, out bool notFound)
         {
             notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-            if (dict[key] == null)
+            if (dict[key] is not string valStr)
                 return defaultValue;
 
             // Format = R, G, B (in base 10)

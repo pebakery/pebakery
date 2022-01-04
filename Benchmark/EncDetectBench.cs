@@ -11,16 +11,16 @@ namespace Benchmark
 {
     public class EncDetectBench
     {
-        private string _binaryDir;
-        private string _sampleBaseDir;
-        private string _sampleDir;
-        private string _magicFile;
-        private Magic _magic;
-        private AdvTextEncDetect _autoitDetect;
+        private string _binaryDir = string.Empty;
+        private string _sampleBaseDir = string.Empty;
+        private string _sampleDir = string.Empty;
+        private string _magicFile = string.Empty;
+        private Magic? _magic;
+        private AdvTextEncDetect? _autoitDetect;
 
         // SrcFiles
         [ParamsSource(nameof(SrcFileNames))]
-        public string SrcFileName { get; set; }
+        public string? SrcFileName { get; set; }
         public IReadOnlyList<string> SrcFileNames { get; set; } = new string[]
         {
             "Banner.7z",
@@ -78,7 +78,8 @@ namespace Benchmark
         [GlobalCleanup]
         public void GlobalCleanup()
         {
-            _magic.Dispose();
+            if (_magic != null)
+                _magic.Dispose();
             Program.NativeGlobalCleanup();
         }
         #endregion
@@ -87,6 +88,9 @@ namespace Benchmark
         [Benchmark]
         public void FileMagician()
         {
+            if (SrcFileName == null)
+                throw new InvalidOperationException($"{nameof(SrcFileName)} is null");
+
             byte[] rawData = SrcFiles[SrcFileName];
             DetectFileMagician(rawData, BufferSize);
         }
@@ -94,6 +98,9 @@ namespace Benchmark
         [Benchmark]
         public void AutoIt()
         {
+            if (SrcFileName == null)
+                throw new InvalidOperationException($"{nameof(SrcFileName)} is null");
+
             byte[] rawData = SrcFiles[SrcFileName];
             DetectAutoIt(rawData, BufferSize);
         }
@@ -101,6 +108,9 @@ namespace Benchmark
         [Benchmark]
         public void UtfUnknown()
         {
+            if (SrcFileName == null)
+                throw new InvalidOperationException($"{nameof(SrcFileName)} is null");
+
             byte[] rawData = SrcFiles[SrcFileName];
             DetectUtfUnknown(rawData, BufferSize);
         }
@@ -118,6 +128,9 @@ namespace Benchmark
 
         public TextType DetectFileMagician(ReadOnlySpan<byte> rawData, int sizeLimit)
         {
+            if (_magic == null)
+                throw new InvalidOperationException($"{nameof(_magic)} is null");
+
             // "utf-16be", "utf-16le", "utf-8", "us-ascii"/"iso-8859-1"/"unknown-8bit" - "text/plain", "text/html"
             _magic.SetFlags(MagicFlags.MimeType);
             string mimeType = _magic.CheckBuffer(rawData.Slice(0, Math.Min(rawData.Length, sizeLimit)));
@@ -142,6 +155,9 @@ namespace Benchmark
 
         public TextEncoding DetectAutoIt(ReadOnlySpan<byte> rawData, int sizeLimit)
         {
+            if (_autoitDetect == null)
+                throw new InvalidOperationException($"{nameof(_autoitDetect)} is null");
+
             return _autoitDetect.DetectEncoding(rawData.Slice(0, Math.Min(sizeLimit, rawData.Length)));
         }
 

@@ -39,22 +39,22 @@ namespace Ookii.Dialogs.Wpf
     {
         internal const int HelpButtonId = 0x4001;
 
-        private FileDialog _downlevelDialog;
+        private FileDialog? _downlevelDialog;
         private NativeMethods.FOS _options;
-        private string _filter;
+        private string? _filter;
         private int _filterIndex;
-        private string[] _fileNames;
-        private string _defaultExt;
+        private string[]? _fileNames;
+        private string? _defaultExt;
         private bool _addExtension;
-        private string _initialDirectory;
-        private string _title;
-        private Window _owner;
+        private string? _initialDirectory;
+        private string? _title;
+        private Window? _owner;
 
         /// <summary>
         /// Event raised when the user clicks on the Open or Save button on a file dialog box.
         /// </summary>
         [Description("Event raised when the user clicks on the Open or Save button on a file dialog box."), Category("Action")]
-        public event CancelEventHandler FileOk;
+        public event CancelEventHandler? FileOk;
 
         /// <inheritdoc />
         /// <summary>
@@ -174,7 +174,7 @@ namespace Ookii.Dialogs.Wpf
         /// The default file name extension. The returned string does not include the period. The default value is an empty string ("").
         /// </value>
         [Category("Behavior"), DefaultValue(""), Description("The default file name extension.")]
-        public string DefaultExt
+        public string? DefaultExt
         {
             get
             {
@@ -191,7 +191,7 @@ namespace Ookii.Dialogs.Wpf
                     if (value != null)
                     {
                         if (value.StartsWith(".", StringComparison.CurrentCulture))
-                            value = value.Substring(1);
+                            value = value[1..];
                         else if (value.Length == 0)
                             value = null;
                     }
@@ -264,7 +264,7 @@ namespace Ookii.Dialogs.Wpf
         /// </value>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")] // suppressed because it matches FileDialog
         [Description("The file names of all selected files in the dialog box."), Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public string[] FileNames
+        public string[]? FileNames
         {
             get
             {
@@ -283,7 +283,7 @@ namespace Ookii.Dialogs.Wpf
         /// </value>
         /// <exception cref="System.ArgumentException">Filter format is invalid.</exception>
         [Description("The current file name filter string, which determines the choices that appear in the \"Save as file type\" or \"Files of type\" box in the dialog box."), Category("Behavior"), Localizable(true), DefaultValue("")]
-        public string Filter
+        public string? Filter
         {
             get
             {
@@ -457,7 +457,7 @@ namespace Ookii.Dialogs.Wpf
         /// This property is set by classes that derive from <see cref="VistaFileDialog"/>.
         /// </remarks>
         [Browsable(false)]
-        protected FileDialog DownlevelDialog
+        protected FileDialog? DownlevelDialog
         {
             get => _downlevelDialog;
             set
@@ -465,7 +465,6 @@ namespace Ookii.Dialogs.Wpf
                 _downlevelDialog = value;
                 if (value != null)
                 {
-                    //value.HelpRequest += new EventHandler(DownlevelDialog_HelpRequest);
                     value.FileOk += DownlevelDialog_FileOk;
                 }
             }
@@ -475,13 +474,13 @@ namespace Ookii.Dialogs.Wpf
 
         #region Internal Properties
 
-        internal string[] FileNamesInternal
+        internal string[]? FileNamesInternal
         {
             private get
             {
                 if (_fileNames == null)
                 {
-                    return new string[0];
+                    return Array.Empty<string>();
                 }
                 return (string[])_fileNames.Clone();
             }
@@ -573,9 +572,9 @@ namespace Ookii.Dialogs.Wpf
             Window owner = (Window)hWnd.RootVisual;
             _owner = owner;
             if (DownlevelDialog != null)
-                return (bool)DownlevelDialog.ShowDialog(owner);
+                return DownlevelDialog.ShowDialog(owner) is true;
 
-            IFileDialog dialog = null;
+            IFileDialog? dialog = null;
             try
             {
                 dialog = CreateFileDialog();
@@ -584,9 +583,16 @@ namespace Ookii.Dialogs.Wpf
                 if (result < 0)
                 {
                     if (result == (int)HRESULT.ERROR_CANCELLED)
+                    {
                         return false;
+                    }
                     else
-                        throw System.Runtime.InteropServices.Marshal.GetExceptionForHR(result);
+                    {
+                        if (System.Runtime.InteropServices.Marshal.GetExceptionForHR(result) is Exception e)
+                            throw e;
+                        return false;
+                    }
+                        
                 }
                 return true;
             }
@@ -619,7 +625,7 @@ namespace Ookii.Dialogs.Wpf
             // Set the default file name
             if (!(_fileNames == null || _fileNames.Length == 0 || string.IsNullOrEmpty(_fileNames[0])))
             {
-                string parent = Path.GetDirectoryName(_fileNames[0]);
+                string? parent = Path.GetDirectoryName(_fileNames[0]);
                 if (parent == null || !Directory.Exists(parent))
                 {
                     dialog.SetFileName(_fileNames[0]);
@@ -684,7 +690,7 @@ namespace Ookii.Dialogs.Wpf
 
         #region Private Methods
 
-        private void DownlevelDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
+        private void DownlevelDialog_FileOk(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             OnFileOk(e);
         }

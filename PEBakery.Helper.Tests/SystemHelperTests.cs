@@ -35,7 +35,8 @@ namespace PEBakery.Helper.Tests
         [TestMethod]
         public void PrintMemorySnapshot()
         {
-            MemorySnapshot m = SystemHelper.GetMemorySnapshot();
+            MemorySnapshot? m = SystemHelper.GetMemorySnapshot();
+            Assert.IsNotNull(m);
             Console.WriteLine(m);
         }
 
@@ -71,7 +72,7 @@ namespace PEBakery.Helper.Tests
         public void AdaptThreadCount()
         {
             const ulong memPerThread = 384 * NumberHelper.MegaByte;
-            ulong QueryMemUsage(int threads) => (uint)(threads + Math.Sqrt(threads)) * memPerThread;
+            static ulong QueryMemUsage(int threads) => (uint)(threads + Math.Sqrt(threads)) * memPerThread;
 
             int reqThreads = Environment.ProcessorCount * 2;
             (ulong MaxReq, double MaxPercent)[] samples = new (ulong, double)[]

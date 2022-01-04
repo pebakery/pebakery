@@ -44,10 +44,6 @@
             white-space: pre-wrap;
         }
 
-        .pb-monospace {
-            font-family: monospace;
-        }
-
         .pb-footer {
             font-family: 'D2Coding', monospace;
             text-align: center;

@@ -111,7 +111,7 @@
             <section id="{{ $sectionId }}" class="container-fluid mt-2">
                 <h2 class="mt-2">{{ $h2 }}</h2>
                 {{ for $d in $model }}
-                <span class="pb-monospace">{{ $d.Codes.size }} {{ $sectionMsg }} in script &#91;{{ $d.ScriptName | html.escape }}&#93; &#40;{{ $d.ScriptPath | html.escape }}&#41;</span>
+                <span class="text-monospace">{{ $d.Codes.size }} {{ $sectionMsg }} in script &#91;{{ $d.ScriptName | html.escape }}&#93; &#40;{{ $d.ScriptPath | html.escape }}&#41;</span>
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
                         <thead class="thead-dark text-center">
@@ -249,7 +249,7 @@
         <h2 class="container-fluid mt-2">Code Logs</h2>
         {{ for $entry in CodeLogs }}
         <div id="script-{{ $entry.Script.IndexStr }}" class="container-fluid mt-2">
-            <span class="pb-monospace">&#91;{{ $entry.Script.IndexStr | html.escape }}&#47;{{ CodeLogs.size }}&#93; {{ $entry.Script.Name | html.escape }}&#40;{{ $entry.Script.Path | html.escape}}&#41;</span>
+            <span class="text-monospace">&#91;{{ $entry.Script.IndexStr | html.escape }}&#47;{{ CodeLogs.size }}&#93; {{ $entry.Script.Name | html.escape }}&#40;{{ $entry.Script.Path | html.escape}}&#41;</span>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
                     <thead class="thead-dark text-center">
@@ -274,7 +274,7 @@
             </div>
 
             {{ if 0 < $entry.Variables.size }}
-            <span class="pb-monospace">Local Variables of Script &#91;{{ $entry.Script.Name | html.escape }}&#93;</span>
+            <span class="text-monospace">Local Variables of Script &#91;{{ $entry.Script.Name | html.escape }}&#93;</span>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
                     <thead class="thead-dark text-center">

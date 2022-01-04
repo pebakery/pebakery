@@ -166,12 +166,12 @@ namespace Ookii.Dialogs.Wpf
             public TaskDialogFlags dwFlags;
             public TaskDialogCommonButtonFlags dwCommonButtons;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszWindowTitle;
+            public string? pszWindowTitle;
             public IntPtr hMainIcon;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszMainInstruction;
+            public string? pszMainInstruction;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszContent;
+            public string? pszContent;
             public uint cButtons;
             //[MarshalAs(UnmanagedType.LPArray)]
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
@@ -182,16 +182,16 @@ namespace Ookii.Dialogs.Wpf
             public IntPtr pRadioButtons;
             public int nDefaultRadioButton;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszVerificationText;
+            public string? pszVerificationText;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszExpandedInformation;
+            public string? pszExpandedInformation;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszExpandedControlText;
+            public string? pszExpandedControlText;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszCollapsedControlText;
+            public string? pszCollapsedControlText;
             public IntPtr hFooterIcon;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string pszFooterText;
+            public string? pszFooterText;
             [MarshalAs(UnmanagedType.FunctionPtr)]
             public TaskDialogCallback pfCallback;
             public IntPtr lpCallbackData;
@@ -546,7 +546,7 @@ namespace Ookii.Dialogs.Wpf
 
         [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool CredUnPackAuthenticationBuffer(uint dwFlags, IntPtr pAuthBuffer, uint cbAuthBuffer, StringBuilder pszUserName, ref uint pcchMaxUserName, StringBuilder pszDomainName, ref uint pcchMaxDomainName, StringBuilder pszPassword, ref uint pcchMaxPassword);
+        public static extern bool CredUnPackAuthenticationBuffer(uint dwFlags, IntPtr pAuthBuffer, uint cbAuthBuffer, StringBuilder pszUserName, ref uint pcchMaxUserName, StringBuilder? pszDomainName, ref uint pcchMaxDomainName, StringBuilder pszPassword, ref uint pcchMaxPassword);
 
         // Disable the "Internal field is never assigned to" warning.
 #pragma warning disable 649

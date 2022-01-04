@@ -32,8 +32,8 @@ namespace PEBakery.Helper.Tests
     [TestClass]
     public class TestSetup
     {
-        public static string BaseDir;
-        public static string SampleDir;
+        public static string BaseDir = string.Empty;
+        public static string SampleDir = string.Empty;
 
         [AssemblyInitialize]
         public static void Init(TestContext context)

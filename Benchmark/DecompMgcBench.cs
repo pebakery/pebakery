@@ -11,9 +11,9 @@ namespace Benchmark
 {
     public class DecompMgcBench
     {
-        private string _binaryDir;
-        private string _sampleBaseDir;
-        private string _sampleDir;
+        private string _binaryDir = string.Empty;
+        private string _sampleBaseDir = string.Empty;
+        private string _sampleDir = string.Empty;
         private long _magicFileLen;
 
         // SrcFiles

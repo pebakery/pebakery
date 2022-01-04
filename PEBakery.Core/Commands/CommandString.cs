@@ -539,6 +539,10 @@ namespace PEBakery.Core.Commands
                             destStr = FileHelper.GetLongPath(srcStr);
                         }
 
+                        // GetShortPathName / GetLongPathName failed
+                        if (destStr == null)
+                            destStr = srcStr;
+
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }

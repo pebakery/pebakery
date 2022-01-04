@@ -28,7 +28,7 @@ namespace Ookii.Dialogs.Wpf.Interop
             return buffer.ToString();
         }
 
-        public string FormatString(uint id, params string[] args)
+        public string? FormatString(uint id, params string[] args)
         {
             CheckDisposed();
 
@@ -49,7 +49,7 @@ namespace Ookii.Dialogs.Wpf.Interop
                 System.Runtime.InteropServices.Marshal.FreeHGlobal(sourcePtr);
             }
 
-            string result = System.Runtime.InteropServices.Marshal.PtrToStringAuto(buffer);
+            string? result = System.Runtime.InteropServices.Marshal.PtrToStringAuto(buffer);
             // FreeHGlobal calls LocalFree
             System.Runtime.InteropServices.Marshal.FreeHGlobal(buffer);
 

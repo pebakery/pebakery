@@ -35,6 +35,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
+#nullable enable
+
 namespace PEBakery.Core
 {
     public static class StringEscaper
@@ -94,7 +96,7 @@ namespace PEBakery.Core
         #endregion
 
         #region IsValid Series
-        public static bool IsPathValid(string path, IEnumerable<char> more = null)
+        public static bool IsPathValid(string path, IEnumerable<char>? more = null)
         {
             // Windows Reserved Characters
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
@@ -137,7 +139,7 @@ namespace PEBakery.Core
             return true;
         }
 
-        public static bool IsFileNameValid(string path, IEnumerable<char> more = null)
+        public static bool IsFileNameValid(string path, IEnumerable<char>? more = null)
         {
             // Windows Reserved Characters
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
@@ -214,12 +216,12 @@ namespace PEBakery.Core
                 int hIdx = str.IndexOf('#', idx);
                 if (hIdx == -1)
                 { // # (X)
-                    b.Append(str.Substring(idx));
+                    b.Append(str[idx..]);
                     break;
                 }
                 else
                 { // # (O)
-                    b.Append(str.Substring(idx, hIdx - idx));
+                    b.Append(str[idx..hIdx]);
                     if (hIdx + 1 < str.Length)
                     {
                         char ch1 = str[hIdx + 1];
@@ -353,12 +355,12 @@ namespace PEBakery.Core
 
                     if (hIdx == -1)
                     { // # (X)
-                        b.Append(str.Substring(idx));
+                        b.Append(str[idx..]);
                         break;
                     }
 
                     // # (O)
-                    b.Append(str.Substring(idx, hIdx - idx));
+                    b.Append(str[idx..hIdx]);
                     b.Append(@"##");
                     idx = hIdx + 1;
                 }
@@ -454,19 +456,19 @@ namespace PEBakery.Core
                 StringBuilder b = new StringBuilder();
                 for (int x = 0; x < matches.Count; x++)
                 {
-                    string pIdxStr = matches[x].Groups[1].ToString().Substring(1);
+                    string pIdxStr = matches[x].Groups[1].ToString()[1..];
                     if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
                         throw new InternalException("ExpandSectionParams failure");
 
                     if (x == 0)
                     {
-                        b.Append(str.Substring(0, matches[0].Index));
+                        b.Append(str[..matches[0].Index]);
                     }
                     else
                     {
                         int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
                         int endOffset = matches[x].Index - startOffset;
-                        b.Append(str.Substring(startOffset, endOffset));
+                        b.Append(str.AsSpan(startOffset, endOffset));
                     }
 
                     string param;
@@ -485,7 +487,7 @@ namespace PEBakery.Core
 
                     if (x + 1 == matches.Count) // Last iteration
                     {
-                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                        b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
                     }
                 }
                 str = b.ToString();
@@ -505,19 +507,19 @@ namespace PEBakery.Core
                     StringBuilder b = new StringBuilder();
                     for (int x = 0; x < matches.Count; x++)
                     {
-                        string pIdxStr = matches[x].Groups[1].ToString().Substring(2);
+                        string pIdxStr = matches[x].Groups[1].ToString()[2..];
                         if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
                             throw new InternalException("ExpandSectionParams failure");
 
                         if (x == 0)
                         {
-                            b.Append(str.Substring(0, matches[0].Index));
+                            b.Append(str[..matches[0].Index]);
                         }
                         else
                         {
                             int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
                             int endOffset = matches[x].Index - startOffset;
-                            b.Append(str.Substring(startOffset, endOffset));
+                            b.Append(str.AsSpan(startOffset, endOffset));
                         }
 
                         string param;
@@ -534,7 +536,7 @@ namespace PEBakery.Core
 
                         if (x + 1 == matches.Count) // Last iteration
                         {
-                            b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                            b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
                         }
                     }
                     str = b.ToString();
@@ -689,7 +691,7 @@ namespace PEBakery.Core
 
             for (int i = 0; i < count; i++)
             {
-                if (!byte.TryParse(packStr.Substring(i * 3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bin[i]))
+                if (!byte.TryParse(packStr.AsSpan(i * 3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bin[i]))
                     return false;
             }
 
@@ -749,14 +751,14 @@ namespace PEBakery.Core
 
             List<string> list = new List<string>();
 
-            string next = packStr;
+            string? next = packStr;
             while (next != null)
             {
                 int pIdx = next.IndexOf("#$z", StringComparison.Ordinal);
                 if (pIdx != -1)
                 { // Not Last One
-                    string now = next.Substring(0, pIdx);
-                    next = next.Substring(pIdx + 3);
+                    string now = next[..pIdx];
+                    next = next[(pIdx + 3)..];
 
                     list.Add(now);
                 }
@@ -773,7 +775,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ProcessVersionString
-        public static string ProcessVersionString(string str)
+        public static string? ProcessVersionString(string str)
         {
             // Integer - Ex) 001 -> 1
             if (NumberHelper.ParseInt32(str, out int intVal))
@@ -781,7 +783,7 @@ namespace PEBakery.Core
 
             // Semantic versioning - Ex) 5.1.2600 
             // If str does not conform to semantic versioning, return null
-            VersionEx semVer = VersionEx.Parse(str);
+            VersionEx? semVer = VersionEx.Parse(str);
             return semVer?.ToString();
         }
         #endregion
@@ -805,12 +807,12 @@ namespace PEBakery.Core
         /// Parse encoding designater string to Encoding instance
         /// </summary>
         /// <returns>Return null on invalid encodingStr</returns>
-        public static Encoding ParseEncoding(string encodingStr)
+        public static Encoding? ParseEncoding(string encodingStr)
         {
             if (encodingStr == null)
-                return EncodingHelper.DefaultAnsi;
+                return null;
 
-            Encoding encoding = null;
+            Encoding? encoding = null;
             if (encodingStr.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
                 encoding = EncodingHelper.DefaultAnsi;
             else if (encodingStr.Equals("UTF16", StringComparison.OrdinalIgnoreCase) ||

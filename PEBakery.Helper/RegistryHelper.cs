@@ -105,9 +105,9 @@ namespace PEBakery.Helper
 
         #region Parse
         [SupportedOSPlatform("windows")]
-        public static RegistryKey ParseStringToRegKey(string rootKey)
+        public static RegistryKey? ParseStringToRegKey(string rootKey)
         {
-            RegistryKey regRoot;
+            RegistryKey? regRoot;
             if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.ClassesRoot; // HKEY_CLASSES_ROOT
@@ -129,9 +129,9 @@ namespace PEBakery.Helper
         }
 
         [SupportedOSPlatform("windows")]
-        public static string RegKeyToString(RegistryKey regKey)
+        public static string? RegKeyToString(RegistryKey regKey)
         {
-            string rootKey;
+            string? rootKey;
             if (regKey == Registry.ClassesRoot)
                 rootKey = "HKCR";
             else if (regKey == Registry.CurrentUser)
@@ -148,9 +148,9 @@ namespace PEBakery.Helper
         }
 
         [SupportedOSPlatform("windows")]
-        public static string RegKeyToFullString(RegistryKey regKey)
+        public static string? RegKeyToFullString(RegistryKey regKey)
         {
-            string rootKey;
+            string? rootKey;
             if (regKey == Registry.ClassesRoot)
                 rootKey = "HKEY_CLASSES_ROOT";
             else if (regKey == Registry.CurrentUser)
@@ -229,7 +229,7 @@ namespace PEBakery.Helper
         /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static object RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, uint valueType)
+        public static object? RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, uint valueType)
         {
             return RegGetValue(hKey, subKeyPath, valueName, (RegistryValueKind)valueType);
         }
@@ -237,9 +237,9 @@ namespace PEBakery.Helper
         /// <summary>
         /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
         /// </summary>
-        public static unsafe object RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, RegistryValueKind valueType)
+        public static unsafe object? RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, RegistryValueKind valueType)
         {
-            void CheckReturnValue(int ret)
+            static void CheckReturnValue(int ret)
             {
                 if (ret != WindowsErrorCode.ERROR_SUCCESS)
                     throw new Win32Exception(ret, "RegQueryValueEx failed");
@@ -273,7 +273,7 @@ namespace PEBakery.Helper
                 }
                 else
                 {
-                    object value = subKey.GetValue(valueName);
+                    object? value = subKey.GetValue(valueName);
                     return value;
                 }
             }
@@ -395,19 +395,19 @@ namespace PEBakery.Helper
 
         #region GetDefaultExecutablePath, GetDefaultWebBrowserPath
         [SupportedOSPlatform("windows")]
-        public static string GetDefaultExecutablePath(string ext, bool onlyExePath)
+        public static string? GetDefaultExecutablePath(string ext, bool onlyExePath)
         {
             const string exePathKeyTemplate = @"{0}\shell\open\command";
 
-            RegistryKey extSubKey = null;
-            RegistryKey exePathSubKey = null;
+            RegistryKey? extSubKey = null;
+            RegistryKey? exePathSubKey = null;
             try
             {
                 extSubKey = Registry.ClassesRoot.OpenSubKey(ext, false);
                 if (extSubKey == null)
                     return null;
 
-                if (!(extSubKey.GetValue(null, null) is string progId))
+                if (extSubKey.GetValue(null, null) is not string progId)
                     return null;
 
                 string exePathKey = string.Format(exePathKeyTemplate, progId);
@@ -415,13 +415,13 @@ namespace PEBakery.Helper
                 if (exePathSubKey == null)
                     return null;
 
-                if (!(exePathSubKey.GetValue(null, null) is string exePath))
+                if (exePathSubKey.GetValue(null, null) is not string exePath)
                     return null;
 
                 if (onlyExePath)
                 {
                     int idx = exePath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
-                    exePath = exePath.Substring(0, idx).Trim().Trim('\"').Trim();
+                    exePath = exePath.AsSpan(0, idx).Trim().Trim('\"').Trim().ToString();
                     return exePath;
                 }
                 else
@@ -437,14 +437,14 @@ namespace PEBakery.Helper
         }
 
         [SupportedOSPlatform("windows")]
-        public static string GetDefaultWebBrowserPath(bool onlyExePath)
+        public static string? GetDefaultWebBrowserPath(bool onlyExePath)
         {
             const string progIdKey = "ProgId";
             const string httpsDefaultKey = @"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice";
             const string exePathKeyTemplate = @"{0}\shell\open\command";
 
-            RegistryKey httpsSubKey = null;
-            RegistryKey exePathSubKey = null;
+            RegistryKey? httpsSubKey = null;
+            RegistryKey? exePathSubKey = null;
             try
             {
                 httpsSubKey = Registry.CurrentUser.OpenSubKey(httpsDefaultKey, false);
@@ -455,7 +455,7 @@ namespace PEBakery.Helper
                         return null;
                 }
 
-                if (!(httpsSubKey.GetValue(progIdKey, null) is string progId))
+                if (httpsSubKey.GetValue(progIdKey, null) is not string progId)
                     return null;
 
                 string exePathKey = string.Format(exePathKeyTemplate, progId);
@@ -463,13 +463,13 @@ namespace PEBakery.Helper
                 if (exePathSubKey == null)
                     return null;
 
-                if (!(exePathSubKey.GetValue(null, null) is string browserPath))
+                if (exePathSubKey.GetValue(null, null) is not string browserPath)
                     return null;
 
                 if (onlyExePath)
                 {
                     int idx = browserPath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
-                    browserPath = browserPath.Substring(0, idx).Trim().Trim('\"').Trim();
+                    browserPath = browserPath.AsSpan(0, idx).Trim().Trim('\"').Trim().ToString();
                     return browserPath;
                 }
                 else

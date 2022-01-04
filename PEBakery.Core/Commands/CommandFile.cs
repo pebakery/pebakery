@@ -295,8 +295,9 @@ namespace PEBakery.Core.Commands
             if (info.Encoding != null)
             {
                 string encodingStr = StringEscaper.Preprocess(s, info.Encoding);
-                encoding = StringEscaper.ParseEncoding(encodingStr);
-                if (encoding == null)
+                if (StringEscaper.ParseEncoding(encodingStr) is Encoding enc)
+                    encoding = enc;
+                else
                     return LogInfo.LogErrorMessage(logs, $"Encoding [{encodingStr}] is invalid");
             }
 

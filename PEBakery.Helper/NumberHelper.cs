@@ -71,7 +71,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return sbyte.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return sbyte.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return sbyte.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -89,7 +89,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return byte.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return byte.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return byte.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -107,7 +107,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return short.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return short.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return short.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -125,7 +125,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return ushort.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ushort.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return ushort.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -143,7 +143,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return int.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return int.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -161,7 +161,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return uint.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return uint.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return uint.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -179,7 +179,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return long.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return long.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
         }
@@ -197,7 +197,7 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ulong.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return ulong.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
@@ -216,7 +216,7 @@ namespace PEBakery.Helper
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             {
-                bool result = ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
+                bool result = ulong.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
                 value = intValue;
                 return result;
             }
@@ -240,7 +240,7 @@ namespace PEBakery.Helper
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             {
-                bool result = ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
+                bool result = ulong.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
                 value = intValue;
                 return result;
             }
@@ -373,7 +373,7 @@ namespace PEBakery.Helper
             // base 16 integer - Z
             if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
-                if (long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
+                if (long.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
                 else
                     return ParseStringToNumberType.String;
@@ -410,9 +410,9 @@ namespace PEBakery.Helper
         public static CompareStringNumberResult CompareStringNumber(string str1, string str2, bool ignoreCase = true)
         {
             // Try version number compare
-            VersionEx v1 = VersionEx.Parse(str1);
-            VersionEx v2 = VersionEx.Parse(str2);
-            if (v1 != null && v2 != null)
+            VersionEx? v1 = VersionEx.Parse(str1);
+            VersionEx? v2 = VersionEx.Parse(str2);
+            if (v1 is not null && v2 is not null)
             {
                 int comp = v1.CompareTo(v2);
                 if (comp < 0)
@@ -475,7 +475,7 @@ namespace PEBakery.Helper
         {
             if (hex.Length % 2 == 1) // hex's length must be even number
             {
-                array = new byte[0];
+                array = Array.Empty<byte>();
                 return false;
             }
 
@@ -501,7 +501,7 @@ namespace PEBakery.Helper
                 StringBuilder b = new StringBuilder(decPoint + 1);
                 b.Append("0.");
                 for (int i = 0; i < decPoint; i++)
-                    b.Append("#");
+                    b.Append('#');
                 formatString = b.ToString();
             }
 
@@ -609,7 +609,7 @@ namespace PEBakery.Helper
                 subStrEndIdx = 1;
             }
 
-            str = str.Substring(0, str.Length - subStrEndIdx);
+            str = str[..^subStrEndIdx];
             return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multiplier;
         }
         #endregion

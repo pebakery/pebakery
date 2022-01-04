@@ -36,26 +36,26 @@ namespace Ookii.Dialogs.Wpf
     [DefaultProperty("MainInstruction"), DefaultEvent("UserNameChanged"), Description("Allows access to credential UI for generic credentials.")]
     public partial class CredentialDialog : Component
     {
-        private string _confirmTarget;
+        private string? _confirmTarget;
         private NetworkCredential _credentials = new NetworkCredential();
         private bool _isSaveChecked;
-        private string _target;
+        private string? _target;
 
         private static readonly Dictionary<string, System.Net.NetworkCredential> _applicationInstanceCredentialCache = new Dictionary<string, NetworkCredential>();
-        private string _caption;
-        private string _text;
-        private string _windowTitle;
+        private string? _caption;
+        private string? _text;
+        private string? _windowTitle;
 
         /// <summary>
         /// Event raised when the <see cref="UserName"/> property changes.
         /// </summary>
         [Category("Property Changed"), Description("Event raised when the value of the UserName property changes.")]
-        public event EventHandler UserNameChanged;
+        public event EventHandler? UserNameChanged;
         /// <summary>
         /// Event raised when the <see cref="Password"/> property changes.
         /// </summary>
         [Category("Property Changed"), Description("Event raised when the value of the Password property changes.")]
-        public event EventHandler PasswordChanged;
+        public event EventHandler? PasswordChanged;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CredentialDialog"/> class.
@@ -420,7 +420,7 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="CredentialException">An error occurred while showing the credentials dialog.</exception>
         /// <exception cref="InvalidOperationException"><see cref="Target"/> is an empty string ("").</exception>
-        public bool ShowDialog(Window owner)
+        public bool ShowDialog(Window? owner)
         {
             if (string.IsNullOrEmpty(_target))
                 throw new InvalidOperationException(Properties.Resources.CredentialEmptyTargetError);
@@ -569,14 +569,14 @@ namespace Ookii.Dialogs.Wpf
         /// <exception cref="ArgumentNullException"><paramref name="target"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="target"/> is an empty string ("").</exception>
         /// <exception cref="CredentialException">An error occurred retrieving the credentials.</exception>
-        public static NetworkCredential RetrieveCredential(string target)
+        public static NetworkCredential? RetrieveCredential(string target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (target.Length == 0)
-                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, "target");
+                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, nameof(target));
 
-            NetworkCredential cred = RetrieveCredentialFromApplicationInstanceCache(target);
+            NetworkCredential? cred = RetrieveCredentialFromApplicationInstanceCache(target);
             if (cred != null)
                 return cred;
 
@@ -587,7 +587,7 @@ namespace Ookii.Dialogs.Wpf
             {
                 try
                 {
-                    NativeMethods.CREDENTIAL c = (NativeMethods.CREDENTIAL)System.Runtime.InteropServices.Marshal.PtrToStructure(credential, typeof(NativeMethods.CREDENTIAL));
+                    NativeMethods.CREDENTIAL c = System.Runtime.InteropServices.Marshal.PtrToStructure<NativeMethods.CREDENTIAL>(credential);
                     byte[] encryptedPassword = new byte[c.CredentialBlobSize];
                     System.Runtime.InteropServices.Marshal.Copy(c.CredentialBlob, encryptedPassword, 0, encryptedPassword.Length);
                     cred = new NetworkCredential(c.UserName, DecryptPassword(encryptedPassword));
@@ -620,7 +620,7 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="target"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="target"/> is an empty string ("").</exception>
-        public static NetworkCredential RetrieveCredentialFromApplicationInstanceCache(string target)
+        public static NetworkCredential? RetrieveCredentialFromApplicationInstanceCache(string target)
         {
             if (target == null)
                 throw new ArgumentNullException("target");
@@ -629,7 +629,7 @@ namespace Ookii.Dialogs.Wpf
 
             lock (_applicationInstanceCredentialCache)
             {
-                System.Net.NetworkCredential cred;
+                System.Net.NetworkCredential? cred;
                 if (_applicationInstanceCredentialCache.TryGetValue(target, out cred))
                 {
                     return cred;
@@ -833,7 +833,7 @@ namespace Ookii.Dialogs.Wpf
 
         private bool RetrieveCredentials()
         {
-            NetworkCredential credential = RetrieveCredential(Target);
+            NetworkCredential? credential = RetrieveCredential(Target);
             if (credential != null)
             {
                 UserName = credential.UserName;
@@ -865,7 +865,7 @@ namespace Ookii.Dialogs.Wpf
         {
             if (UseApplicationInstanceCredentialCache)
             {
-                NetworkCredential credential = RetrieveCredentialFromApplicationInstanceCache(Target);
+                NetworkCredential? credential = RetrieveCredentialFromApplicationInstanceCache(Target);
                 if (credential != null)
                 {
                     UserName = credential.UserName;

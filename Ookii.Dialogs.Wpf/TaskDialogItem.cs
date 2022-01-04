@@ -14,10 +14,10 @@ namespace Ookii.Dialogs.Wpf
     [ToolboxItem(false), DesignTimeVisible(false), DefaultProperty("Text"), DefaultEvent("Click")]
     public abstract partial class TaskDialogItem : Component
     {
-        private TaskDialog _owner;
+        private TaskDialog? _owner;
         private int _id;
         private bool _enabled = true;
-        private string _text;
+        private string? _text;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TaskDialogItem"/> class.
@@ -60,7 +60,7 @@ namespace Ookii.Dialogs.Wpf
         /// collection of a <see cref="TaskDialog"/>.
         /// </remarks>
         [Browsable(false)]
-        public TaskDialog Owner
+        public TaskDialog? Owner
         {
             get { return _owner; }
             internal set
@@ -204,7 +204,7 @@ namespace Ookii.Dialogs.Wpf
                 Owner.UpdateDialog();
         }
 
-        internal virtual void CheckDuplicate(TaskDialogItem itemToExclude)
+        internal virtual void CheckDuplicate(TaskDialogItem? itemToExclude)
         {
             CheckDuplicateId(itemToExclude, _id);
         }
@@ -223,7 +223,7 @@ namespace Ookii.Dialogs.Wpf
             }
         }
 
-        private void CheckDuplicateId(TaskDialogItem itemToExclude, int id)
+        private void CheckDuplicateId(TaskDialogItem? itemToExclude, int id)
         {
             if (id != 0)
             {

@@ -51,7 +51,10 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static Version GetProgramVersion()
         {
-            return Assembly.GetExecutingAssembly().GetName().Version;
+            if (Assembly.GetExecutingAssembly().GetName().Version is Version ver)
+                return ver;
+            else
+                return new Version(0, 0); // Error
         }
 
         public static string GetProgramAbsolutePath()
@@ -79,8 +82,8 @@ namespace PEBakery.Helper
         private static readonly object TempPathLock = new();
         private static readonly RandomNumberGenerator SecureRandom = RandomNumberGenerator.Create();
 
-        private static FileStream _lockFileStream = null;
-        private static string _baseTempDir = null;
+        private static FileStream? _lockFileStream = null;
+        private static string? _baseTempDir = null;
         public static string BaseTempDir()
         {
             lock (TempPathLock)
@@ -164,7 +167,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
         /// </remarks>
-        public static string GetTempFile(string ext = null)
+        public static string GetTempFile(string? ext = null)
         {
             return GetTempFile(null, ext);
         }
@@ -176,7 +179,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
         /// </remarks>
-        public static string GetTempFile(string baseName, string ext)
+        public static string GetTempFile(string? baseName, string? ext)
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
             string baseTempDir = BaseTempDir();
@@ -218,7 +221,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
         /// </remarks>
-        public static string ReserveTempFile(string ext = null)
+        public static string ReserveTempFile(string? ext = null)
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
             string baseTempDir = BaseTempDir();
@@ -255,7 +258,7 @@ namespace PEBakery.Helper
             }
             else
             { // Ex) AB\CD\EF.so, AB\?.exe
-                return path.Substring(0, lastDirSepIdx);
+                return path[..lastDirSepIdx];
             }
         }
 
@@ -271,9 +274,10 @@ namespace PEBakery.Helper
             string fullSrcPath = Path.GetFullPath(srcPath);
             string fullDestPath = Path.GetFullPath(destPath);
 
-            string srcDrive = Path.GetPathRoot(fullSrcPath);
-            string destDrive = Path.GetPathRoot(fullDestPath);
-            if (srcDrive.Equals(destDrive, StringComparison.Ordinal))
+            string? srcDrive = Path.GetPathRoot(fullSrcPath);
+            string? destDrive = Path.GetPathRoot(fullDestPath);
+            if (srcDrive is not null && destDrive is not null &&
+                srcDrive.Equals(destDrive, StringComparison.Ordinal))
             {
                 try
                 {
@@ -642,10 +646,11 @@ namespace PEBakery.Helper
         private const string UseLegacyPathHandling = @"Switch.System.IO.UseLegacyPathHandling";
 
         // Success of this depends on HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation
-        public static string GetShortPath(string longPath)
+        public static string? GetShortPath(string longPath)
         {
             // Is long path (~32768) support enabled in .Net?
             bool isLongPathDisabled;
+
             try
             {
                 // false - 32767, true - 260
@@ -656,25 +661,27 @@ namespace PEBakery.Helper
                 isLongPathDisabled = true;
             }
 
-            if (!isLongPathDisabled)
+            if (isLongPathDisabled == false)
             {
-                if (!longPath.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                if (longPath.StartsWith(LongPathPrefix, StringComparison.Ordinal) == false)
                     longPath = LongPathPrefix + longPath;
             }
 
             StringBuilder shortPath = new StringBuilder(MaxLongPath);
-            NativeMethods.GetShortPathName(longPath, shortPath, MaxLongPath);
+            int ret = NativeMethods.GetShortPathName(longPath, shortPath, MaxLongPath);
+            if (ret == 0) // GetShortPathNameW() failed
+                return null;
 
             string str = shortPath.ToString();
             if (!isLongPathDisabled)
             {
                 if (str.StartsWith(LongPathPrefix, StringComparison.Ordinal))
-                    return str.Substring(LongPathPrefix.Length);
+                    return str[LongPathPrefix.Length..];
             }
             return str;
         }
 
-        public static string GetLongPath(string shortPath)
+        public static string? GetLongPath(string shortPath)
         {
             // Is long path (~32768) support enabled in .Net?
             bool isLongPathDisabled;
@@ -693,13 +700,15 @@ namespace PEBakery.Helper
             }
 
             StringBuilder longPath = new StringBuilder(MaxLongPath);
-            NativeMethods.GetLongPathName(shortPath, longPath, MaxLongPath);
+            int ret = NativeMethods.GetLongPathName(shortPath, longPath, MaxLongPath);
+            if (ret == 0) // GetLongPathNameW() failed
+                return null;
 
             string str = longPath.ToString();
-            if (!isLongPathDisabled)
+            if (isLongPathDisabled == false)
             {
                 if (str.StartsWith(LongPathPrefix, StringComparison.Ordinal))
-                    return str.Substring(LongPathPrefix.Length);
+                    return str[LongPathPrefix.Length..];
             }
             return str;
         }
@@ -716,11 +725,11 @@ namespace PEBakery.Helper
         /// <returns>An instance of ResultReport.</returns>
         public static ResultReport OpenUri(string uri)
         {
-            Process proc = null;
+            Process? proc = null;
             try
             {
                 string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
-                string exePath = RegistryHelper.GetDefaultWebBrowserPath(true);
+                string? exePath = RegistryHelper.GetDefaultWebBrowserPath(true);
                 if (exePath == null)
                 {
                     proc = Process.Start(new ProcessStartInfo
@@ -762,12 +771,12 @@ namespace PEBakery.Helper
             if (docPath == null)
                 throw new ArgumentNullException(nameof(docPath));
 
-            Process proc = null;
+            Process? proc = null;
             try
             {
                 bool fallback = false;
 
-                string exePath = null;
+                string? exePath = null;
                 string quotePath = docPath.Contains(' ') ? $"\"{docPath}\"" : docPath;
                 string ext = Path.GetExtension(docPath);
                 if (ext == null)
@@ -781,7 +790,7 @@ namespace PEBakery.Helper
                         fallback = true;
                 }
 
-                if (fallback)
+                if (fallback || exePath == null)
                 {
                     proc = Process.Start(new ProcessStartInfo
                     {
@@ -791,7 +800,6 @@ namespace PEBakery.Helper
                 }
                 else
                 {
-                    Debug.Assert(exePath != null, $"{nameof(exePath)} is null but fallback was not enabled");
                     proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                     {
                         UseShellExecute = false,
@@ -826,7 +834,7 @@ namespace PEBakery.Helper
             if (docPath == null)
                 throw new ArgumentNullException(nameof(docPath));
 
-            Process proc = null;
+            Process? proc = null;
             try
             {
                 try
@@ -943,7 +951,7 @@ namespace PEBakery.Helper
         {
             if (!path.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException($"{nameof(path)} must start with {nameof(rootDir)}");
-            return path.Substring(rootDir.Length).TrimStart('\\');
+            return path.AsSpan(rootDir.Length).TrimStart('\\').ToString();
         }
         #endregion
     }
@@ -954,8 +962,8 @@ namespace PEBakery.Helper
     {
         public bool CopySubDirs;
         public bool Overwrite;
-        public string FileWildcard;
-        public IProgress<string> Progress;
+        public string? FileWildcard;
+        public IProgress<string>? Progress;
     }
     #endregion
 }

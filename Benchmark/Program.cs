@@ -20,9 +20,7 @@ namespace Benchmark
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : ParamOptions
         {
-            T cast = this as T;
-            Debug.Assert(cast != null);
-            return cast;
+            return (T)this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,7 +124,7 @@ namespace Benchmark
         #region Main
         public static void Main(string[] args)
         {
-            ParamOptions opts = null;
+            ParamOptions? opts = null;
             Parser argParser = new Parser(conf =>
             {
                 conf.HelpWriter = Console.Out;

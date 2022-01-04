@@ -3,6 +3,7 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <Configurations>Debug;Release;Publish</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PEBakery.Core\PEBakery.Core.csproj" />

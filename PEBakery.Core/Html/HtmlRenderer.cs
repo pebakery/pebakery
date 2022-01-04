@@ -122,7 +122,7 @@ namespace PEBakery.Core.Html
                 case LogState.Overwrite:
                     return "text-overwrite";
                 case LogState.Info:
-                    return "text-primary";
+                    return "text-info";
                 default:
                     return string.Empty;
             }
@@ -142,7 +142,7 @@ namespace PEBakery.Core.Html
                 case LogState.CriticalError:
                     return "text-danger";
                 case LogState.Info:
-                    return "text-primary";
+                    return "text-info";
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";

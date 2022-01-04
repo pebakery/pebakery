@@ -1109,7 +1109,7 @@ namespace PEBakery.Core
     #region ScriptComaparer
     public class ScriptComparer : IEqualityComparer<Script>
     {
-        public static ScriptComparer Instance = new ScriptComparer();
+        public static ScriptComparer Instance => new ScriptComparer();
 
         public bool Equals(Script x, Script y)
         {
@@ -1137,6 +1137,9 @@ namespace PEBakery.Core
 
         public bool Equals(ScriptParseInfo y)
         {
+            if (y == null)
+                return false;
+
             // IsDir, IsDirLink
             if (IsDir != y.IsDir || IsDirLink != y.IsDirLink)
                 return false;
@@ -1159,6 +1162,24 @@ namespace PEBakery.Core
 
             return true;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is ScriptParseInfo other)
+                return Equals(other);
+            else
+                return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = IsDir.GetHashCode() ^ IsDirLink.GetHashCode();
+            if (RealPath != null)
+                hash ^= RealPath.GetHashCode();
+            if (TreePath != null)
+                hash ^= TreePath.GetHashCode();
+            return hash;
+        }
     }
 
     public class ScriptParseInfoComparer : IEqualityComparer<ScriptParseInfo>
@@ -1173,7 +1194,7 @@ namespace PEBakery.Core
             return x.RealPath.GetHashCode() ^ x.TreePath.GetHashCode() ^ x.IsDir.GetHashCode() ^ x.IsDirLink.GetHashCode();
         }
 
-        public static ScriptParseInfoComparer Instance { get; } = new ScriptParseInfoComparer();
+        public static ScriptParseInfoComparer Instance => new ScriptParseInfoComparer();
     }
     #endregion
 }
