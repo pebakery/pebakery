@@ -134,7 +134,8 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+                        // Prepare Command Progress Report
+                        WimgApi.RegisterMessageCallback(hWim, WimgApiMountCallback);
 
                         using (WimHandle hImage = WimgApi.LoadImage(hWim, imageIndex))
                         {
@@ -152,7 +153,7 @@ namespace PEBakery.Core.Commands
                     finally
                     {
                         s.MainViewModel.ResetBuildCommandProgress();
-                        WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
+                        WimgApi.UnregisterMessageCallback(hWim, WimgApiMountCallback);
                     }
                 }
             }
@@ -204,9 +205,9 @@ namespace PEBakery.Core.Commands
                 Debug.Assert(wimInfo.MountPath.Equals(mountDir, StringComparison.OrdinalIgnoreCase));
 
                 // Prepare Command Progress Report
-                WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+                WimgApi.RegisterMessageCallback(hWim, WimgApiUnmountCallback);
                 s.MainViewModel.SetBuildCommandProgress("WimUnmount Progress");
-
+                
                 try
                 {
                     // Commit 
@@ -240,7 +241,7 @@ namespace PEBakery.Core.Commands
                 finally
                 { // Finalize Command Progress Report
                     s.MainViewModel.ResetBuildCommandProgress();
-                    WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
+                    WimgApi.UnregisterMessageCallback(hWim, WimgApiUnmountCallback);
                 }
             }
             catch (Win32Exception e)
@@ -257,7 +258,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimMessageResult WimgApiCallback(WimMessageType msgType, object msg, object userData)
+        private static WimMessageResult WimgApiMountCallback(WimMessageType msgType, object msg, object userData)
         { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
             Debug.Assert(Engine.WorkingEngine != null);
             EngineState s = Engine.WorkingEngine.State;
@@ -265,7 +266,7 @@ namespace PEBakery.Core.Commands
             switch (msgType)
             {
                 case WimMessageType.Progress:
-                    { // For WimMount
+                    { // For Mount
                         WimMessageProgress wMsg = (WimMessageProgress)msg;
 
                         s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
@@ -274,16 +275,46 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"Mounting image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
                         }
                         else
                         {
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%";
+                            s.MainViewModel.BuildCommandProgressText = $"Mounting image... ({wMsg.PercentComplete}%)";
+                        }
+                    }
+                    break;
+            }
+
+            return WimMessageResult.Success;
+        }
+
+        private static WimMessageResult WimgApiUnmountCallback(WimMessageType msgType, object msg, object userData)
+        { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
+            Debug.Assert(Engine.WorkingEngine != null);
+            EngineState s = Engine.WorkingEngine.State;
+
+            switch (msgType)
+            {
+                case WimMessageType.Progress:
+                    { // For Commit
+                        WimMessageProgress wMsg = (WimMessageProgress)msg;
+
+                        s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
+
+                        if (0 < wMsg.EstimatedTimeRemaining.TotalSeconds)
+                        {
+                            int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
+                            int sec = wMsg.EstimatedTimeRemaining.Seconds;
+                            s.MainViewModel.BuildCommandProgressText = $"Saving image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
+                        }
+                        else
+                        {
+                            s.MainViewModel.BuildCommandProgressText = $"Saving image... ({wMsg.PercentComplete}%)";
                         }
                     }
                     break;
                 case WimMessageType.MountCleanupProgress:
-                    { // For WimUnmount
+                    { // For Unmount
                         WimMessageMountCleanupProgress wMsg = (WimMessageMountCleanupProgress)msg;
 
                         s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
@@ -292,11 +323,11 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"Unmounting image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
                         }
                         else
                         {
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%";
+                            s.MainViewModel.BuildCommandProgressText = $"Unmounting image... ({wMsg.PercentComplete}%)";
                         }
                     }
                     break;

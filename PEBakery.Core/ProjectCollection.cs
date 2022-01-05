@@ -253,7 +253,7 @@ namespace PEBakery.Core
                 string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot));
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
-                // Local functions fo collect ScriptParseInfo
+                // Local functions for collect ScriptParseInfo
                 void CollectScriptsFromDir(string dirPath)
                 {
                     ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x) => new ScriptParseInfo
