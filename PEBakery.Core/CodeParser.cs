@@ -44,26 +44,29 @@ namespace PEBakery.Core
         #endregion
 
         #region Options
-        public struct Options
+        public class Options
         {
             // Optimization
-            public bool OptimizeCode;
+            public bool OptimizeCode { get; set; } = true;
             // Compatibility
-            public bool AllowLegacyBranchCondition;
-            public bool AllowLegacyRegWrite;
-            public bool AllowLegacyInterfaceCommand;
-            public bool AllowLegacySectionParamCommand;
+            public bool AllowLegacyBranchCondition { get; set; } = true;
+            public bool AllowLegacyRegWrite { get; set; } = true;
+            public bool AllowLegacyInterfaceCommand { get; set; } = true;
+            public bool AllowLegacySectionParamCommand { get; set; } = true;
 
-            public static Options CreateOptions(Setting setting, CompatOption compat)
+            public static Options CreateOptions(Setting? setting, CompatOption compat)
             {
-                return new Options
+                Options opts = new Options
                 {
-                    OptimizeCode = setting.General.OptimizeCode,
                     AllowLegacyBranchCondition = compat.LegacyBranchCondition,
                     AllowLegacyRegWrite = compat.LegacyRegWrite,
                     AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
                     AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
                 };
+
+                if (setting != null)
+                    opts.OptimizeCode = setting.General.OptimizeCode;
+                return opts;
             }
         }
         #endregion
@@ -75,7 +78,7 @@ namespace PEBakery.Core
             _opts = options;
         }
 
-        public CodeParser(ScriptSection section, Setting setting, CompatOption compat)
+        public CodeParser(ScriptSection section, Setting? setting, CompatOption compat)
         {
             _section = section;
             _opts = Options.CreateOptions(setting, compat);
@@ -98,17 +101,21 @@ namespace PEBakery.Core
             }
         }
 
-        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync()
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements()
         {
-            return Task.Run(ParseStatements);
+            if (_section.Lines is string[] lines)
+            {
+                return ParseStatements(lines);
+            }
+            else
+            {
+                List<LogInfo> errLogs = new List<LogInfo>();
+                string errMsg = $"Cannot parse section [{_section.Name}], section is not a valid code";
+                CodeCommand error = new CodeCommand(string.Empty, _section, CodeType.Error, new CodeInfo_Error(errMsg), 0);
+                errLogs.Add(new LogInfo(LogState.Error, errMsg, 0));
+                return (new CodeCommand[] { error }, errLogs);
+            }
         }
-
-        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IReadOnlyList<string> lines)
-        {
-            return Task.Run(() => ParseStatements(lines));
-        }
-
-        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements() => ParseStatements(_section.Lines);
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IReadOnlyList<string> lines)
         {
@@ -158,7 +165,7 @@ namespace PEBakery.Core
         #endregion
 
         #region GetNextArgument
-        public static (string Next, string Remainder) GetNextArgument(string str)
+        public static (string Next, string? Remainder) GetNextArgument(string str)
         {
             str = str.Trim();
 
@@ -241,17 +248,17 @@ namespace PEBakery.Core
 
             // Check if rawCode is empty
             if (rawCode.Length == 0)
-                return new CodeCommand(string.Empty, _section, CodeType.None, null, lineIdx);
+                return new CodeCommand(string.Empty, _section, CodeType.None, new CodeInfo(), lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
             if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
-                return new CodeCommand(rawCode, _section, CodeType.Comment, null, lineIdx);
+                return new CodeCommand(rawCode, _section, CodeType.Comment, new CodeInfo(), lineIdx);
 
             // Split with period
-            (string codeTypeStr, string remainder) = GetNextArgument(rawCode);
+            (string codeTypeStr, string? remainder) = GetNextArgument(rawCode);
 
             // Parse CodeType
-            CodeType type = ParseCodeType(codeTypeStr, out string macroType);
+            CodeType type = ParseCodeType(codeTypeStr, out string? macroType);
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
@@ -303,7 +310,9 @@ namespace PEBakery.Core
             }
 
             // Create instance of command
-            CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
+            CodeInfo? info = ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
+            if (info is null)
+                info = new CodeInfo();
             return new CodeCommand(rawCode, _section, type, info, lineIdx);
 
             // [Process] <- LineIdx
@@ -320,7 +329,7 @@ namespace PEBakery.Core
             CodeType type;
 
             // Parse type
-            string macroType;
+            string? macroType;
             try
             {
                 type = ParseCodeType(args[0], out macroType);
@@ -332,7 +341,9 @@ namespace PEBakery.Core
 
             try
             {
-                CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), lineIdx);
+                CodeInfo? info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), lineIdx);
+                if (info is null)
+                    info = new CodeInfo();
                 return new CodeCommand(rawCode, _section, type, info, lineIdx);
             }
             catch (InvalidCommandException e)
@@ -342,7 +353,7 @@ namespace PEBakery.Core
             }
         }
 
-        public CodeType ParseCodeType(string typeStr, out string macroType)
+        public CodeType ParseCodeType(string typeStr, out string? macroType)
         {
             macroType = null;
 
@@ -371,15 +382,16 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfo
-        public CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, int lineIdx)
+        public CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string? macroType, List<string> args, int lineIdx)
         {
             switch (type)
             {
                 #region 00 Misc
                 case CodeType.None:
                 case CodeType.Comment:
+                    return new CodeInfo();
                 case CodeType.Error:
-                    return null;
+                    return new CodeInfo_Error(string.Empty);
                 #endregion
                 #region 01 File
                 case CodeType.FileCopy:
@@ -477,7 +489,7 @@ namespace PEBakery.Core
                         string filePath = args[0];
                         bool preserve = false;
                         bool noWarn = false;
-                        string encodingValue = null;
+                        string? encodingValue = null;
 
                         bool isDeprecated = false;
                         const string encodingKey = "Encoding=";
@@ -634,7 +646,9 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         string destVar = args[3];
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
@@ -654,7 +668,7 @@ namespace PEBakery.Core
 
                         // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         // It will be parsed in RegWriteLegacy
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
                         {
                             type = CodeType.RegWriteLegacy;
@@ -801,11 +815,11 @@ namespace PEBakery.Core
                             cnt -= 1;
                         }
 
-                        string valueName = null;
+                        string? valueName = null;
                         if (4 <= cnt)
                             valueName = args[3];
 
-                        string[] valueDataList = null;
+                        string[]? valueDataList = null;
                         if (5 <= cnt)
                             valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
 
@@ -818,9 +832,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+
                         string keyPath = args[1];
-                        string valueName = null;
+                        string? valueName = null;
                         if (args.Count == maxArgCount)
                             valueName = args[2];
 
@@ -833,7 +850,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+
                         string keyPath = args[1];
                         string valueName = args[2];
 
@@ -843,7 +863,7 @@ namespace PEBakery.Core
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         string arg1 = args[4];
-                        string arg2 = null;
+                        string? arg2 = null;
                         if (args.Count == maxArgCount)
                             arg2 = args[5];
 
@@ -863,7 +883,9 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
@@ -874,8 +896,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        RegistryKey hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
+                        RegistryKey? hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hSrcKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+                        RegistryKey? hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
+                        if (hDestKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[2]}]", rawCode);
 
                         bool wildcard = false;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -902,7 +928,6 @@ namespace PEBakery.Core
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
 
                         string fileName = args[0];
                         string line = args[1];
@@ -964,7 +989,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string defaultValue = null;
+                        string? defaultValue = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1011,7 +1036,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1137,7 +1162,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1184,7 +1209,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1233,7 +1258,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1295,9 +1320,9 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string wimFlags = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? wimFlags = null;
                         bool boot = false;
                         bool check = false;
                         bool noAcl = false;
@@ -1358,10 +1383,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string wimFlags = null;
-                        string deltaFrom = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? wimFlags = null;
+                        string? deltaFrom = null;
                         bool boot = false;
                         bool check = false;
                         bool noAcl = false;
@@ -1569,7 +1594,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string recompress = null;
+                        string? recompress = null;
                         bool? check = null;
 
                         for (int i = minArgCount; i < args.Count; i++)
@@ -1608,10 +1633,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string split = null;
-                        string recompress = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? split = null;
+                        string? recompress = null;
                         bool boot = false;
                         bool? check = null;
 
@@ -1680,16 +1705,16 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        ArchiveFile.ArchiveCompressFormat format;
+                        ArchiveCompressFormat format;
                         string formatStr = args[0];
                         if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveFile.ArchiveCompressFormat.Zip;
+                            format = ArchiveCompressFormat.Zip;
                         else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveFile.ArchiveCompressFormat.SevenZip;
+                            format = ArchiveCompressFormat.SevenZip;
                         else
                             throw new InvalidCommandException($"Cannot compress to [{formatStr}] file format", rawCode);
 
-                        ArchiveFile.CompressLevel? compLevel = null;
+                        CompressLevel? compLevel = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1697,25 +1722,25 @@ namespace PEBakery.Core
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Store;
+                                compLevel = CompressLevel.Store;
                             }
                             else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Fastest;
+                                compLevel = CompressLevel.Fastest;
                             }
                             else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Normal;
+                                compLevel = CompressLevel.Normal;
                             }
                             else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Best;
+                                compLevel = CompressLevel.Best;
                             }
                             else
                             {
@@ -1732,7 +1757,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string password = null;
+                        string? password = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1761,7 +1786,7 @@ namespace PEBakery.Core
 
                         string srcCab = args[0];
                         string destDir = args[1];
-                        string singleFile = null;
+                        string? singleFile = null;
                         bool preserve = false;
                         bool noWarn = false;
 
@@ -1832,11 +1857,11 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        HashHelper.HashType hashType = HashHelper.HashType.None;
-                        string hashDigest = null;
-                        string timeOut = null;
-                        string referer = null;
-                        string userAgent = null;
+                        HashType hashType = HashType.None;
+                        string? hashDigest = null;
+                        string? timeOut = null;
+                        string? referer = null;
+                        string? userAgent = null;
                         bool noErr = false;
 
                         const string md5Key = "MD5=";
@@ -1852,37 +1877,37 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.StartsWith(md5Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <MD5> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.MD5;
+                                hashType = HashType.MD5;
                                 hashDigest = arg[md5Key.Length..];
                             }
                             else if (arg.StartsWith(sha1Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA1> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA1;
+                                hashType = HashType.SHA1;
                                 hashDigest = arg[sha1Key.Length..];
                             }
                             else if (arg.StartsWith(sha256Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA256> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA256;
+                                hashType = HashType.SHA256;
                                 hashDigest = arg[sha256Key.Length..];
                             }
                             else if (arg.StartsWith(sha384Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA384> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA384;
+                                hashType = HashType.SHA384;
                                 hashDigest = arg[sha384Key.Length..];
                             }
                             else if (arg.StartsWith(sha512Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA512;
+                                hashType = HashType.SHA512;
                                 hashDigest = arg[sha512Key.Length..];
                             }
                             else if (arg.StartsWith(timeOutKey, StringComparison.OrdinalIgnoreCase))
@@ -1947,7 +1972,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string _params = null;
+                        string? _params = null;
                         if (4 <= args.Count)
                             _params = args[3];
 
@@ -1968,7 +1993,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string compression = null;
+                        string? compression = null;
                         if (3 < args.Count)
                             compression = args[3];
 
@@ -1984,7 +2009,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string interfaceKey = Variables.TrimPercentMark(args[0]);
+                        string? interfaceKey = Variables.TrimPercentMark(args[0]);
                         if (interfaceKey == null)
                             throw new InvalidCommandException($"Invalid InterfaceKey [{interfaceKey}]", rawCode);
 
@@ -2017,7 +2042,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2049,7 +2074,7 @@ namespace PEBakery.Core
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2081,7 +2106,7 @@ namespace PEBakery.Core
 
                         string message = args[0];
                         CodeMessageAction action = CodeMessageAction.None;
-                        string timeout = null;
+                        string? timeout = null;
 
                         if (2 <= args.Count)
                         {
@@ -2532,7 +2557,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
                         }
 
-                        string varCount = null;
+                        string? varCount = null;
                         if (args.Count == 3)
                         {
                             varKeyType = Variables.DetectType(args[2]);
@@ -2569,9 +2594,9 @@ namespace PEBakery.Core
                         if (type == CodeType.ShellExecuteEx && args.Count == 5)
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string parameters = null;
-                        string workDir = null;
-                        string exitOutVar = null;
+                        string? parameters = null;
+                        string? workDir = null;
+                        string? exitOutVar = null;
                         switch (args.Count)
                         {
                             case 3:
@@ -2597,12 +2622,15 @@ namespace PEBakery.Core
                 #endregion
                 #region 99 External Macro
                 case CodeType.Macro:
-                    return new CodeInfo_Macro(macroType, args);
+                    if (macroType != null)
+                        return new CodeInfo_Macro(macroType, args);
+                    else
+                        goto default;
                 #endregion
                 #region Error
                 default: // Error
-                    throw new InternalParserException($"Wrong CodeType [{type}]");
-                    #endregion
+                    throw new InternalParserException($"Invalid CodeType [{type}]");
+                #endregion
             }
         }
         #endregion
@@ -2706,8 +2734,8 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
 
-                        string title = null;
-                        string filter = null;
+                        string? title = null;
+                        string? filter = null;
 
                         const string titleKey = "Title=";
                         const string filterKey = "Filter=";
@@ -2847,7 +2875,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         // Convert WB Date Format String to .Net Date Format String
-                        string formatStr = StrFormat_Date_FormatString(args[1]);
+                        string? formatStr = StrFormat_Date_FormatString(args[1]);
                         if (formatStr == null)
                             throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
@@ -3131,7 +3159,7 @@ namespace PEBakery.Core
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
         private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g' };
 
-        private static string StrFormat_Date_FormatString(string str)
+        private static string? StrFormat_Date_FormatString(string str)
         {
             // dd-mmm-yyyy-hh.nn
             // 02-11-2017-13.49
@@ -3466,8 +3494,8 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string min = null;
-                        string max = null;
+                        string? min = null;
+                        string? max = null;
                         if (3 == args.Count)
                         {
                             min = args[1];
@@ -3529,7 +3557,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3562,7 +3590,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3595,7 +3623,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3628,7 +3656,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3661,7 +3689,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3693,7 +3721,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3730,7 +3758,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3771,7 +3799,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3807,7 +3835,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -4059,7 +4087,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string logFormat = null;
+                        string? logFormat = null;
                         if (minArgCount < args.Count)
                             logFormat = args[1];
 
@@ -4144,7 +4172,7 @@ namespace PEBakery.Core
             {
                 case DebugType.Breakpoint:
                     { // Debug,Breakpoint,[BranchCondition]
-                        BranchCondition cond = null;
+                        BranchCondition? cond = null;
 
                         // BranchCondition was written
                         if (0 < args.Count)
@@ -4206,7 +4234,7 @@ namespace PEBakery.Core
             {
                 int embIdx = -1;
                 string condStr = args[cIdx];
-                BranchCondition cond = null;
+                BranchCondition? cond = null;
                 if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
                 {
                     embIdx = cIdx + 2;
@@ -4560,9 +4588,9 @@ namespace PEBakery.Core
                     info.Link.Add(info.Embed);
                     info.LinkParsed = true;
 
-                    info = info.Embed.Info as CodeInfo_If;
-                    if (info == null)
+                    if (info.Embed.Info is not CodeInfo_If newInfo)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+                    info = newInfo;
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -4617,11 +4645,9 @@ namespace PEBakery.Core
                         ifInfo.Link.Add(ifInfo.Embed);
                         ifInfo.LinkParsed = true;
 
-                        ifInfo = ifInfo.Embed.Info as CodeInfo_If;
-                        if (ifInfo == null)
+                        if (ifInfo.Embed.Info is not CodeInfo_If newIfInfo)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                        ifInfo.LinkParsed = true;
+                        ifInfo = newIfInfo;
                     }
                     else if (ifInfo.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {

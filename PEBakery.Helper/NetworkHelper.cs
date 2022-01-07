@@ -108,7 +108,7 @@ namespace PEBakery.Helper
 
         public HttpClientDownloader(
             HttpClient httpClient, Uri uri, Stream destStream,
-            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress,
+            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)>? progress,
             TimeSpan reportInterval,
             CancellationToken? cancelToken = null)
         {
@@ -124,7 +124,7 @@ namespace PEBakery.Helper
         public HttpClientDownloader(
             HttpClient httpClient, Uri uri, Stream destStream,
             int bufferSize,
-            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress,
+            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)>? progress,
             TimeSpan reportInterval,
             CancellationToken? cancelToken = null)
         {

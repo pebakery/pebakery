@@ -55,7 +55,13 @@ namespace PEBakery.Core.Html
         /// <param name="textWriter"></param>
         public static async Task RenderHtmlAsync<TModel>(string templateKey, Assembly templateAssembly, TModel model, TextWriter textWriter)
         {
-            string templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
+            string? templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
+            if (templateBody == null)
+            {
+                MessageBox.Show("Failed to read HTML Template.", "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             Template template = Template.Parse(templateBody);
             if (template.HasErrors)
             {
@@ -67,6 +73,7 @@ namespace PEBakery.Core.Html
                 string errMsg = b.ToString();
 
                 MessageBox.Show(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
 
             ScriptObject root = new ScriptObject();
@@ -251,7 +258,7 @@ namespace PEBakery.Core.Html
 
         public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
         {
-            string templateStr = ResourceHelper.GetEmbeddedResourceString("Html." + templatePath, _assembly);
+            string? templateStr = ResourceHelper.GetEmbeddedResourceString("Html." + templatePath, _assembly);
             return templateStr ?? string.Empty;
         }
 

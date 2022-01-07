@@ -195,8 +195,8 @@ namespace PEBakery.Core.Commands
 
             // Unmount Wim
             // https://msdn.microsoft.com/ko-kr/library/windows/desktop/dd834953.aspx
-            WimHandle hWim = null;
-            WimHandle hImage = null;
+            WimHandle? hWim = null;
+            WimHandle? hImage = null;
             try
             {
                 hWim = WimgApi.GetMountedImageHandle(mountDir, !commit, out hImage);
@@ -499,8 +499,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimApplyExtractProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // EXTRACT_IMAGE_BEGIN
             // EXTRACT_FILE_STRUCTURE (Stage 1)
@@ -1111,8 +1111,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimWriteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // SCAN_BEGIN
             // SCAN_DENTRY (Stage 1)
@@ -1221,8 +1221,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimDeleteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // WRITE_STREAMS 
             switch (msg)
@@ -1601,8 +1601,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimPathProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // UPDATE_BEGIN_COMMAND
             // SCAN_BEGIN
@@ -1761,10 +1761,10 @@ namespace PEBakery.Core.Commands
             string srcWimPath = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
             string destWimPath = StringEscaper.Preprocess(s, info.DestWim);
-            string imageName = null;
+            string? imageName = null;
             if (info.ImageName != null)
                 imageName = StringEscaper.Preprocess(s, info.ImageName);
-            string imageDesc = null;
+            string? imageDesc = null;
             if (info.ImageDesc != null)
                 imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
 
@@ -1906,8 +1906,8 @@ namespace PEBakery.Core.Commands
         #region WimLib - WimSimpleWriteProgress
         private static CallbackStatus WimSimpleWriteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // WRITE_STREAMS 
             switch (msg)

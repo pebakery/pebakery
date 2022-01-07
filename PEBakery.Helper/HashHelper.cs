@@ -32,11 +32,20 @@ using System.Security.Cryptography;
 
 namespace PEBakery.Helper
 {
+    public enum HashType
+    { 
+        None,
+        MD5,
+        SHA1,
+        SHA256,
+        SHA384, 
+        SHA512
+    }
+
     #region HashHelper
     public static class HashHelper
     {
         #region Fields
-        public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 }
         public static readonly ReadOnlyDictionary<HashType, int> HashLenDict = new ReadOnlyDictionary<HashType, int>
         (
             new Dictionary<HashType, int>

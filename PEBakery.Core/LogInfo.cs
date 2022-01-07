@@ -51,13 +51,12 @@ namespace PEBakery.Core
     public class LogInfo
     {
         #region Fields
-        public LogState State;
-        public string Message;
-        public CodeCommand Command;
-        // ReSharper disable once InconsistentNaming
-        public UIControl UIControl;
-        public bool IsException;
-        public int Depth;
+        public LogState State { get; set; }
+        public string Message { get; set; }
+        public CodeCommand? Command { get; set; }
+        public UIControl? UIControl { get; set; }
+        public bool IsException { get; set; }
+        public int Depth { get; set; }
         #endregion
 
         #region Constructor - LogState, Message

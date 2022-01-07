@@ -159,7 +159,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region Operators
-        public static bool operator ==(VersionEx v1, VersionEx v2)
+        public static bool operator ==(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
             {
@@ -177,12 +177,12 @@ namespace PEBakery.Helper
             }
         }
 
-        public static bool operator !=(VersionEx v1, VersionEx v2)
+        public static bool operator !=(VersionEx? v1, VersionEx? v2)
         {
             return !(v1 == v2);
         }
 
-        public static bool operator <(VersionEx v1, VersionEx v2)
+        public static bool operator <(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
                 throw new ArgumentNullException(nameof(v1));
@@ -190,7 +190,7 @@ namespace PEBakery.Helper
             return v1.CompareTo(v2) < 0;
         }
 
-        public static bool operator <=(VersionEx v1, VersionEx v2)
+        public static bool operator <=(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
                 throw new ArgumentNullException(nameof(v1));
@@ -198,12 +198,12 @@ namespace PEBakery.Helper
             return v1.CompareTo(v2) <= 0;
         }
 
-        public static bool operator >(VersionEx v1, VersionEx v2)
+        public static bool operator >(VersionEx? v1, VersionEx? v2)
         {
             return v2 < v1;
         }
 
-        public static bool operator >=(VersionEx v1, VersionEx v2)
+        public static bool operator >=(VersionEx? v1, VersionEx? v2)
         {
             return v2 <= v1;
         }

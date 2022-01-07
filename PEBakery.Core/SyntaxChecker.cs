@@ -134,7 +134,7 @@ namespace PEBakery.Core
                 string interfaceList = _sc.MainInfo[Script.Const.InterfaceList];
                 try
                 {
-                    string remainder = interfaceList;
+                    string? remainder = interfaceList;
                     while (remainder != null)
                     {
                         string next;
@@ -171,7 +171,7 @@ namespace PEBakery.Core
         #endregion
 
         #region CheckCodeSection
-        private List<LogInfo> CheckCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
+        private List<LogInfo> CheckCodeSection(ScriptSection section, string? rawLine = null, int lineIdx = 0)
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
@@ -198,8 +198,8 @@ namespace PEBakery.Core
 
         private void RecursiveFindCodeSection(IReadOnlyList<CodeCommand> codes, List<LogInfo> logs)
         {
-            string targetCodeSection = null;
-            string targetInterfaceSection = null;
+            string? targetCodeSection = null;
+            string? targetInterfaceSection = null;
             foreach (CodeCommand cmd in codes)
             {
                 switch (cmd.Type)
@@ -211,15 +211,21 @@ namespace PEBakery.Core
 
                             if (info.Condition.Type == BranchConditionType.ExistSection)
                             {
+                                // Break is false -> Other properties must not be null
+                                if (info.Condition.Arg1 is not string arg1)
+                                    throw new InternalException($"{nameof(info.Condition.Arg1)} is null");
+                                if (info.Condition.Arg2 is not string arg2)
+                                    throw new InternalException($"{nameof(info.Condition.Arg2)} is null");
+
                                 // For recursive section call
                                 // Ex) If,ExistSection,%ScriptFile%,DoWork,Run,%ScriptFile%,DoWork
-                                if (info.Condition.Arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                if (arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.RunEx || info.Embed.Type == CodeType.Exec)
                                 {
                                     CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
                                     if (subInfo.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
+                                        if (arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
                                             continue;
                                     }
                                 }
@@ -241,7 +247,7 @@ namespace PEBakery.Core
                         {
                             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
-                            // CodeValidator does not have Variable information, so just check with predefined literal
+                            // SyntaxChecker does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
@@ -254,10 +260,17 @@ namespace PEBakery.Core
                         {
                             CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
 
+                            // info.Break -> CodeInfo_Loop is empty
                             if (info.Break)
                                 continue;
 
-                            // CodeValidator does not have Variable information, so just check with predefined literal
+                            // Break is false -> Other properties must not be null
+                            if (info.ScriptFile is not string scriptFile)
+                                throw new InternalException($"{nameof(info.ScriptFile)} is null");
+                            if (info.SectionName is not string sectionName)
+                                throw new InternalException($"{nameof(info.SectionName)} is null");
+
+                            // SyntaxChecker does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
@@ -364,7 +377,7 @@ namespace PEBakery.Core
         #endregion
 
         #region CheckInterfaceSection
-        private List<LogInfo> CheckInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
+        private List<LogInfo> CheckInterfaceSection(ScriptSection section, string? rawLine = null, int lineIdx = 0)
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
@@ -448,7 +461,7 @@ namespace PEBakery.Core
                         {
                             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                            string pictureSection = info.Picture;
+                            string? pictureSection = info.Picture;
                             if (pictureSection != null &&
                                 !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                                 !EncodedFile.ContainsInterface(_sc, pictureSection))

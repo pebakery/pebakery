@@ -175,7 +175,7 @@ namespace PEBakery.Core
                                 {
                                     _w.WriteLine(eLog.Export(LogExportType.Text, false, false));
 
-                                    string refScriptText = ExportRefScriptText(eLog, scOriginLogs);
+                                    string? refScriptText = ExportRefScriptText(eLog, scOriginLogs);
                                     if (refScriptText != null)
                                     { // Referenced scripts
                                         _w.Write("  ");
@@ -218,7 +218,7 @@ namespace PEBakery.Core
                                 {
                                     _w.WriteLine(wLog.Export(LogExportType.Text, false, false));
 
-                                    string refScriptText = ExportRefScriptText(wLog, scOriginLogs);
+                                    string? refScriptText = ExportRefScriptText(wLog, scOriginLogs);
                                     if (refScriptText != null)
                                     { // Referenced scripts
                                         _w.Write("  ");
@@ -638,11 +638,11 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportScriptOriginText
-        private static string ExportRefScriptText(LogModel.BuildLog bLog, LogModel.Script[] scLogs)
+        private static string? ExportRefScriptText(LogModel.BuildLog bLog, LogModel.Script[] scLogs)
         {
             if (bLog.RefScriptId != 0)
             { // Referenced script
-                LogModel.Script refScLog = scLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
+                LogModel.Script? refScLog = scLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
                 if (refScLog == null)
                     return "|-> Referenced an unknown script";
 

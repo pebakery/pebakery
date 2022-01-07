@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.ResetBuildCommandProgress();
             }
 
-            string _params = null;
+            string? _params = null;
             using (Process proc = new Process())
             {
                 proc.EnableRaisingEvents = true;
@@ -190,7 +190,7 @@ namespace PEBakery.Core.Commands
                     proc.StartInfo.Arguments = _params;
                 }
 
-                proc.Exited += (object sender, EventArgs e) =>
+                proc.Exited += (object? sender, EventArgs e) =>
                 {
                     if (Directory.Exists(tempDir))
                         Directory.Delete(tempDir, true);
@@ -210,7 +210,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();

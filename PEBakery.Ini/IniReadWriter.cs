@@ -3162,7 +3162,7 @@ namespace PEBakery.Ini
             { // Ini style entry, reformat into [Key=Value] template
                 ReadOnlySpan<char> key = lineSpan[..idx].Trim();
                 ReadOnlySpan<char> value = lineSpan[(idx + 1)..].Trim();
-                return $"{key}={value}";
+                return string.Concat(key, "=", value);
             }
             else
             { // Non-ini style entry, trim only end of it (Commands are often indented)

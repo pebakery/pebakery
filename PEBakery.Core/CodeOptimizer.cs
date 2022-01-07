@@ -68,12 +68,16 @@ namespace PEBakery.Core
                 {
                     case CodeType.If:
                         {
+                            if (cmd.Info is null)
+                                throw new InvalidCodeCommandException("cmd.Info is null", cmd);
                             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
                             info.Link = Optimize(info.Link);
                         }
                         break;
                     case CodeType.Else:
                         {
+                            if (cmd.Info is null)
+                                throw new InvalidCodeCommandException("cmd.Info is null", cmd);
                             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
                             info.Link = Optimize(info.Link);
                         }

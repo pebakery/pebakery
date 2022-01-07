@@ -58,7 +58,7 @@ namespace PEBakery.Core
         private readonly Variables _variables;
 
         private readonly Canvas _canvas;
-        private readonly Window _window; // Can be null
+        private readonly Window? _window; // Can be null
         private readonly Script _sc;
         /// <summary>
         /// true in MainWindow, false in ScriptEditWindow
@@ -74,7 +74,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window? window, Script script, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
@@ -83,13 +83,13 @@ namespace PEBakery.Core
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
+            (List<UIControl>? uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
             UICtrls = uiCtrls ?? new List<UIControl>(0);
 
             Global.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window? window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
@@ -109,7 +109,7 @@ namespace PEBakery.Core
         /// <param name="sc">Script to get interface.</param>
         /// <param name="sectionName">Set to null for auto detection.</param>
         /// <returns>A list of parsed UIControls, and a list of error logs.</returns>
-        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, string sectionName = null)
+        public static (List<UIControl>?, List<LogInfo>) LoadInterfaces(Script sc, string? sectionName = null)
         {
             // Check if script has custom interface section
             string ifaceSectionName = sectionName ?? sc.InterfaceSectionName;
@@ -147,7 +147,7 @@ namespace PEBakery.Core
                 try
                 {
                     // Render and add event
-                    RenderCleanInfo clean = null;
+                    RenderCleanInfo? clean = null;
                     switch (uiCtrl.Type)
                     {
                         case UIControlType.TextBox:
@@ -219,37 +219,64 @@ namespace PEBakery.Core
                 switch (ci.UICtrl.Type)
                 {
                     case UIControlType.TextBox:
-                        ManageTextBoxEvent(ci.Element as TextBox, false);
+                        {
+                            if (ci.Element is TextBox textBox)
+                                ManageTextBoxEvent(textBox, false);
+                        }
                         break;
                     case UIControlType.NumberBox:
-                        ManageNumberBoxEvent(ci.Element as NumberBox, false);
+                        {
+                            if (ci.Element is NumberBox numberBox)
+                                ManageNumberBoxEvent(numberBox, false);
+                        }
                         break;
                     case UIControlType.CheckBox:
-                        ManageCheckBoxEvent(ci.Element as CheckBox, false, (string)ci.Tag);
+                        {
+                            if (ci.Element is CheckBox checkBox && ci.Tag is string sectionName)
+                                ManageCheckBoxEvent(checkBox, false, sectionName);
+                        }
                         break;
                     case UIControlType.ComboBox:
-                        ManageComboBoxEvent(ci.Element as ComboBox, false, (string)ci.Tag);
+                        {
+                            if (ci.Element is ComboBox comboBox && ci.Tag is string sectionName)
+                                ManageComboBoxEvent(comboBox, false, sectionName);
+                        }
                         break;
                     case UIControlType.Image:
-                        ManageImageEvent(ci.Element as Button, false, (bool)ci.Tag);
+                        {
+                            if (ci.Element is Button imageButton && ci.Tag is bool hasUrl)
+                                ManageImageEvent(imageButton, false, hasUrl);
+                        }
                         break;
                     case UIControlType.Button:
-                        ManageButtonEvent(ci.Element as Button, false, (string)ci.Tag);
+                        {
+                            if (ci.Element is Button button && ci.Tag is string sectionName)
+                                ManageButtonEvent(button, false, sectionName);
+                        }
                         break;
                     case UIControlType.WebLabel:
-                        ManageWebLabelEvent(ci.Element as Hyperlink, false);
+                        {
+                            if (ci.Element is Hyperlink link)
+                                ManageWebLabelEvent(link, false);
+                        }
                         break;
                     case UIControlType.RadioButton:
-                        ManageRadioButtonEvent(ci.Element as RadioButton, false, (string)ci.Tag);
+                        {
+                            if (ci.Element is RadioButton radioButton && ci.Tag is string sectionName)
+                            ManageRadioButtonEvent(radioButton, false, sectionName);
+                        }
                         break;
                     case UIControlType.FileBox:
-                        Debug.Assert(ci.Elements != null, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.FileBox}]");
-                        Debug.Assert(ci.Elements.Length == 2, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.FileBox}]]");
-                        ManageFileBoxEvent(ci.Elements[0] as TextBox, ci.Elements[1] as Button, false);
+                        {
+                            if (ci.Elements.Length == 2 && ci.Elements[0] is TextBox textBox && ci.Elements[1] is Button button)
+                                ManageFileBoxEvent(textBox, button, false);
+                        }
                         break;
                     case UIControlType.RadioGroup:
-                        Debug.Assert(ci.Elements != null, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.RadioGroup}]");
-                        ManageRadioGroupEvent(ci.Elements.Select(x => x as RadioButton).ToArray(), false, (string)ci.Tag);
+                        {
+                            if (ci.Element is RadioButton[] radioButtons && ci.Tag is string sectionName)
+                            ManageRadioGroupEvent(radioButtons, false, sectionName);
+                        }
                         break;
                 }
             }
@@ -329,10 +356,11 @@ namespace PEBakery.Core
 
         public void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            TextBox box = sender as TextBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(TextBox_LostFocus)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(TextBox_LostFocus)}]");
+            if (sender is not TextBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.TextBox, $"Wrong UIControlType in [{nameof(TextBox_LostFocus)}]");
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
@@ -418,10 +446,11 @@ namespace PEBakery.Core
 
         public void NumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            NumberBox box = sender as NumberBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(NumberBox_ValueChanged)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(NumberBox_ValueChanged)}]");
+            if (sender is not NumberBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.NumberBox, $"Wrong UIControlType in [{nameof(NumberBox_ValueChanged)}]");
             UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
 
@@ -453,9 +482,8 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        public void ManageCheckBoxEvent(CheckBox box, bool addMode, string sectionName)
+        public void ManageCheckBoxEvent(CheckBox box, bool addMode, string? sectionName)
         {
-            Debug.Assert(box != null, $"null in [{nameof(ManageCheckBoxEvent)}]");
             if (addMode)
             {
                 box.Checked += CheckBox_Checked;
@@ -474,10 +502,11 @@ namespace PEBakery.Core
 
         public void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            CheckBox box = sender as CheckBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Checked)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Checked)}]");
+            if (sender is not CheckBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Checked)}]");
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
@@ -487,10 +516,11 @@ namespace PEBakery.Core
 
         public void CheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            CheckBox box = sender as CheckBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Unchecked)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Unchecked)}]");
+            if (sender is not CheckBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
@@ -500,14 +530,16 @@ namespace PEBakery.Core
 
         public void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            CheckBox box = sender as CheckBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Click)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Click)}]");
+            if (sender is not CheckBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Click)}]");
 
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
-            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+            if (info.SectionName != null)
+                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -535,9 +567,8 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        public void ManageComboBoxEvent(ComboBox box, bool addMode, string sectionName)
+        public void ManageComboBoxEvent(ComboBox box, bool addMode, string? sectionName)
         {
-            Debug.Assert(box != null, $"null in [{nameof(ManageComboBoxEvent)}]");
             if (addMode)
             {
                 box.LostFocus += ComboBox_LostFocus;
@@ -554,10 +585,11 @@ namespace PEBakery.Core
 
         public void ComboBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            ComboBox box = sender as ComboBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_LostFocus)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(ComboBox_LostFocus)}]");
+            if (sender is not ComboBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_LostFocus)}]");
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
@@ -571,19 +603,21 @@ namespace PEBakery.Core
 
         public void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ComboBox box = sender as ComboBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_SelectionChanged)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(ComboBox_SelectionChanged)}]");
+            if (sender is not ComboBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_SelectionChanged)}]");
 
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
-            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+            if (info.SectionName != null)
+                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
         #region Image
-        public RenderCleanInfo RenderImage(UIControl uiCtrl)
+        public RenderCleanInfo? RenderImage(UIControl uiCtrl)
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
@@ -640,7 +674,7 @@ namespace PEBakery.Core
                     };
                 }
 
-                Style imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
+                Style? imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
                 Debug.Assert(imageButtonStyle != null);
                 Button button = new Button
                 {
@@ -649,16 +683,16 @@ namespace PEBakery.Core
                 };
 
                 bool hasUrl = false;
-                string url = null;
+                string? url = null;
                 if (!string.IsNullOrEmpty(info.Url))
                 {
                     url = StringEscaper.Unescape(info.Url);
                     hasUrl = StringEscaper.IsUrlValid(url);
                 }
 
-                string toolTip = info.ToolTip;
+                string? toolTip = info.ToolTip;
                 ManageImageEvent(button, true, hasUrl);
-                if (hasUrl) // Open URL
+                if (hasUrl && url != null) // Open URL
                     toolTip = AppendUrlToToolTip(info.ToolTip, url);
 
                 SetToolTip(button, toolTip);
@@ -729,15 +763,19 @@ namespace PEBakery.Core
         /// <param name="e"></param>
         public void Image_Click_OpenUrl(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenUrl)}]");
-            UIControl uiCtrl = button.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenUrl)}]");
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenUrl)}]");
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
+            if (info.Url == null)
+                return;
+
             string url = StringEscaper.Unescape(info.Url);
-            Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
+            // Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
 
             ResultReport result = FileHelper.OpenUri(url);
             if (!result.Success)
@@ -754,10 +792,11 @@ namespace PEBakery.Core
         /// <param name="e"></param>
         public void Image_Click_OpenImage(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenImage)}]");
-            UIControl uiCtrl = button.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenImage)}]");
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenImage)}]");
 
             string imageSection = StringEscaper.Unescape(uiCtrl.Text);
@@ -874,7 +913,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Button
-        public RenderCleanInfo RenderButton(UIControl uiCtrl)
+        public RenderCleanInfo? RenderButton(UIControl uiCtrl)
         {
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
@@ -887,7 +926,7 @@ namespace PEBakery.Core
             if (_viewMode)
                 ManageButtonEvent(button, true, info.SectionName);
 
-            string pictureSection = info.Picture;
+            string? pictureSection = info.Picture;
             if (pictureSection != null &&
                 !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                 EncodedFile.ContainsInterface(uiCtrl.Section.Script, pictureSection))
@@ -1009,10 +1048,11 @@ namespace PEBakery.Core
 
         public void Button_Click(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(Button_Click)}]");
-            UIControl uiCtrl = button.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Button_Click)}]");
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.Button, $"Wrong UIControlType in [{nameof(Button_Click)}]");
 
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
@@ -1032,9 +1072,13 @@ namespace PEBakery.Core
             };
 
             string url = StringEscaper.Unescape(info.Url);
-            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
                 throw new InvalidCommandException($"Invalid URL [{url}]");
-            Hyperlink link = new Hyperlink { NavigateUri = uri };
+
+            Hyperlink link = new Hyperlink();
+            if (uri != null)
+                link.NavigateUri = uri;
+
             link.Inlines.Add(StringEscaper.Unescape(uiCtrl.Text));
             if (_viewMode)
                 ManageWebLabelEvent(link, true);
@@ -1104,9 +1148,8 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, radio, info.SectionName);
         }
 
-        public void ManageRadioButtonEvent(RadioButton radio, bool addMode, string sectionName)
+        public void ManageRadioButtonEvent(RadioButton radio, bool addMode, string? sectionName)
         {
-            Debug.Assert(radio != null, $"null in [{nameof(ManageRadioButtonEvent)}]");
             if (addMode)
             {
                 radio.Checked += RadioButton_Checked;
@@ -1123,10 +1166,11 @@ namespace PEBakery.Core
 
         public void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            RadioButton radio = sender as RadioButton;
-            Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Checked)}]");
-            UIControl uiCtrl = radio.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(RadioButton_Checked)}]");
+            if (sender is not RadioButton radio)
+                return;
+            if (radio.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Checked)}]");
             UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
@@ -1146,14 +1190,16 @@ namespace PEBakery.Core
 
         public void RadioButton_Click(object sender, RoutedEventArgs e)
         {
-            RadioButton radio = sender as RadioButton;
-            Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Click)}]");
-            UIControl uiCtrl = radio.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(RadioButton_Click)}]");
+            if (sender is not RadioButton radio)
+                return;
+            if (radio.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Click)}]");
 
             UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
-            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+            if (info.SectionName != null)
+                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -1294,10 +1340,11 @@ namespace PEBakery.Core
 
         public void FileBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            TextBox box = sender as TextBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(FileBox_TextChanged)}]");
-            UIControl uiCtrl = box.Tag as UIControl;
-            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(FileBox_TextChanged)}]");
+            if (sender is not TextBox box)
+                return;
+            if (box.Tag is not UIControl uiCtrl)
+                return;
+
             Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_TextChanged)}]");
 
             uiCtrl.Text = StringEscaper.Escape(box.Text);
@@ -1306,10 +1353,10 @@ namespace PEBakery.Core
 
         public void FileBox_ButtonClick(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(FileBox_ButtonClick)}]");
-            Tuple<UIControl, TextBox> tup = button.Tag as Tuple<UIControl, TextBox>;
-            Debug.Assert(tup != null, $"Wrong tag in [{nameof(FileBox_ButtonClick)}]");
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not Tuple<UIControl, TextBox> tup)
+                return;
 
             UIControl uiCtrl = tup.Item1;
             TextBox box = tup.Item2;
@@ -1319,7 +1366,7 @@ namespace PEBakery.Core
 
             if (info.IsFile)
             { // File
-                string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
+                string? currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
                 if (File.Exists(currentPath))
                     currentPath = Path.GetDirectoryName(currentPath);
                 else
@@ -1335,15 +1382,12 @@ namespace PEBakery.Core
                     filter = StringEscaper.Unescape(info.Filter);
                 }
 
-                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
-                {
-                    InitialDirectory = currentPath,
-                };
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+                if (currentPath != null)
+                    dialog.InitialDirectory = currentPath;
 
                 if (info.Title != null)
-                {
                     dialog.Title = StringEscaper.Unescape(info.Title);
-                }
 
                 try
                 {
@@ -1442,9 +1486,8 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, radios.Select(x => (object)x).ToArray());
         }
 
-        public void ManageRadioGroupEvent(RadioButton[] buttons, bool addMode, string sectionName)
+        public void ManageRadioGroupEvent(RadioButton[] buttons, bool addMode, string? sectionName)
         {
-            Debug.Assert(buttons != null, $"null in [{nameof(ManageRadioGroupEvent)}]");
             foreach (RadioButton button in buttons)
             {
                 if (addMode)
@@ -1464,10 +1507,10 @@ namespace PEBakery.Core
 
         public void RadioGroup_Checked(object sender, RoutedEventArgs e)
         {
-            RadioButton button = sender as RadioButton;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Checked)}]");
-            Tuple<UIControl, int> tup = button.Tag as Tuple<UIControl, int>;
-            Debug.Assert(tup != null, $"Wrong tag in [{nameof(RadioGroup_Checked)}]");
+            if (sender is not RadioButton button)
+                return;
+            if (button.Tag is not Tuple<UIControl, int> tup)
+                return;
 
             UIControl uiCtrl = tup.Item1;
             int idx = tup.Item2;
@@ -1481,15 +1524,17 @@ namespace PEBakery.Core
 
         public void RadioGroup_Click(object sender, RoutedEventArgs e)
         {
-            RadioButton button = sender as RadioButton;
-            Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Click)}]");
-            Tuple<UIControl, int> tup = button.Tag as Tuple<UIControl, int>;
-            Debug.Assert(tup != null, $"Wrong tag in [{nameof(RadioGroup_Checked)}]");
+            if (sender is not RadioButton button)
+                return;
+            if (button.Tag is not Tuple<UIControl, int> tup)
+                return;
+
             UIControl uiCtrl = tup.Item1;
             Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
 
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
-            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+            if (info.SectionName != null)
+                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
         #endregion
@@ -1543,7 +1588,7 @@ namespace PEBakery.Core
             canvas.Children.Remove(element);
         }
 
-        private static void SetToolTip(FrameworkElement element, string toolTip)
+        private static void SetToolTip(FrameworkElement element, string? toolTip)
         {
             if (toolTip != null)
                 element.ToolTip = StringEscaper.Unescape(toolTip);
@@ -1565,13 +1610,17 @@ namespace PEBakery.Core
             return fontPoint * UIControl.PointToDeviceIndependentPixel;
         }
 
-        private static string AppendUrlToToolTip(string toolTip, string url)
+        private static string AppendUrlToToolTip(string? toolTip, string url)
         {
             if (url == null)
+            {
+                if (toolTip == null)
+                    return string.Empty;
                 return StringEscaper.Unescape(toolTip);
+            }
 
             if (MaxUrlDisplayLen < url.Length)
-                url = url.Substring(0, MaxUrlDisplayLen) + "...";
+                url = string.Concat(url.AsSpan(0, MaxUrlDisplayLen), "...");
 
             if (toolTip == null)
                 return url;
@@ -1607,7 +1656,8 @@ namespace PEBakery.Core
 
         private static async void InternalRunOneSection(ScriptSection section, string logMsg, bool hideProgress)
         {
-            MainViewModel mainModel = Global.MainViewModel;
+            if (Global.MainViewModel is not MainViewModel mainViewModel)
+                return;
 
             if (!Engine.TryEnterLock())
                 return;
@@ -1618,15 +1668,15 @@ namespace PEBakery.Core
                 // Populate BuildTree
                 if (!hideProgress)
                 {
-                    mainModel.BuildTreeItems.Clear();
+                    mainViewModel.BuildTreeItems.Clear();
                     ProjectTreeItemModel itemRoot = MainViewModel.PopulateOneTreeItem(section.Script, null, null);
-                    mainModel.BuildTreeItems.Add(itemRoot);
-                    mainModel.CurBuildTree = null;
+                    mainViewModel.BuildTreeItems.Add(itemRoot);
+                    mainViewModel.CurBuildTree = null;
                 }
 
-                mainModel.WorkInProgress = true;
+                mainViewModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne,
+                EngineState s = new EngineState(section.Project, logger, mainViewModel, EngineMode.RunMainAndOne,
                     section.Script, section.Name);
                 s.SetOptions(Global.Setting);
                 s.SetCompat(section.Project.Compat);
@@ -1637,7 +1687,7 @@ namespace PEBakery.Core
 
                 // Build Start, Switch to Build View
                 if (!hideProgress)
-                    mainModel.SwitchNormalBuildInterface = false;
+                    mainViewModel.SwitchNormalBuildInterface = false;
 
                 Task printStatus;
                 using (CancellationTokenSource ct = new CancellationTokenSource())
@@ -1654,15 +1704,15 @@ namespace PEBakery.Core
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
-                    mainModel.SwitchNormalBuildInterface = true;
+                    mainViewModel.SwitchNormalBuildInterface = true;
 
                 // Report elapsed time
                 await printStatus;
-                string haltReason = s.RunResultReport();
+                string? haltReason = s.RunResultReport();
                 if (haltReason != null)
-                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
+                    mainViewModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
                 else
-                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
+                    mainViewModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
 
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)
@@ -1672,8 +1722,8 @@ namespace PEBakery.Core
                 }
 
                 // Turn off ProgressRing
-                mainModel.BuildTreeItems.Clear();
-                mainModel.WorkInProgress = false;
+                mainViewModel.BuildTreeItems.Clear();
+                mainViewModel.WorkInProgress = false;
             }
             finally
             {
@@ -1685,7 +1735,9 @@ namespace PEBakery.Core
             {
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    mainModel.DisplayScript(mainModel.CurMainTree.Script);
+                    ProjectTreeItemModel? curMainTree = mainViewModel.CurMainTree;
+                    if (curMainTree != null)
+                        mainViewModel.DisplayScript(curMainTree.Script);
                 });
             }
         }
@@ -1697,22 +1749,29 @@ namespace PEBakery.Core
     public class RenderCleanInfo
     {
         public readonly UIControl UICtrl;
-        public readonly object Element;
         public readonly object[] Elements;
-        public readonly object Tag;
+        public readonly object? Tag;
 
-        public RenderCleanInfo(UIControl uiCtrl, object element, object tag = null)
+        public object? Element
+        {
+            get
+            {
+                if (Elements.Length == 0)
+                    return null;
+                return Elements[0];
+            }
+        }
+
+        public RenderCleanInfo(UIControl uiCtrl, object element, object? tag = null)
         {
             UICtrl = uiCtrl;
-            Element = element;
-            Elements = null;
+            Elements = new object[1] { element };
             Tag = tag;
         }
 
-        public RenderCleanInfo(UIControl uiCtrl, object[] elements, object tag = null)
+        public RenderCleanInfo(UIControl uiCtrl, object[] elements, object? tag = null)
         {
             UICtrl = uiCtrl;
-            Element = null;
             Elements = elements;
             Tag = tag;
         }

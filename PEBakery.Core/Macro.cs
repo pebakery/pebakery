@@ -54,11 +54,11 @@ namespace PEBakery.Core
         /// <summary>
         /// %API% of sciprt.project
         /// </summary>
-        public Script MacroScript { get; }
+        public Script? MacroScript { get; }
         /// <summary>
         /// %APIVAR% of sciprt.project
         /// </summary>
-        public ScriptSection MacroSection { get; }
+        public ScriptSection? MacroSection { get; }
         /// <summary>
         /// [ApiVar] of macro script
         /// </summary>
@@ -306,7 +306,7 @@ namespace PEBakery.Core
         #endregion
 
         #region SetMacro
-        public LogInfo SetMacro(string macroName, string macroCommand, ScriptSection section, bool global, bool permanent)
+        public LogInfo SetMacro(string macroName, string? macroCommand, ScriptSection section, bool global, bool permanent)
         {
             // Macro Name Validation
             if (!Regex.Match(macroName, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
@@ -343,8 +343,7 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
             }
             else
-            {
-                // Delete
+            { // Delete
                 // Put into dictionary
                 if (permanent) // MacroDict
                 {

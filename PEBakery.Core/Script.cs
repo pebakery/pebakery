@@ -76,22 +76,22 @@ namespace PEBakery.Core
         [Key(0)]
         private readonly ScriptType _type;
         [Key(1)]
-        private readonly string _realPath;
+        private readonly string _realPath = string.Empty;
         [IgnoreMember]
-        private string _treePath;
+        private string _treePath = string.Empty;
         [Key(2)]
         private readonly bool _isMainScript;
         [Key(3)]
         private readonly bool _ignoreMain;
         [Key(4)]
         [MessagePackFormatter(typeof(ScriptStringDictionaryFormatter<ScriptSection>))]
-        private Dictionary<string, ScriptSection> _sections;
+        private Dictionary<string, ScriptSection> _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
         [Key(5)]
         private readonly List<string> _interfaceList = new List<string>();
         [IgnoreMember]
-        private Project _project;
+        private Project? _project;
         [IgnoreMember]
-        private Script _link;
+        private Script? _link;
         [IgnoreMember]
         private bool _linkLoaded;
         [IgnoreMember]
@@ -113,7 +113,7 @@ namespace PEBakery.Core
         [Key(13)]
         private bool _mandatory = false;
         [Key(14)]
-        private string _updateUrl;
+        private string? _updateUrl;
         #endregion
 
         #region Properties
@@ -131,7 +131,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.RealPath;
                 return _realPath;
             }
@@ -151,7 +151,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Sections;
                 return _sections;
             }
@@ -161,12 +161,19 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
+                {
                     return _link.MainInfo;
+                }
+                    
                 if (_sections.ContainsKey(ScriptSection.Names.Main))
-                    return _sections[ScriptSection.Names.Main].IniDict;
+                {
+                    Dictionary<string, string>? iniDict = _sections[ScriptSection.Names.Main].IniDict;
+                    if (iniDict != null)
+                        return iniDict;
+                }
 
-                // Section not found, Just return empty dictionary
+                // Section not found, just return empty dictionary
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
@@ -177,7 +184,7 @@ namespace PEBakery.Core
         [IgnoreMember]
         public ScriptType Type => _type;
         [IgnoreMember]
-        public Script Link => _link;
+        public Script? Link => _link;
         [IgnoreMember]
         public bool LinkLoaded => _linkLoaded;
         [IgnoreMember]
@@ -187,9 +194,11 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Project;
-                return _project;
+                if (_project != null)
+                    return _project;
+                throw new CriticalErrorException($"{nameof(_project)} is null");
             }
         }
         /// <summary>
@@ -200,7 +209,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Title;
                 return _title;
             }
@@ -210,7 +219,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Author;
                 return _author;
             }
@@ -220,7 +229,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Description;
                 return _description;
             }
@@ -230,7 +239,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.RawVersion;
                 return _version;
             }
@@ -245,7 +254,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Level;
                 return _level;
             }
@@ -255,7 +264,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (_type == ScriptType.Link && _linkLoaded)
+                if (_type == ScriptType.Link && _linkLoaded && _link != null)
                     return _link.Mandatory;
                 return _mandatory;
             }
@@ -273,7 +282,7 @@ namespace PEBakery.Core
                 string valStr = value.ToString();
                 if (_type != ScriptType.Directory && _sections.ContainsKey(ScriptSection.Names.Main))
                 {
-                    _sections[ScriptSection.Names.Main].IniDict[Const.Selected] = valStr;
+                    MainInfo[Const.Selected] = valStr;
                     IniReadWriter.WriteKey(_realPath, new IniKey(ScriptSection.Names.Main, Const.Selected, valStr));
                 }
             }
@@ -295,12 +304,13 @@ namespace PEBakery.Core
         }
 
         [IgnoreMember]
-        public string UpdateUrl => _updateUrl;
+        public string? UpdateUrl => _updateUrl;
         [IgnoreMember]
         public bool IsUpdateable => _updateUrl != null || Type == ScriptType.Directory;
         #endregion
 
         #region Constructor
+        // For MessagePack
         [SerializationConstructor]
         private Script() { /* Do Nothing */ }
 
@@ -369,7 +379,6 @@ namespace PEBakery.Core
             {
                 int idx = 0;
                 int sectionIdx = 0;
-                string rawLine;
                 string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
@@ -385,18 +394,18 @@ namespace PEBakery.Core
                     }
                 }
 
+                string? rawLine;
                 while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
                     idx++;
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
-                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
-                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
+                    if (IniReadWriter.IsLineSection(line, out ReadOnlySpan<char> sectionName))
                     { // Start of section
                         FinalizeSection();
 
                         sectionIdx = idx;
-                        currentSection = line.Slice(1, line.Length - 2).ToString();
+                        currentSection = sectionName.ToString();
                         type = DetectSectionType(currentSection, false);
                         if (ScriptSection.LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
@@ -476,9 +485,10 @@ namespace PEBakery.Core
             }
             else
             {
-                encodedFolders = IniReadWriter.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
-                if (encodedFolders == null)  // No EncodedFolders section, exit
+                List<string>? encodedFolderLists = IniReadWriter.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
+                if (encodedFolderLists == null)  // No EncodedFolders section, exit
                     return false;
+                encodedFolders = encodedFolderLists;
             }
 
             return encodedFolders.Any(folder => folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
@@ -506,7 +516,7 @@ namespace PEBakery.Core
             }
         }
 
-        public ScriptSection RefreshSection(string sectionName)
+        public ScriptSection? RefreshSection(string sectionName)
         {
             ScriptSection section;
             if (Sections.ContainsKey(sectionName))
@@ -517,7 +527,7 @@ namespace PEBakery.Core
             }
             else
             {
-                List<string> lineList = IniReadWriter.ParseRawSection(_realPath, sectionName);
+                List<string>? lineList = IniReadWriter.ParseRawSection(_realPath, sectionName);
                 if (lineList == null)
                     return null;
 
@@ -636,7 +646,7 @@ namespace PEBakery.Core
                                 string rawList = mainSection.IniDict[Const.InterfaceList];
                                 try
                                 {
-                                    string remainder = rawList;
+                                    string? remainder = rawList;
                                     while (remainder != null)
                                     {
                                         string next;
@@ -718,7 +728,7 @@ namespace PEBakery.Core
         #endregion
 
         #region GetDisableScriptPaths
-        public static string[] GetDisableScriptPaths(Script sc, out List<LogInfo> errorLogs)
+        public static string[]? GetDisableScriptPaths(Script sc, out List<LogInfo> errorLogs)
         {
             errorLogs = new List<LogInfo>();
 
@@ -727,6 +737,9 @@ namespace PEBakery.Core
 
             if (!sc.MainInfo.ContainsKey("Disable"))
                 return null;
+
+            if (sc.Project.Variables == null)
+                throw new InvalidOperationException($"Variables of Project [{sc.Project.ProjectName}] is not initialized");
 
             sc.Project.Variables.ResetVariables(VarsType.Local);
             sc.Project.Variables.LoadDefaultScriptVariables(sc);
@@ -745,7 +758,7 @@ namespace PEBakery.Core
             List<string> paths = new List<string>();
             try
             {
-                string remainder = rawLine;
+                string? remainder = rawLine;
                 while (remainder != null)
                 {
                     string next;
@@ -836,7 +849,7 @@ namespace PEBakery.Core
         #endregion
 
         #region User Interface Methods - Get, Apply
-        public ScriptSection GetInterfaceSection(out string sectionName)
+        public ScriptSection? GetInterfaceSection(out string sectionName)
         {
             sectionName = ScriptSection.Names.Interface;
             if (MainInfo.ContainsKey(ScriptSection.Names.Interface))
@@ -856,7 +869,7 @@ namespace PEBakery.Core
             List<string> visitedSections = new List<string>();
 
             // Parse interface controls.
-            ScriptSection section = GetInterfaceSection(out string defaultInterfaceSection);
+            ScriptSection? section = GetInterfaceSection(out string defaultInterfaceSection);
             if (section == null) // No interface section -> return empty list
                 return interfaceSections;
 
@@ -873,7 +886,7 @@ namespace PEBakery.Core
             (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(section.Lines, section);
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                string sectionToRun = null;
+                string? sectionToRun = null;
                 switch (uiCtrl.Type)
                 {
                     case UIControlType.CheckBox:
@@ -965,6 +978,10 @@ namespace PEBakery.Core
 
                                 if (info.Break)
                                     continue;
+                                if (info.ScriptFile == null)
+                                    throw new InvalidOperationException($"[{nameof(info.ScriptFile)}] is null");
+                                if (info.SectionName == null)
+                                    throw new InvalidOperationException($"[{nameof(info.SectionName)}] is null");
 
                                 if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     !CodeParser.StringContainsVariable(info.SectionName) &&
@@ -995,18 +1012,18 @@ namespace PEBakery.Core
             return interfaceSections;
         }
 
-        public (string sectionName, List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls()
+        public (string? sectionName, List<UIControl>? uiCtrls, List<LogInfo>? errLogs) GetInterfaceControls()
         {
-            ScriptSection ifaceSection = GetInterfaceSection(out string sectionName);
+            ScriptSection? ifaceSection = GetInterfaceSection(out string sectionName);
             if (ifaceSection == null)
-                return (null, null, null);
+                return (sectionName, null, null);
 
             string[] lines = ifaceSection.Lines;
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIParser.ParseStatements(lines, ifaceSection);
             return (sectionName, uiCtrls, errLogs);
         }
 
-        public (List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls(string srcSection)
+        public (List<UIControl>? uiCtrls, List<LogInfo>? errLogs) GetInterfaceControls(string srcSection)
         {
             if (!Sections.ContainsKey(srcSection))
                 return (null, null);
@@ -1066,7 +1083,7 @@ namespace PEBakery.Core
             };
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is Script sc)
                 return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
@@ -1074,7 +1091,7 @@ namespace PEBakery.Core
             return false;
         }
 
-        public bool Equals(Script sc)
+        public bool Equals(Script? sc)
         {
             if (sc == null)
                 return false;
@@ -1111,7 +1128,7 @@ namespace PEBakery.Core
     {
         public static ScriptComparer Instance => new ScriptComparer();
 
-        public bool Equals(Script x, Script y)
+        public bool Equals(Script? x, Script? y)
         {
             Debug.Assert(x != null, "Script must not be null");
             Debug.Assert(y != null, "Script must not be null");
@@ -1128,14 +1145,22 @@ namespace PEBakery.Core
     #region ScriptParseInfo
     public class ScriptParseInfo : IEquatable<ScriptParseInfo>
     {
-        public string RealPath;
-        public string TreePath;
-        public bool IsDir;
-        public bool IsDirLink;
-
+        public string RealPath { get; private set; }
+        public string TreePath { get; private set; }
+        public bool IsDir { get; private set; }
+        public bool IsDirLink { get; private set; }
+        
+        public ScriptParseInfo(string realPath, string treePath, bool isDir, bool isDirLink)
+        {
+            RealPath = realPath;
+            TreePath = treePath;
+            IsDir = isDir;
+            IsDirLink = isDirLink;
+        }
+        
         public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
 
-        public bool Equals(ScriptParseInfo y)
+        public bool Equals(ScriptParseInfo? y)
         {
             if (y == null)
                 return false;
@@ -1163,7 +1188,7 @@ namespace PEBakery.Core
             return true;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ScriptParseInfo other)
                 return Equals(other);
@@ -1184,9 +1209,22 @@ namespace PEBakery.Core
 
     public class ScriptParseInfoComparer : IEqualityComparer<ScriptParseInfo>
     {
-        public bool Equals(ScriptParseInfo x, ScriptParseInfo y)
+        public bool Equals(ScriptParseInfo? x, ScriptParseInfo? y)
         {
-            return x.Equals(y);
+            if (x == null)
+            {
+                if (y == null)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                if (y == null)
+                    return false;
+                else
+                    return x.Equals(y);
+            }
         }
 
         public int GetHashCode(ScriptParseInfo x)

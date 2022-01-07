@@ -97,13 +97,13 @@ namespace PEBakery.Core.Tests
                     {
                         EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                         ms.Position = 0;
-                        extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                        extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                     }
 
                     byte[] originDigest;
                     using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                        originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                     }
 
                     Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
@@ -290,7 +290,7 @@ namespace PEBakery.Core.Tests
                 {
                     EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                     ms.Position = 0;
-                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -298,7 +298,7 @@ namespace PEBakery.Core.Tests
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -326,7 +326,7 @@ namespace PEBakery.Core.Tests
                 using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))
                 {
                     ms.Position = 0;
-                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -334,7 +334,7 @@ namespace PEBakery.Core.Tests
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -394,7 +394,7 @@ namespace PEBakery.Core.Tests
             using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
             {
                 Assert.IsTrue(type == ImageHelper.ImageFormat.Jpg);
-                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "Logo.jpg");
@@ -402,7 +402,7 @@ namespace PEBakery.Core.Tests
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -422,7 +422,7 @@ namespace PEBakery.Core.Tests
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterface(sc, "PEBakeryAlphaMemory.jpg"))
             {
-                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "PEBakeryAlphaMemory.jpg");
@@ -430,7 +430,7 @@ namespace PEBakery.Core.Tests
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -442,9 +442,8 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ReadFileInfo()
         {
-            // ReSharper disable once InconsistentNaming
-            const string FolderExample = "FolderExample";
-            const string folderExample = "folderExample";
+            const string FolderExampleUpper = "FolderExample";
+            const string FolderExampleLower = "folderExample";
 
             EngineState s = EngineTests.CreateEngineState();
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
@@ -454,57 +453,45 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, folderExample, fileName, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, FolderExampleLower, fileName, detail);
                 Assert.IsTrue(report.Success);
                 Assert.IsTrue(comp.Equals(report.Result));
             }
 
-            Template("Type1.jpg", true, new EncodedFileInfo
+            Template("Type1.jpg", true, new EncodedFileInfo(FolderExampleUpper, "Type1.jpg")
             {
-                FolderName = FolderExample,
-                FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
                 EncodeMode = EncodeMode.ZLib
             });
-            Template("type1.jpg", false, new EncodedFileInfo
+            Template("type1.jpg", false, new EncodedFileInfo(FolderExampleLower, "Type1.jpg")
             {
-                FolderName = folderExample,
-                FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
                 EncodeMode = null
             });
 
-            Template("Type2.7z", true, new EncodedFileInfo
+            Template("Type2.7z", true, new EncodedFileInfo(FolderExampleUpper, "Type2.7z")
             {
-                FolderName = FolderExample,
-                FileName = "Type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
                 EncodeMode = EncodeMode.Raw
             });
-            Template("Type2.7z", false, new EncodedFileInfo
+            Template("Type2.7z", false, new EncodedFileInfo(FolderExampleUpper, "type2.7z")
             {
-                FolderName = FolderExample,
-                FileName = "type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
                 EncodeMode = null
             });
 
-            Template("Type3.pdf", true, new EncodedFileInfo
+            Template("Type3.pdf", true, new EncodedFileInfo(FolderExampleUpper, "Type3.pdf")
             {
-                FolderName = FolderExample,
-                FileName = "Type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
                 EncodeMode = EncodeMode.XZ
             });
-            Template("Type3.pdf", false, new EncodedFileInfo
+            Template("Type3.pdf", false, new EncodedFileInfo(FolderExampleLower, "type3.pdf")
             {
-                FolderName = folderExample,
-                FileName = "type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
                 EncodeMode = null
@@ -539,18 +526,14 @@ namespace PEBakery.Core.Tests
                 }
             }
 
-            Template(logoScript, true, new EncodedFileInfo
+            Template(logoScript, true, new EncodedFileInfo("AuthorEncoded", "logo.jpg")
             {
-                FolderName = "AuthorEncoded",
-                FileName = "logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
                 EncodeMode = EncodeMode.ZLib
             });
-            Template(logoScript, false, new EncodedFileInfo
+            Template(logoScript, false, new EncodedFileInfo("authorEncoded", "Logo.jpg")
             {
-                FolderName = "authorEncoded",
-                FileName = "Logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
                 EncodeMode = null
@@ -585,26 +568,20 @@ namespace PEBakery.Core.Tests
 
             List<EncodedFileInfo> compDetailList = new List<EncodedFileInfo>
             {
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type1.jpg")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type1.jpg",
                     RawSize = 7683,
                     EncodedSize = 10244,
                     EncodeMode = EncodeMode.ZLib
                 },
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type2.7z")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type2.7z",
                     RawSize = 1631,
                     EncodedSize = 2175,
                     EncodeMode = EncodeMode.Raw
                 },
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type3.pdf")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type3.pdf",
                     RawSize = 88692,
                     EncodedSize = 102908,
                     EncodeMode = EncodeMode.XZ
@@ -660,26 +637,20 @@ namespace PEBakery.Core.Tests
             {
                 ["FolderExample"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type1.jpg")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type1.jpg",
                         RawSize = 7683,
                         EncodedSize = 10244,
                         EncodeMode = EncodeMode.ZLib
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type2.7z")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type2.7z",
                         RawSize = 1631,
                         EncodedSize = 2175,
                         EncodeMode = EncodeMode.Raw
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type3.pdf")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type3.pdf",
                         RawSize = 88692,
                         EncodedSize = 102908,
                         EncodeMode = EncodeMode.XZ
@@ -687,10 +658,8 @@ namespace PEBakery.Core.Tests
                 },
                 ["FolderRun"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo("FolderRun", "TestBatch.cmd")
                     {
-                        FolderName = "FolderRun",
-                        FileName = "TestBatch.cmd",
                         RawSize = 34,
                         EncodedSize = 144,
                         EncodeMode = EncodeMode.Raw
@@ -698,18 +667,14 @@ namespace PEBakery.Core.Tests
                 },
                 ["BannerImage"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo("BannerImage", "Banner.bmp")
                     {
-                        FolderName = "BannerImage",
-                        FileName = "Banner.bmp",
                         RawSize = 17626,
                         EncodedSize = 23502,
                         EncodeMode = EncodeMode.ZLib
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo("BannerImage", "Banner.svg")
                     {
-                        FolderName = "BannerImage",
-                        FileName = "Banner.svg",
                         RawSize = 4715,
                         EncodedSize = 6287,
                         EncodeMode = EncodeMode.ZLib
@@ -1059,7 +1024,7 @@ namespace PEBakery.Core.Tests
                 byte[] encDigest;
                 using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    binDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    binDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 if (inMem)
@@ -1083,7 +1048,7 @@ namespace PEBakery.Core.Tests
                         fs.Write(decoded, 0, decoded.Length);
                     }
 #endif
-                    encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, decoded);
+                    encDigest = HashHelper.GetHash(HashType.SHA256, decoded);
                 }
                 else
                 {
@@ -1103,7 +1068,7 @@ namespace PEBakery.Core.Tests
                         }
                         ms.Position = 0;
 #endif
-                        encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                        encDigest = HashHelper.GetHash(HashType.SHA256, ms);
                     }
                 }
 

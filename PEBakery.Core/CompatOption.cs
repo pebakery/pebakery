@@ -151,10 +151,13 @@ namespace PEBakery.Core
             };
 
             keys = IniReadWriter.ReadKeys(_compatFile, keys);
-            Dictionary<string, string> keyDict = keys.ToDictionary(
-                x => x.Key,
-                x => x.Value,
-                StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string?> keyDict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (IniKey key in keys)
+            {
+                if (key.Key == null)
+                    continue;
+                keyDict[key.Key] = key.Value;
+            }
 
             // Script Tree
             AsteriskBugDirLink = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink);

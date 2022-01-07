@@ -137,7 +137,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -333,7 +333,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -397,7 +397,7 @@ namespace PEBakery.Core.Commands
                             return LogInfo.LogErrorMessage(logs, $"[{directionStr}] must be one of [Left, Right]");
 
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -539,7 +539,7 @@ namespace PEBakery.Core.Commands
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -619,7 +619,7 @@ namespace PEBakery.Core.Commands
         /// <param name="bitSizeStr">String to parse</param>
         /// <param name="bitSize">Parsed bitSize integer</param>
         /// <returns>Null if succeed, an error message string if failed</returns>
-        public static string ParseAndCheckBitSize(string bitSizeStr, out int bitSize)
+        public static string? ParseAndCheckBitSize(string bitSizeStr, out int bitSize)
         {
             if (!NumberHelper.ParseInt32(bitSizeStr, out bitSize))
                 return $"[{bitSizeStr}] is not a valid integer";

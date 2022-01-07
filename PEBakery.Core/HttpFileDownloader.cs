@@ -43,11 +43,11 @@ namespace PEBakery.Core
         private readonly MainViewModel _m;
         private readonly int _timeOut;
         private readonly string _userAgent;
-        private readonly string _referer;
+        private readonly string? _referer;
         #endregion
 
         #region Constructor
-        public HttpFileDownloader(MainViewModel m, int timeOut, string customUserAgent, string referer)
+        public HttpFileDownloader(MainViewModel m, int timeOut, string? customUserAgent, string? referer)
         {
             _m = m;
             _timeOut = timeOut;
@@ -57,19 +57,19 @@ namespace PEBakery.Core
         #endregion
 
         #region Download
-        public struct Report
+        public class Report
         {
             /// <summary>
             /// Successfully finished receiving the reposne without exceptions
             /// </summary>
-            public bool Result;
+            public bool Result { get; set; }
             /// <summary>
             /// HTTP status code came with respose. When the request could not be sent, it is set to 0.
             /// </summary>
-            public int StatusCode;
-            public string ErrorMsg;
+            public int StatusCode { get; set; }
+            public string? ErrorMsg { get; set; }
 
-            public Report(bool result, int statusCode, string errorMsg)
+            public Report(bool result, int statusCode, string? errorMsg)
             {
                 Result = result;
                 StatusCode = statusCode;
@@ -87,7 +87,7 @@ namespace PEBakery.Core
 
             bool result;
             HttpStatusCode statusCode;
-            string errorMsg = null;
+            string? errorMsg = null;
             using (HttpClientHandler handler = new HttpClientHandler())
             {
                 handler.AllowAutoRedirect = true;
@@ -109,7 +109,7 @@ namespace PEBakery.Core
                     }
 
                     // Progress Report
-                    Progress<(long Position, long ContentLength, TimeSpan Elapsed)> progress = null;
+                    Progress<(long Position, long ContentLength, TimeSpan Elapsed)>? progress = null;
                     if (_m != null)
                     {
                         progress = new Progress<(long, long, TimeSpan)>(x =>

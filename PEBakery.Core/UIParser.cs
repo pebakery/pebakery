@@ -37,14 +37,14 @@ namespace PEBakery.Core
     public static class UIParser
     {
         #region ParseStatement, ParseStatements
-        public static UIControl ParseStatement(string line, ScriptSection section, out List<LogInfo> errorLogs)
+        public static UIControl? ParseStatement(string line, ScriptSection section, out List<LogInfo> errorLogs)
         {
             int idx = 0;
 
             errorLogs = new List<LogInfo>();
             try
             {
-                UIControl uiCtrl = ParseUIControl(new List<string> { line }, section, ref idx);
+                UIControl? uiCtrl = ParseUIControl(new List<string> { line }, section, ref idx);
                 if (uiCtrl == null)
                     return null;
 
@@ -80,7 +80,7 @@ namespace PEBakery.Core
 
                 try
                 {
-                    UIControl uiCtrl = ParseUIControl(lines, section, ref i);
+                    UIControl? uiCtrl = ParseUIControl(lines, section, ref i);
                     if (uiCtrl == null)
                         continue;
 
@@ -112,7 +112,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseUIControl
-        public static UIControl ParseUIControl(IList<string> rawLines, ScriptSection section, ref int idx)
+        public static UIControl? ParseUIControl(IList<string> rawLines, ScriptSection section, ref int idx)
         {
             // UICommand's line number in physical file
             int lineIdx = section.LineIdx + 1 + idx;
@@ -146,7 +146,7 @@ namespace PEBakery.Core
             List<string> args = new List<string>();
             try
             {
-                string remainder = rawValue;
+                string? remainder = rawValue;
                 while (remainder != null)
                 {
                     string next;
@@ -254,7 +254,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         int cnt = args.Count;
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             tooltip = GetInfoTooltip(args, cnt - 1);
@@ -309,11 +309,11 @@ namespace PEBakery.Core
                         else if (args[0].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             tooltip = GetInfoTooltip(args, args.Count - 1);
 
-                        string sectionName = null;
+                        string? sectionName = null;
                         bool hideProgress = false;
                         if (3 <= args.Count &&
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
@@ -339,14 +339,14 @@ namespace PEBakery.Core
                         List<string> items = new List<string>();
 
                         int cnt = args.Count;
-                        string toolTip = null;
+                        string? toolTip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             toolTip = GetInfoTooltip(args, args.Count - 1);
                             cnt -= 1;
                         }
 
-                        string sectionName = null;
+                        string? sectionName = null;
                         bool hideProgress = false;
                         if (2 <= cnt &&
                             (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
@@ -382,14 +382,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         int cnt = args.Count;
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             tooltip = GetInfoTooltip(args, cnt - 1);
                             cnt -= 1;
                         }
 
-                        string url = null;
+                        string? url = null;
                         if (1 <= cnt)
                             url = args[0];
 
@@ -421,14 +421,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] must have at least [{minOpCount}] arguments");
 
                         int cnt = args.Count;
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             tooltip = GetInfoTooltip(args, cnt - 1);
                             cnt -= 1;
                         }
 
-                        string picture = null;
+                        string? picture = null;
                         if (2 <= cnt)
                         {
                             if (!args[1].Equals("0", StringComparison.OrdinalIgnoreCase))
@@ -479,11 +479,11 @@ namespace PEBakery.Core
                         else if (!args[0].Equals("False", StringComparison.OrdinalIgnoreCase))
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             tooltip = GetInfoTooltip(args, args.Count - 1);
 
-                        string sectionName = null;
+                        string? sectionName = null;
                         bool hideProgress = false;
                         if (3 <= args.Count &&
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
@@ -512,7 +512,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         int cnt = args.Count;
-                        string tooltip = null;
+                        string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             tooltip = GetInfoTooltip(args, cnt - 1);
@@ -564,9 +564,9 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
                         }
 
-                        string title = null;
-                        string filter = null;
-                        string tooltip = null;
+                        string? title = null;
+                        string? filter = null;
+                        string? tooltip = null;
 
                         const string titleKey = "Title=";
                         const string filterKey = "Filter=";
@@ -607,7 +607,7 @@ namespace PEBakery.Core
                     { // Variable Length
                         List<string> items = new List<string>();
 
-                        string sectionName = null;
+                        string? sectionName = null;
                         bool showProgress = false;
 
                         int cnt = args.Count - 1;
@@ -680,7 +680,7 @@ namespace PEBakery.Core
         /// <param name="op"></param>
         /// <param name="idx">Tooltip operator's operand index</param>
         /// <returns></returns>
-        private static string GetInfoTooltip(List<string> op, int idx)
+        private static string? GetInfoTooltip(List<string> op, int idx)
         {
             if (idx < op.Count && op[idx].StartsWith("__", StringComparison.Ordinal)) // Has tooltip
                 return op[idx].Substring(2);

@@ -54,13 +54,40 @@ namespace PEBakery.Core
             public const string ProgramVersionStr = "0.9.7";
             public const string ProgramVersionStrFull = "0.9.7 beta7";
 
-            public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
+            private static readonly VersionEx? _programVersionInst = VersionEx.Parse(ProgramVersionStr);
+            public static VersionEx ProgramVersionInst
+            {
+                get
+                {
+                    if (_programVersionInst == null)
+                        throw new InternalException($"{nameof(_programVersionInst)} is null");
+                    return _programVersionInst;
+                }
+            }
 
             // Update json version
             public const string UpdateSchemaMaxVerStr = "0.1.1";
             public const string UpdateSchemaMinVerStr = "0.1.1";
-            public static readonly VersionEx UpdateSchemaMaxVerInst = VersionEx.Parse(UpdateSchemaMaxVerStr);
-            public static readonly VersionEx UpdateSchemaMinVerInst = VersionEx.Parse(UpdateSchemaMinVerStr);
+            private static readonly VersionEx? _updateSchemaMaxVerInst = VersionEx.Parse(UpdateSchemaMaxVerStr);
+            public static VersionEx UpdateSchemaMaxVerInst
+            {
+                get
+                {
+                    if (_updateSchemaMaxVerInst == null)
+                        throw new InternalException($"{nameof(_updateSchemaMaxVerInst)} is null");
+                    return _updateSchemaMaxVerInst;
+                }
+            }
+            private static readonly VersionEx? _updateSchemaMinVerInst = VersionEx.Parse(UpdateSchemaMinVerStr);
+            public static VersionEx UpdateSchemaMinVerInst
+            {
+                get
+                {
+                    if (_updateSchemaMinVerInst == null)
+                        throw new InternalException($"{nameof(_updateSchemaMinVerInst)} is null");
+                    return _updateSchemaMinVerInst;
+                }
+            }
         }
         #endregion
 
@@ -69,24 +96,64 @@ namespace PEBakery.Core
         public static DateTime BuildDate { get; set; }
 
         // Start-time variables
-        public static string[] Args { get; set; }
-        public static string BaseDir { get; set; }
+        public static string[] Args { get; set; } = Array.Empty<string>();
+        public static string BaseDir { get; set; } = string.Empty;
 
         // Buffer Pool
         private static readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
         public static RecyclableMemoryStreamManager MemoryStreamManager => _recyclableMemoryStreamManager;
 
         // Global Instances
-        public static Logger Logger { get; set; }
-        public static MainViewModel MainViewModel { get; set; }
-        public static Setting Setting { get; set; }
-        public static ProjectCollection Projects { get; set; }
-        public static ScriptCache ScriptCache { get; set; }
+        private static Logger? _logger;
+        public static Logger Logger
+        {
+            get
+            {
+                if (_logger == null)
+                    throw new InvalidOperationException($"{nameof(_logger)} is null");
+                return _logger;
+            }
+            set => _logger = value;
+        }
+        public static MainViewModel? MainViewModel { get; set; }
+        private static Setting? _setting;
+        public static Setting Setting
+        {
+            get
+            {
+                if (_setting == null)
+                    throw new InvalidOperationException($"{nameof(_setting)} is null");
+                return _setting;
+            }
+            set => _setting = value;
+        }
+        private static ProjectCollection? _projects;
+        public static ProjectCollection Projects
+        {
+            get
+            {
+                if (_projects == null)
+                    throw new InvalidOperationException($"{nameof(_projects)} is null");
+                return _projects;
+            }
+            private set => _projects = value;
+        }
+        private static ScriptCache? _scriptCache;
+        public static ScriptCache? ScriptCache
+        {
+            get
+            {
+                //if (_scriptCache == null)
+                //    throw new InvalidOperationException($"{nameof(_scriptCache)} is null");
+                return _scriptCache;
+            }
+            private set => _scriptCache = value;
+        }
 
         // FileTypeDetector / LibMagic
-        public static string MagicFile { get; set; }
+        public static string? MagicFile { get; set; }
         private static readonly object _fileTypeDetectorLock = new object();
-        private static FileTypeDetector _fileTypeDetector;
+        private static FileTypeDetector? _fileTypeDetector;
         public static FileTypeDetector FileTypeDetector
         {
             get
@@ -145,7 +212,7 @@ namespace PEBakery.Core
 
             // Run ArgumentParser
             ArgumentParser argParser = new ArgumentParser();
-            PEBakeryOptions opts = argParser.Parse(Args);
+            PEBakeryOptions? opts = argParser.Parse(Args);
             if (opts == null) // Arguments parse fail
                 Environment.Exit(1); // Force Shutdown
 
@@ -201,7 +268,7 @@ namespace PEBakery.Core
             Setting.ApplySetting();
 
             // Custom Title
-            if (Setting.Interface.UseCustomTitle)
+            if (Setting.Interface.UseCustomTitle && MainViewModel != null)
                 MainViewModel.TitleBar = Setting.Interface.CustomTitle;
 
             // Init script cache DB, regardless of Setting.Script.EnableCache
@@ -252,11 +319,11 @@ namespace PEBakery.Core
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
-            string magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
-            string zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
-            string xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
-            string wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
-            string sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
+            string? magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
+            string? zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
+            string? xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
+            string? wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
+            string? sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
 
             try
             {
@@ -299,7 +366,7 @@ namespace PEBakery.Core
         /// <param name="baseDir">Location of an executable</param>
         /// <param name="filename">Native library file</param>
         /// <returns>A path of a given native library.</returns>
-        private static string GetNativeLibraryPath(string baseDir, string filename)
+        private static string? GetNativeLibraryPath(string baseDir, string filename)
         {
             string libDir = "runtimes";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -413,7 +480,7 @@ namespace PEBakery.Core
     #region BuildTimestamp
     public static class BuildTimestamp
     {
-        public static string ReadString()
+        public static string? ReadString()
         {
             CustomAttributeData attr = Assembly.GetExecutingAssembly()
                 .GetCustomAttributesData()
@@ -424,7 +491,8 @@ namespace PEBakery.Core
 
         public static DateTime ReadDateTime()
         {
-            string timestampStr = ReadString();
+            if (ReadString() is not string timestampStr)
+                return DateTime.MinValue;
             return DateTime.ParseExact(timestampStr, "yyyy-MM-ddTHH:mm:ss.fffZ", null, DateTimeStyles.AssumeUniversal).ToUniversalTime();
         }
     }

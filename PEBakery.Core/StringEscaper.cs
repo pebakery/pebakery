@@ -498,50 +498,51 @@ namespace PEBakery.Core
             if (!s.CompatDisableExtendedSectionParams)
             {
                 // Escape #o1, #o2, ... (Section Out Parameter)
-                // string outParamRegex = s.CompatDisableExtendedSectionParams ? @"(?<!#)(#[oO][1-9])" : @"(?<!#)(#[oO][1-9][0-9]*)";
-                // Regex outRegex = new Regex(outParamRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
-                Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-                matches = outRegex.Matches(str);
-                while (0 < matches.Count)
+                if (s.CurSectionOutParams != null)
                 {
-                    StringBuilder b = new StringBuilder();
-                    for (int x = 0; x < matches.Count; x++)
+                    Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                    matches = outRegex.Matches(str);
+                    while (0 < matches.Count)
                     {
-                        string pIdxStr = matches[x].Groups[1].ToString()[2..];
-                        if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
-                            throw new InternalException("ExpandSectionParams failure");
+                        StringBuilder b = new StringBuilder();
+                        for (int x = 0; x < matches.Count; x++)
+                        {
+                            string pIdxStr = matches[x].Groups[1].ToString()[2..];
+                            if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
+                                throw new InternalException("ExpandSectionParams failure");
 
-                        if (x == 0)
-                        {
-                            b.Append(str[..matches[0].Index]);
-                        }
-                        else
-                        {
-                            int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
-                            int endOffset = matches[x].Index - startOffset;
-                            b.Append(str.AsSpan(startOffset, endOffset));
-                        }
+                            if (x == 0)
+                            {
+                                b.Append(str[..matches[0].Index]);
+                            }
+                            else
+                            {
+                                int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                                int endOffset = matches[x].Index - startOffset;
+                                b.Append(str.AsSpan(startOffset, endOffset));
+                            }
 
-                        string param;
-                        if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
-                        {
-                            string varKey = s.CurSectionOutParams[pIdx - 1];
-                            param = s.Variables.Expand(varKey);
-                        }
-                        else
-                        {
-                            param = string.Empty;
-                        }
-                        b.Append(param);
+                            string param;
+                            if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
+                            {
+                                string varKey = s.CurSectionOutParams[pIdx - 1];
+                                param = s.Variables.Expand(varKey);
+                            }
+                            else
+                            {
+                                param = string.Empty;
+                            }
+                            b.Append(param);
 
-                        if (x + 1 == matches.Count) // Last iteration
-                        {
-                            b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
+                            if (x + 1 == matches.Count) // Last iteration
+                            {
+                                b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
+                            }
                         }
+                        str = b.ToString();
+
+                        matches = inRegex.Matches(str);
                     }
-                    str = b.ToString();
-
-                    matches = inRegex.Matches(str);
                 }
 
                 // Escape #a (Section In Params Count)

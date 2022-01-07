@@ -142,14 +142,8 @@ namespace PEBakery.Core
             #region Project Title
             // Read from MainScript
             string fullPath = _project.MainScript.RealPath;
-            IniKey[] keys =
-            {
-                new IniKey("Main", "Title"),
-            };
-            keys = IniReadWriter.ReadKeys(fullPath, keys);
-            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
-
-            string projectTitle = dict["Title"];
+            IniKey key = new IniKey(ScriptSection.Names.Main, "Title");
+            string? projectTitle = IniReadWriter.ReadKey(fullPath, key);
             if (string.IsNullOrWhiteSpace(projectTitle))
                 projectTitle = _project.ProjectName;
 
@@ -185,7 +179,7 @@ namespace PEBakery.Core
 
                 foreach ((string winVarName, string pebVarName) in envVarNames)
                 {
-                    string envValue = Environment.GetEnvironmentVariable(winVarName);
+                    string? envValue = Environment.GetEnvironmentVariable(winVarName);
                     if (envValue == null)
                         logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{winVarName}%] from Windows"));
                     else
@@ -238,11 +232,17 @@ namespace PEBakery.Core
                 new IniKey("Main", "ISOFile"),
             };
             keys = IniReadWriter.ReadKeys(fullPath, keys);
-            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
+            Dictionary<string, string?> dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (IniKey key in keys)
+            {
+                if (key.Key == null)
+                    continue;
+                dict[key.Key] = key.Value;
+            }
 
             // If PathSetting is set to False, do not set SourceDir, TargetDir and ISOFile
             bool pathEnabled = true;
-            string pathEnabledStr = dict["PathSetting"];
+            string? pathEnabledStr = dict["PathSetting"];
             if (pathEnabledStr != null && pathEnabledStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                 pathEnabled = false;
 
@@ -250,7 +250,7 @@ namespace PEBakery.Core
             {
                 // Get SourceDir
                 string sourceDir = string.Empty;
-                string sourceDirs = dict["SourceDir"];
+                string? sourceDirs = dict["SourceDir"];
                 if (sourceDirs != null) // Empty
                 {
                     string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -269,14 +269,14 @@ namespace PEBakery.Core
                 logs.Add(SetValue(VarsType.Global, "SourceDir", sourceDir));
 
                 // TargetDir
-                string targetDirStr = dict["TargetDir"];
+                string? targetDirStr = dict["TargetDir"];
                 string targetDir = Path.Combine("%BaseDir%", "Target", _project.ProjectName);
                 if (!string.IsNullOrEmpty(targetDirStr))
                     targetDir = targetDirStr;
                 logs.Add(SetValue(VarsType.Global, "TargetDir", targetDir));
 
                 // ISOFile, ISODir
-                string isoFileStr = dict["ISOFile"];
+                string? isoFileStr = dict["ISOFile"];
                 string isoFile = Path.Combine("%BaseDir%", "ISO", _project.ProjectName + ".iso");
                 if (!string.IsNullOrEmpty(isoFileStr))
                     isoFile = isoFileStr;
@@ -306,7 +306,7 @@ namespace PEBakery.Core
 
             // Per-Script Variables
             SetValue(VarsType.Fixed, "ScriptFile", sc.RealPath);
-            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(sc.RealPath));
+            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(sc.RealPath) ?? string.Empty);
             SetValue(VarsType.Fixed, "ScriptTitle", sc.Title);
 
             // [Variables]
@@ -323,7 +323,7 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            (string? ifaceSectionName, List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls();
             if (ifaceSectionName != null && uiCtrls != null)
             {
                 List<LogInfo> subLogs = UIControlToVariables(uiCtrls);
@@ -341,25 +341,25 @@ namespace PEBakery.Core
         #endregion
 
         #region UIControlToVariable
-        public LogInfo UIControlToVariable(UIControl uiCmd, string prefix = null)
+        public LogInfo? UIControlToVariable(UIControl uiCmd, string? prefix = null)
         {
             string destVar = uiCmd.Key;
             if (!string.IsNullOrEmpty(prefix))
                 destVar = $"{prefix}_{uiCmd.Key}";
 
-            string value = uiCmd.GetValue(true);
+            string? value = uiCmd.GetValue(true);
             if (value != null)
                 return SetValue(VarsType.Local, destVar, value);
             return null;
         }
 
-        public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string prefix = null)
+        public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string? prefix = null)
         {
             List<LogInfo> logs = new List<LogInfo>(uiCtrls.Count);
 
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                LogInfo log = UIControlToVariable(uiCtrl, prefix);
+                LogInfo? log = UIControlToVariable(uiCtrl, prefix);
                 if (log != null)
                     logs.Add(log);
             }
@@ -403,7 +403,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Get, Set, Expand Value
-        private Dictionary<string, string> GetVarsMatchesType(VarsType type)
+        private Dictionary<string, string>? GetVarsMatchesType(VarsType type)
         {
             return type switch
             {
@@ -416,7 +416,10 @@ namespace PEBakery.Core
 
         public Dictionary<string, string> GetVarDict(VarsType type)
         { // Return a copy of varDict
-            return new Dictionary<string, string>(GetVarsMatchesType(type), StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string>? varsDict = GetVarsMatchesType(type);
+            if (varsDict == null)
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            return new Dictionary<string, string>(varsDict, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -425,14 +428,14 @@ namespace PEBakery.Core
         /// <param name="type">Which variables are to be overwritten?</param>
         /// <param name="varDict">New key-values to overwrite.</param>
         /// <param name="keysToPreserve">Do not overwrite these variables. It should not contain %. </param>
-        public void SetVarDict(VarsType type, Dictionary<string, string> varDict, IEnumerable<string> keysToPreserve = null)
+        public void SetVarDict(VarsType type, Dictionary<string, string> varDict, IEnumerable<string>? keysToPreserve = null)
         {
             Dictionary<string, string> newDict = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
 
             // Preserve keys 
             if (keysToPreserve != null)
             {
-                Dictionary<string, string> oldDict = null;
+                Dictionary<string, string>? oldDict = null;
                 switch (type)
                 {
                     case VarsType.Local:
@@ -471,7 +474,9 @@ namespace PEBakery.Core
 
         public LogInfo SetValue(VarsType type, string key, string value, bool expand = false)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return new LogInfo(LogState.Error, $"Invalid variable type [{type}]");
 
             if (expand)
                 vars[key] = Expand(value);
@@ -489,15 +494,22 @@ namespace PEBakery.Core
 
         public string GetValue(VarsType type, string key)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            bool result = vars.TryGetValue(key, out string value);
-            return result ? Expand(value) : string.Empty;
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return string.Empty;
+
+            bool result = vars.TryGetValue(key, out string? value);
+            if (result == false || value == null)
+                return string.Empty;
+            return Expand(value);
         }
 
         public bool DeleteKey(VarsType type, string key)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            if (!vars.ContainsKey(key))
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return false;
+            if (vars.ContainsKey(key) == false)
                 return false;
 
             vars.Remove(key);
@@ -511,7 +523,9 @@ namespace PEBakery.Core
 
         public bool ContainsKey(VarsType type, string key)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return false;
             return vars.ContainsKey(key);
         }
 
@@ -522,7 +536,9 @@ namespace PEBakery.Core
 
         public bool ContainsValue(VarsType type, string val)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return false;
             return vars.ContainsValue(val);
         }
 
@@ -540,28 +556,28 @@ namespace PEBakery.Core
 
         public bool TryGetValue(string key, out string value)
         {
-            bool fixedResult = _fixedVars.TryGetValue(key, out string fixedValue);
-            bool globalResult = _globalVars.TryGetValue(key, out string globalValue);
-            bool localResult = _localVars.TryGetValue(key, out string localValue);
+            bool fixedResult = _fixedVars.TryGetValue(key, out string? fixedValue);
+            bool globalResult = _globalVars.TryGetValue(key, out string? globalValue);
+            bool localResult = _localVars.TryGetValue(key, out string? localValue);
 
             if (_opts.OverridableFixedVariables)
             { // WinBuilder compatible
-                if (localResult)
+                if (localResult && localValue != null)
                     value = Expand(localValue);
-                else if (globalResult)
+                else if (globalResult && globalValue != null)
                     value = Expand(globalValue);
-                else if (fixedResult)
+                else if (fixedResult && fixedValue != null)
                     value = Expand(fixedValue);
                 else
                     value = string.Empty;
             }
             else
             { // PEBakery standard
-                if (fixedResult)
+                if (fixedResult && fixedValue != null)
                     value = Expand(fixedValue);
-                else if (localResult)
+                else if (localResult && localValue != null)
                     value = Expand(localValue);
-                else if (globalResult)
+                else if (globalResult && globalValue != null)
                     value = Expand(globalValue);
                 else
                     value = string.Empty;
@@ -582,7 +598,9 @@ namespace PEBakery.Core
 
         public bool Exists(VarsType type, string key)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            Dictionary<string, string>? vars = GetVarsMatchesType(type);
+            if (vars == null)
+                return false;
             return vars.ContainsKey(key);
         }
         #endregion
@@ -738,11 +756,8 @@ namespace PEBakery.Core
         #endregion
 
         #region Static Methods - Utility
-        public static string TrimPercentMark(string varKey)
+        public static string? TrimPercentMark(string varKey)
         {
-            if (varKey == null)
-                throw new ArgumentNullException(nameof(varKey));
-
             if (!(varKey.StartsWith("%", StringComparison.Ordinal) && varKey.EndsWith("%", StringComparison.Ordinal)))
                 return null;
             varKey = varKey.Substring(1, varKey.Length - 2);
@@ -758,7 +773,7 @@ namespace PEBakery.Core
         /// Return null if this string cannot be used as variable key.
         /// </summary>
         /// <returns></returns>
-        public static string GetVariableName(EngineState s, string varName)
+        public static string? GetVariableName(EngineState s, string varName)
         {
             if (!varName.StartsWith("%") || !varName.EndsWith("%"))
                 return null;
@@ -818,8 +833,11 @@ namespace PEBakery.Core
             return 0; // Error
         }
 
-        public static string GetSectionOutParamVarKey(EngineState s, string secParam)
+        public static string? GetSectionOutParamVarKey(EngineState s, string secParam)
         {
+            if (s.CurSectionOutParams == null)
+                return null;
+
             int soIdx = GetSectionOutParamIndex(secParam);
             if (soIdx == 0)
                 return null; // Error
@@ -859,12 +877,12 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Error, $"Section out parameter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#o{pIdx}", StringComparison.OrdinalIgnoreCase) != -1)
                 return new LogInfo(LogState.Error, "Section out parameter cannot have a circular reference");
-            if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count <= pIdx - 1)
+            if (s.CurSectionOutParams == null || s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count <= pIdx - 1)
                 return new LogInfo(LogState.Error, $"[#o{pIdx}] is not referencing any variables");
 
             // Write to varKey
             string varKey = s.CurSectionOutParams[pIdx - 1]; // %Dest%
-            string key = GetVariableName(s, varKey); // %D%
+            string? key = GetVariableName(s, varKey); // %D%
             if (key == null) // This must not happen, must check before calling this method
                 return new LogInfo(LogState.CriticalError, $"[#o{pIdx}] is referencing invalid variable");
 
@@ -902,9 +920,12 @@ namespace PEBakery.Core
                 // Determine varKey's type - %A% vs #1
                 if (type == VarKeyType.Variable) // %A%
                 {
-                    string key = GetVariableName(s, varKey);
+                    string? key = GetVariableName(s, varKey);
                     if (key == null)
+                    {
                         logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{varKey}] must start and end with %"));
+                        return logs;
+                    }
 
                     if (permanent)
                     {
@@ -980,9 +1001,12 @@ namespace PEBakery.Core
                 // Determine varKey's type - %A% vs #1
                 if (type == VarKeyType.Variable) // %A%
                 {
-                    string key = GetVariableName(s, varKey);
+                    string? key = GetVariableName(s, varKey);
                     if (key == null)
+                    {
                         logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
+                        return logs;
+                    }
 
                     // Does this variable resides in fixedDict?
                     if (!s.Variables._opts.OverridableFixedVariables)
@@ -1142,13 +1166,15 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarKeyType.Variable:
-                    string key = TrimPercentMark(varKey);
+                    string? key = TrimPercentMark(varKey);
                     return key != null && s.Variables.ContainsKey(key);
                 case VarKeyType.SectionInParams:
                     int siIdx = GetSectionInParamIndex(varKey);
                     return siIdx != 0 && s.CurSectionInParams.ContainsKey(siIdx);
                 case VarKeyType.SectionOutParams:
-                    varKey = GetSectionOutParamVarKey(s, varKey);
+                    if (GetSectionOutParamVarKey(s, varKey) is not string newVarKey)
+                        return null;
+                    varKey = newVarKey;
                     goto case VarKeyType.Variable;
                 case VarKeyType.ReturnValue:
                     return true;

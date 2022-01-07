@@ -175,7 +175,7 @@ namespace PEBakery.Core
             Y = 0;
             Width = 0;
             Height = 0;
-            Info = null;
+            Info = new UIInfo(null);
             LineIdx = 0;
         }
 
@@ -202,6 +202,8 @@ namespace PEBakery.Core
 
         #region ToString
         public override string ToString() => RawLine;
+
+        private const string Value = ",";
         #endregion
 
         #region ForgeRawLine
@@ -211,19 +213,19 @@ namespace PEBakery.Core
             if (includeKey)
             {
                 b.Append(Key);
-                b.Append("=");
+                b.Append('=');
             }
             b.Append(StringEscaper.DoubleQuote(Text));
-            b.Append(",");
+            b.Append(',');
             b.Append(Visibility ? "1," : "0,");
             b.Append((int)Type);
-            b.Append(",");
+            b.Append(',');
             b.Append(X);
-            b.Append(",");
+            b.Append(',');
             b.Append(Y);
-            b.Append(",");
+            b.Append(',');
             b.Append(Width);
-            b.Append(",");
+            b.Append(Value);
             b.Append(Height);
             b.Append(Info.ForgeRawLine());
             return b.ToString();
@@ -233,11 +235,13 @@ namespace PEBakery.Core
         #region Update
         public bool Update()
         {
+            string newLine = ForgeRawLine(false);
+
             // Update ScriptSection.Lines
-            Section.UpdateIniKey(Key, ForgeRawLine(false));
+            Section.UpdateIniKey(Key, newLine);
 
             // Update actual file
-            return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
+            return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, newLine);
         }
 
         public static bool Update(IReadOnlyList<UIControl> uiCtrls)
@@ -288,9 +292,9 @@ namespace PEBakery.Core
         #endregion
 
         #region GetValue, SetValue
-        public string GetValue(bool strict)
+        public string? GetValue(bool strict)
         {
-            string value = null;
+            string? value = null;
             switch (Type)
             {
                 case UIControlType.TextLabel:
@@ -337,7 +341,6 @@ namespace PEBakery.Core
                     }
                     break;
             }
-
             return value;
         }
 
@@ -620,9 +623,9 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo
     {
-        public string ToolTip { get; set; } // optional
+        public string? ToolTip { get; set; } // optional
 
-        public UIInfo(string tooltip)
+        public UIInfo(string? tooltip)
         {
             ToolTip = tooltip;
         }
@@ -636,10 +639,7 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : UIInfo
         {
-            Debug.Assert(GetType() == typeof(T), "Invalid UIInfo");
-            T cast = this as T;
-            Debug.Assert(cast != null, "Invalid UIInfo");
-            return cast;
+            return (T)this;
         }
 
         /// <summary>
@@ -691,7 +691,7 @@ namespace PEBakery.Core
     {
         public string Value { get; set; }
 
-        public UIInfo_TextBox(string tooltip, string str)
+        public UIInfo_TextBox(string? tooltip, string str)
             : base(tooltip)
         {
             Value = str;
@@ -700,7 +700,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Value));
             b.Append(ForgeToolTip());
             return b.ToString();
@@ -722,7 +722,7 @@ namespace PEBakery.Core
         public UIFontWeight FontWeight { get; set; }
         public UIFontStyle? FontStyle { get; set; }
 
-        public UIInfo_TextLabel(string tooltip, int fontSize, UIFontWeight fontWeight, UIFontStyle? fontStyle)
+        public UIInfo_TextLabel(string? tooltip, int fontSize, UIFontWeight fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
             FontSize = fontSize;
@@ -733,13 +733,13 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
+            b.Append(',');
             b.Append(FontSize);
-            b.Append(",");
+            b.Append(',');
             b.Append(FontWeight);
             if (FontStyle != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(FontStyle);
             }
             b.Append(ForgeToolTip());
@@ -759,7 +759,7 @@ namespace PEBakery.Core
         public int Max { get; set; }
         public int Tick { get; set; }
 
-        public UIInfo_NumberBox(string tooltip, int value, int min, int max, int tick)
+        public UIInfo_NumberBox(string? tooltip, int value, int min, int max, int tick)
             : base(tooltip)
         {
             Value = value;
@@ -771,13 +771,13 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(",");
+            builder.Append(',');
             builder.Append(Value);
-            builder.Append(",");
+            builder.Append(',');
             builder.Append(Min);
-            builder.Append(",");
+            builder.Append(',');
             builder.Append(Max);
-            builder.Append(",");
+            builder.Append(',');
             builder.Append(Tick);
             builder.Append(ForgeToolTip());
             return builder.ToString();
@@ -792,10 +792,10 @@ namespace PEBakery.Core
     public class UIInfo_CheckBox : UIInfo
     {
         public bool Value { get; set; }
-        public string SectionName { get; set; } // Optional
+        public string? SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool hideProgress = false)
+        public UIInfo_CheckBox(string? tooltip, bool value, string? sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Value = value;
@@ -811,7 +811,7 @@ namespace PEBakery.Core
             {
                 b.Append(",_");
                 b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append("_");
+                b.Append('_');
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -828,10 +828,10 @@ namespace PEBakery.Core
     {
         public List<string> Items { get; set; }
         public int Index { get; set; } // Zero based index, -1 if nothing is set
-        public string SectionName { get; set; } // Optional
+        public string? SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_ComboBox(string tooltip, List<string> items, int index, string sectionName = null, bool hideProgress = false)
+        public UIInfo_ComboBox(string? tooltip, List<string> items, int index, string? sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;
@@ -845,14 +845,14 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             foreach (string item in Items)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(StringEscaper.DoubleQuote(item));
             }
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append("_");
+                b.Append('_');
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -867,9 +867,9 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Image : UIInfo
     {
-        public string Url { get; set; } // Optional
+        public string? Url { get; set; } // Optional
 
-        public UIInfo_Image(string toolTip, string url)
+        public UIInfo_Image(string? toolTip, string? url)
             : base(toolTip)
         {
             Url = url;
@@ -899,7 +899,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_TextFile : UIInfo
     {
-        public UIInfo_TextFile(string tooltip)
+        public UIInfo_TextFile(string? tooltip)
             : base(tooltip)
         {
 
@@ -918,10 +918,10 @@ namespace PEBakery.Core
     public class UIInfo_Button : UIInfo
     {
         public string SectionName { get; set; }
-        public string Picture { get; set; } // Optional
+        public string? Picture { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_Button(string tooltip, string sectionName, string picture, bool hideProgress)
+        public UIInfo_Button(string? tooltip, string sectionName, string? picture, bool hideProgress)
             : base(tooltip)
         {
             SectionName = sectionName;
@@ -954,7 +954,7 @@ namespace PEBakery.Core
     {
         public string Url { get; set; }
 
-        public UIInfo_WebLabel(string tooltip, string url)
+        public UIInfo_WebLabel(string? tooltip, string url)
             : base(tooltip)
         {
             Url = url;
@@ -978,10 +978,10 @@ namespace PEBakery.Core
     public class UIInfo_RadioButton : UIInfo
     {
         public bool Selected { get; set; }
-        public string SectionName { get; set; } // Optional
+        public string? SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false)
+        public UIInfo_RadioButton(string? tooltip, bool selected, string? sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Selected = selected;
@@ -992,13 +992,13 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
+            b.Append(',');
             b.Append(Selected);
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append("_");
+                b.Append('_');
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -1017,7 +1017,7 @@ namespace PEBakery.Core
         public UIFontWeight? FontWeight { get; set; }
         public UIFontStyle? FontStyle { get; set; }
 
-        public UIInfo_Bevel(string tooltip, int? fontSize, UIFontWeight? fontWeight, UIFontStyle? fontStyle)
+        public UIInfo_Bevel(string? tooltip, int? fontSize, UIFontWeight? fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
             FontSize = fontSize;
@@ -1077,11 +1077,10 @@ namespace PEBakery.Core
     public class UIInfo_FileBox : UIInfo
     {
         public bool IsFile { get; set; }
-        // Optional
-        public string Title { get; set; }
-        public string Filter { get; set; }
+        public string? Title { get; set; } // Optional
+        public string? Filter { get; set; } // Optional
 
-        public UIInfo_FileBox(string tooltip, bool isFile, string title, string filter)
+        public UIInfo_FileBox(string? tooltip, bool isFile, string? title, string? filter)
             : base(tooltip)
         {
             IsFile = isFile;
@@ -1117,10 +1116,10 @@ namespace PEBakery.Core
     {
         public List<string> Items { get; set; }
         public int Selected { get; set; } // Zero-based index
-        public string SectionName { get; set; } // Optional
+        public string? SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_RadioGroup(string tooltip, List<string> items, int selected, string sectionName = null, bool hideProgress = false)
+        public UIInfo_RadioGroup(string? tooltip, List<string> items, int selected, string? sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;
@@ -1134,16 +1133,16 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             foreach (string item in Items)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(StringEscaper.DoubleQuote(item));
             }
-            b.Append(",");
+            b.Append(',');
             b.Append(Selected);
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append("_");
+                b.Append('_');
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());

@@ -38,11 +38,11 @@ namespace PEBakery.Core.Tests.Command
                         byte[] extractDigest;
                         using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                            originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                         }
                         using (FileStream fs = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                            extractDigest = HashHelper.GetHash(HashType.SHA256, fs);
                         }
                         Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
                     }
@@ -89,11 +89,11 @@ namespace PEBakery.Core.Tests.Command
                             byte[] extractDigest;
                             using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                             {
-                                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                                originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                             }
                             using (FileStream fs = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                             {
-                                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                                extractDigest = HashHelper.GetHash(HashType.SHA256, fs);
                             }
                             Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
                         }
@@ -172,13 +172,13 @@ namespace PEBakery.Core.Tests.Command
                         {
                             EncodedFile.ExtractFile(sc, folderName, srcFileName, ms, null);
                             ms.Position = 0;
-                            extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                            extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                         }
 
                         byte[] originDigest;
                         using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                            originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                         }
 
                         Assert.IsTrue(originDigest.SequenceEqual(extractDigest));

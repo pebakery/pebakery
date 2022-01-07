@@ -113,13 +113,13 @@ namespace PEBakery.Core.Tests
             byte[] h1;
             using (FileStream fs = new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                h1 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                h1 = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             byte[] h2;
             using (FileStream fs = new FileStream(y, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                h2 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                h2 = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             return h1.SequenceEqual(h2);

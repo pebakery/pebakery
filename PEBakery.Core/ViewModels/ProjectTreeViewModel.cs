@@ -43,12 +43,13 @@ namespace PEBakery.Core.ViewModels
     {
         #region Basic Property and Constructor
         public ProjectTreeItemModel ProjectRoot { get; }
-        public ProjectTreeItemModel Parent { get; }
+        public ProjectTreeItemModel? Parent { get; }
 
-        public ProjectTreeItemModel(ProjectTreeItemModel root, ProjectTreeItemModel parent)
+        public ProjectTreeItemModel(ProjectTreeItemModel? root, ProjectTreeItemModel? parent, Script script)
         {
             ProjectRoot = root ?? this;
             Parent = parent;
+            _sc = script;
 
             Children = new ObservableCollection<ProjectTreeItemModel>();
             BindingOperations.EnableCollectionSynchronization(Children, _childrenLock);
@@ -142,7 +143,7 @@ namespace PEBakery.Core.ViewModels
             if (_sc.Mandatory || _sc.Selected == SelectedState.None)
                 return;
 
-            if (first)
+            if (first && Global.MainViewModel != null)
             {
                 Global.MainViewModel.WorkInProgress = true;
                 Global.MainViewModel.EnableTreeItems = false;
@@ -177,7 +178,7 @@ namespace PEBakery.Core.ViewModels
             OnPropertyUpdate(nameof(Checked));
 
             // No meaning on using try-finally, if exception is thrown, the program just dies.
-            if (first)
+            if (first && Global.MainViewModel != null)
             {
                 Global.MainViewModel.EnableTreeItems = true;
                 Global.MainViewModel.WorkInProgress = false;
@@ -219,7 +220,7 @@ namespace PEBakery.Core.ViewModels
             if (root == null || sc == null)
                 return;
 
-            string[] paths = Script.GetDisableScriptPaths(sc, out List<LogInfo> errorLogs);
+            string[]? paths = Script.GetDisableScriptPaths(sc, out List<LogInfo> errorLogs);
             if (paths == null)
                 return;
             Global.Logger.SystemWrite(errorLogs);
@@ -234,7 +235,7 @@ namespace PEBakery.Core.ViewModels
                 IniReadWriter.WriteKey(path, "Main", "Selected", "False");
 
                 // Write to in-memory script
-                ProjectTreeItemModel found = FindScriptByRealPath(path);
+                ProjectTreeItemModel? found = FindScriptByRealPath(path);
                 if (found == null)
                     continue;
                 if (sc.Type != ScriptType.Directory && !sc.Mandatory && sc.Selected != SelectedState.None)
@@ -244,17 +245,17 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Find Script
-        public ProjectTreeItemModel FindScriptByRealPath(string realPath)
+        public ProjectTreeItemModel? FindScriptByRealPath(string realPath)
         {
             return RecursiveFindScriptByRealPath(ProjectRoot, realPath);
         }
 
-        public static ProjectTreeItemModel FindScriptByRealPath(ProjectTreeItemModel root, string realPath)
+        public static ProjectTreeItemModel? FindScriptByRealPath(ProjectTreeItemModel root, string realPath)
         {
             return RecursiveFindScriptByRealPath(root, realPath);
         }
 
-        private static ProjectTreeItemModel RecursiveFindScriptByRealPath(ProjectTreeItemModel cur, string fullPath)
+        private static ProjectTreeItemModel? RecursiveFindScriptByRealPath(ProjectTreeItemModel cur, string fullPath)
         {
             if (cur.Script != null)
             {
@@ -266,7 +267,7 @@ namespace PEBakery.Core.ViewModels
             {
                 foreach (ProjectTreeItemModel next in cur.Children)
                 {
-                    ProjectTreeItemModel found = RecursiveFindScriptByRealPath(next, fullPath);
+                    ProjectTreeItemModel? found = RecursiveFindScriptByRealPath(next, fullPath);
                     if (found != null)
                         return found;
                 }

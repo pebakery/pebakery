@@ -54,25 +54,25 @@ namespace PEBakery.Core.WpfControls
             set => MessageTextBlock.Text = value;
         }
 
-        internal string OkButtonText
+        internal string? OkButtonText
         {
             get => OKLabel.Content.ToString();
             set => OKLabel.Content = TryAddKeyboardAccellerator(value);
         }
 
-        internal string CancelButtonText
+        internal string? CancelButtonText
         {
             get => CancelLabel.Content.ToString();
             set => CancelLabel.Content = TryAddKeyboardAccellerator(value);
         }
 
-        internal string YesButtonText
+        internal string? YesButtonText
         {
             get => YesLabel.Content.ToString();
             set => YesLabel.Content = TryAddKeyboardAccellerator(value);
         }
 
-        internal string NoButtonText
+        internal string? NoButtonText
         {
             get => NoLabel.Content.ToString();
             set => NoLabel.Content = TryAddKeyboardAccellerator(value);
@@ -302,12 +302,16 @@ namespace PEBakery.Core.WpfControls
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        internal static string TryAddKeyboardAccellerator(string input)
+        internal static string? TryAddKeyboardAccellerator(string? input)
         {
+            if (input == null)
+                return null;
+
             const string accellerator = "_";            // This is the default WPF accellerator symbol - used to be & in WinForms
 
             // If it already contains an accellerator, do nothing
-            if (input.Contains(accellerator)) return input;
+            if (input.Contains(accellerator))
+                return input;
 
             return accellerator + input;
         }

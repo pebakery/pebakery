@@ -37,7 +37,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -351,8 +350,12 @@ namespace PEBakery.Core
 
         public static Dictionary<string, int> GetInterfaceFileRefCount(Script sc)
         {
-            (_, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
             Dictionary<string, int> fileRefCountDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            (_, List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls();
+            if (uiCtrls == null)
+                return fileRefCountDict;
+            
             foreach (UIControl thisCtrl in uiCtrls)
             {
                 switch (thisCtrl.Type)
@@ -487,7 +490,10 @@ namespace PEBakery.Core
             }
 
             IniReadWriter.AddSection(sc.RealPath, folderName);
-            return sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                throw new InvalidOperationException($"Script [{sc}] cannot be refreshed");
+            return newScript;
         }
 
         public static bool ContainsFolder(Script sc, string folderName)
@@ -513,12 +519,12 @@ namespace PEBakery.Core
         #endregion
 
         #region RenameFile, RenameFolder
-        public static Task<(Script, string)> RenameFileAsync(Script sc, string folderName, string oldFileName, string newFileName)
+        public static Task<(Script, string?)> RenameFileAsync(Script sc, string folderName, string oldFileName, string newFileName)
         {
             return Task.Run(() => RenameFile(sc, folderName, oldFileName, newFileName));
         }
 
-        public static (Script, string) RenameFile(Script sc, string folderName, string oldFileName, string newFileName)
+        public static (Script, string?) RenameFile(Script sc, string folderName, string oldFileName, string newFileName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -528,7 +534,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(oldFileName));
             if (newFileName == null)
                 throw new ArgumentNullException(nameof(newFileName));
-            string errorMsg = null;
+            string? errorMsg = null;
 
             // If oldFileName and newFileName is equal, report success without doing anything
             if (oldFileName.Equals(newFileName, StringComparison.OrdinalIgnoreCase))
@@ -569,16 +575,20 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMsg = $"Script [{sc}] cannot be refreshed";
+            else
+                sc = newScript;
             return (sc, errorMsg);
         }
 
-        public static Task<(Script, string)> RenameFolderAsync(Script sc, string oldFolderName, string newFolderName)
+        public static Task<(Script, string?)> RenameFolderAsync(Script sc, string oldFolderName, string newFolderName)
         {
             return Task.Run(() => RenameFolder(sc, oldFolderName, newFolderName));
         }
 
-        public static (Script, string) RenameFolder(Script sc, string oldFolderName, string newFolderName)
+        public static (Script, string?) RenameFolder(Script sc, string oldFolderName, string newFolderName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -586,7 +596,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(oldFolderName));
             if (newFolderName == null)
                 throw new ArgumentNullException(nameof(newFolderName));
-            string errorMsg = null;
+            string? errorMsg = null;
 
             // If oldFileName and newFileName is equal, report success without doing anything
             if (oldFolderName.Equals(newFolderName, StringComparison.OrdinalIgnoreCase))
@@ -670,7 +680,11 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMsg = $"Script [{sc}] cannot be refreshed";
+            else
+                sc = newScript;
             return (sc, errorMsg);
         }
         #endregion
@@ -806,11 +820,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo
-            {
-                FolderName = folderName,
-                FileName = fileName
-            };
+            EncodedFileInfo info = new EncodedFileInfo(folderName, fileName);
 
             if (!sc.Sections.ContainsKey(folderName))
                 return new ResultReport<EncodedFileInfo>(false, null, $"Directory [{folderName}] does not exist");
@@ -845,7 +855,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo { FolderName = ScriptSection.Names.AuthorEncoded };
+            EncodedFileInfo info = new EncodedFileInfo(ScriptSection.Names.AuthorEncoded);
 
             if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 return new ResultReport<EncodedFileInfo>(false, null, $"Directory [{ScriptSection.Names.AuthorEncoded}] does not exist");
@@ -895,11 +905,7 @@ namespace PEBakery.Core
             Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             foreach (string fileName in fileDict.Keys)
             {
-                EncodedFileInfo info = new EncodedFileInfo
-                {
-                    FolderName = folderName,
-                    FileName = fileName
-                };
+                EncodedFileInfo info = new EncodedFileInfo(folderName, fileName);
 
                 if (!fileDict.ContainsKey(fileName))
                     return new ResultReport<EncodedFileInfo[]>(false, null, $"File index of [{fileName}] does not exist");
@@ -985,11 +991,7 @@ namespace PEBakery.Core
                     string fileName = kv.Key;
                     string fileIndex = kv.Value;
 
-                    EncodedFileInfo info = new EncodedFileInfo
-                    {
-                        FolderName = folderName,
-                        FileName = fileName
-                    };
+                    EncodedFileInfo info = new EncodedFileInfo(folderName, fileName);
 
                     // In [AuthorEncoded], "Logo=" line does not contain proper encoded file information
                     if (opts.IncludeAuthorEncoded && fileName.Equals("Logo", StringComparison.OrdinalIgnoreCase))
@@ -1075,7 +1077,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(folderName));
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-            string errorMsg = null;
+            string? errorMsg = null;
 
             // Backup
             string backupFile = FileHelper.GetTempFile("script");
@@ -1110,7 +1112,12 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMsg = $"Script [{sc}] cannot be refreshed";
+            else
+                sc = newScript;
+
             return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
 
@@ -1169,7 +1176,15 @@ namespace PEBakery.Core
                     iniKeys.RemoveAt(idx);
 
                 // Delete encoded file section
-                var sectionNames = iniKeys.Select(x => ScriptSection.Names.GetEncodedSectionName(x.Section, x.Key));
+                List<string> sectionNames = new List<string>(iniKeys.Count);
+                foreach (IniKey iniKey in iniKeys)
+                {
+                    if (iniKey.Key == null)
+                        continue;
+                    string sectionName = ScriptSection.Names.GetEncodedSectionName(iniKey.Section, iniKey.Key);
+                    sectionNames.Add(sectionName);
+                }
+
                 results = IniReadWriter.DeleteSections(sc.RealPath, sectionNames);
                 for (int i = 0; i < results.Length; i++)
                 {
@@ -1189,7 +1204,12 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMessages.Add($"Script [{sc}] cannot be refreshed");
+            else
+                sc = newScript;
+
             return new ResultReport<Script, string[]>(true, sc, errorMessages.ToArray());
         }
 
@@ -1204,7 +1224,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(sc));
             if (folderName == null)
                 throw new ArgumentNullException(nameof(folderName));
-            string errorMsg = null;
+            string? errorMsg = null;
 
             // Backup
             string backupFile = FileHelper.GetTempFile("script");
@@ -1276,7 +1296,12 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMsg = $"Script [{sc}] cannot be refreshed";
+            else
+                sc = newScript;
+
             return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
 
@@ -1290,7 +1315,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            string errorMsg = null;
+            string? errorMsg = null;
 
             // Backup
             string backupFile = FileHelper.GetTempFile("script");
@@ -1331,13 +1356,18 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            sc = sc.Project.RefreshScript(sc);
+            Script? newScript = sc.Project.RefreshScript(sc);
+            if (newScript == null)
+                errorMsg = $"Script [{sc}] cannot be refreshed";
+            else
+                sc = newScript;
+
             return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
         #endregion
 
         #region Encode
-        private static void Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
+        private static void Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo, IProgress<double>? progress)
         {
             using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.Encode", input, 0, input.Length))
             {
@@ -1349,7 +1379,7 @@ namespace PEBakery.Core
         /// Encode a resource into a script.
         /// Refreshes scripts automatically.
         /// </summary>
-        private static void Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
+        private static void Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo, IProgress<double>? progress)
         {
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
 
@@ -1406,7 +1436,7 @@ namespace PEBakery.Core
                             }
                             break;
                         case EncodeMode.XZ:
-                            XZStream xzs = null;
+                            XZStream? xzs = null;
                             try
                             {
                                 // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
@@ -1466,8 +1496,7 @@ namespace PEBakery.Core
                             }
                             finally
                             {
-                                Debug.Assert(xzs != null, $"XZStream is null in {nameof(Encode)}!");
-                                xzs.Dispose();
+                                xzs?.Dispose();
                             }
                             break;
                         default:
@@ -1574,7 +1603,7 @@ namespace PEBakery.Core
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    string? lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
                     IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)
@@ -1603,7 +1632,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Decode
-        private static long Decode(string scPath, string section, Stream outStream, IProgress<double> progress)
+        private static long Decode(string scPath, string section, Stream outStream, IProgress<double>? progress)
         {
             string tempDecode = FileHelper.GetTempFile(".bin");
             string tempComp = FileHelper.GetTempFile(".bin");
@@ -2386,7 +2415,7 @@ namespace PEBakery.Core
     public static class SplitBase64
     {
         #region Encode
-        public static int Encode(Stream srcStream, TextWriter tw, IProgress<long> progress = null)
+        public static int Encode(Stream srcStream, TextWriter tw, IProgress<long>? progress = null)
         {
             const int reportInterval = 1024 * 1024; // 1MB
 
@@ -2449,7 +2478,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Decode
-        public static int Decode(TextReader tr, Stream destStream, IProgress<(int Pos, int Total)> progress = null)
+        public static int Decode(TextReader tr, Stream destStream, IProgress<(int Pos, int Total)>? progress = null)
         {
             int lineLen = -1;
             int lineCount = 0;
@@ -2463,7 +2492,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder(4090 * 16);
 
             // Read base64 block directly from file
-            string line;
+            string? line;
             while ((line = tr.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
@@ -2471,11 +2500,10 @@ namespace PEBakery.Core
                     continue;
 
                 // End of section
-                if (line.StartsWith("[", StringComparison.Ordinal) &&
-                    line.EndsWith("]", StringComparison.Ordinal))
+                if (IniReadWriter.IsLineSection(line))
                     break;
 
-                (string key, string block) = IniReadWriter.GetKeyValueFromLine(line);
+                (string? key, string? block) = IniReadWriter.GetKeyValueFromLine(line);
                 if (key == null || block == null)
                     throw new InvalidOperationException("Encoded lines are malformed");
 
@@ -2548,7 +2576,7 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            (List<string> keys, List<string> base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
+            (List<string>? keys, List<string>? base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
             if (keys == null || base64Blocks == null)
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
@@ -2587,7 +2615,7 @@ namespace PEBakery.Core
         public bool IncludeInterfaceEncoded;
 
         #region Interface and Override Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ReadFileInfoOptions other)
                 return Equals(other);
@@ -2595,8 +2623,11 @@ namespace PEBakery.Core
                 return false;
         }
 
-        public bool Equals(ReadFileInfoOptions other)
+        public bool Equals(ReadFileInfoOptions? other)
         {
+            if (other is null)
+                return false;
+
             return InspectEncodeMode == other.InspectEncodeMode &&
                 IncludeAuthorEncoded == other.IncludeAuthorEncoded &&
                 IncludeInterfaceEncoded == other.IncludeInterfaceEncoded;
@@ -2630,13 +2661,25 @@ namespace PEBakery.Core
     #region EncodedFileInfo
     public class EncodedFileInfo : IEquatable<EncodedFileInfo>, ICloneable
     {
-        public string FolderName;
-        public string FileName;
-        public int RawSize;
-        public int EncodedSize;
-        public EncodeMode? EncodeMode;
+        public string FolderName { get; set; }
+        public string FileName { get; set; }
+        public int RawSize { get; set; }
+        public int EncodedSize { get; set; }
+        public EncodeMode? EncodeMode { get; set; }
 
-        public bool Equals(EncodedFileInfo x)
+        public EncodedFileInfo(string folderName)
+        {
+            FolderName = folderName;
+            FileName = string.Empty;
+        }
+
+        public EncodedFileInfo(string folderName, string fileName)
+        {
+            FolderName = folderName;
+            FileName = fileName;
+        }
+
+        public bool Equals(EncodedFileInfo? x)
         {
             if (x == null)
                 return false;
@@ -2650,10 +2693,8 @@ namespace PEBakery.Core
 
         public object Clone()
         {
-            return new EncodedFileInfo
+            return new EncodedFileInfo(FolderName, FileName)
             {
-                FolderName = FolderName,
-                FileName = FileName,
                 RawSize = RawSize,
                 EncodedSize = EncodedSize,
                 EncodeMode = EncodeMode
@@ -2665,7 +2706,7 @@ namespace PEBakery.Core
             return ScriptSection.Names.GetEncodedSectionName(FolderName, FileName);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as EncodedFileInfo);
         }

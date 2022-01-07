@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -96,12 +97,7 @@ namespace PEBakery.Core.Commands
                             if (s.ErrorOffDepthMinusOne)
                                 ls = ls.UpdateDepth(ls.Depth - 1);
 
-                            ErrorOffState newState = new ErrorOffState
-                            {
-                                LocalState = ls,
-                                StartLineIdx = cmd.LineIdx,
-                                LineCount = lines,
-                            };
+                            ErrorOffState newState = new ErrorOffState(ls, cmd.LineIdx, lines);
 
                             s.ErrorOffWaitingRegister = newState;
                             s.ErrorOffDepthMinusOne = false;
@@ -118,7 +114,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetEnv subInfo = info.SubInfo.Cast<SystemInfo_GetEnv>();
 
                         string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVar);
-                        string envVarValue = Environment.GetEnvironmentVariable(envVarName);
+                        string? envVarValue = Environment.GetEnvironmentVariable(envVarName);
                         if (envVarValue == null) // Failure
                         {
                             logs.Add(new LogInfo(LogState.Ignore, $"Cannot get environment variable [%{envVarName}%]'s value"));
@@ -160,7 +156,11 @@ namespace PEBakery.Core.Commands
 
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
-                        DriveInfo drive = new DriveInfo(Path.GetPathRoot(path));
+                        string? pathRoot = Path.GetPathRoot(path);
+                        if (pathRoot == null)
+                            return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(subInfo.Path)} [{path}]");
+
+                        DriveInfo drive = new DriveInfo(pathRoot);
                         long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString(CultureInfo.InvariantCulture));
@@ -257,8 +257,9 @@ namespace PEBakery.Core.Commands
                         }
                         List<Script> newScripts = new List<Script>(files.Length);
 
-                        string srcDirPath = Path.GetDirectoryName(srcFilePath);
-                        Debug.Assert(srcDirPath != null, $"{nameof(srcDirPath)} is null (CommandSystem.LoadNewScript)");
+                        string? srcDirPath = Path.GetDirectoryName(srcFilePath);
+                        if (srcDirPath == null)
+                            return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(subInfo.SrcFilePath)} [{srcDirPath}]");
 
                         (string realPath, string treePath)[] fileTuples = files
                             .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
@@ -282,7 +283,7 @@ namespace PEBakery.Core.Commands
                                 logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
                             }
 
-                            Script sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
+                            Script? sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
                             {
                                 AddToProjectTree = true,
                                 OverwriteToProjectTree = true,
@@ -329,7 +330,7 @@ namespace PEBakery.Core.Commands
 
                         // Check wildcard
                         string wildcard = Path.GetFileName(filePath);
-                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
+                        bool containsWildcard = wildcard.IndexOfAny(new[] { '*', '?' }) != -1;
 
                         string[] files;
                         if (containsWildcard)
@@ -366,12 +367,13 @@ namespace PEBakery.Core.Commands
 
                             // RefreshScript -> Update Project.AllScripts
                             Script sc = Engine.GetScriptInstance(s, cmd.Section.Script.RealPath, scRealPath, out _);
-                            sc = s.Project.RefreshScript(sc, s);
-                            if (sc == null)
+                            Script? newScript = s.Project.RefreshScript(sc, s);
+                            if (newScript == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
                                 continue;
                             }
+                            sc = newScript;
 
                             newScripts.Add(sc);
                             logs.Add(new LogInfo(LogState.Success, $"Refreshed script [{scRealPath}]"));
@@ -383,12 +385,16 @@ namespace PEBakery.Core.Commands
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false);
                         });
-                        foreach (Script sc in newScripts)
+                        ProjectTreeItemModel? curMainTree = s.MainViewModel.CurMainTree;
+                        if (curMainTree != null)
                         {
-                            if (sc.Equals(s.MainViewModel.CurMainTree.Script))
+                            foreach (Script sc in newScripts)
                             {
-                                s.MainViewModel.CurMainTree.Script = sc;
-                                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
+                                if (sc.Equals(curMainTree.Script))
+                                {
+                                    curMainTree.Script = sc;
+                                    s.MainViewModel.DisplayScript(curMainTree.Script);
+                                }
                             }
                         }
 
@@ -535,7 +541,7 @@ namespace PEBakery.Core.Commands
                     b.Append(parameters);
                 }
 
-                string pathVarBak = null;
+                string? pathVarBak = null;
                 if (info.WorkDir != null)
                 {
                     string workDir = StringEscaper.Preprocess(s, info.WorkDir);
@@ -605,7 +611,8 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.CreateNoWindow = true;
 
                         // Redirecting standard stream without reading can full buffer, which leads to hang
-                        if (Global.MainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
+                        MainViewModel? mainViewModel = Global.MainViewModel;
+                        if (mainViewModel != null && mainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
                         {
                             redirectStandardStream = true;
 
@@ -692,7 +699,7 @@ namespace PEBakery.Core.Commands
                         // %ExitOutVar% must be defined before it can be used.
                         if (info.ExitOutVar != null)
                         {
-                            string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
+                            string? exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
                             if (exitOutVar != null && s.Variables.ContainsKey(exitOutVar))
                             {
                                 log = Variables.SetVariable(s, info.ExitOutVar, exitCodeStr).First();

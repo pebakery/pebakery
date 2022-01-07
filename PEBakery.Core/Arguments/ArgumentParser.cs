@@ -12,9 +12,7 @@ namespace PEBakery.Core.Arguments
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : ParamOptions
         {
-            T cast = this as T;
-            Debug.Assert(cast != null);
-            return cast;
+            return (T)this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -27,7 +25,7 @@ namespace PEBakery.Core.Arguments
     public class PEBakeryOptions : ParamOptions
     {
         [Option('b', "baseDir", Required = false, Default = null, HelpText = "Base directory to run PEBakery on.")]
-        public string BaseDir { get; set; }
+        public string? BaseDir { get; set; }
 
         [Usage(ApplicationAlias = "PEBakery.exe")]
         public static IEnumerable<Example> Examples
@@ -45,11 +43,11 @@ namespace PEBakery.Core.Arguments
     #region CommandLine
     public class ArgumentParser
     {
-        private PEBakeryOptions _opts = null;
-        private ParserResult<PEBakeryOptions> _parserResult = null;
+        private PEBakeryOptions? _opts = null;
+        private ParserResult<PEBakeryOptions>? _parserResult = null;
         public bool IsArgumentValid { get; set; } = false;
 
-        public PEBakeryOptions Parse(string[] args)
+        public PEBakeryOptions? Parse(string[] args)
         {
             Parser parser = new Parser(conf =>
             {
@@ -68,7 +66,7 @@ namespace PEBakery.Core.Arguments
             return _opts;
         }
 
-        public string BuildHelpMessage(string appendMessage = null)
+        public string BuildHelpMessage(string? appendMessage = null)
         {
             HelpText helpText = HelpText.AutoBuild(_parserResult, h =>
             {

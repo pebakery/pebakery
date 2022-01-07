@@ -32,7 +32,8 @@ namespace PEBakery.Core
     #region CodeParser, UIParser, Commands
     public class InvalidCommandException : Exception
     {
-        public string RawLine { get; }
+        public string RawLine { get; } = string.Empty;
+
         public InvalidCommandException() { }
         public InvalidCommandException(string message) : base(message) { }
         public InvalidCommandException(string message, string rawLine) : base(message) { RawLine = rawLine; }
@@ -42,11 +43,9 @@ namespace PEBakery.Core
     public class InvalidCodeCommandException : Exception
     {
         public CodeCommand Cmd { get; }
-        public InvalidCodeCommandException() { }
-        public InvalidCodeCommandException(string message) : base(message) { }
+
         public InvalidCodeCommandException(CodeCommand cmd) { Cmd = cmd; }
         public InvalidCodeCommandException(string message, CodeCommand cmd) : base(message) { Cmd = cmd; }
-        public InvalidCodeCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>

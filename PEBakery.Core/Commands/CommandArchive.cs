@@ -46,7 +46,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
 
             #region Event Handlers
-            void ReportCompressProgress(object sender, ProgressEventArgs e)
+            void ReportCompressProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Compressing... ({e.PercentDone}%)";
@@ -58,7 +58,7 @@ namespace PEBakery.Core.Commands
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
             SevenZip.OutArchiveFormat outFormat = ArchiveFile.ToSevenZipOutFormat(info.Format);
             SevenZip.CompressionLevel compLevel = SevenZip.CompressionLevel.Normal;
-            if (info.CompressLevel is ArchiveFile.CompressLevel level)
+            if (info.CompressLevel is CompressLevel level)
             {
                 try
                 {
@@ -170,7 +170,9 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // With wildcard
-                    string srcDirToFind = Path.GetDirectoryName(srcPath);
+                    string? srcDirToFind = Path.GetDirectoryName(srcPath);
+                    if (srcDirToFind == null) // srcPath is root directory
+                        return LogInfo.LogErrorMessage(logs, $"SrcPath [{srcPath}] is a root directory");
                     string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
 
                     // Compressor Options
@@ -219,7 +221,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
 
             #region Event Handlers
-            void ReportDecompressProgress(object sender, ProgressEventArgs e)
+            void ReportDecompressProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Decompressing... ({e.PercentDone}%)";
@@ -246,7 +248,7 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            SevenZipExtractor extractor = null;
+            SevenZipExtractor? extractor = null;
             try
             {
                 if (info.Password == null)
@@ -287,14 +289,14 @@ namespace PEBakery.Core.Commands
             List<string> extractedFiles = new List<string>();
 
             #region Event Handlers
-            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            void ReportExpandProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";
             }
 
             object trackLock = new object();
-            void TrackExtractedFile(object sender, FileInfoEventArgs e)
+            void TrackExtractedFile(object? sender, FileInfoEventArgs e)
             {
                 lock (trackLock)
                     extractedFiles.Add(e.FileInfo.FileName);
@@ -303,7 +305,7 @@ namespace PEBakery.Core.Commands
 
             string srcCab = StringEscaper.Preprocess(s, info.SrcCab);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
-            string singleFile = null;
+            string? singleFile = null;
             if (info.SingleFile != null)
                 singleFile = StringEscaper.Preprocess(s, info.SingleFile);
 
@@ -420,7 +422,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_CopyOrExpand info = cmd.Info.Cast<CodeInfo_CopyOrExpand>();
 
             #region Event Handlers
-            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            void ReportExpandProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";

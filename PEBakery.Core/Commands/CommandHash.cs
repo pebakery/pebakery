@@ -69,7 +69,7 @@ namespace PEBakery.Core.Commands
             }
 
             string digest;
-            HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
+            HashType hashType = HashHelper.ParseHashType(hashTypeStr);
 
             if (0 < reportInterval)
                 s.MainViewModel.SetBuildCommandProgress("Hash Progress");

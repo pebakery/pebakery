@@ -1622,7 +1622,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                int cacheCount = Global.ScriptCache.CacheCount;
+                int cacheCount = ScriptCache.CacheCount;
                 long cacheBytes = PEBakery.Helper.FileHelper.GetFileSize(Global.ScriptCache.DatabasePath.ToString());
                 string humanReadableCacheSize = NumberHelper.ByteSizeToSIUnit(cacheBytes, 1);
                 ScriptCacheState = $"{cacheCount} scripts cached, {humanReadableCacheSize}";

@@ -338,9 +338,9 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            const string comp = "Hello ";
+            const string expected = "Hello ";
 
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
         }
 
         public static void ExpandSectionParams_7()
@@ -351,8 +351,8 @@ namespace PEBakery.Core.Tests
 
             const string src = "##1 ##a ##r #r";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string comp = "##1 ##a ##r TEST";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            const string expected = "##1 ##a ##r TEST";
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
         }
         #endregion
 

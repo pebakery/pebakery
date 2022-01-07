@@ -290,7 +290,8 @@ namespace PEBakery.WPF
 
         private void AboutWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Global.Setting != null;
+            // e.CanExecute = Global.Setting != null;
+            e.CanExecute = true;
         }
 
         private void AboutWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)

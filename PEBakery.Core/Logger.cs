@@ -44,8 +44,8 @@ namespace PEBakery.Core
     #region EventHandlers
     public sealed class SystemLogUpdateEventArgs : EventArgs
     {
-        public LogModel.SystemLog Log { get; set; }
-        public LogModel.SystemLog[] Logs { get; set; }
+        public LogModel.SystemLog? Log { get; set; }
+        public LogModel.SystemLog[]? Logs { get; set; }
 
         public SystemLogUpdateEventArgs(LogModel.SystemLog log)
         {
@@ -121,7 +121,7 @@ namespace PEBakery.Core
     public class DeferredLogging
     {
         public int CurrentScriptId;
-        public LogModel.BuildInfo BuildInfo;
+        public LogModel.BuildInfo? BuildInfo;
         public List<LogModel.Script> ScriptLogPool; // Only used in FullDeferredLogging
         public List<LogModel.Variable> VariablePool; // Only used in FullDeferredLogging
         public List<LogModel.BuildLog> BuildLogPool;
@@ -132,12 +132,18 @@ namespace PEBakery.Core
         {
             CurrentScriptId = 0;
             BuildInfo = null;
+            ScriptLogPool = new List<LogModel.Script>();
+            VariablePool = new List<LogModel.Variable>();
             BuildLogPool = new List<LogModel.BuildLog>(1024);
             if (fullDeferred)
             {
                 ScriptLogPool = new List<LogModel.Script>(64);
                 VariablePool = new List<LogModel.Variable>(128);
                 _scriptIdMatchDict = new Dictionary<int, int>(64) { [0] = 0 };
+            }
+            else
+            {
+                _scriptIdMatchDict = new Dictionary<int, int>();
             }
         }
 
@@ -220,24 +226,24 @@ namespace PEBakery.Core
         public const string LogSeparator = "--------------------------------------------------------------------------------";
 
         public LogDatabase Db { get; private set; }
-        public bool SuspendBuildLog = false;
+        public bool SuspendBuildLog { get; set; } = false;
 
-        public static LogDebugLevel DebugLevel;
-        public static bool MinifyHtmlExport;
+        public static LogDebugLevel DebugLevel { get; set; }
+        public static bool MinifyHtmlExport { get; set; }
 
         // Deferred logging and LogModel pool
-        private DeferredLogging _deferred;
+        private DeferredLogging? _deferred;
         private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
         private readonly ConcurrentDictionary<int, LogModel.Script> _scriptDict = new ConcurrentDictionary<int, LogModel.Script>();
         private readonly ConcurrentDictionary<string, LogModel.Script> _scriptRefIdDict = new ConcurrentDictionary<string, LogModel.Script>(StringComparer.Ordinal);
 
         // Event
-        public event SystemLogUpdateEventHandler SystemLogUpdated;
-        public event BuildLogUpdateEventHandler BuildLogUpdated;
-        public event BuildInfoUpdateEventHandler BuildInfoUpdated;
-        public event ScriptUpdateEventHandler ScriptUpdated;
-        public event VariableUpdateEventHandler VariableUpdated;
-        public event FullRefreshEventHandler FullRefresh;
+        public event SystemLogUpdateEventHandler? SystemLogUpdated;
+        public event BuildLogUpdateEventHandler? BuildLogUpdated;
+        public event BuildInfoUpdateEventHandler? BuildInfoUpdated;
+        public event ScriptUpdateEventHandler? ScriptUpdated;
+        public event VariableUpdateEventHandler? VariableUpdated;
+        public event FullRefreshEventHandler? FullRefresh;
         #endregion
 
         #region Constructor, Destructor
@@ -262,7 +268,6 @@ namespace PEBakery.Core
             if (disposing && Db != null)
             {
                 Db.Close();
-                Db = null;
             }
         }
         #endregion
@@ -278,10 +283,14 @@ namespace PEBakery.Core
             switch (s.LogMode)
             {
                 case LogMode.PartDefer:
+                    if (_deferred == null)
+                        throw new InvalidOperationException($"{nameof(_deferred)} is null");
                     Db.InsertAll(_deferred.BuildLogPool);
                     _deferred.BuildLogPool.Clear();
                     break;
                 case LogMode.FullDefer:
+                    if (_deferred == null)
+                        throw new InvalidOperationException($"{nameof(_deferred)} is null");
                     return _deferred.FlushFullDeferred(s);
             }
             return s.BuildId;
@@ -291,6 +300,9 @@ namespace PEBakery.Core
         #region ClearDeferredLogging
         public DeferredLogging ReadAndClearDeferredLogs()
         {
+            if (_deferred == null)
+                throw new InvalidOperationException($"{nameof(_deferred)} is null");
+
             DeferredLogging deferred = _deferred;
             _deferred = null;
             return deferred;
@@ -360,9 +372,15 @@ namespace PEBakery.Core
             }
 
             if (s.LogMode == LogMode.FullDefer)
+            {
+                if (_deferred == null)
+                    throw new InvalidOperationException($"{nameof(_deferred)} is null");
                 _deferred.VariablePool.AddRange(varLogs);
+            }
             else
+            {
                 Db.InsertAll(varLogs);
+            }
 
             SystemWrite(new LogInfo(LogState.Info, $"Build [{name}] started"));
 
@@ -374,7 +392,7 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            bool ret = _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
+            bool ret = _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo? dbBuild);
             if (!ret)
             {
                 string errMsg = $"Build {s.BuildId} was not logged properly";
@@ -382,6 +400,9 @@ namespace PEBakery.Core
                 Debug.Assert(false, errMsg);
                 return;
             }
+
+            if (dbBuild == null)
+                throw new InvalidOperationException($"{nameof(dbBuild)} is null");
 
             dbBuild.FinishTime = s.EndTime;
             switch (s.LogMode)
@@ -423,6 +444,9 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.FullDefer)
             {
+                if (_deferred == null)
+                    throw new InvalidOperationException($"{nameof(_deferred)} is null");
+
                 _deferred.CurrentScriptId -= 1;
                 dbScript.Id = _deferred.CurrentScriptId;
                 _deferred.ScriptLogPool.Add(dbScript);
@@ -448,6 +472,9 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.PartDefer)
             {
+                if (_deferred == null)
+                    throw new InvalidOperationException($"{nameof(_deferred)} is null");
+
                 Db.InsertAll(_deferred.BuildLogPool);
                 _deferred.BuildLogPool.Clear();
             }
@@ -456,7 +483,7 @@ namespace PEBakery.Core
             int scriptId = s.ScriptId;
 
             // Log elapsed time
-            bool ret = _scriptDict.TryRemove(scriptId, out LogModel.Script dbScript);
+            bool ret = _scriptDict.TryRemove(scriptId, out LogModel.Script? dbScript);
             if (!ret)
             {
                 string errMsg = $"Script {s.ScriptId} was not logged properly";
@@ -464,6 +491,9 @@ namespace PEBakery.Core
                 Debug.Assert(false, errMsg);
                 return;
             }
+            if (dbScript == null)
+                throw new InvalidOperationException($"{nameof(dbScript)} is null");
+
             dbScript.FinishTime = DateTime.UtcNow;
 
             if (localVars != null)
@@ -487,9 +517,15 @@ namespace PEBakery.Core
                 }
 
                 if (s.LogMode == LogMode.FullDefer)
+                {
+                    if (_deferred == null)
+                        throw new InvalidOperationException($"{nameof(_deferred)} is null");
                     _deferred.VariablePool.AddRange(varLogs);
+                }
                 else
+                {
                     Db.InsertAll(varLogs);
+                }
             }
 
             if (s.LogMode != LogMode.FullDefer)
@@ -535,6 +571,8 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.FullDefer)
             {
+                if (_deferred == null)
+                    throw new InvalidOperationException($"{nameof(_deferred)} is null");
                 _deferred.CurrentScriptId -= 1;
                 dbScript.Id = _deferred.CurrentScriptId;
                 _deferred.ScriptLogPool.Add(dbScript);
@@ -550,7 +588,7 @@ namespace PEBakery.Core
         #endregion
 
         #region BuildWrite
-        private void InternalBuildWrite(EngineState s, LogModel.BuildLog dbCode)
+        private void InternalBuildWrite(EngineState? s, LogModel.BuildLog dbCode)
         {
             if (s == null)
             {
@@ -565,6 +603,8 @@ namespace PEBakery.Core
                 {
                     case LogMode.FullDefer:
                     case LogMode.PartDefer:
+                        if (_deferred == null)
+                            throw new InvalidOperationException($"{nameof(_deferred)} is null");
                         _deferred.BuildLogPool.Add(dbCode);
                         break;
                     case LogMode.NoDefer:
@@ -775,7 +815,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string>? inParams, List<string>? outParams, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -787,7 +827,7 @@ namespace PEBakery.Core
                 LogStartOfSection(s, section.Script.TreePath, section.Name, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string>? inParams = null, List<string>? outParams = null, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -802,7 +842,7 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string>? inParams = null, List<string>? outParams = null, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -817,7 +857,7 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null)
+        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -829,7 +869,7 @@ namespace PEBakery.Core
                 LogEndOfSection(s, section.Script.TreePath, section.Name, depth, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogEndOfSection(EngineState s, string sectionName, int depth, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -842,7 +882,7 @@ namespace PEBakery.Core
                 BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogEndOfSection(EngineState s, string scriptName, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogEndOfSection(EngineState s, string scriptName, string sectionName, int depth, CodeCommand? cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -857,7 +897,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LogSectionParameter
-        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
+        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string>? inParams = null, List<string>? outParams = null, CodeCommand? cmd = null)
         {
             if (s.DisableLogger)
                 return;
@@ -1091,7 +1131,7 @@ namespace PEBakery.Core
             public DateTime Time { get; set; }
             public LogState State { get; set; }
             [MaxLength(65535)]
-            public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
 
             // Used in LogWindow
             [Ignore]
@@ -1110,15 +1150,15 @@ namespace PEBakery.Core
             [PrimaryKey, AutoIncrement]
             public int Id { get; set; }
             [MaxLength(32)]
-            public string PEBakeryVersion { get; set; }
+            public string PEBakeryVersion { get; set; } = string.Empty;
             [MaxLength(32)]
-            public string HostWindowsVersion { get; set; }
+            public string HostWindowsVersion { get; set; } = string.Empty;
             [MaxLength(32)]
-            public string HostDotnetVersion { get; set; }
+            public string HostDotnetVersion { get; set; } = string.Empty;
             public DateTime StartTime { get; set; }
             public DateTime FinishTime { get; set; }
             [MaxLength(256)]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [Ignore]
             public string TimeStr => StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
@@ -1144,10 +1184,10 @@ namespace PEBakery.Core
             /// </summary>
             public int Order { get; set; }
             public int Level { get; set; }
-            public string Name { get; set; }
-            public string RealPath { get; set; }
-            public string TreePath { get; set; }
-            public string Version { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string RealPath { get; set; } = string.Empty;
+            public string TreePath { get; set; } = string.Empty;
+            public string Version { get; set; } = string.Empty;
             public DateTime StartTime { get; set; }
             public DateTime FinishTime { get; set; }
 
@@ -1174,7 +1214,7 @@ namespace PEBakery.Core
 
             }
 
-            public bool Equals(Script x, Script y)
+            public bool Equals(Script? x, Script? y)
             {
                 if (x == null)
                 {
@@ -1208,9 +1248,9 @@ namespace PEBakery.Core
             public int ScriptId { get; set; }
             public VarsType Type { get; set; }
             [MaxLength(256)]
-            public string Key { get; set; }
+            public string Key { get; set; } = string.Empty;
             [MaxLength(65535)]
-            public string Value { get; set; }
+            public string Value { get; set; } = string.Empty;
 
             public override string ToString()
             {
@@ -1295,10 +1335,10 @@ namespace PEBakery.Core
             public int Depth { get; set; }
             public LogState State { get; set; }
             [MaxLength(4096)]
-            public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
             public int LineIdx { get; set; }
             [MaxLength(4096)]
-            public string RawCode { get; set; }
+            public string RawCode { get; set; } = string.Empty;
             public BuildLogFlag Flags { get; set; }
 
             [Ignore]

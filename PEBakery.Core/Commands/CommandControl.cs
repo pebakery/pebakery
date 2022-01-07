@@ -49,7 +49,7 @@ namespace PEBakery.Core.Commands
                 if (Regex.Match(info.VarKey, Macro.MacroNameRegex,
                     RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                 {
-                    string macroCommand = StringEscaper.Preprocess(s, info.VarValue);
+                    string? macroCommand = StringEscaper.Preprocess(s, info.VarValue);
 
                     if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                         macroCommand = null;
@@ -75,16 +75,16 @@ namespace PEBakery.Core.Commands
                         #region Set interface control's value (Compat)
                         if (s.CompatAllowSetModifyInterface)
                         {
-                            string varKey = Variables.TrimPercentMark(info.VarKey);
+                            string? varKey = Variables.TrimPercentMark(info.VarKey);
                             string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
                             Script sc = cmd.Section.Script;
-                            ScriptSection iface = sc.GetInterfaceSection(out _);
+                            ScriptSection? iface = sc.GetInterfaceSection(out _);
                             if (iface == null)
                                 goto case false;
 
                             (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
-                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                            UIControl? uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
                             if (uiCtrl == null)
                                 goto case false;
 
@@ -117,7 +117,7 @@ namespace PEBakery.Core.Commands
             // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
             CodeInfo_SetMacro info = cmd.Info.Cast<CodeInfo_SetMacro>();
 
-            string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
+            string? macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
 
             if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                 macroCommand = null;
@@ -141,7 +141,7 @@ namespace PEBakery.Core.Commands
                     {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};
 
             // Directly read from file
-            List<string> lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
+            List<string>? lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
             if (lines == null)
                 return new List<LogInfo>
                     {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};

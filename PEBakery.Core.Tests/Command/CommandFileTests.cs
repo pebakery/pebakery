@@ -38,7 +38,6 @@ namespace PEBakery.Core.Tests.Command
     [TestClass]
     [TestCategory(nameof(PEBakery.Core.Tests.Command))]
     [TestCategory(nameof(PEBakery.Core.Commands.CommandFile))]
-    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandFileTests
     {
         #region Const String
@@ -85,8 +84,8 @@ namespace PEBakery.Core.Tests.Command
                         using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
@@ -132,8 +131,8 @@ namespace PEBakery.Core.Tests.Command
                             using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                             using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                             {
-                                byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                                byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                                byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                                byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                                 Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                             }
                         }

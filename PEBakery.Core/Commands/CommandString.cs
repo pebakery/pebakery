@@ -74,9 +74,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.BytesToInt:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_BytesToInt), "Invalid StrFormatInfo");
-                        StrFormatInfo_BytesToInt subInfo = info.SubInfo as StrFormatInfo_BytesToInt;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_BytesToInt subInfo = info.SubInfo.Cast<StrFormatInfo_BytesToInt>();
 
                         string humanReadableByteSizeStr = StringEscaper.Preprocess(s, subInfo.HumanReadableByteSize);
                         decimal dest = NumberHelper.HumanReadableStringToByteSize(humanReadableByteSizeStr);
@@ -529,15 +527,11 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
-                        string destStr;
+                        string? destStr;
                         if (type == StrFormatType.ShortPath)
-                        {
                             destStr = FileHelper.GetShortPath(srcStr);
-                        }
                         else
-                        {
                             destStr = FileHelper.GetLongPath(srcStr);
-                        }
 
                         // GetShortPathName / GetLongPathName failed
                         if (destStr == null)

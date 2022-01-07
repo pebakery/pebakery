@@ -79,8 +79,8 @@ namespace PEBakery.Ini.Tests
                 File.Copy(srcFilePath, destFilePath, true);
                 Assert.IsTrue(testFunc.Invoke(destFilePath));
 
-                byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destFilePath);
-                byte[] expectDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, expectFilePath);
+                byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destFilePath);
+                byte[] expectDigest = HashHelper.GetHash(HashType.SHA256, expectFilePath);
                 Assert.IsTrue(HashHelper.IsHashBytesEqual(destDigest, expectDigest));
             }
             finally

@@ -84,11 +84,22 @@ namespace PEBakery.Core
 
         #region Fields and Properties
         [IgnoreMember]
-        public Script Script { get; private set; }
+        private Script? _script;
+        [IgnoreMember]
+        public Script Script
+        { 
+            get
+            {
+                if (_script == null)
+                    throw new InvalidOperationException($"{nameof(_script)} is null");
+                return _script;
+            }
+            private set => _script = value;
+        }
         [IgnoreMember]
         public Project Project => Script.Project;
         [Key(0)] // "private set" for Deserialization
-        public string Name { get; private set; }
+        public string Name { get; private set; } = string.Empty;
         [Key(1)]
         private SectionType _type;
         [IgnoreMember]
@@ -111,7 +122,7 @@ namespace PEBakery.Core
         /// Get lines of this section (Cached)
         /// </summary>
         [Key(3)]
-        private string[] _lines;
+        private string[]? _lines;
         [IgnoreMember]
 #pragma warning disable CA1819 // Properties should not return arrays
         public string[] Lines
@@ -126,20 +137,23 @@ namespace PEBakery.Core
                 // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
                 {
-                    List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
-                    return lineList?.ToArray();
+                    List<string>? lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
+                    if (lineList != null)
+                        return lineList.ToArray();
+                    else
+                        throw new InvalidOperationException($"Section [{Name}] is not a line-type section");
                 }
 
                 // Load from file, cache them in the memory.
-                if (LoadLines())
+                if (LoadLines() && _lines != null)
                     return _lines;
 
-                return null;
+                throw new InvalidOperationException($"Section [{Name}] is not a line-type section");
             }
         }
 
         [IgnoreMember]
-        private Dictionary<string, string> _iniDict;
+        private Dictionary<string, string>? _iniDict;
         [IgnoreMember]
         public Dictionary<string, string> IniDict
         {
@@ -151,12 +165,20 @@ namespace PEBakery.Core
 
                 // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
-                    return IniReadWriter.ParseIniSectionToDict(Script.RealPath, Name);
+                {
+                    Dictionary<string, string>? iniDict = IniReadWriter.ParseIniSectionToDict(Script.RealPath, Name);
+                    if (iniDict != null)
+                        return iniDict;
+                    else
+                        throw new InvalidOperationException($"Section [{Name}] is not an ini-type section");
+
+                }
 
                 // Load from file, cache them in the memory.
-                if (LoadIniDict())
+                if (LoadIniDict() && _iniDict != null)
                     return _iniDict;
-                return null;
+
+                throw new InvalidOperationException($"Section [{Name}] is not an ini-type section");
             }
         }
         #endregion
@@ -197,7 +219,7 @@ namespace PEBakery.Core
             if (_lines != null)
                 return true;
 
-            List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
+            List<string>? lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
             if (lineList == null)
                 return false;
             _lines = lineList.ToArray();
@@ -215,7 +237,7 @@ namespace PEBakery.Core
             bool result = true;
             if (_lines == null)
                 result = LoadLines();
-            if (!result) // LoadLines failed
+            if (!result || _lines == null) // LoadLines failed
                 return false;
 
             if (_iniDict != null)
@@ -271,7 +293,7 @@ namespace PEBakery.Core
                 int eIdx = line.IndexOf('=');
                 if (eIdx != -1 && eIdx != 0)
                 { // Key Found
-                    ReadOnlySpan<char> keyName = line.AsSpan().Slice(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    ReadOnlySpan<char> keyName = line.AsSpan(0, eIdx).TrimEnd(); // Do not need to trim start of the line
                     if (keyName.Equals(key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     {
                         _lines[i] = $"{key}={value}";
@@ -308,7 +330,7 @@ namespace PEBakery.Core
                 int eIdx = line.IndexOf('=');
                 if (eIdx != -1 && eIdx != 0)
                 { // Key Found
-                    ReadOnlySpan<char> keyName = line.AsSpan().Slice(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    ReadOnlySpan<char> keyName = line.AsSpan(0, eIdx).TrimEnd(); // Do not need to trim start of the line
                     if (keyName.Equals(key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     {
                         targetIdx = i;
@@ -356,14 +378,14 @@ namespace PEBakery.Core
         #endregion
 
         #region Equals, GetHashCode
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ScriptSection section)
                 return Equals(section);
             return false;
         }
 
-        public bool Equals(ScriptSection section)
+        public bool Equals(ScriptSection? section)
         {
             if (section == null)
                 return false;

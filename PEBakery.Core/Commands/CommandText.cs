@@ -73,7 +73,8 @@ namespace PEBakery.Core.Commands
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     w.WriteLine(line);
-                    string lineFromSrc;
+
+                    string? lineFromSrc;
                     while ((lineFromSrc = r.ReadLine()) != null)
                         w.WriteLine(lineFromSrc);
                 }
@@ -341,7 +342,7 @@ namespace PEBakery.Core.Commands
             using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
-                string srcLine;
+                string? srcLine;
                 while ((srcLine = r.ReadLine()) != null)
                 {
                     // Strange enough, WB082 treat [deleteLine] as case sensitive string.
@@ -391,7 +392,7 @@ namespace PEBakery.Core.Commands
             using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
-                string srcLine;
+                string? srcLine;
                 while ((srcLine = r.ReadLine()) != null)
                 {
                     bool writeLine = true;
@@ -441,7 +442,7 @@ namespace PEBakery.Core.Commands
             using (StreamReader sr = new StreamReader(fileName, encoding, false))
             using (StreamWriter sw = new StreamWriter(tempPath, false, encoding))
             {
-                string srcLine;
+                string? srcLine;
                 while ((srcLine = sr.ReadLine()) != null)
                 {
                     int count = StringHelper.CountSubStr(srcLine, " ");
@@ -481,7 +482,7 @@ namespace PEBakery.Core.Commands
             using (StreamReader r = new StreamReader(fileName, encoding, false))
             using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
-                string lineFromSrc;
+                string? lineFromSrc;
                 while ((lineFromSrc = r.ReadLine()) != null)
                 {
                     if (lineFromSrc.Length == 0)

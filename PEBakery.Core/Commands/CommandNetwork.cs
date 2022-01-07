@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
             }
 
-            string refererUrl = null;
+            string? refererUrl = null;
             if (info.Referer != null)
                 refererUrl = StringEscaper.Preprocess(s, info.Referer);
 
@@ -97,13 +97,13 @@ namespace PEBakery.Core.Commands
                 // (1) Use Command's custom User-Agent
                 // (2) Use EngineState's custom User-Agent
                 // (3) Use PEBakery's default User-Agent
-                string userAgent = null;
+                string? userAgent = null;
                 if (info.UserAgent != null)
                     userAgent = info.UserAgent;
                 else
                     userAgent = s.CustomUserAgent;
 
-                if (info.HashType == HashHelper.HashType.None)
+                if (info.HashType == HashType.None)
                 { // Standard WebGet
                     string tempPath = FileHelper.GetTempFile(destFileExt);
 
@@ -138,7 +138,8 @@ namespace PEBakery.Core.Commands
                     {
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
                         logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
-                        logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
+                        if (report.ErrorMsg != null)
+                            logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else
@@ -211,7 +212,8 @@ namespace PEBakery.Core.Commands
                     { // Failure -> Log error message
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
                         logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
-                        logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
+                        if (report.ErrorMsg != null)
+                            logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else

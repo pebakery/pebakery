@@ -46,7 +46,7 @@ namespace PEBakery.Core
         {
             public const string SectionName = "Project";
 
-            public string DefaultProject;
+            public string DefaultProject { get; set; } = string.Empty;
 
             public ProjectSetting()
             {
@@ -63,13 +63,18 @@ namespace PEBakery.Core
         {
             public const string SectionName = "General";
 
-            public bool OptimizeCode;
-            public bool ShowLogAfterBuild;
-            public bool StopBuildOnError;
-            public bool EnableLongFilePath;
-            public bool EnableUpdateServerManagement;
-            public bool UseCustomUserAgent;
-            public string CustomUserAgent;
+            /// <summary>
+            /// Default custom User-Agent is set to wget (1.20.3 is version of Ubuntu 20.04 wget package) 
+            /// </summary>
+            public const string DefaultCustomUserAgent = @"Wget/1.20.3";
+
+            public bool OptimizeCode { get; set; }
+            public bool ShowLogAfterBuild { get; set; }
+            public bool StopBuildOnError { get; set; }
+            public bool EnableLongFilePath { get; set; }
+            public bool EnableUpdateServerManagement { get; set; }
+            public bool UseCustomUserAgent { get; set; }
+            public string CustomUserAgent { get; set; } = DefaultCustomUserAgent;
 
             public GeneralSetting()
             {
@@ -84,8 +89,7 @@ namespace PEBakery.Core
                 EnableLongFilePath = false;
                 EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
-                // Default custom User-Agent is set to wget (1.20.3 is version of Ubuntu 20.04 wget package)
-                CustomUserAgent = @"Wget/1.20.3";
+                CustomUserAgent = DefaultCustomUserAgent;
             }
         }
 
@@ -100,14 +104,14 @@ namespace PEBakery.Core
         {
             public const string SectionName = "Interface";
 
-            public bool UseCustomTitle;
-            public string CustomTitle;
-            public bool UseCustomEditor;
-            public string CustomEditorPath;
-            public FontHelper.FontInfo MonospacedFont;
-            public int ScaleFactor;
-            public bool DisplayShellExecuteConOut;
-            public InterfaceSize InterfaceSize;
+            public bool UseCustomTitle { get; set; }
+            public string CustomTitle { get; set; } = string.Empty;
+            public bool UseCustomEditor { get; set; }
+            public string CustomEditorPath { get; set; } = string.Empty;
+            public FontHelper.FontInfo MonospacedFont { get; set; }
+            public int ScaleFactor { get; set; }
+            public bool DisplayShellExecuteConOut { get; set; }
+            public InterfaceSize InterfaceSize { get; set; }
 
             public FontFamily MonospacedFontFamily => MonospacedFont.FontFamily;
             public FontWeight MonospacedFontWeight => MonospacedFont.FontWeight;
@@ -411,8 +415,8 @@ namespace PEBakery.Core
         {
             public const string SectionName = "Script";
 
-            public bool EnableCache;
-            public bool AutoSyntaxCheck;
+            public bool EnableCache { get; set; }
+            public bool AutoSyntaxCheck { get; set; }
 
             public ScriptSetting()
             {
@@ -431,9 +435,9 @@ namespace PEBakery.Core
         {
             public const string SectionName = "Log";
 
-            public LogDebugLevel DebugLevel;
-            public bool DeferredLogging;
-            public bool MinifyHtmlExport;
+            public LogDebugLevel DebugLevel { get; set; }
+            public bool DeferredLogging { get; set; }
+            public bool MinifyHtmlExport { get; set; }
 
             public LogSetting()
             {
@@ -457,24 +461,24 @@ namespace PEBakery.Core
         {
             public const string SectionName = "LogViewer";
 
-            public int LogWindowWidth;
-            public int LogWindowHeight;
-            public bool BuildFullLogTimeVisible;
-            public int BuildFullLogTimeWidth;
-            public bool BuildFullLogScriptOriginVisible;
-            public int BuildFullLogScriptOriginWidth;
-            public bool BuildFullLogDepthVisible;
-            public int BuildFullLogDepthWidth;
-            public bool BuildFullLogStateVisible;
-            public int BuildFullLogStateWidth;
-            public bool BuildFullLogFlagsVisible;
-            public int BuildFullLogFlagsWidth;
-            public bool BuildFullLogMessageVisible;
-            public int BuildFullLogMessageWidth;
-            public bool BuildFullLogRawCodeVisible;
-            public int BuildFullLogRawCodeWidth;
-            public bool BuildFullLogLineNumberVisible;
-            public int BuildFullLogLineNumberWidth;
+            public int LogWindowWidth { get; set; }
+            public int LogWindowHeight { get; set; }
+            public bool BuildFullLogTimeVisible { get; set; }
+            public int BuildFullLogTimeWidth { get; set; }
+            public bool BuildFullLogScriptOriginVisible { get; set; }
+            public int BuildFullLogScriptOriginWidth { get; set; }
+            public bool BuildFullLogDepthVisible { get; set; }
+            public int BuildFullLogDepthWidth { get; set; }
+            public bool BuildFullLogStateVisible { get; set; }
+            public int BuildFullLogStateWidth { get; set; }
+            public bool BuildFullLogFlagsVisible { get; set; }
+            public int BuildFullLogFlagsWidth { get; set; }
+            public bool BuildFullLogMessageVisible { get; set; }
+            public int BuildFullLogMessageWidth { get; set; }
+            public bool BuildFullLogRawCodeVisible { get; set; }
+            public int BuildFullLogRawCodeWidth { get; set; }
+            public bool BuildFullLogLineNumberVisible { get; set; }
+            public int BuildFullLogLineNumberWidth { get; set; }
 
             public const int MinColumnWidth = 35;
 
@@ -547,6 +551,10 @@ namespace PEBakery.Core
             // Static
             Logger.DebugLevel = Log.DebugLevel;
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
+
+            // Check nullability
+            if (Global.MainViewModel == null)
+                return;
 
             // MainViewModel (Without Theme)
             Global.MainViewModel.TitleBar = Interface.UseCustomTitle ? Interface.CustomTitle : MainViewModel.DefaultTitleBar;
@@ -653,17 +661,24 @@ namespace PEBakery.Core
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth)), // Integer
             };
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
-            Dictionary<string, Dictionary<string, string>> keyDict = keys
-                .GroupBy(x => x.Section)
-                .ToDictionary(
-                    x => x.Key,
-                    y => y.ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase),
-                    StringComparer.OrdinalIgnoreCase);
+
+            Dictionary<string, Dictionary<string, string?>> keyDict = new Dictionary<string, Dictionary<string, string?>>(StringComparer.OrdinalIgnoreCase);
+            foreach (IGrouping<string, IniKey> kvGroup in keys.GroupBy(x => x.Section))
+            {
+                Dictionary<string, string?> valueDict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                foreach (IniKey iniKey in kvGroup)
+                {
+                    if (iniKey.Key == null)
+                        continue;
+                    valueDict[iniKey.Key] = iniKey.Value;
+                }
+                keyDict[kvGroup.Key] = valueDict;
+            }
 
             // Project
             if (keyDict.ContainsKey(ProjectSetting.SectionName))
             {
-                Dictionary<string, string> projectDict = keyDict[ProjectSetting.SectionName];
+                Dictionary<string, string?> projectDict = keyDict[ProjectSetting.SectionName];
 
                 Project.DefaultProject = SettingDictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
             }
@@ -671,7 +686,7 @@ namespace PEBakery.Core
             // General
             if (keyDict.ContainsKey(GeneralSetting.SectionName))
             {
-                Dictionary<string, string> generalDict = keyDict[GeneralSetting.SectionName];
+                Dictionary<string, string?> generalDict = keyDict[GeneralSetting.SectionName];
 
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
@@ -685,15 +700,15 @@ namespace PEBakery.Core
             // Interface
             if (keyDict.ContainsKey(InterfaceSetting.SectionName))
             {
-                Dictionary<string, string> ifaceDict = keyDict[InterfaceSetting.SectionName];
+                Dictionary<string, string?> ifaceDict = keyDict[InterfaceSetting.SectionName];
 
                 // Parse MonospacedFont
                 FontFamily monoFontFamily = Interface.MonospacedFont.FontFamily;
                 FontWeight monoFontWeight = Interface.MonospacedFont.FontWeight;
-                if (ifaceDict[nameof(Interface.MonospacedFontFamily)] != null)
-                    monoFontFamily = new FontFamily(ifaceDict[nameof(Interface.MonospacedFontFamily)]);
-                if (ifaceDict[nameof(Interface.MonospacedFontWeight)] != null)
-                    monoFontWeight = FontHelper.ParseFontWeight(ifaceDict[nameof(Interface.MonospacedFontWeight)]);
+                if (ifaceDict[nameof(Interface.MonospacedFontFamily)] is string monoFontFamilyStr)
+                    monoFontFamily = new FontFamily(monoFontFamilyStr);
+                if (ifaceDict[nameof(Interface.MonospacedFontWeight)] is string monoFontWeightStr)
+                    monoFontWeight = FontHelper.ParseFontWeight(monoFontWeightStr);
                 int monoFontSize = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, null);
                 Interface.MonospacedFont = new FontHelper.FontInfo(monoFontFamily, monoFontWeight, monoFontSize);
 
@@ -709,7 +724,7 @@ namespace PEBakery.Core
             // Theme
             if (keyDict.ContainsKey(ThemeSetting.SectionName))
             {
-                Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
+                Dictionary<string, string?> scDict = keyDict[ThemeSetting.SectionName];
 
                 Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
@@ -727,7 +742,7 @@ namespace PEBakery.Core
             // Script
             if (keyDict.ContainsKey(ScriptSetting.SectionName))
             {
-                Dictionary<string, string> scDict = keyDict[ScriptSetting.SectionName];
+                Dictionary<string, string?> scDict = keyDict[ScriptSetting.SectionName];
 
                 Script.EnableCache = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
                 Script.AutoSyntaxCheck = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
@@ -736,7 +751,7 @@ namespace PEBakery.Core
             // Log
             if (keyDict.ContainsKey(LogSetting.SectionName))
             {
-                Dictionary<string, string> logDict = keyDict[LogSetting.SectionName];
+                Dictionary<string, string?> logDict = keyDict[LogSetting.SectionName];
 
                 Log.DebugLevel = SettingDictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
                 Log.DeferredLogging = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
@@ -746,7 +761,7 @@ namespace PEBakery.Core
             // LogViewer
             if (keyDict.ContainsKey(LogViewerSetting.SectionName))
             {
-                Dictionary<string, string> logViewDict = keyDict[LogViewerSetting.SectionName];
+                Dictionary<string, string?> logViewDict = keyDict[LogViewerSetting.SectionName];
 
                 LogViewer.LogWindowWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, null);
                 LogViewer.LogWindowHeight = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, null);
@@ -771,7 +786,7 @@ namespace PEBakery.Core
 
         public void WriteToFile()
         {
-            string WriteColor(Color c) => $"{c.R}, {c.G}, {c.B}";
+            static string WriteColor(Color c) => $"{c.R}, {c.G}, {c.B}";
 
             IniKey[] keys =
             {
@@ -844,48 +859,48 @@ namespace PEBakery.Core
     #region SettingDictParser
     public static class SettingDictParser
     {
-        public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
+        public static string ParseString(Dictionary<string, string?> dict, string key, string defaultValue)
         {
-            return SilentDictParser.ParseString(dict, key, defaultValue);
+            return SilentDictParser.ParseStringNullable(dict, key, defaultValue);
         }
 
-        public static bool ParseBoolean(Dictionary<string, string> dict, string section, string key, bool defaultValue)
+        public static bool ParseBoolean(Dictionary<string, string?> dict, string section, string key, bool defaultValue)
         {
-            bool val = SilentDictParser.ParseBoolean(dict, key, defaultValue, out bool notFound);
+            bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool notFound);
             if (notFound)
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
             return val;
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string section, string key, int defaultValue, int? min, int? max)
+        public static int ParseInteger(Dictionary<string, string?> dict, string section, string key, int defaultValue, int? min, int? max)
         {
-            int val = SilentDictParser.ParseInteger(dict, key, defaultValue, min, max, out bool notFound);
+            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool notFound);
             if (notFound)
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
             return val;
         }
 
-        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
-            TEnum val = SilentDictParser.ParseStrEnum(dict, key, defaultValue, out bool notFound);
+            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool notFound);
             if (notFound)
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
             return val;
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : Enum
         {
-            TEnum val = SilentDictParser.ParseIntEnum(dict, key, defaultValue, out bool notFound);
+            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool notFound);
             if (notFound)
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
             return val;
         }
 
-        public static Color ParseColor(Dictionary<string, string> dict, string section, string key, Color defaultValue)
+        public static Color ParseColor(Dictionary<string, string?> dict, string section, string key, Color defaultValue)
         {
-            Color val = SilentDictParser.ParseColor(dict, key, defaultValue, out bool notFound);
+            Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool notFound);
             if (notFound)
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
             return val;

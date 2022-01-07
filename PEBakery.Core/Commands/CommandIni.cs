@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
-            string defaultValue = null;
+            string? defaultValue = null;
             if (info.DefaultValue != null)
                 defaultValue = StringEscaper.Preprocess(s, info.DefaultValue);
 
@@ -57,7 +57,7 @@ namespace PEBakery.Core.Commands
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            string value = IniReadWriter.ReadKey(fileName, sectionName, key);
+            string? value = IniReadWriter.ReadKey(fileName, sectionName, key);
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and it's value [{value}] read from [{fileName}]"));
@@ -122,13 +122,14 @@ namespace PEBakery.Core.Commands
             {
                 IniKey kv = keys[i];
                 CodeCommand subCmd = infoOp.Cmds[i];
+                CodeInfo_IniRead subInfo = infoOp.Infos[i];
 
                 if (kv.Value != null)
                 {
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and it's value [{kv.Value}] successfully read", subCmd));
 
                     string escapedValue = StringEscaper.Escape(kv.Value, false, true);
-                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, escapedValue, false, false, false);
+                    List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, escapedValue, false, false, false);
                     LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
 
@@ -136,18 +137,18 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    if (infoOp.Infos[i].DefaultValue != null)
+                    if (subInfo.DefaultValue != null)
                     {
                         logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist. Assigning default value [{infoOp.Infos[i].DefaultValue}]"));
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, infoOp.Infos[i].DefaultValue, false, false, false);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, subInfo.DefaultValue, false, false, false);
                         logs.AddRange(varLogs);
                     }
                     else
                     {
                         logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist", subCmd));
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, string.Empty, false, false, false);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, string.Empty, false, false, false);
                         logs.AddRange(varLogs);
                     }
                 }
@@ -168,11 +169,6 @@ namespace PEBakery.Core.Commands
             string key = StringEscaper.Preprocess(s, info.Key);
             string value = StringEscaper.Preprocess(s, info.Value);
 
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-            Debug.Assert(sectionName != null, $"{nameof(sectionName)} != null");
-            Debug.Assert(key != null, $"{nameof(key)} != null");
-            Debug.Assert(value != null, $"{nameof(value)} != null");
-
             if (sectionName.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
             if (key.Length == 0)
@@ -181,9 +177,10 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniWrite");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
+
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
@@ -212,7 +209,6 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWriteOp infoOp = cmd.Info.Cast<CodeInfo_IniWriteOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -234,9 +230,10 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key, value);
             }
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniWriteOp");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
+
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
@@ -316,8 +313,6 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -384,12 +379,17 @@ namespace PEBakery.Core.Commands
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
-            IniKey[] keys = IniReadWriter.ReadSection(fileName, section);
+            IniKey[]? keys = IniReadWriter.ReadSection(fileName, section);
             if (keys != null)
             {
                 List<string> kvList = new List<string>(keys.Length * 2);
                 foreach (IniKey k in keys)
                 {
+                    if (k.Key == null)
+                        throw new CriticalErrorException($"{nameof(k.Key)} is null");
+                    if (k.Value == null)
+                        throw new CriticalErrorException($"{nameof(k.Value)} is null");
+
                     kvList.Add(k.Key);
                     kvList.Add(k.Value);
                 }
@@ -420,8 +420,6 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-
             string[] sections = new string[infoOp.Cmds.Count];
             string[] destVars = new string[infoOp.Cmds.Count];
             string[] delims = new string[infoOp.Cmds.Count];
@@ -440,14 +438,14 @@ namespace PEBakery.Core.Commands
                     delims[i] = StringEscaper.Preprocess(s, info.Delim);
             }
 
-            Dictionary<string, IniKey[]> keyDict = IniReadWriter.ReadSections(fileName, sections);
+            Dictionary<string, IniKey[]?> keyDict = IniReadWriter.ReadSections(fileName, sections);
 
             int successCount = 0;
             for (int i = 0; i < sections.Length; i++)
             {
                 string section = sections[i];
                 string delim = delims[i];
-                IniKey[] keys = keyDict[section];
+                IniKey[]? keys = keyDict[section];
                 CodeCommand subCmd = infoOp.Cmds[i];
 
                 if (keys != null)
@@ -455,6 +453,11 @@ namespace PEBakery.Core.Commands
                     List<string> kvList = new List<string>(keys.Length * 2);
                     foreach (IniKey k in keys)
                     {
+                        if (k.Key == null)
+                            throw new CriticalErrorException($"{nameof(k.Key)} is null");
+                        if (k.Value == null)
+                            throw new CriticalErrorException($"{nameof(k.Value)} is null");
+
                         kvList.Add(k.Key);
                         kvList.Add(k.Value);
                     }
@@ -498,9 +501,9 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniAddSection");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
@@ -542,9 +545,10 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniAddSectionOp");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
+
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
@@ -661,9 +665,10 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniWriteTextLine");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
+
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
@@ -709,9 +714,10 @@ namespace PEBakery.Core.Commands
             }
             IniKey[] keys = keyList.ToArray();
 
-            string dirPath = Path.GetDirectoryName(fileName);
+            string? dirPath = Path.GetDirectoryName(fileName);
             if (dirPath == null)
-                throw new InternalException("Internal Logic Error at IniWriteTextLineOp");
+                return LogInfo.LogErrorMessage(logs, $"DirectoryName of {nameof(fileName)} [{fileName}] is null");
+
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 

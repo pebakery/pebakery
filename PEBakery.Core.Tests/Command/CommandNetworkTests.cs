@@ -43,14 +43,14 @@ namespace PEBakery.Core.Tests.Command
         // ReSharper disable StringLiteralTypo
         private static string _sampleSrcFile;
         private static string _sampleFileUrl;
-        private static readonly Dictionary<HashHelper.HashType, string> SampleDigestDict =
-            new Dictionary<HashHelper.HashType, string>
+        private static readonly Dictionary<HashType, string> SampleDigestDict =
+            new Dictionary<HashType, string>
             {
-                [HashHelper.HashType.MD5] = "ddc79d50c92bba1ce70529c2999b2849",
-                [HashHelper.HashType.SHA1] = "c565c60689bd51a0a0f5013290c1dfbcefd4a318",
-                [HashHelper.HashType.SHA256] = "0f197f2578c73cf86e3b6c6f053a790dd2438102fb245694958c59f0cd1733d5",
-                [HashHelper.HashType.SHA384] = "ff284e5211277d364a15514b465afd86c980658af814decc7782786e56547bfe420fe0590b1c27005cba8e78a46f9b3c",
-                [HashHelper.HashType.SHA512] = "de4faf4db469c022c1731fde2a2383466e378709259d9734e64090a27b937c52a9a079867eefb6e7b0751815dc6362e6f162a6f2e6e01b7c3fa924ebe2decaee"
+                [HashType.MD5] = "ddc79d50c92bba1ce70529c2999b2849",
+                [HashType.SHA1] = "c565c60689bd51a0a0f5013290c1dfbcefd4a318",
+                [HashType.SHA256] = "0f197f2578c73cf86e3b6c6f053a790dd2438102fb245694958c59f0cd1733d5",
+                [HashType.SHA384] = "ff284e5211277d364a15514b465afd86c980658af814decc7782786e56547bfe420fe0590b1c27005cba8e78a46f9b3c",
+                [HashType.SHA512] = "de4faf4db469c022c1731fde2a2383466e378709259d9734e64090a27b937c52a9a079867eefb6e7b0751815dc6362e6f162a6f2e6e01b7c3fa924ebe2decaee"
             };
         // ReSharper restore StringLiteralTypo
 
@@ -339,7 +339,7 @@ namespace PEBakery.Core.Tests.Command
 
         public void WebGet_HashSuccess(EngineState s)
         {
-            foreach (HashHelper.HashType hashType in SampleDigestDict.Keys)
+            foreach (HashType hashType in SampleDigestDict.Keys)
             {
                 string destFile = FileHelper.ReserveTempFile("html");
                 try

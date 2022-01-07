@@ -41,8 +41,8 @@ namespace PEBakery.Core.ViewModels
     public class ViewModelBase : INotifyPropertyChanged
     {
         #region OnPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        public virtual void OnPropertyUpdate([CallerMemberName] string propertyName = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public virtual void OnPropertyUpdate([CallerMemberName] string? propertyName = null)
         {
             Debug.Assert(propertyName != null);
             Debug.Assert(GetType().GetRuntimeProperty(propertyName) != null);
@@ -51,13 +51,13 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region SetProperty
-        protected virtual void SetProperty<T>(ref T fieldRef, T newValue, [CallerMemberName] string propertyName = null)
+        protected virtual void SetProperty<T>(ref T fieldRef, T newValue, [CallerMemberName] string? propertyName = null)
         {
             fieldRef = newValue;
             OnPropertyUpdate(propertyName);
         }
 
-        protected virtual void SetCollectionProperty<T>(ref T fieldRef, object lockObject, T newValue, [CallerMemberName] string propertyName = null)
+        protected virtual void SetCollectionProperty<T>(ref T fieldRef, object lockObject, T newValue, [CallerMemberName] string? propertyName = null)
             where T : IEnumerable
         {
             fieldRef = newValue;
@@ -67,12 +67,12 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region RelayCommand
-        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, Action<object> executeFunc, Func<object, bool> canExecuteFunc = null)
+        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
         {
             return cmdRef ??= new RelayCommand(executeFunc, canExecuteFunc);
         }
 
-        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, string text, Action<object> executeFunc, Func<object, bool> canExecuteFunc = null)
+        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, string text, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
         {
             return cmdRef ??= new RelayCommand(text, executeFunc, canExecuteFunc);
         }
