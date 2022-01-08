@@ -143,7 +143,8 @@ namespace PEBakery.Core.Tests.Command
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
                         string srcFile = Path.Combine(srcDir, srcFileName);
-                        Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                        Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                        Assert.IsNotNull(sc);
 
                         // Check whether file was successfully encoded
                         Assert.IsTrue(sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders));

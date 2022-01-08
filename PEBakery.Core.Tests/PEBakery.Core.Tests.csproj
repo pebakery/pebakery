@@ -27,5 +27,6 @@
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent>REM XCOPY /S /I /Y "$(SolutionDir)Precompiled\Native\*" "$(TargetDir)"</PostBuildEvent>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 </Project>

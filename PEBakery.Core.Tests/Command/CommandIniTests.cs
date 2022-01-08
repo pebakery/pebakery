@@ -995,7 +995,7 @@ namespace PEBakery.Core.Tests.Command
         #region Template
         private static void ReadTemplate(
             EngineState s, CodeType type,
-            string rawCode, string testFile, string sampleStr, string compStr,
+            string rawCode, string testFile, string sampleStr, string? compStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(testFile))
@@ -1064,7 +1064,7 @@ namespace PEBakery.Core.Tests.Command
 
         private static void WriteTemplate(
             EngineState s, CodeType type,
-            string rawCode, string testFile, string sampleStr, string expectStr,
+            string rawCode, string testFile, string sampleStr, string? expectStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(testFile))

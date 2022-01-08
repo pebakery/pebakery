@@ -316,7 +316,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void FileTemplate(string archiveFile, string originDir, string originFile, string password = null)
+            void FileTemplate(string archiveFile, string originDir, string originFile, string? password = null)
             {
                 Debug.Assert(archiveFile != null);
 

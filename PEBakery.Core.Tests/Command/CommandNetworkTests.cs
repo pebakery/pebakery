@@ -40,9 +40,8 @@ namespace PEBakery.Core.Tests.Command
     public class CommandNetworkTests
     {
         #region Fields and Properties
-        // ReSharper disable StringLiteralTypo
-        private static string _sampleSrcFile;
-        private static string _sampleFileUrl;
+        private static string? _sampleSrcFile;
+        private static string? _sampleFileUrl;
         private static readonly Dictionary<HashType, string> SampleDigestDict =
             new Dictionary<HashType, string>
             {
@@ -184,7 +183,8 @@ namespace PEBakery.Core.Tests.Command
                 s.ReturnValue = string.Empty;
 
                 // Test without NOERR
-                string testUrl = GenerateNeverExistUrl();
+                string? testUrl = GenerateNeverExistUrl();
+                Assert.IsNotNull(testUrl);
                 string rawCode = $"WebGet,\"{testUrl}/Sample.txt\",\"{destFile}\"";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.RuntimeError);
 
@@ -339,6 +339,8 @@ namespace PEBakery.Core.Tests.Command
 
         public void WebGet_HashSuccess(EngineState s)
         {
+            Assert.IsNotNull(_sampleSrcFile);
+
             foreach (HashType hashType in SampleDigestDict.Keys)
             {
                 string destFile = FileHelper.ReserveTempFile("html");
@@ -394,13 +396,13 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Utility
-        private static string GenerateNeverExistUrl()
+        private static string? GenerateNeverExistUrl()
         {
             // Let's try a domain which never exists.
             // No one wants to create a domain named 'Never-exist-domain + rand hex' in Korean, right?
             const string baseUrl = "절대로존재하지않는無도메인";
             Random rand = new Random();
-            string testUrl = null;
+            string? testUrl = null;
             int counter = 0;
 
             // Very unlikely, but if a villain already created 16 randomized domains, then give up. Test will fail.

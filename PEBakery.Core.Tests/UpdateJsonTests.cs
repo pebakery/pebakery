@@ -67,12 +67,13 @@ namespace PEBakery.Core.Tests
                 File.Copy(srcScriptFile, workScriptFile);
 
                 Project p = EngineTests.Project;
-                Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
+                Script? sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
                 {
                     AddToProjectTree = true,
                     IgnoreMain = false,
                     OverwriteToProjectTree = true,
                 });
+                Assert.IsNotNull(sc);
 
                 // Create a script meta json
                 UpdateJson.CreateScriptUpdateJson(sc, destJson);

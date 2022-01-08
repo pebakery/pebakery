@@ -119,7 +119,8 @@ namespace PEBakery.Core.Tests.Command
                 Assert.AreNotEqual(-1, idx);
 
                 // Check script file
-                string permanent = IniReadWriter.ReadKey(scPath, "Variables", "%PermDest%");
+                string? permanent = IniReadWriter.ReadKey(scPath, "Variables", "%PermDest%");
+                Assert.IsNotNull(permanent);
                 Assert.IsTrue(dest.Equals(permanent, StringComparison.Ordinal));
 
                 // Delete

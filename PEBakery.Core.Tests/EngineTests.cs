@@ -47,25 +47,46 @@ namespace PEBakery.Core.Tests
     public static class EngineTests
     {
         #region Static Fields and Properties
-        public static Project Project { get; set; }
-        public static Logger Logger { get; set; }
-        public static string BaseDir { get; set; }
-        public static string TestBench { get; set; }
-        public static string MagicFile { get; set; }
+        private static Project? _project;
+        public static Project Project
+        {
+            get
+            {
+                if (_project == null)
+                    throw new InvalidOperationException($"{nameof(_project)} is null");
+                return _project;
+            }
+            set => _project = value;
+        }
+        private static Logger? _logger;
+        public static Logger Logger
+        {
+            get
+            {
+                if (_logger == null)
+                    throw new InvalidOperationException($"{nameof(_logger)} is null");
+                return _logger;
+            }
+            set => _logger = value;
+        }
+        public static string BaseDir { get; set; } = string.Empty;
+        public static string TestBench { get; set; } = string.Empty;
+        public static string MagicFile { get; set; } = string.Empty;
         public static bool IsOnline { get; set; }
         #endregion
 
         #region CreateEngineState, DummySection
-        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = ScriptSection.Names.Process)
+        public static EngineState CreateEngineState(bool doCopy = true, Script? sc = null, string entrySection = ScriptSection.Names.Process)
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             EngineState s;
             if (doCopy)
             {
                 Project project = Project.PartialDeepCopy();
-                MainViewModel model = null;
-                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                MainViewModel? model = null;
+                // TODO: .NET Core Band-aid. Without this line, entire WPF Control access would crash the test.
                 RunSTAThread(() => model = new MainViewModel());
+                Assert.IsNotNull(model);
 
                 if (sc == null)
                     s = new EngineState(project, Logger, model, EngineMode.RunAll);
@@ -75,9 +96,11 @@ namespace PEBakery.Core.Tests
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
-                MainViewModel model = null;
-                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                MainViewModel? model = null;
+                // TODO: .NET Core Band-aid. Without this line, entire WPF Control access would crash the test.
                 RunSTAThread(() => model = new MainViewModel());
+                Assert.IsNotNull(model);
+
                 if (sc == null)
                     s = new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
@@ -218,7 +241,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
+            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false) ?? new List<LogInfo>();
         }
         #endregion
 
@@ -337,7 +360,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
+            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false) ?? new List<LogInfo>();
         }
         #endregion
 
@@ -347,9 +370,9 @@ namespace PEBakery.Core.Tests
             return EvalScript(treePath, check, null, entrySection);
         }
 
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> setState, string entrySection = ScriptSection.Names.Process)
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState>? setState, string entrySection = ScriptSection.Names.Process)
         {
-            Script sc = Project.GetScriptByTreePath(treePath);
+            Script? sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
 
             EngineState s = CreateEngineState(true, sc, entrySection);
@@ -454,7 +477,7 @@ namespace PEBakery.Core.Tests
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                 return new TestResult[] { testMethod.Invoke(null) };
 
-            TestResult[] result = null;
+            TestResult[] result = Array.Empty<TestResult>();
             Thread thread = new Thread(() =>
             {
                 result = new TestResult[] { testMethod.Invoke(null) };

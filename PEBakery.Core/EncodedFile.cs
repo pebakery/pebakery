@@ -209,12 +209,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachFile, ContainsFile
-        public static Task AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
+        public static Task AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double>? progress)
         {
             return Task.Run(() => AttachFile(sc, folderName, fileName, srcFilePath, type, progress));
         }
 
-        public static void AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
+        public static void AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double>? progress)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -690,12 +690,12 @@ namespace PEBakery.Core
         #endregion
 
         #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
-        public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream, IProgress<double> progress)
+        public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream, IProgress<double>? progress)
         {
             return Task.Run(() => ExtractFile(sc, folderName, fileName, outStream, progress));
         }
 
-        public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream, IProgress<double> progress)
+        public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream, IProgress<double>? progress)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));

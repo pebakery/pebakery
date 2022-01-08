@@ -223,7 +223,7 @@ namespace PEBakery.Core.Tests.Command
             Registry.CurrentUser.DeleteSubKeyTree(RegDeletePath, false);
             try
             {
-                void Template(string rawCode, RegistryKey hKey, string keyPath, string valueName, bool createDummy = true, ErrorCheck check = ErrorCheck.Success)
+                void Template(string rawCode, RegistryKey hKey, string keyPath, string? valueName, bool createDummy = true, ErrorCheck check = ErrorCheck.Success)
                 { // RegDelete,<HKey>,<KeyPath>,[ValueName]
                     if (createDummy)
                     {
@@ -241,20 +241,20 @@ namespace PEBakery.Core.Tests.Command
                     {
                         if (valueName == null)
                         {
-                            using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
+                            using (RegistryKey? subKey = hKey.OpenSubKey(keyPath, false))
                             {
                                 Assert.IsNull(subKey);
                             }
                         }
                         else
                         {
-                            using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
+                            using (RegistryKey? subKey = hKey.OpenSubKey(keyPath, false))
                             {
                                 if (createDummy)
                                 {
                                     Assert.IsNotNull(subKey);
 
-                                    object valueData = subKey.GetValue(valueName);
+                                    object? valueData = subKey.GetValue(valueName);
                                     Assert.IsNull(valueData);
                                 }
                                 else
@@ -300,14 +300,14 @@ namespace PEBakery.Core.Tests.Command
 
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
-                    using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
+                    using (RegistryKey? subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
                     {
                         Assert.IsNotNull(subKey);
 
                         RegistryValueKind kind = subKey.GetValueKind("Key");
                         Assert.IsTrue(kind == RegistryValueKind.MultiString);
 
-                        object valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                        object? valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                         Assert.IsNotNull(valueData);
 
                         string[] destStrs = (string[])valueData;
@@ -328,14 +328,14 @@ namespace PEBakery.Core.Tests.Command
 
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
-                    using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
+                    using (RegistryKey? subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
                     {
                         Assert.IsNotNull(subKey);
 
                         RegistryValueKind kind = subKey.GetValueKind("Key");
                         Assert.IsTrue(kind == RegistryValueKind.MultiString);
 
-                        object valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                        object? valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                         Assert.IsNotNull(valueData);
 
                         string[] destStrs = (string[])valueData;
@@ -432,7 +432,7 @@ namespace PEBakery.Core.Tests.Command
                 using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(subKeyStr, false))
                 {
                     Assert.AreEqual(RegistryValueKind.String, subKey.GetValueKind("String"));
-                    string stringValue = subKey.GetValue("String", null) as string;
+                    string? stringValue = subKey.GetValue("String", null) as string;
                     Assert.IsNotNull(stringValue);
                     Assert.IsTrue(stringValue.Equals("Str"));
 
@@ -442,18 +442,22 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsTrue(stringValue.Equals("%WinDir%"));
 
                     Assert.AreEqual(RegistryValueKind.Binary, subKey.GetValueKind("Binary"));
-                    byte[] byteValue = subKey.GetValue("Binary", null) as byte[];
+                    byte[]? byteValue = subKey.GetValue("Binary", null) as byte[];
                     Assert.IsNotNull(byteValue);
                     Assert.IsTrue(byteValue.SequenceEqual(new byte[] { 0xA0, 0xA1, 0xA2 }));
 
                     Assert.AreEqual(RegistryValueKind.DWord, subKey.GetValueKind("DWORD"));
                     Assert.IsNotNull(subKey.GetValue("DWORD", null));
-                    uint dword = (uint)(int)subKey.GetValue("DWORD", null);
+                    object? valObj = subKey.GetValue("DWORD", null);
+                    Assert.IsNotNull(valObj);
+                    uint dword = (uint)(int)valObj;
                     Assert.AreEqual(0x03u, dword);
 
                     Assert.AreEqual(RegistryValueKind.QWord, subKey.GetValueKind("QWORD"));
                     Assert.IsNotNull(subKey.GetValue("QWORD", null));
-                    ulong qword = (ulong)(long)subKey.GetValue("QWORD", null);
+                    valObj = subKey.GetValue("QWORD", null);
+                    Assert.IsNotNull(valObj);
+                    ulong qword = (ulong)(long)valObj;
                     Assert.AreEqual(0x100000000u, qword);
                 }
             }
@@ -588,11 +592,11 @@ namespace PEBakery.Core.Tests.Command
 
             void CheckRegValues(RegistryKey hKey, string subKeyPath)
             {
-                using (RegistryKey key = hKey.OpenSubKey(subKeyPath, false))
+                using (RegistryKey? key = hKey.OpenSubKey(subKeyPath, false))
                 {
                     Assert.IsNotNull(key);
 
-                    byte[] bin = key.GetValue("None") as byte[];
+                    byte[]? bin = key.GetValue("None") as byte[];
                     Assert.IsNotNull(bin);
                     Assert.AreEqual(0, bin.Length);
 
@@ -600,33 +604,39 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsNotNull(bin);
                     Assert.IsTrue(bin.SequenceEqual(new byte[] { 0x01, 0x02, 0x03 }));
 
-                    int dword = (int)key.GetValue("Integer");
+                    object? intObj = key.GetValue("Integer");
+                    Assert.IsNotNull(intObj);
+                    int dword = (int)intObj;
                     Assert.AreEqual(dword, 1225);
 
-                    string str = key.GetValue("String") as string;
+                    object? strObj = key.GetValue("String") as string;
+                    Assert.IsNotNull(strObj);
+                    string str = (string)strObj;
                     Assert.IsNotNull(str);
                     Assert.IsTrue(str.Equals("English", StringComparison.Ordinal));
 
-                    // .Net Framework's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
+                    // .NET's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
                     bin = RegistryHelper.RegGetValue(hKey, subKeyPath, "Strange10", RegistryValueKind.Unknown) as byte[];
                     Assert.IsNotNull(bin);
                     Assert.AreEqual(0, bin.Length);
 
-                    // .Net Framework's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
+                    // .NET's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
                     bin = RegistryHelper.RegGetValue(hKey, subKeyPath, "Strange20", RegistryValueKind.Unknown) as byte[];
                     Assert.IsNotNull(bin);
                     Assert.IsTrue(bin.SequenceEqual(new byte[] { 0x01, 0x02, 0x03 }));
 
-                    using (RegistryKey subKey = key.OpenSubKey("SubKey", false))
+                    using (RegistryKey? subKey = key.OpenSubKey("SubKey", false))
                     {
                         Assert.IsNotNull(subKey);
 
-                        str = subKey.GetValue("Unicode") as string;
-                        Assert.IsNotNull(str);
+                        strObj = subKey.GetValue("Unicode");
+                        Assert.IsNotNull(strObj);
+                        str = (string)strObj;
                         Assert.IsTrue(str.Equals("한국어", StringComparison.Ordinal));
 
-                        str = subKey.GetValue("WinDir", null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
-                        Assert.IsNotNull(str);
+                        strObj = subKey.GetValue("WinDir", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                        Assert.IsNotNull(strObj);
+                        str = (string)strObj;
                         Assert.IsTrue(str.Equals("%WinDir%", StringComparison.Ordinal));
                     }
                 }
@@ -712,8 +722,8 @@ namespace PEBakery.Core.Tests.Command
         }
 
         private static void WriteSuccessTemplate(EngineState s, CodeType codeType, string rawCode,
-                RegistryKey hKey, RegistryValueKind compKind, string keyPath, string valueName, object comp,
-                CompatOption opts = null, ErrorCheck check = ErrorCheck.Success)
+                RegistryKey hKey, RegistryValueKind compKind, string keyPath, string valueName, object? expect,
+                CompatOption? opts = null, ErrorCheck check = ErrorCheck.Success)
         {
             if (opts == null)
                 EngineTests.Eval(s, rawCode, codeType, check);
@@ -722,14 +732,14 @@ namespace PEBakery.Core.Tests.Command
 
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
             {
-                using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
+                using (RegistryKey? subKey = hKey.OpenSubKey(keyPath, false))
                 {
                     Assert.IsNotNull(subKey);
 
                     RegistryValueKind kind = subKey.GetValueKind(valueName);
                     Assert.IsTrue(kind == compKind);
 
-                    object valueData;
+                    object? valueData;
                     if (kind == RegistryValueKind.Unknown)
                         valueData = RegistryHelper.RegGetValue(hKey, keyPath, valueName, RegistryValueKind.Unknown);
                     else
@@ -740,8 +750,9 @@ namespace PEBakery.Core.Tests.Command
                     {
                         case RegistryValueKind.Unknown:
                             { // RegWriteEx
+                                Assert.IsNotNull(expect);
                                 byte[] destBin = (byte[])valueData;
-                                byte[] compBin = (byte[])comp;
+                                byte[] compBin = (byte[])expect;
                                 Assert.IsTrue(destBin.SequenceEqual(compBin));
                             }
                             break;
@@ -750,15 +761,17 @@ namespace PEBakery.Core.Tests.Command
                         case RegistryValueKind.String:
                         case RegistryValueKind.ExpandString:
                             {
+                                Assert.IsNotNull(expect);
                                 string destStr = (string)valueData;
-                                string compStr = (string)comp;
+                                string compStr = (string)expect;
                                 Assert.IsTrue(destStr.Equals(compStr, StringComparison.Ordinal));
                             }
                             break;
                         case RegistryValueKind.MultiString:
                             {
+                                Assert.IsNotNull(expect);
                                 string[] destStrs = (string[])valueData;
-                                string[] compStrs = (string[])comp;
+                                string[] compStrs = (string[])expect;
 
                                 Assert.IsTrue(destStrs.Length == compStrs.Length);
                                 for (int i = 0; i < destStrs.Length; i++)
@@ -767,22 +780,25 @@ namespace PEBakery.Core.Tests.Command
                             break;
                         case RegistryValueKind.Binary:
                             {
+                                Assert.IsNotNull(expect);
                                 byte[] destBin = (byte[])valueData;
-                                byte[] compBin = (byte[])comp;
+                                byte[] compBin = (byte[])expect;
                                 Assert.IsTrue(destBin.SequenceEqual(compBin));
                             }
                             break;
                         case RegistryValueKind.DWord:
                             {
+                                Assert.IsNotNull(expect);
                                 uint destInt = (uint)(int)valueData;
-                                uint compInt = (uint)comp;
+                                uint compInt = (uint)expect;
                                 Assert.IsTrue(destInt == compInt);
                             }
                             break;
                         case RegistryValueKind.QWord:
                             {
+                                Assert.IsNotNull(expect);
                                 ulong destInt = (ulong)(long)valueData;
-                                ulong compInt = (ulong)comp;
+                                ulong compInt = (ulong)expect;
                                 Assert.IsTrue(destInt == compInt);
                             }
                             break;

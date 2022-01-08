@@ -162,7 +162,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            void SingleTemplate(List<string> rawCodes, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
+            void SingleTemplate(List<string> rawCodes, string? destExpected, string? retExpected, ErrorCheck check = ErrorCheck.Success)
             {
                 s.Variables.DeleteKey(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
@@ -170,10 +170,13 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.EvalLines(s, rawCodes, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
+                    Assert.IsNotNull(destExpected);
+                    Assert.IsNotNull(retExpected);
+
                     string dest = s.Variables["Dest"];
                     string ret = s.ReturnValue;
-                    Assert.IsTrue(dest.Equals(destComp, StringComparison.Ordinal));
-                    Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
+                    Assert.IsTrue(dest.Equals(destExpected, StringComparison.Ordinal));
+                    Assert.IsTrue(ret.Equals(retExpected, StringComparison.Ordinal));
                 }
             }
             void ScriptTemplate(string treePath, string entrySection, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)

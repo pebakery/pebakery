@@ -77,7 +77,6 @@ namespace PEBakery.Core.Tests
             StopWebFileServer();
 
             Global.Cleanup();
-            EngineTests.Logger = null;
         }
         #endregion
 
@@ -135,11 +134,11 @@ namespace PEBakery.Core.Tests
         }
 
         private static readonly object FileServerLock = new object();
-        private static Task _fileServerTask;
-        private static CancellationTokenSource _fileServerCancel;
+        private static Task? _fileServerTask;
+        private static CancellationTokenSource? _fileServerCancel;
 
-        public static string WebRoot { get; private set; }
-        public static string UrlRoot { get; private set; }
+        public static string WebRoot { get; private set; } = string.Empty;
+        public static string? UrlRoot { get; private set; }
         public static bool IsServerRunning
         {
             get
@@ -199,6 +198,8 @@ namespace PEBakery.Core.Tests
             lock (FileServerLock)
             {
                 if (_fileServerTask == null)
+                    return;
+                if (_fileServerCancel == null)
                     return;
 
                 _fileServerCancel.Cancel();

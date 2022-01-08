@@ -138,12 +138,12 @@ namespace PEBakery.Core
     {
         #region Fields and Properties
         private readonly Project _p;
-        private readonly MainViewModel _m;
+        private readonly MainViewModel? _m;
         private readonly HttpFileDownloader _downloader;
         #endregion
 
         #region Constructor
-        public FileUpdater(Project p, MainViewModel mainViewModel, string customUserAgent)
+        public FileUpdater(Project p, MainViewModel? mainViewModel, string? customUserAgent)
         {
             _p = p;
             _m = mainViewModel;

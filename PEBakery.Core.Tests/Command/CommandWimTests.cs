@@ -39,8 +39,6 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [SuppressMessage("ReSharper", "LocalizableElement")]
-    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandWimTests
     {
         #region WimInfo
@@ -53,14 +51,14 @@ namespace PEBakery.Core.Tests.Command
 
             string pbSrcDir = Path.Combine("%TestBench%", "CommandWim");
 
-            void SuccessTemplate(string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+            void SuccessTemplate(string rawCode, string? expected, ErrorCheck check = ErrorCheck.Success)
             {
                 EngineTests.Eval(s, rawCode, CodeType.WimInfo, check);
 
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
                     string dest = s.Variables["Dest"];
-                    Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+                    Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
                 }
             }
 
@@ -139,22 +137,23 @@ namespace PEBakery.Core.Tests.Command
             string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            void SingleTemplate(string rawCode, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
+            void SingleTemplate(string rawCode, string[]? expectedFiles, ErrorCheck check = ErrorCheck.Success)
             {
                 Directory.CreateDirectory(destDir);
                 try
                 {
                     EngineTests.Eval(s, rawCode, CodeType.WimExtract, check);
-                    if (check == ErrorCheck.Success)
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
-                        if (compFiles.Length == 0)
+                        Assert.IsNotNull(expectedFiles);
+                        if (expectedFiles.Length == 0)
                         {
                             DirectoryInfo di = new DirectoryInfo(destDir);
                             Assert.AreEqual(0, di.GetFiles().Length);
                         }
                         else
                         {
-                            foreach (string f in compFiles)
+                            foreach (string f in expectedFiles)
                                 Assert.IsTrue(File.Exists(Path.Combine(destDir, f)));
                         }
                     }
@@ -224,7 +223,7 @@ namespace PEBakery.Core.Tests.Command
                 "나",
             });
 
-            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", new string[0]);
+            SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", Array.Empty<string>());
 
             SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,1,\ACDE.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", null, ErrorCheck.ParserError);
             SingleTemplate($@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", null, ErrorCheck.RuntimeError);
@@ -288,34 +287,34 @@ namespace PEBakery.Core.Tests.Command
             string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            void Template(string rawCode, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
+            void Template(string rawCode, string[]? expectedFiles, ErrorCheck check = ErrorCheck.Success)
             {
                 Directory.CreateDirectory(destDir);
                 string listFile = Path.Combine(destDir, "ListFile.txt");
                 try
                 {
-                    if (compFiles != null)
+                    if (expectedFiles != null)
                     {
                         using (StreamWriter w = new StreamWriter(listFile, false, Encoding.Unicode))
                         {
-                            foreach (string f in compFiles)
+                            foreach (string f in expectedFiles)
                                 w.WriteLine(@"\" + f);
                         }
                     }
 
                     EngineTests.Eval(s, rawCode, CodeType.WimExtractBulk, check);
-                    if (check == ErrorCheck.Success)
+                    if (check == ErrorCheck.Success) // Do not check ErrorCheck.Warning, as NOERR flag should be tested.
                     {
-                        Debug.Assert(compFiles != null);
+                        Assert.IsNotNull(expectedFiles);
 
-                        if (compFiles.Length == 0)
+                        if (expectedFiles.Length == 0)
                         {
                             DirectoryInfo di = new DirectoryInfo(destDir);
                             Assert.IsTrue(di.GetFiles().Length == 1); // 1 for listfile
                         }
                         else
                         {
-                            foreach (string f in compFiles)
+                            foreach (string f in expectedFiles)
                                 Assert.IsTrue(File.Exists(Path.Combine(destDir, f)));
                         }
                     }
@@ -609,7 +608,7 @@ namespace PEBakery.Core.Tests.Command
             string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            void Template(string rawCode, string wimFileName, string comp, ErrorCheck check = ErrorCheck.Success)
+            void Template(string rawCode, string wimFileName, string? expected, ErrorCheck check = ErrorCheck.Success)
             {
                 string srcWim = Path.Combine(sampleDir, wimFileName);
                 string destWim = Path.Combine(destDir, wimFileName);
@@ -631,7 +630,7 @@ namespace PEBakery.Core.Tests.Command
                                 return Wim.IterateCallbackSuccess;
                             }
 
-                            wim.IterateDirTree(1, comp, IterateDirTreeFlags.None, ExistCallback, null);
+                            wim.IterateDirTree(1, expected, IterateDirTreeFlags.None, ExistCallback, null);
                             Assert.IsTrue(found);
                         }
                     }
@@ -664,7 +663,7 @@ namespace PEBakery.Core.Tests.Command
             string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            void Template(string rawCode, string wimFileName, string comp, ErrorCheck check = ErrorCheck.Success)
+            void Template(string rawCode, string wimFileName, string? expected, ErrorCheck check = ErrorCheck.Success)
             {
                 string srcWim = Path.Combine(sampleDir, wimFileName);
                 string destWim = Path.Combine(destDir, wimFileName);
@@ -681,7 +680,7 @@ namespace PEBakery.Core.Tests.Command
                         {
                             bool deleted = false;
                             int DeletedCallback(DirEntry dentry, object userData) => Wim.IterateCallbackSuccess;
-                            try { wim.IterateDirTree(1, comp, IterateDirTreeFlags.None, DeletedCallback, null); }
+                            try { wim.IterateDirTree(1, expected, IterateDirTreeFlags.None, DeletedCallback, null); }
                             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist) { deleted = true; }
 
                             Assert.IsTrue(deleted);
@@ -717,7 +716,7 @@ namespace PEBakery.Core.Tests.Command
             string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            void Template(string rawCode, string wimFileName, string originalName, string newName, ErrorCheck check = ErrorCheck.Success)
+            void Template(string rawCode, string wimFileName, string? originalName, string? newName, ErrorCheck check = ErrorCheck.Success)
             {
                 string srcWim = Path.Combine(sampleDir, wimFileName);
                 string destWim = Path.Combine(destDir, wimFileName);
@@ -1247,7 +1246,7 @@ namespace PEBakery.Core.Tests.Command
 
             public class CheckWimPathComparer : IEqualityComparer<Tuple<string, bool>>
             {
-                public bool Equals(Tuple<string, bool> x, Tuple<string, bool> y)
+                public bool Equals(Tuple<string, bool>? x, Tuple<string, bool>? y)
                 {
                     if (x == null)
                         throw new ArgumentNullException(nameof(x));

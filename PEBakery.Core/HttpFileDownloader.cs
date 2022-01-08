@@ -40,14 +40,14 @@ namespace PEBakery.Core
     public class HttpFileDownloader
     {
         #region Properties
-        private readonly MainViewModel _m;
+        private readonly MainViewModel? _m;
         private readonly int _timeOut;
         private readonly string _userAgent;
         private readonly string? _referer;
         #endregion
 
         #region Constructor
-        public HttpFileDownloader(MainViewModel m, int timeOut, string? customUserAgent, string? referer)
+        public HttpFileDownloader(MainViewModel? m, int timeOut, string? customUserAgent, string? referer)
         {
             _m = m;
             _timeOut = timeOut;

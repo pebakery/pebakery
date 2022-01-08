@@ -50,6 +50,8 @@ namespace PEBakery.Core
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
             // ARM64 Windows has ProgramFiles(Arm) == "C:\Program Files (Arm)"
         };
+
+        private static readonly char[] WildcardCharacters = new char[] { '*', '?' };
         #endregion
 
         #region PathSecurityCheck
@@ -826,6 +828,13 @@ namespace PEBakery.Core
             else if (encodingStr.Equals("UTF8BOM", StringComparison.OrdinalIgnoreCase))
                 encoding = new UTF8Encoding(true);
             return encoding;
+        }
+        #endregion
+
+        #region IsWildcard
+        public static bool ContainsWildcard(string path)
+        {
+            return path.IndexOfAny(WildcardCharacters) != -1;
         }
         #endregion
     }

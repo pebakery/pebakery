@@ -55,7 +55,7 @@ namespace PEBakery.Core.Tests.Command
             string pbSrcDir = Path.Combine(pbDirPath, SrcDirFile);
             string destDir = FileHelper.GetTempDir();
 
-            void SingleTemplate(string rawCode, string srcFileName, string destFileName,
+            void SingleTemplate(string rawCode, string srcFileName, string? destFileName,
                 ErrorCheck check = ErrorCheck.Success, bool preserve = false, bool ignoreCompare = false)
             {
                 if (destFileName == null)
@@ -466,7 +466,7 @@ namespace PEBakery.Core.Tests.Command
 
                     if (check == ErrorCheck.Success)
                     {
-                        string wildcard = null;
+                        string? wildcard = null;
                         if (dirName.IndexOfAny(new char[] { '*', '?' }) != -1)
                             wildcard = dirName;
 

@@ -46,12 +46,15 @@ namespace PEBakery.Core.Tests
             CodeParser_GetNextArgument_5();
         }
 
-        public static void CodeParser_GetNextArgument_Test(string code, List<(string Next, string Remainder)> testCases)
+        public static void CodeParser_GetNextArgument_Test(string code, List<(string Next, string? Remainder)> testCases)
         {
-            string remainder = code;
+            string? remainder = code;
 
-            foreach ((string compNext, string compRemainder) in testCases)
+            foreach ((string compNext, string? compRemainder) in testCases)
             {
+                if (remainder == null)
+                    Assert.Fail();
+
                 string next;
                 (next, remainder) = CodeParser.GetNextArgument(remainder);
 
@@ -62,14 +65,14 @@ namespace PEBakery.Core.Tests
                 if (remainder != null)
                     Assert.IsTrue(remainder.Equals(compRemainder, StringComparison.Ordinal));
                 else
-                    Assert.IsTrue(remainder == null);
+                    Assert.IsNull(remainder);
             }
         }
 
         public void CodeParser_GetNextArgument_1()
         {
             const string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
-            List<(string, string)> testCases = new List<(string, string)>
+            List<(string, string?)> testCases = new List<(string, string?)>
             {
                 (@"TXTAddLine", @"#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
                 (@"#3.au3", @"""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
@@ -83,7 +86,7 @@ namespace PEBakery.Core.Tests
         public void CodeParser_GetNextArgument_2()
         {
             const string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
-            List<(string, string)> testCases = new List<(string, string)>
+            List<(string, string?)> testCases = new List<(string, string?)>
             {
                 (@"TXTAddLine", @"#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
                 (@"#3.au3", @"""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
@@ -97,7 +100,7 @@ namespace PEBakery.Core.Tests
         public void CodeParser_GetNextArgument_3()
         {
             const string code = @"StrFormat,REPLACE,#2,\,,#8";
-            List<(string, string)> testCases = new List<(string, string)>
+            List<(string, string?)> testCases = new List<(string, string?)>
             {
                 (@"StrFormat", @"REPLACE,#2,\,,#8"),
                 (@"REPLACE", @"#2,\,,#8"),
@@ -113,7 +116,7 @@ namespace PEBakery.Core.Tests
         public void CodeParser_GetNextArgument_4()
         {
             const string code = @"Set,%Waik2Tools%,";
-            List<(string, string)> testCases = new List<(string, string)>
+            List<(string, string?)> testCases = new List<(string, string?)>
             {
                 (@"Set", @"%Waik2Tools%,"),
                 (@"%Waik2Tools%", string.Empty),
@@ -126,7 +129,7 @@ namespace PEBakery.Core.Tests
         public void CodeParser_GetNextArgument_5()
         {
             const string code = "Message,\"Hello\"\"World\",Information";
-            List<(string, string)> testCases = new List<(string, string)>
+            List<(string, string?)> testCases = new List<(string, string?)>
             {
                 ("Message", "\"Hello\"\"World\",Information"),
                 ("Hello\"\"World", "Information"),
