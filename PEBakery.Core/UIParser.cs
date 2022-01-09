@@ -134,8 +134,8 @@ namespace PEBakery.Core
             int equalIdx = rawLine.IndexOf('=');
             if (equalIdx != -1 && equalIdx != 0)
             {
-                key = rawLine.Substring(0, equalIdx);
-                rawValue = rawLine.Substring(equalIdx + 1);
+                key = rawLine[..equalIdx];
+                rawValue = rawLine[(equalIdx + 1)..];
             }
             else
             {
@@ -179,7 +179,7 @@ namespace PEBakery.Core
 
             // Parse UIControlType
             UIControlType type;
-            try { type = UIParser.ParseControlTypeVal(args[2]); }
+            try { type = ParseControlTypeVal(args[2]); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Remove UIControlType from operands
@@ -219,7 +219,7 @@ namespace PEBakery.Core
             if (!StringHelper.IsInteger(typeStr))
                 throw new InvalidCommandException("Only numbers can be used for interface control type");
 
-            if (!(Enum.TryParse(typeStr, false, out UIControlType type) && Enum.IsDefined(typeof(UIControlType), type)))
+            if (!(Enum.TryParse(typeStr, false, out UIControlType type) && Enum.IsDefined(type)))
                 throw new InvalidCommandException("Invalid interface control type");
 
             return type;
@@ -327,7 +327,7 @@ namespace PEBakery.Core
 
                             // Trim one '_' from start and end
                             string rawSectionName = args[1];
-                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
+                            sectionName = rawSectionName[1..^1];
                         }
 
                         return new UIInfo_CheckBox(tooltip, _checked, sectionName, hideProgress);
@@ -360,7 +360,7 @@ namespace PEBakery.Core
 
                             // Trim one '_' from start and end
                             string rawSectionName = args[cnt - 2];
-                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
+                            sectionName = rawSectionName[1..^1];
                             cnt -= 2;
                         }
 
@@ -497,7 +497,7 @@ namespace PEBakery.Core
 
                             // Trim one '_' from start and end
                             string rawSectionName = args[1];
-                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
+                            sectionName = rawSectionName[1..^1];
                         }
 
                         return new UIInfo_RadioButton(tooltip, selected, sectionName, hideProgress);
@@ -579,7 +579,7 @@ namespace PEBakery.Core
                             {
                                 if (title != null)
                                     throw new InvalidCommandException("Argument <Title> cannot be duplicated");
-                                title = arg.Substring(titleKey.Length);
+                                title = arg[titleKey.Length..];
                             }
                             else if (arg.StartsWith(filterKey, StringComparison.OrdinalIgnoreCase))
                             {
@@ -587,7 +587,7 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
                                 if (filter != null)
                                     throw new InvalidCommandException("Argument <Filter> cannot be duplicated");
-                                filter = arg.Substring(filterKey.Length);
+                                filter = arg[filterKey.Length..];
                             }
                             else if (arg.StartsWith("__", StringComparison.OrdinalIgnoreCase)) // ToolTip
                             {
@@ -623,7 +623,7 @@ namespace PEBakery.Core
                             else if (!args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase))
                                 throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be [True] or [False]");
 
-                            sectionName = args[cnt - 1].Substring(1, args[cnt - 1].Length - 2);
+                            sectionName = args[cnt - 1][1..^1];
 
                             cnt -= 2;
                         }
@@ -635,6 +635,52 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be an integer");
 
                         return new UIInfo_RadioGroup(GetInfoTooltip(args, args.Count), items, idx, sectionName, showProgress);
+                    }
+                #endregion
+                #region PathBox
+                case UIControlType.PathBox:
+                    { // <file|dir>,<Title>,<Filter> +[RunOptional]
+                        const int minOpCount = 3;
+                        const int maxOpCount = 5; // +2 for RunOptional
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for Tooltip
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
+
+                        int cnt = args.Count;
+                        string? tooltip = null;
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
+
+                        bool isFile = false;
+                        if (args[0].Equals("file", StringComparison.OrdinalIgnoreCase))
+                            isFile = true;
+                        else if (!args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
+
+                        string title = args[1];
+                        string filter = args[2];
+
+                        string? sectionName = null;
+                        bool showProgress = false;
+
+                        if (cnt == maxOpCount) // 1 for <FILE|DIR>, 2 for [RunOptional]
+                        {
+                            if ((args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                                args[cnt - 2].StartsWith("_", StringComparison.Ordinal) && args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
+                            { // Has [RunOptional] -> <SectionName>,<HideProgress>
+                                if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    showProgress = true;
+                                else if (!args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase))
+                                    throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
+
+                                sectionName = args[cnt - 2][1..^1];
+                            }
+                            cnt -= 2;
+                        }
+
+                        return new UIInfo_PathBox(tooltip, isFile, title, filter, sectionName, showProgress);
                     }
                 #endregion
                 #region default
@@ -683,7 +729,7 @@ namespace PEBakery.Core
         private static string? GetInfoTooltip(List<string> op, int idx)
         {
             if (idx < op.Count && op[idx].StartsWith("__", StringComparison.Ordinal)) // Has tooltip
-                return op[idx].Substring(2);
+                return op[idx][2..];
             return null;
         }
         #endregion

@@ -123,13 +123,13 @@ namespace PEBakery.WPF
                     if (0 < BuildLogSimpleListView.Items.Count)
                     {
                         BuildLogSimpleListView.UpdateLayout();
-                        BuildLogSimpleListView.ScrollIntoView(BuildLogSimpleListView.Items[BuildLogSimpleListView.Items.Count - 1]);
+                        BuildLogSimpleListView.ScrollIntoView(BuildLogSimpleListView.Items[^1]);
                     }
 
                     if (0 < BuildLogDetailListView.Items.Count)
                     {
                         BuildLogDetailListView.UpdateLayout();
-                        BuildLogDetailListView.ScrollIntoView(BuildLogDetailListView.Items[BuildLogDetailListView.Items.Count - 1]);
+                        BuildLogDetailListView.ScrollIntoView(BuildLogDetailListView.Items[^1]);
                     }
                 });
             }
@@ -938,12 +938,14 @@ namespace PEBakery.WPF
         #endregion
 
         #region Utility
+        /*
         private void ResizeGridViewColumn(GridViewColumn column)
         {
             if (double.IsNaN(column.Width))
                 column.Width = column.ActualWidth;
             column.Width = double.NaN;
         }
+        */
         #endregion
     }
     #endregion

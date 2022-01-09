@@ -547,6 +547,26 @@ namespace PEBakery.Core
                                 logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected index [{info.Selected}]", uiCtrl));
                         }
                         break;
+                    case UIControlType.PathBox:
+                        {
+                            UIInfo_PathBox info = uiCtrl.Info.Cast<UIInfo_PathBox>();
+
+                            if (info.IsFile)
+                            { // Select File
+                                if (info.Filter != null)
+                                {
+                                    string filter = StringEscaper.Unescape(info.Filter);
+                                    if (StringEscaper.IsFileFilterValid(filter) == false)
+                                        logs.Add(new LogInfo(LogState.Warning, $"File filter pattern [{filter}] is invalid", uiCtrl));
+                                }
+                            }
+                            else
+                            { // Select Folder
+                                if (info.Filter != null)
+                                    logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", uiCtrl));
+                            }
+                        }
+                        break;
                 }
             }
             return logs;

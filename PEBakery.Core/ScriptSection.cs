@@ -124,9 +124,7 @@ namespace PEBakery.Core
         [Key(3)]
         private string[]? _lines;
         [IgnoreMember]
-#pragma warning disable CA1819 // Properties should not return arrays
         public string[] Lines
-#pragma warning restore CA1819 // Properties should not return arrays
         {
             get
             {

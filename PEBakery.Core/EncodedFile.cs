@@ -754,9 +754,7 @@ namespace PEBakery.Core
                 if (!overwrite && File.Exists(destFile))
                     throw new InvalidOperationException($"File [{destFile}] cannot be overwritten");
 
-#pragma warning disable IDE0068 // 권장 dispose 패턴 사용
                 using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
-#pragma warning restore IDE0068 // 권장 dispose 패턴 사용
                 {
                     Decode(sc.RealPath, section, fs, null);
                 }
@@ -1505,8 +1503,10 @@ namespace PEBakery.Core
 
                     progress?.Report(0.8);
 
-                    ArchiveFooter archiveFooter = new ArchiveFooter();
-                    archiveFooter.BodyLength = (ulong)encodeStream.Position;
+                    ArchiveFooter archiveFooter = new ArchiveFooter
+                    {
+                        BodyLength = (ulong)encodeStream.Position
+                    };
 
                     // [Stage 3] Generate file footer
                     fileFooter.RawFileCRC32 = crc32.Checksum;
@@ -2450,11 +2450,11 @@ namespace PEBakery.Core
                 {
                     tw.Write(idx);
                     tw.Write("=");
-                    tw.WriteLine(encodedStr.Substring(x * 4090, 4090));
+                    tw.WriteLine(encodedStr.AsSpan(x * 4090, 4090));
                     idx += 1;
                 }
 
-                string lastLine = encodedStr.Substring(encodeBlockLines * 4090);
+                string lastLine = encodedStr[(encodeBlockLines * 4090)..];
                 if (0 < lastLine.Length && encodeBlockLines < 1024 * 4)
                 {
                     tw.Write(idx);
@@ -2558,7 +2558,7 @@ namespace PEBakery.Core
                     b.Append("==");
                     break;
                 case 3:
-                    b.Append("=");
+                    b.Append('=');
                     break;
             }
 
@@ -2597,7 +2597,7 @@ namespace PEBakery.Core
                     b.Append("==");
                     break;
                 case 3:
-                    b.Append("=");
+                    b.Append('=');
                     break;
             }
 

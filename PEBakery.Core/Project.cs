@@ -256,12 +256,10 @@ namespace PEBakery.Core
             {
                 UpdateInfo = new ProjectUpdateInfo(selectedChannel, pBaseUrl);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (ArgumentException)
             {
                 UpdateInfo = new ProjectUpdateInfo();
             }
-#pragma warning restore CA1031 // Do not catch general exception types
         }
         #endregion
 

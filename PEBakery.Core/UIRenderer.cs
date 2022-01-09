@@ -193,6 +193,9 @@ namespace PEBakery.Core
                         case UIControlType.RadioGroup:
                             clean = RenderRadioGroup(uiCtrl);
                             break;
+                        case UIControlType.PathBox:
+                            clean = RenderPathBox(uiCtrl);
+                            break;
                         default:
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unknown UIControlType [{uiCtrl.Type}] ({uiCtrl.RawLine})"));
                             break;
@@ -280,6 +283,14 @@ namespace PEBakery.Core
                         {
                             if (ci.Element is RadioButton[] radioButtons && ci.Tag is string sectionName)
                             ManageRadioGroupEvent(radioButtons, false, sectionName);
+                        }
+                        break;
+                    case UIControlType.PathBox:
+                        {
+                            if (ci.Elements.Length == 3 &&
+                                ci.Elements[0] is TextBox textBox &&
+                                ci.Elements[1] is Button clearButton && ci.Elements[2] is Button selectButton)
+                                ManagePathBoxEvent(textBox, clearButton, selectButton, false);
                         }
                         break;
                 }
@@ -1411,8 +1422,8 @@ namespace PEBakery.Core
             }
             else
             { // Directory
-                // .Net Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
-                // But it requires HWND to be displayed properly, which UIRenderer does not have.
+                // .NET Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly, which UIRenderer does not have, and brings WinForms dependency.
                 // Use Ookii's VistaFolderBrowserDialog instead.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
@@ -1539,6 +1550,203 @@ namespace PEBakery.Core
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
             if (info.SectionName != null)
                 RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
+
+        #region PathBox
+        public RenderCleanInfo RenderPathBox(UIControl uiCtrl)
+        {
+            UIInfo_PathBox info = uiCtrl.Info.Cast<UIInfo_PathBox>();
+
+            TextBox box = new TextBox
+            {
+                Text = StringEscaper.Unescape(uiCtrl.Text),
+                FontSize = CalcFontPointScale(),
+                Margin = new Thickness(0, 0, 5, 0),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsReadOnly = true, // Required for PathBox
+                Tag = uiCtrl,
+            };
+
+            Button clearButton = new Button
+            {
+                FontSize = CalcFontPointScale(),
+                Content = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.Backspace,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                },
+                Margin = new Thickness(0, 0, 5, 0),
+                Tag = new Tuple<UIControl, TextBox>(uiCtrl, box),
+            };
+
+            Button selectButton = new Button
+            {
+                FontSize = CalcFontPointScale(),
+                Content = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.FolderOpen,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                },
+                Tag = new Tuple<UIControl, TextBox>(uiCtrl, box),
+            };
+
+            if (_viewMode)
+            {
+                ManagePathBoxEvent(box, clearButton, selectButton, true);
+            }
+
+            Grid grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(uiCtrl.Height + 5) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(uiCtrl.Height) });
+
+            Grid.SetColumn(box, 0);
+            grid.Children.Add(box);
+            Grid.SetColumn(clearButton, 1);
+            grid.Children.Add(clearButton);
+            Grid.SetColumn(selectButton, 2);
+            grid.Children.Add(selectButton);
+
+            SetToolTip(grid, info.ToolTip);
+            SetEditModeProperties(grid, uiCtrl);
+            DrawToCanvas(grid, uiCtrl);
+
+            return new RenderCleanInfo(uiCtrl, new object[] { box, clearButton, selectButton });
+        }
+
+        public void ManagePathBoxEvent(TextBox box, Button clearButton, Button selectButton, bool addMode)
+        {
+            if (addMode)
+            {
+                clearButton.Click += PathBox_ClearButtonClick;
+                selectButton.Click += PathBox_SelectButtonClick;
+            }
+            else
+            {
+                clearButton.Click -= PathBox_ClearButtonClick;
+                selectButton.Click -= PathBox_SelectButtonClick;
+            }
+        }
+
+        public void PathBox_ClearButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not Tuple<UIControl, TextBox> tup)
+                return;
+
+            (UIControl uiCtrl, TextBox box) = tup;
+
+            box.Clear();
+            box.Text = string.Empty;
+            // TextBox of PathBox Control is readonly, so we should set uiCtrl.Text manually.
+            uiCtrl.Text = string.Empty;
+            uiCtrl.Update();
+        }
+
+        public void PathBox_SelectButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button)
+                return;
+            if (button.Tag is not Tuple<UIControl, TextBox> tup)
+                return;
+
+            (UIControl uiCtrl, TextBox box) = tup;
+
+            UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
+
+            if (info.IsFile)
+            { // File
+                string? currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
+                if (File.Exists(currentPath))
+                    currentPath = Path.GetDirectoryName(currentPath);
+                else
+                    currentPath = string.Empty;
+
+                const string fallbackFilter = "All Files|*.*";
+                string filter = fallbackFilter;
+                if (string.IsNullOrEmpty(info.Filter) == false)
+                {
+                    // info.Filter is independently validated at SyntaxChecker.
+                    // Let UIControl be displayed even at worst case, so do not call StringEscaper.IsFileFilterValid() here.
+                    filter = StringEscaper.Unescape(info.Filter);
+                }
+
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+                if (currentPath != null)
+                    dialog.InitialDirectory = currentPath;
+
+                if (string.IsNullOrEmpty(info.Title) == false)
+                    dialog.Title = StringEscaper.Unescape(info.Title);
+
+                try
+                {
+                    // WPF will throw ArgumentException if file filter pattern is invalid.
+                    dialog.Filter = filter;
+                }
+                catch (ArgumentException argEx) // Invalid Filter string
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, argEx, uiCtrl));
+                    dialog.Filter = fallbackFilter; // Fallback to default filter
+                }
+
+                if (dialog.ShowDialog() == true)
+                {
+                    box.Text = dialog.FileName;
+                    // TextBox of PathBox Control is readonly, so we should set uiCtrl.Text manually.
+                    uiCtrl.Text = StringEscaper.Escape(dialog.FileName);
+                    uiCtrl.Update();
+
+                    // Run a section if [RunOptional] is active.
+                    if (info.SectionName != null)
+                        RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                }
+            }
+            else
+            { // Directory
+                // .NET Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
+                // But it requires HWND to be displayed properly, which UIRenderer does not have, and brings WinForms dependency.
+                // Use Ookii's VistaFolderBrowserDialog instead.
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+
+                string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
+                if (Directory.Exists(currentPath))
+                    dialog.SelectedPath = currentPath;
+
+                if (info.Title != null)
+                {
+                    dialog.UseDescriptionForTitle = true;
+                    dialog.Description = StringEscaper.Unescape(info.Title);
+                }
+
+                bool? result = false;
+                string path = string.Empty;
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    result = _window == null ? dialog.ShowDialog() : dialog.ShowDialog(_window);
+                    if (result == true)
+                    {
+                        path = dialog.SelectedPath;
+                        if (!path.EndsWith("\\", StringComparison.Ordinal))
+                            path += "\\";
+                        box.Text = path;
+                    }
+                });
+
+                if (result == true)
+                {
+                    // TextBox of PathBox Control is readonly, so we should set uiCtrl.Text manually.
+                    uiCtrl.Text = StringEscaper.Escape(path);
+                    uiCtrl.Update();
+
+                    // Run a section if [RunOptional] is active.
+                    if (info.SectionName != null)
+                        RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                }
+            }
         }
         #endregion
         #endregion

@@ -1701,7 +1701,6 @@ namespace PEBakery.Core
             RefScriptId = 0;
         }
 
-        [SuppressMessage("ReSharper", "ArrangeThisQualifier")]
         public EngineLocalState UpdateDepth(int newDepth)
         {
             return new EngineLocalState

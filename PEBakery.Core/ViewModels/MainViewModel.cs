@@ -1437,7 +1437,7 @@ namespace PEBakery.Core.ViewModels
                 // Script Author
                 string author = StringEscaper.Unescape(sc.Author);
                 if (ScriptAuthorLenLimit < author.Length)
-                    ScriptAuthorText = author.Substring(0, ScriptAuthorLenLimit) + "...";
+                    ScriptAuthorText = string.Concat(author.AsSpan(0, ScriptAuthorLenLimit), "...");
                 else
                     ScriptAuthorText = author;
             }
@@ -1533,9 +1533,7 @@ namespace PEBakery.Core.ViewModels
                 int idx = sc.TreePath.IndexOf('\\');
                 if (idx == -1)
                     continue;
-                string[] paths = sc.TreePath
-                    .Substring(idx + 1)
-                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string[] paths = sc.TreePath[(idx + 1)..].Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
                 for (int i = 0; i < paths.Length - 1; i++)
@@ -1688,7 +1686,6 @@ namespace PEBakery.Core.ViewModels
         /// <summary>
         /// Open text file using specified/default code editor, without Administrator privilege.
         /// </summary>
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))

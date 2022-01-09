@@ -48,13 +48,12 @@ using System.Windows.Shell;
 namespace PEBakery.WPF
 {
     #region MainWindow
-    // ReSharper disable once RedundantExtendsListEntry
     public partial class MainWindow : Window
     {
         #region Fields and Properties
         // Shortcut to Global
-        public string BaseDir => Global.BaseDir;
-        public Logger Logger => Global.Logger;
+        public static string BaseDir => Global.BaseDir;
+        public static Logger Logger => Global.Logger;
         private static MainViewModel Model => Global.MainViewModel;
 
         // Window 

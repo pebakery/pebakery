@@ -1133,6 +1133,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlBevel));
                 OnPropertyUpdate(nameof(IsUICtrlFileBox));
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
+                OnPropertyUpdate(nameof(IsUICtrlPathBox));
                 OnPropertyUpdate(nameof(ShowUICtrlListItemButton));
                 OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
 
@@ -1330,6 +1331,7 @@ namespace PEBakery.WPF
         public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlPathBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.PathBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility ShowUICtrlListItemButton
         {
             get
@@ -1361,6 +1363,7 @@ namespace PEBakery.WPF
                     case UIControlType.Button:
                     case UIControlType.RadioButton:
                     case UIControlType.RadioGroup:
+                    case UIControlType.PathBox:
                         return Visibility.Visible;
                     default:
                         return Visibility.Collapsed;
@@ -1888,6 +1891,79 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+        #region For PathBox
+        private UIInfo_PathBox? _uiCtrlPathBoxInfo;
+        public UIInfo_PathBox? UICtrlPathBoxInfo
+        {
+            get => _uiCtrlPathBoxInfo;
+            set
+            {
+                _uiCtrlPathBoxInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlPathBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlPathBoxDirChecked));
+                OnPropertyUpdate(nameof(UICtrlPathBoxTitle));
+                OnPropertyUpdate(nameof(UICtrlPathBoxFilter));
+            }
+        }
+        public bool UICtrlPathBoxFileChecked
+        {
+            get => _uiCtrlPathBoxInfo?.IsFile ?? false;
+            set
+            {
+                if (_uiCtrlPathBoxInfo == null)
+                    return;
+
+                _uiCtrlPathBoxInfo.IsFile = value;
+                OnPropertyUpdate(nameof(UICtrlPathBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlPathBoxDirChecked));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public bool UICtrlPathBoxDirChecked
+        {
+            get => !_uiCtrlPathBoxInfo?.IsFile ?? false;
+            set
+            {
+                if (_uiCtrlPathBoxInfo == null)
+                    return;
+
+                _uiCtrlPathBoxInfo.IsFile = !value;
+                OnPropertyUpdate(nameof(UICtrlPathBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlPathBoxDirChecked));
+                InvokeUIControlEvent(true);
+            }
+        }
+
+        public string UICtrlPathBoxTitle
+        {
+            get => _uiCtrlPathBoxInfo?.Title ?? string.Empty;
+            set
+            {
+                if (_uiCtrlPathBoxInfo == null)
+                    return;
+
+                _uiCtrlPathBoxInfo.Title = value;
+                OnPropertyUpdate(nameof(UICtrlPathBoxTitle));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public string UICtrlPathBoxFilter
+        {
+            get => _uiCtrlPathBoxInfo?.Filter ?? string.Empty;
+            set
+            {
+                if (_uiCtrlPathBoxInfo == null)
+                    return;
+
+                _uiCtrlPathBoxInfo.Filter = value;
+                OnPropertyUpdate(nameof(UICtrlPathBoxFilter));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
         #region For (Common) ListItemEdit
         public int UICtrlListItemCount
         {
@@ -1905,6 +1981,7 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) RunOptional
+        /*
         private bool _uiCtrlRunOptionalEnabled;
         public bool UICtrlRunOptionalEnabled
         {
@@ -1916,6 +1993,7 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(false);
             }
         }
+        */
         private string? _uiCtrlSectionToRun;
         public string? UICtrlSectionToRun
         {
@@ -2467,6 +2545,11 @@ namespace PEBakery.WPF
 
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
+            }
+            catch (Exception ex)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                MessageBox.Show(_window, $"{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -4289,6 +4372,15 @@ namespace PEBakery.WPF
                         UICtrlListItemCount = UICtrlRadioGroupInfo.Items.Count;
                         break;
                     }
+                case UIControlType.PathBox:
+                    {
+                        UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
+
+                        UICtrlPathBoxInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
             }
 
             UIControlModifiedEventToggle = false;
@@ -4455,10 +4547,28 @@ namespace PEBakery.WPF
                         info.HideProgress = UICtrlHideProgress;
                         break;
                     }
+                case UIControlType.FileBox:
+                    {
+                        UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
+
+                        if (info.IsFile == false)
+                            info.Filter = null;
+                    }
+                    break;
                 case UIControlType.RadioGroup:
                     {
                         UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+                case UIControlType.PathBox:
+                    {
+                        UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
+
+                        if (info.IsFile == false)
+                            info.Filter = string.Empty;
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;
                         break;
