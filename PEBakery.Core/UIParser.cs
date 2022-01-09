@@ -639,9 +639,9 @@ namespace PEBakery.Core
                 #endregion
                 #region PathBox
                 case UIControlType.PathBox:
-                    { // <file|dir>,<Title>,<Filter> +[RunOptional]
-                        const int minOpCount = 3;
-                        const int maxOpCount = 5; // +2 for RunOptional
+                    { // <file|dir>,<Title>,[Filter] +[RunOptional]
+                        const int minOpCount = 2;
+                        const int maxOpCount = 5; // +1 for Filter +2 for RunOptional
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for Tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -649,8 +649,8 @@ namespace PEBakery.Core
                         string? tooltip = null;
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
-                            tooltip = GetInfoTooltip(args, cnt - 1);
                             cnt -= 1;
+                            tooltip = GetInfoTooltip(args, cnt);
                         }
 
                         bool isFile = false;
@@ -659,28 +659,36 @@ namespace PEBakery.Core
                         else if (!args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
                             throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
 
-                        string title = args[1];
-                        string filter = args[2];
+                        string? title = null;
+                        string? filter = null;
+
+                        if (args[1].StartsWith("_", StringComparison.Ordinal))
+                            throw new InvalidCommandException("Argument <Title> is required");
+                        else
+                            title = args[1];
+
+                        if (!isFile && !args[2].StartsWith("_", StringComparison.Ordinal))
+                            throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
+
+                        if(!args[2].StartsWith("_", StringComparison.Ordinal))
+                            filter = args[2];
 
                         string? sectionName = null;
-                        bool showProgress = false;
+                        bool hideProgress = false;
 
-                        if (cnt == maxOpCount) // 1 for <FILE|DIR>, 2 for [RunOptional]
-                        {
-                            if ((args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                                args[cnt - 2].StartsWith("_", StringComparison.Ordinal) && args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
-                            { // Has [RunOptional] -> <SectionName>,<HideProgress>
-                                if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    showProgress = true;
-                                else if (!args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
+                        if ((args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                            args[cnt - 2].StartsWith("_", StringComparison.Ordinal) &&
+                            args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
+                            if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
+                                hideProgress = true;
+                            else if (!args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
 
-                                sectionName = args[cnt - 2][1..^1];
-                            }
-                            cnt -= 2;
+                            sectionName = args[cnt - 2][1..^1];
                         }
 
-                        return new UIInfo_PathBox(tooltip, isFile, title, filter, sectionName, showProgress);
+                        return new UIInfo_PathBox(tooltip, isFile, title, filter, sectionName, hideProgress);
                     }
                 #endregion
                 #region default

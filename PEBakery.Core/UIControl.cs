@@ -68,14 +68,14 @@ namespace PEBakery.Core
         ComboBox = 4,
         Image = 5,
         TextFile = 6,
-        // 7 was to be EditValues, but WinBuilder 082 didn't implemented this
+        // 7 was reserved for TextEdit, a writeable version of TextFile, but it was never implimented in WinBuilder
         Button = 8,
-        // 9 is CheckList, but rarely used so deprecated
+        // 9 is CheckList, but was rarely used so deprecated
         WebLabel = 10,
         RadioButton = 11,
         Bevel = 12,
         /// <summary>
-        /// Original version of PathBox.
+        /// Original version of FileBox.
         /// Rendered as writeable TextBox with buttons, and does not support RunOptional
         /// </summary>
         FileBox = 13,
@@ -111,7 +111,7 @@ namespace PEBakery.Core
     12 Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatibility with scripts built in WB editor)
     13 FileBox     = <Path>  // It can be file or directory
     14 RadioGroup  = Caption 
-    20 FileBox     = <Path>  // It can be file or directory
+    20 PathBox     = <Path>  // It can be file or directory
 
     <OptionalValues>
      0 TextBox     = <StringValue>
@@ -1158,11 +1158,11 @@ namespace PEBakery.Core
     {
         public bool IsFile { get; set; }
         public string Title { get; set; }
-        public string Filter { get; set; }
-        public string? SectionName { get; set; }
-        public bool HideProgress { get; set; }
+        public string? Filter { get; set; } // Optional
+        public string? SectionName { get; set; } // Optional
+        public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_PathBox(string? tooltip, bool isFile, string title, string filter, string? sectionName, bool hideProgress)
+        public UIInfo_PathBox(string? tooltip, bool isFile, string title, string? filter, string? sectionName, bool hideProgress)
             : base(tooltip)
         {
             IsFile = isFile;
@@ -1178,8 +1178,11 @@ namespace PEBakery.Core
             b.Append(IsFile ? ",file" : ",dir");
             b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Title));
-            b.Append(',');
-            b.Append(StringEscaper.DoubleQuote(Filter));
+            if (IsFile && !string.IsNullOrWhiteSpace(Filter))
+            {
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote(Filter));
+            }
             if (SectionName != null)
             {
                 b.Append(",_");
