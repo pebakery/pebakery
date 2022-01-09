@@ -21,6 +21,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <ErrorReport>send</ErrorReport>
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <None Update="App.manifest">

@@ -53,19 +53,21 @@ namespace PEBakery.WPF
     #region UIControlModifiedEvent
     public class UIControlModifiedEventArgs : EventArgs
     {
-        public UIControl UIControl { get; set; }
-        public List<UIControl> UIControls { get; set; }
-        public bool MultiSelect => UIControls != null;
+        public UIControl UIControl => UIControls[0];
+        public UIControl[] UIControls { get; private set; } = Array.Empty<UIControl>();
+        public bool MultiSelect { get; private set; }
         public bool InfoNotUpdated { get; set; }
 
         public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
         {
-            UIControl = uiCtrl;
+            MultiSelect = false;
+            UIControls = new UIControl[1] { uiCtrl };
             InfoNotUpdated = infoNotUpdated;
         }
-        public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
+        public UIControlModifiedEventArgs(IEnumerable<UIControl> uiCtrls, bool infoNotUpdated)
         {
-            UIControls = uiCtrls;
+            MultiSelect = true;
+            UIControls = uiCtrls.ToArray();
             InfoNotUpdated = infoNotUpdated;
         }
     }
@@ -86,10 +88,11 @@ namespace PEBakery.WPF
         public ScriptEditWindow(Script sc, MainViewModel mainViewModel)
         {
             Interlocked.Increment(ref Count);
+            m = new ScriptEditViewModel(sc, this, mainViewModel);
 
             try
             {
-                DataContext = m = new ScriptEditViewModel(sc, this, mainViewModel);
+                DataContext = m;
 
                 InitializeComponent();
 
@@ -168,14 +171,15 @@ namespace PEBakery.WPF
             Tag = m.Script;
         }
 
-        private void Window_Closed(object sender, EventArgs e)
+        private void Window_Closed(object? sender, EventArgs e)
         {
             m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
             m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlDragged;
             m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlDragged;
             m.UIControlModified -= ViewModel_UIControlModified;
 
-            m.Renderer.Clear();
+            if (m.Renderer != null)
+                m.Renderer.Clear();
             Interlocked.Decrement(ref Count);
             CommandManager.InvalidateRequerySuggested();
         }
@@ -183,13 +187,16 @@ namespace PEBakery.WPF
 
         #region Event Handler - Interface
         #region For Editor
-        private void ScaleFactor_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        private void ScaleFactor_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
             m.DrawScript();
         }
 
-        private void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ActiveSectionComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
+            if (m.InterfaceSectionName == null)
+                return;
+
             // Run only if selected interface section is different from active interface section
             if (m.SelectedInterfaceSectionName == null ||
                 m.SelectedInterfaceSectionName.Equals(m.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
@@ -220,8 +227,11 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void UIControlComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
+            if (m.Renderer == null)
+                return;
+
             if (m.InterfaceUICtrlIndex < 0 || m.Renderer.UICtrls.Count <= m.InterfaceUICtrlIndex)
                 return;
 
@@ -235,8 +245,11 @@ namespace PEBakery.WPF
         /// <summary>
         /// Update modified UIControl(s).
         /// </summary>
-        private void ViewModel_UIControlModified(object sender, UIControlModifiedEventArgs e)
+        private void ViewModel_UIControlModified(object? sender, UIControlModifiedEventArgs e)
         {
+            if (m.Renderer == null)
+                return;
+
             if (e.MultiSelect)
             {
                 m.InterfaceCanvas.ClearSelectedElements(true);
@@ -259,9 +272,9 @@ namespace PEBakery.WPF
         /// <summary>
         /// Selected UIControl(s) from interface canvas.
         /// </summary>
-        private void InterfaceCanvas_UIControlSelected(object sender, UIControlSelectedEventArgs e)
+        private void InterfaceCanvas_UIControlSelected(object? sender, UIControlSelectedEventArgs e)
         {
-            if (e.UIControl == null && e.UIControls == null)
+            if (e.IsReset)
             { // Reset
                 m.SelectedUICtrl = null;
                 m.SelectedUICtrls = null;
@@ -270,7 +283,7 @@ namespace PEBakery.WPF
             else if (e.MultiSelect)
             { // Selected multiple controls
                 m.SelectedUICtrl = null;
-                m.SelectedUICtrls = e.UIControls;
+                m.SelectedUICtrls = e.UIControls.ToList();
                 m.InterfaceUICtrlIndex = -1;
             }
             else
@@ -279,16 +292,18 @@ namespace PEBakery.WPF
                 m.SelectedUICtrl = e.UIControl;
                 m.ReadUIControlInfo(m.SelectedUICtrl);
 
-                int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
-                Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
-                m.InterfaceUICtrlIndex = idx;
+                if (m.Renderer != null)
+                {
+                    int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+                    m.InterfaceUICtrlIndex = idx;
+                }
             }
         }
 
         /// <summary>
         /// Dragged UIControl(s) from interface canvas.
         /// </summary>
-        private void InterfaceCanvas_UIControlDragged(object sender, UIControlDraggedEventArgs e)
+        private void InterfaceCanvas_UIControlDragged(object? sender, UIControlDraggedEventArgs e)
         {
             switch (e.DragState)
             {
@@ -325,7 +340,7 @@ namespace PEBakery.WPF
         /// <summary>
         /// Event handler to start UIControl dragging
         /// </summary>
-        private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object? sender, MouseButtonEventArgs e)
         {
             InterfaceScrollViewer.Focus();
 
@@ -350,7 +365,7 @@ namespace PEBakery.WPF
         /// <summary>
         /// Event handler to show current position to the status bar
         /// </summary>
-        private void InterfaceScrollViewer_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void InterfaceScrollViewer_PreviewMouseMove(object? sender, MouseEventArgs e)
         {
             m.InterfaceCursorPos = e.GetPosition(m.InterfaceCanvas);
             m.UpdateCursorPosStatus(m.InterfaceControlDragging, false);
@@ -358,7 +373,7 @@ namespace PEBakery.WPF
         #endregion 
 
         #region For Interface Move/Resize via Keyboard
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TabControl_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (m.TabIndex == 1)
                 InterfaceScrollViewer.Focus();
@@ -367,7 +382,7 @@ namespace PEBakery.WPF
         /// <summary>
         /// Handle moving UIControl via keyboard
         /// </summary>
-        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void Window_PreviewKeyDown(object? sender, KeyEventArgs e)
         {
             IInputElement focusedControl = Keyboard.FocusedElement;
             if (!Equals(focusedControl, InterfaceScrollViewer))
@@ -431,6 +446,8 @@ namespace PEBakery.WPF
             switch (m.SelectMode)
             {
                 case ScriptEditViewModel.ControlSelectMode.SingleSelect:
+                    if (m.SelectedUICtrl == null)
+                        throw new InvalidOperationException($"{nameof(m.SelectedUICtrl)} is null");
                     if (move)
                     {
                         DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
@@ -443,6 +460,8 @@ namespace PEBakery.WPF
                     }
                     break;
                 case ScriptEditViewModel.ControlSelectMode.MultiSelect:
+                    if (m.SelectedUICtrls == null)
+                        throw new InvalidOperationException($"{nameof(m.SelectedUICtrls)} is null");
                     if (move)
                     {
                         DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
@@ -540,16 +559,16 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event
-        public event UIControlModifiedHandler UIControlModified;
+        public event UIControlModifiedHandler? UIControlModified;
         #endregion
 
         #region Property - Basic
         private readonly object _scriptLock = new object();
-        public Script Script;
+        public Script Script { get; private set; }
         private readonly Window _window;
         public MainViewModel MainViewModel { get; }
-        public UIRenderer Renderer { get; private set; }
-        public string InterfaceSectionName { get; private set; }
+        public UIRenderer? Renderer { get; private set; }
+        public string? InterfaceSectionName { get; private set; }
 
         /// <summary>
         /// Temp variable to disable buttons while working.
@@ -743,8 +762,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private ImageSource _scriptLogoImage;
-        public ImageSource ScriptLogoImage
+        private ImageSource? _scriptLogoImage;
+        public ImageSource? ScriptLogoImage
         {
             get => _scriptLogoImage;
             set
@@ -758,8 +777,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private DrawingBrush _scriptLogoSvg;
-        public DrawingBrush ScriptLogoSvg
+        private DrawingBrush? _scriptLogoSvg;
+        public DrawingBrush? ScriptLogoSvg
         {
             get => _scriptLogoSvg;
             set
@@ -796,8 +815,8 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        private EncodedFileInfo _scriptLogoInfo;
-        public EncodedFileInfo ScriptLogoInfo
+        private EncodedFileInfo? _scriptLogoInfo;
+        public EncodedFileInfo? ScriptLogoInfo
         {
             get => _scriptLogoInfo;
             set
@@ -855,7 +874,7 @@ namespace PEBakery.WPF
 
         #region Property - Interface - Panels
         // InterfaceSection
-        private ObservableCollection<string> _interfaceSectionNames;
+        private ObservableCollection<string> _interfaceSectionNames = new ObservableCollection<string>();
         private readonly object _interfaceSectionNamesLock = new object();
         public ObservableCollection<string> InterfaceSectionNames
         {
@@ -863,8 +882,8 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _interfaceSectionNames, _interfaceSectionNamesLock, value);
         }
 
-        private string _selectedInterfaceSectionName;
-        public string SelectedInterfaceSectionName
+        private string? _selectedInterfaceSectionName;
+        public string? SelectedInterfaceSectionName
         {
             get => _selectedInterfaceSectionName;
             set => SetProperty(ref _selectedInterfaceSectionName, value);
@@ -903,10 +922,15 @@ namespace PEBakery.WPF
         public bool InterfaceUpdated { get; set; } = false;
 
         // Interface View Canvas
-        private DragCanvas _interfaceCanvas;
+        private DragCanvas? _interfaceCanvas;
         public DragCanvas InterfaceCanvas
         {
-            get => _interfaceCanvas;
+            get
+            {
+                if (_interfaceCanvas == null)
+                    throw new InvalidOperationException($"{nameof(_interfaceCanvas)} is null");
+                return _interfaceCanvas;
+            }
             set => SetProperty(ref _interfaceCanvas, value);
         }
 
@@ -949,7 +973,7 @@ namespace PEBakery.WPF
         }
 
         // Interface StatusBar & ProgressBar
-        private string _interfaceStatusBarText;
+        private string _interfaceStatusBarText = string.Empty;
         public string InterfaceStatusBarText
         {
             get => _interfaceStatusBarText;
@@ -1074,8 +1098,8 @@ namespace PEBakery.WPF
             }
         }
         // Single-select
-        private UIControl _selectedUICtrl = null;
-        public UIControl SelectedUICtrl
+        private UIControl? _selectedUICtrl = null;
+        public UIControl? SelectedUICtrl
         {
             get => _selectedUICtrl;
             set
@@ -1116,8 +1140,8 @@ namespace PEBakery.WPF
             }
         }
         // Multi-select
-        private List<UIControl> _selectedUICtrls = null;
-        public List<UIControl> SelectedUICtrls
+        private List<UIControl>? _selectedUICtrls = null;
+        public List<UIControl>? SelectedUICtrls
         {
             get => _selectedUICtrls;
             set
@@ -1275,7 +1299,12 @@ namespace PEBakery.WPF
         }
         public string UICtrlToolTip
         {
-            get => _selectedUICtrl != null ? _selectedUICtrl.Info.ToolTip : string.Empty;
+            get
+            {
+                if (_selectedUICtrl == null)
+                    return string.Empty;
+                return _selectedUICtrl.Info.ToolTip ?? string.Empty;
+            }
             set
             {
                 if (_selectedUICtrl == null)
@@ -1341,8 +1370,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region For TextBox
-        private UIInfo_TextBox _uiCtrlTextBoxInfo;
-        public UIInfo_TextBox UICtrlTextBoxInfo
+        private UIInfo_TextBox? _uiCtrlTextBoxInfo;
+        public UIInfo_TextBox? UICtrlTextBoxInfo
         {
             get => _uiCtrlTextBoxInfo;
             set
@@ -1369,8 +1398,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For TextLabel
-        private UIInfo_TextLabel _uiCtrlTextLabelInfo;
-        public UIInfo_TextLabel UICtrlTextLabelInfo
+        private UIInfo_TextLabel? _uiCtrlTextLabelInfo;
+        public UIInfo_TextLabel? UICtrlTextLabelInfo
         {
             get => _uiCtrlTextLabelInfo;
             set
@@ -1433,8 +1462,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For NumberBox
-        private UIInfo_NumberBox _uiCtrlNumberBoxInfo;
-        public UIInfo_NumberBox UICtrlNumberBoxInfo
+        private UIInfo_NumberBox? _uiCtrlNumberBoxInfo;
+        public UIInfo_NumberBox? UICtrlNumberBoxInfo
         {
             get => _uiCtrlNumberBoxInfo;
             set
@@ -1503,8 +1532,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For CheckBox
-        private UIInfo_CheckBox _uiCtrlCheckBoxInfo;
-        public UIInfo_CheckBox UICtrlCheckBoxInfo
+        private UIInfo_CheckBox? _uiCtrlCheckBoxInfo;
+        public UIInfo_CheckBox? UICtrlCheckBoxInfo
         {
             get => _uiCtrlCheckBoxInfo;
             set
@@ -1531,8 +1560,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For ComboBox
-        private UIInfo_ComboBox _uiCtrlComboBoxInfo;
-        public UIInfo_ComboBox UICtrlComboBoxInfo
+        private UIInfo_ComboBox? _uiCtrlComboBoxInfo;
+        public UIInfo_ComboBox? UICtrlComboBoxInfo
         {
             get => _uiCtrlComboBoxInfo;
             set
@@ -1542,8 +1571,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For Image
-        private UIInfo_Image _uiCtrlImageInfo;
-        public UIInfo_Image UICtrlImageInfo
+        private UIInfo_Image? _uiCtrlImageInfo;
+        public UIInfo_Image? UICtrlImageInfo
         {
             get => _uiCtrlImageInfo;
             set
@@ -1598,7 +1627,7 @@ namespace PEBakery.WPF
         public Visibility UICtrlTextFileUnloaded => !_uiCtrlTextFileSet ? Visibility.Visible : Visibility.Collapsed;
         #endregion
         #region For Button
-        public UIInfo_Button UICtrlButtonInfo { get; set; }
+        public UIInfo_Button? UICtrlButtonInfo { get; set; }
         private bool _uiCtrlButtonPictureSet = false;
         public bool UICtrlButtonPictureSet
         {
@@ -1614,8 +1643,8 @@ namespace PEBakery.WPF
         public Visibility UICtrlButtonPictureUnloaded => !_uiCtrlButtonPictureSet ? Visibility.Visible : Visibility.Collapsed;
         #endregion
         #region For WebLabel
-        private UIInfo_WebLabel _uiCtrlWebLabelInfo;
-        public UIInfo_WebLabel UICtrlWebLabelInfo
+        private UIInfo_WebLabel? _uiCtrlWebLabelInfo;
+        public UIInfo_WebLabel? UICtrlWebLabelInfo
         {
             get => _uiCtrlWebLabelInfo;
             set
@@ -1635,16 +1664,16 @@ namespace PEBakery.WPF
                 if (_uiCtrlWebLabelInfo == null)
                     return;
 
-                _uiCtrlWebLabelInfo.Url = string.IsNullOrWhiteSpace(value) ? null : value;
+                _uiCtrlWebLabelInfo.Url = value;
                 OnPropertyUpdate(nameof(UICtrlWebLabelInfo.Url));
                 InvokeUIControlEvent(true);
             }
         }
         #endregion
         #region For RadioButton
-        public List<UIControl> UICtrlRadioButtonList { get; set; }
-        private UIInfo_RadioButton _uiCtrlRadioButtonInfo;
-        public UIInfo_RadioButton UICtrlRadioButtonInfo
+        public List<UIControl> UICtrlRadioButtonList { get; set; } = new List<UIControl>();
+        private UIInfo_RadioButton? _uiCtrlRadioButtonInfo;
+        public UIInfo_RadioButton? UICtrlRadioButtonInfo
         {
             get => _uiCtrlRadioButtonInfo;
             set
@@ -1660,8 +1689,8 @@ namespace PEBakery.WPF
         public bool UICtrlRadioButtonSelectEnable => !_uiCtrlRadioButtonInfo?.Selected ?? false;
         #endregion
         #region For Bevel
-        private UIInfo_Bevel _uiCtrlBevelInfo;
-        public UIInfo_Bevel UICtrlBevelInfo
+        private UIInfo_Bevel? _uiCtrlBevelInfo;
+        public UIInfo_Bevel? UICtrlBevelInfo
         {
             get => _uiCtrlBevelInfo;
             set
@@ -1683,11 +1712,15 @@ namespace PEBakery.WPF
             {
                 if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
                     return false;
+                if (UICtrlBevelInfo == null)
+                    return false;
 
                 return UICtrlBevelInfo.CaptionEnabled;
             }
             set
             {
+                if (UICtrlBevelInfo == null)
+                    return;
                 UICtrlBevelInfo.CaptionEnabled = value;
                 OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
                 InvokeUIControlEvent(true);
@@ -1698,6 +1731,8 @@ namespace PEBakery.WPF
             get
             {
                 if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
+                    return string.Empty;
+                if (UICtrlBevelInfo == null)
                     return string.Empty;
 
                 return UICtrlBevelInfo.CaptionEnabled ? _selectedUICtrl.Text : string.Empty;
@@ -1719,6 +1754,8 @@ namespace PEBakery.WPF
             {
                 if (_uiCtrlBevelInfo == null)
                     return;
+                if (UICtrlBevelInfo == null)
+                    return;
 
                 UICtrlBevelInfo.CaptionEnabled = true;
 
@@ -1732,7 +1769,7 @@ namespace PEBakery.WPF
             get => (int?)_uiCtrlBevelInfo?.FontWeight ?? 0;
             set
             {
-                if (_uiCtrlBevelInfo == null)
+                if (UICtrlBevelInfo == null || _uiCtrlBevelInfo == null)
                     return;
 
                 UICtrlBevelInfo.CaptionEnabled = true;
@@ -1752,7 +1789,7 @@ namespace PEBakery.WPF
             }
             set
             {
-                if (_uiCtrlBevelInfo == null)
+                if (UICtrlBevelInfo == null || _uiCtrlBevelInfo == null)
                     return;
 
                 UICtrlBevelInfo.CaptionEnabled = true;
@@ -1768,8 +1805,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For FileBox
-        private UIInfo_FileBox _uiCtrlFileBoxInfo;
-        public UIInfo_FileBox UICtrlFileBoxInfo
+        private UIInfo_FileBox? _uiCtrlFileBoxInfo;
+        public UIInfo_FileBox? UICtrlFileBoxInfo
         {
             get => _uiCtrlFileBoxInfo;
             set
@@ -1841,8 +1878,8 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For RadioGroup
-        private UIInfo_RadioGroup _uiCtrlRadioGroupInfo;
-        public UIInfo_RadioGroup UICtrlRadioGroupInfo
+        private UIInfo_RadioGroup? _uiCtrlRadioGroupInfo;
+        public UIInfo_RadioGroup? UICtrlRadioGroupInfo
         {
             get => _uiCtrlRadioGroupInfo;
             set
@@ -1860,7 +1897,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string _uiCtrlListItemEditButtonText;
+        private string _uiCtrlListItemEditButtonText = string.Empty;
         public string UICtrlListItemEditButtonText
         {
             get => _uiCtrlListItemEditButtonText;
@@ -1879,8 +1916,8 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(false);
             }
         }
-        private string _uiCtrlSectionToRun;
-        public string UICtrlSectionToRun
+        private string? _uiCtrlSectionToRun;
+        public string? UICtrlSectionToRun
         {
             get => _uiCtrlSectionToRun;
             set
@@ -1918,7 +1955,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string _scriptFileSizeStr;
+        private string _scriptFileSizeStr = string.Empty;
         public string ScriptFileSizeStr
         {
             get => _scriptFileSizeStr;
@@ -1926,15 +1963,15 @@ namespace PEBakery.WPF
         }
 
         private readonly object _attachedFoldersLock = new object();
-        private ObservableCollection<AttachFolderItem> _attachedFolders;
+        private ObservableCollection<AttachFolderItem> _attachedFolders = new ObservableCollection<AttachFolderItem>();
         public ObservableCollection<AttachFolderItem> AttachedFolders
         {
             get => _attachedFolders;
             set => SetCollectionProperty(ref _attachedFolders, _attachedFoldersLock, value);
         }
 
-        private AttachFolderItem _selectedAttachedFolder;
-        public AttachFolderItem SelectedAttachedFolder
+        private AttachFolderItem? _selectedAttachedFolder;
+        public AttachFolderItem? SelectedAttachedFolder
         {
             get => _selectedAttachedFolder;
             set
@@ -1942,15 +1979,15 @@ namespace PEBakery.WPF
                 _selectedAttachedFolder = value;
                 OnPropertyUpdate();
 
-                if (value != null)
-                    AttachedFiles = SelectedAttachedFolder.Children;
+                if (_selectedAttachedFolder != null)
+                    AttachedFiles = _selectedAttachedFolder.Children;
                 else
                     AttachedFiles.Clear();
             }
         }
 
         private readonly object _attachedFilesLock = new object();
-        private ObservableCollection<AttachFileItem> _attachedFiles;
+        private ObservableCollection<AttachFileItem> _attachedFiles = new ObservableCollection<AttachFileItem>();
         public ObservableCollection<AttachFileItem> AttachedFiles
         {
             get => _attachedFiles;
@@ -1993,10 +2030,12 @@ namespace PEBakery.WPF
             switch (SelectMode)
             {
                 case ControlSelectMode.SingleSelect:
-                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
+                    if (_selectedUICtrl != null)
+                        UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
                     break;
                 case ControlSelectMode.MultiSelect:
-                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrls, true));
+                    if (_selectedUICtrls != null)
+                        UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrls, true));
                     break;
             }
         }
@@ -2007,12 +2046,12 @@ namespace PEBakery.WPF
         public ICommand ScriptLogoExtractCommand => new RelayCommand(ScriptLogoExtractCommand_Execute, ScriptLogoLoadedFunc);
         public ICommand ScriptLogoDeleteCommand => new RelayCommand(ScriptLogoDeleteCommand_Execute, ScriptLogoLoadedFunc);
 
-        private bool ScriptLogoLoadedFunc(object parameter)
+        private bool ScriptLogoLoadedFunc(object? parameter)
         {
             return CanExecuteCommand && ScriptLogoLoaded;
         }
 
-        private void ScriptLogoAttachCommand_Execute(object parameter)
+        private void ScriptLogoAttachCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2060,7 +2099,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptLogoExtractCommand_Execute(object parameter)
+        private void ScriptLogoExtractCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2109,7 +2148,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptLogoDeleteCommand_Execute(object parameter)
+        private void ScriptLogoDeleteCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2121,7 +2160,7 @@ namespace PEBakery.WPF
                 }
 
                 ResultReport<Script> report = EncodedFile.DeleteLogo(Script);
-                if (report.Success)
+                if (report.Success && report.Result != null)
                 {
                     Script = report.Result;
                     MessageBox.Show(_window, "Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -2146,17 +2185,17 @@ namespace PEBakery.WPF
 
         #region Command - Interface Editor
         #region For Add, Delete of Interface Section
-        private ICommand _interfaceSectionAddCommand;
-        private ICommand _interfaceSectionDeleteCommand;
+        private ICommand? _interfaceSectionAddCommand;
+        private ICommand? _interfaceSectionDeleteCommand;
         public ICommand InterfaceSectionAddCommand => GetRelayCommand(ref _interfaceSectionAddCommand, "Add interface section", InterfaceSectionAddCommand_Execute, InterfaceSectionAddCommand_CanExecute);
         public ICommand InterfaceSectionDeleteCommand => GetRelayCommand(ref _interfaceSectionDeleteCommand, "Delete interface section", InterfaceSectionDeleteCommand_Execute, InterfaceSectionDeleteCommand_CanExecute);
 
-        private bool InterfaceSectionAddCommand_CanExecute(object sender)
+        private bool InterfaceSectionAddCommand_CanExecute(object? sender)
         {
             return CanExecuteCommand;
         }
 
-        private async void InterfaceSectionAddCommand_Execute(object sender)
+        private async void InterfaceSectionAddCommand_Execute(object? sender)
         {
             CanExecuteCommand = false;
             try
@@ -2204,7 +2243,15 @@ namespace PEBakery.WPF
                         IniReadWriter.AddSection(Script.RealPath, newInterfaceSectionName);
 
                         // Read from script
-                        Script = Script.Project.RefreshScript(Script);
+                        Script? newScript = Script.Project.RefreshScript(Script);
+                        if (newScript == null)
+                        {
+                            string errMsg = $"Script [{Script.Title}] refresh error.";
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                            MessageBox.Show(_window, errMsg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+                        Script = newScript;
                     });
 
                     ReadScriptInterface(true);
@@ -2218,15 +2265,20 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool InterfaceSectionDeleteCommand_CanExecute(object sender)
+        private bool InterfaceSectionDeleteCommand_CanExecute(object? sender)
         {
             return CanExecuteCommand &&
                    InterfaceSectionNames != null && SelectedInterfaceSectionName != null &&
                    1 < InterfaceSectionNames.Count && !SelectedInterfaceSectionName.Equals(ScriptSection.Names.Interface);
         }
 
-        private async void InterfaceSectionDeleteCommand_Execute(object sender)
+        private async void InterfaceSectionDeleteCommand_Execute(object? sender)
         {
+            if (Renderer == null)
+                return;
+            if (SelectedInterfaceSectionName == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
@@ -2303,7 +2355,15 @@ namespace PEBakery.WPF
                     IniReadWriter.DeleteSection(Script.RealPath, sectionToDelete);
 
                     // Read from script
-                    Script = Script.Project.RefreshScript(Script);
+                    Script? newScript = Script.Project.RefreshScript(Script);
+                    if (newScript == null)
+                    {
+                        string errMsg = $"Script [{Script.Title}] refresh error.";
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                        MessageBox.Show(_window, errMsg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    Script = newScript;
                 });
 
                 // Rendering must be done in ui thread.
@@ -2319,20 +2379,25 @@ namespace PEBakery.WPF
         #endregion
 
         #region For Add, Delete, Reload of UIControl
-        private ICommand _uiCtrlAddCommand;
-        private ICommand _uiCtrlDeleteCommand;
-        private ICommand _uiCtrlReloadCommand;
+        private ICommand? _uiCtrlAddCommand;
+        private ICommand? _uiCtrlDeleteCommand;
+        private ICommand? _uiCtrlReloadCommand;
         public ICommand UICtrlAddCommand => GetRelayCommand(ref _uiCtrlAddCommand, "Add UIControl", UICtrlAddCommand_Execute, UICtrlAddCommand_CanExecute);
         public ICommand UICtrlDeleteCommand => GetRelayCommand(ref _uiCtrlDeleteCommand, "Delete UIControl", UICtrlDeleteCommand_Execute, UICtrlDeleteCommand_CanExecute);
         public ICommand UICtrlReloadCommand => GetRelayCommand(ref _uiCtrlReloadCommand, "Reload UIControl", UICtrlReloadCommand_Execute, UICtrlReloadCommand_CanExecute);
 
-        private bool UICtrlAddCommand_CanExecute(object sender)
+        private bool UICtrlAddCommand_CanExecute(object? sender)
         {
             return CanExecuteCommand && (0 <= UICtrlAddTypeIndex && UICtrlAddTypeIndex < UIControl.LexicalDict.Count);
         }
 
-        private void UICtrlAddCommand_Execute(object sender)
+        private void UICtrlAddCommand_Execute(object? sender)
         {
+            if (Renderer == null)
+                return;
+            if (InterfaceSectionName == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
@@ -2370,15 +2435,26 @@ namespace PEBakery.WPF
                 if (!Script.Sections.ContainsKey(InterfaceSectionName))
                 { // No [Interface] section, so add it
                     IniReadWriter.AddSection(Script.DirectRealPath, InterfaceSectionName);
-                    Script = Script.Project.RefreshScript(Script);
+                    Script? newScript = Script.Project.RefreshScript(Script);
+                    if (newScript == null)
+                    {
+                        string errMsg = $"Script [{Script.Title}] refresh error.";
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                        MessageBox.Show(_window, errMsg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    Script = newScript;
                 }
 
                 ScriptSection ifaceSection = Script.Sections[InterfaceSectionName];
                 string line = UIControl.GetUIControlTemplate(type, key);
 
-                UIControl uiCtrl = UIParser.ParseStatement(line, ifaceSection, out List<LogInfo> errorLogs);
-                Debug.Assert(uiCtrl != null, "Internal Logic Error at UICtrlAddButton_Click");
-                Debug.Assert(errorLogs.Count == 0, "Internal Logic Error at UICtrlAddButton_Click");
+                UIControl? uiCtrl = UIParser.ParseStatement(line, ifaceSection, out List<LogInfo> errorLogs);
+                if (uiCtrl == null)
+                {
+                    Global.Logger.SystemWrite(errorLogs);
+                    return;
+                }
 
                 Renderer.UICtrls.Add(uiCtrl);
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
@@ -2399,13 +2475,16 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool UICtrlDeleteCommand_CanExecute(object sender)
+        private bool UICtrlDeleteCommand_CanExecute(object? sender)
         {
             return CanExecuteCommand && ((SelectedUICtrls != null && SelectedUICtrls.Count > 0) || (SelectedUICtrl != null));
         }
 
-        private void UICtrlDeleteCommand_Execute(object parameter)
+        private void UICtrlDeleteCommand_Execute(object? parameter)
         {
+            if (Renderer == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
@@ -2498,13 +2577,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool UICtrlReloadCommand_CanExecute(object sender)
+        private bool UICtrlReloadCommand_CanExecute(object? sender)
         {
             // Only in Tab [Interface]
             return CanExecuteCommand && TabIndex == 1;
         }
 
-        private void UICtrlReloadCommand_Execute(object parameter)
+        private void UICtrlReloadCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2519,10 +2598,10 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For Image
-        private ICommand _uiCtrlImageAutoResizeCommand;
+        private ICommand? _uiCtrlImageAutoResizeCommand;
         public ICommand UICtrlImageAutoResizeCommand => GetRelayCommand(ref _uiCtrlImageAutoResizeCommand, "Auto resize Image control", UICtrlImageAutoResizeCommand_Execute, CanExecuteFunc);
 
-        private async void UICtrlImageAutoResizeCommand_Execute(object parameter)
+        private async void UICtrlImageAutoResizeCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2579,15 +2658,15 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For RadioButton
-        private ICommand _uiCtrlRadioButtonSelectCommand;
+        private ICommand? _uiCtrlRadioButtonSelectCommand;
         public ICommand UICtrlRadioButtonSelectCommand => GetRelayCommand(ref _uiCtrlRadioButtonSelectCommand, "Select RadioButton", UICtrlRadioButtonSelectCommand_Execute, UICtrlRadioButtonSelectCommand_CanExecute);
 
-        private bool UICtrlRadioButtonSelectCommand_CanExecute(object parameter)
+        private bool UICtrlRadioButtonSelectCommand_CanExecute(object? parameter)
         {
             return CanExecuteCommand && UICtrlRadioButtonSelectEnable;
         }
 
-        private void UICtrlRadioButtonSelectCommand_Execute(object parameter)
+        private void UICtrlRadioButtonSelectCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2618,10 +2697,10 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For ListItemEditWindow
-        private ICommand _uiCtrlListItemEditCommand;
+        private ICommand? _uiCtrlListItemEditCommand;
         public ICommand UICtrlListItemEditCommand => GetRelayCommand(ref _uiCtrlListItemEditCommand, "Edit ListItem of the selected control", UICtrlListItemEditCommand_Execute, CanExecuteFunc);
 
-        private void UICtrlListItemEditCommand_Execute(object parameter)
+        private void UICtrlListItemEditCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2653,15 +2732,18 @@ namespace PEBakery.WPF
         #endregion
 
         #region For (Common) InterfaceEncoded 
-        private ICommand _uiCtrlInterfaceAttachCommand;
-        private ICommand _uiCtrlInterfaceExtractCommand;
-        private ICommand _uiCtrlInterfaceResetCommand;
+        private ICommand? _uiCtrlInterfaceAttachCommand;
+        private ICommand? _uiCtrlInterfaceExtractCommand;
+        private ICommand? _uiCtrlInterfaceResetCommand;
         public ICommand UICtrlInterfaceAttachCommand => GetRelayCommand(ref _uiCtrlInterfaceAttachCommand, "Attach file", UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
         public ICommand UICtrlInterfaceExtractCommand => GetRelayCommand(ref _uiCtrlInterfaceExtractCommand, "Extract attached file", UICtrlInterfaceExtractCommand_Execute, CanExecuteFunc);
         public ICommand UICtrlInterfaceResetCommand => GetRelayCommand(ref _uiCtrlInterfaceResetCommand, "Delete attached file", UICtrlInterfaceResetCommand_Execute, CanExecuteFunc);
 
-        private async void UICtrlInterfaceAttachCommand_Execute(object parameter)
+        private async void UICtrlInterfaceAttachCommand_Execute(object? parameter)
         {
+            if (Renderer == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
@@ -2741,7 +2823,7 @@ namespace PEBakery.WPF
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
                     ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
-                    if (!report.Success)
+                    if (!report.Success || report.Result == null)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
                         MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -2790,6 +2872,8 @@ namespace PEBakery.WPF
                             UICtrlTextFileSet = true;
                             break;
                         case UIControlType.Button:
+                            if (UICtrlButtonInfo == null)
+                                throw new InvalidOperationException($"{nameof(UICtrlButtonInfo)} is null");
                             UICtrlButtonInfo.Picture = srcFileName;
                             UICtrlButtonPictureSet = true;
                             break;
@@ -2811,7 +2895,7 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private async void UICtrlInterfaceExtractCommand_Execute(object parameter)
+        private async void UICtrlInterfaceExtractCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2850,19 +2934,19 @@ namespace PEBakery.WPF
                 string fileName = uiCtrl.Text;
                 if (selectedType == UIControlType.Button)
                 {
-                    Debug.Assert(UICtrlButtonInfo != null, internalErrorMsg);
+                    if (UICtrlButtonInfo == null)
+                        throw new InvalidOperationException($"{nameof(UICtrlButtonInfo)} is null");
+                    if (UICtrlButtonInfo.Picture == null)
+                        throw new InvalidOperationException($"{nameof(UICtrlButtonInfo.Picture)} is null");
                     fileName = UICtrlButtonInfo.Picture;
                 }
                 string ext = Path.GetExtension(fileName);
-
-                Debug.Assert(fileName != null, internalErrorMsg);
-                Debug.Assert(ext != null, internalErrorMsg);
 
                 string extFilter;
                 if (selectedType == UIControlType.TextFile)
                     extFilter = $"Text File|*{ext}";
                 else
-                    extFilter = $"{ext.ToUpper().Replace(".", String.Empty)} Image|*{ext}";
+                    extFilter = $"{ext.ToUpper().Replace(".", string.Empty)} Image|*{ext}";
 
                 if (!EncodedFile.ContainsInterface(Script, fileName))
                 {
@@ -2904,7 +2988,7 @@ namespace PEBakery.WPF
         /// <summary>
         /// Only for Image, TextFile, Button
         /// </summary>
-        private void UICtrlInterfaceResetCommand_Execute(object parameter)
+        private void UICtrlInterfaceResetCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2950,7 +3034,9 @@ namespace PEBakery.WPF
                 }
 
                 // Delete interface encoded file to prevent orphaned Interface-Encoded attachments
-                string fileName = DeleteInterfaceEncodedFile(SelectedUICtrl);
+                string? fileName = DeleteInterfaceEncodedFile(SelectedUICtrl);
+                if (fileName == null)
+                    throw new InvalidOperationException($"Deleting InterfaceEncodedFile of [{SelectedUICtrl.Key}] ({SelectedUICtrl.Type}) is not supported");
                 Debug.Assert(fileName != null, internalErrorMsg);
 
                 // Clear encoded file information from uiCtrl
@@ -2965,6 +3051,8 @@ namespace PEBakery.WPF
                         UICtrlTextFileSet = false;
                         break;
                     case UIControlType.Button:
+                        if (UICtrlButtonInfo == null)
+                            throw new InvalidOperationException($"{nameof(UICtrlButtonInfo)} is null");
                         UICtrlButtonInfo.Picture = null;
                         UICtrlButtonPictureSet = false;
                         break;
@@ -2979,12 +3067,12 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private string DeleteInterfaceEncodedFile(UIControl uiCtrl)
+        private string? DeleteInterfaceEncodedFile(UIControl uiCtrl)
         {
             void InternalDeleteInterfaceEncodedFile(string delFileName)
             {
                 ResultReport<Script> report = EncodedFile.DeleteFile(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
-                if (report.Success)
+                if (report.Success && report.Result != null)
                     Script = report.Result;
                 else
                     MessageBox.Show(_window, $"Unable to delete encoded file [{delFileName}].", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -2993,7 +3081,7 @@ namespace PEBakery.WPF
             // If two or more controls are referencing encoded file, do not delete it.
             Dictionary<string, int> fileRefCountDict = EncodedFile.GetInterfaceFileRefCount(Script);
 
-            string fileName = null;
+            string? fileName = null;
             switch (uiCtrl.Type)
             {
                 case UIControlType.Image:
@@ -3037,30 +3125,30 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - IsWorking
-        private bool CanExecuteFunc(object parameter)
+        private bool CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand;
         }
         #endregion
 
         #region Command - Attachment (Folder)
-        private ICommand _addFolderCommand;
-        private ICommand _renameFolderCommand;
-        private ICommand _extractFolderCommand;
-        private ICommand _deleteFolderCommand;
-        private ICommand _attachFileCommand;
+        private ICommand? _addFolderCommand;
+        private ICommand? _renameFolderCommand;
+        private ICommand? _extractFolderCommand;
+        private ICommand? _deleteFolderCommand;
+        private ICommand? _attachFileCommand;
         public ICommand AddFolderCommand => GetRelayCommand(ref _addFolderCommand, "Add folder", AddFolderCommand_Execute, CanExecuteFunc);
         public ICommand RenameFolderCommand => GetRelayCommand(ref _renameFolderCommand, "Rename folder", RenameFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, FolderSelected_CanExecute);
 
-        private bool FolderSelected_CanExecute(object parameter)
+        private bool FolderSelected_CanExecute(object? parameter)
         {
             return CanExecuteCommand && SelectedAttachedFolder != null;
         }
 
-        private async void AddFolderCommand_Execute(object parameter)
+        private async void AddFolderCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3111,18 +3199,16 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void RenameFolderCommand_Execute(object parameter)
+        private async void RenameFolderCommand_Execute(object? parameter)
         {
+            AttachFolderItem? folder = SelectedAttachedFolder;
+            if (folder == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
-                AttachFolderItem folder = SelectedAttachedFolder;
-                Debug.Assert(folder != null);
-
-                TextBoxDialog dialog = new TextBoxDialog(_window,
-                        "Rename folder",
-                        "Please input new folder name.",
-                        PackIconMaterialKind.Pencil)
+                TextBoxDialog dialog = new TextBoxDialog(_window, "Rename folder", "Please input new folder name.", PackIconMaterialKind.Pencil)
                 {
                     InputText = folder.FolderName
                 };
@@ -3139,7 +3225,7 @@ namespace PEBakery.WPF
 
                 AttachProgressIndeterminate = true;
 
-                string errMsg;
+                string? errMsg;
                 (Script, errMsg) = await EncodedFile.RenameFolderAsync(Script, folder.FolderName, newFolderName);
                 if (errMsg == null)
                 {
@@ -3162,13 +3248,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void ExtractFolderCommand_Execute(object parameter)
+        private async void ExtractFolderCommand_Execute(object? parameter)
         {
+            AttachFolderItem? folder = SelectedAttachedFolder;
+            if (folder == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
-                AttachFolderItem folder = SelectedAttachedFolder;
-                Debug.Assert(folder != null);
                 EncodedFileInfo[] fileInfos = folder.Children.Select(x => x.Info).ToArray();
                 if (fileInfos.Length == 0)
                 {
@@ -3295,14 +3383,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void DeleteFolderCommand_Execute(object parameter)
+        private async void DeleteFolderCommand_Execute(object? parameter)
         {
+            AttachFolderItem? folder = SelectedAttachedFolder;
+            if (folder == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
-                AttachFolderItem folder = SelectedAttachedFolder;
-                Debug.Assert(folder != null);
-
                 MessageBoxResult result = MessageBox.Show(
                     $"Are you sure you want to delete [{folder.FolderName}]?",
                     "Confirm Delete",
@@ -3314,7 +3403,7 @@ namespace PEBakery.WPF
                 AttachProgressIndeterminate = true;
 
                 ResultReport<Script> report = await EncodedFile.DeleteFolderAsync(Script, folder.FolderName);
-                if (report.Success)
+                if (report.Success && report.Result != null)
                 {
                     Script = report.Result;
                     ScriptAttachUpdated = true;
@@ -3334,14 +3423,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void AttachFileCommand_Execute(object parameter)
+        private async void AttachFileCommand_Execute(object? parameter)
         {
+            AttachFolderItem? folder = SelectedAttachedFolder;
+            if (folder == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
-                AttachFolderItem folder = SelectedAttachedFolder;
-                Debug.Assert(folder != null);
-
                 ScriptAttachFileDialog dialog = new ScriptAttachFileDialog { Owner = _window };
                 if (dialog.ShowDialog() != true)
                     return;
@@ -3447,28 +3537,28 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (File)
-        private ICommand _renameFileCommand;
-        private ICommand _extractFileCommand;
-        private ICommand _deleteFileCommand;
-        private ICommand _openFileCommand;
-        private ICommand _inspectFileCommand;
+        private ICommand? _renameFileCommand;
+        private ICommand? _extractFileCommand;
+        private ICommand? _deleteFileCommand;
+        private ICommand? _openFileCommand;
+        private ICommand? _inspectFileCommand;
         public ICommand RenameFileCommand => GetRelayCommand(ref _renameFileCommand, "Rename file", RenameFileCommand_Execute, FileSingleSelected_CanExecute);
         public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract file", ExtractFileCommand_Execute, FileSelected_CanExecute);
         public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete file", DeleteFileCommand_Execute, FileSelected_CanExecute);
         public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSingleSelected_CanExecute);
         public ICommand InspectFileCommand => GetRelayCommand(ref _inspectFileCommand, "Inspect file", InspectFileCommand_Execute, FileSelected_CanExecute);
 
-        private bool FileSelected_CanExecute(object parameter)
+        private bool FileSelected_CanExecute(object? parameter)
         {
             return CanExecuteCommand && SelectedAttachedFolder != null && 0 < SelectedAttachedFiles.Length;
         }
 
-        private bool FileSingleSelected_CanExecute(object parameter)
+        private bool FileSingleSelected_CanExecute(object? parameter)
         {
             return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFiles.Length == 1;
         }
 
-        private async void RenameFileCommand_Execute(object parameter)
+        private async void RenameFileCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3513,7 +3603,7 @@ namespace PEBakery.WPF
                 CanExecuteCommand = false;
                 AttachProgressIndeterminate = true;
 
-                string errorMsg;
+                string? errorMsg;
                 (Script, errorMsg) = await EncodedFile.RenameFileAsync(Script, fi.FolderName, fi.FileName, newFileName);
                 if (errorMsg == null)
                 {
@@ -3541,7 +3631,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void ExtractFileCommand_Execute(object parameter)
+        private async void ExtractFileCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3686,8 +3776,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void DeleteFileCommand_Execute(object parameter)
+        private async void DeleteFileCommand_Execute(object? parameter)
         {
+            AttachFolderItem? folder = SelectedAttachedFolder;
+            if (folder == null)
+                return;
+
             CanExecuteCommand = false;
             try
             {
@@ -3708,7 +3802,7 @@ namespace PEBakery.WPF
                     AttachProgressIndeterminate = true;
 
                     ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, fi.FolderName, fi.FileName);
-                    if (report.Success)
+                    if (report.Success && report.Result != null)
                     {
                         Script = report.Result;
                         ScriptAttachUpdated = true;
@@ -3732,7 +3826,7 @@ namespace PEBakery.WPF
                         return;
 
                     AttachProgressIndeterminate = true;
-                    string folderName = SelectedAttachedFolder.FolderName;
+                    string folderName = folder.FolderName;
                     string[] fileNames = SelectedAttachedFiles.Select(fi => fi.FileName).ToArray();
 
 
@@ -3770,7 +3864,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void OpenFileCommand_Execute(object parameter)
+        private async void OpenFileCommand_Execute(object? parameter)
         {
             Debug.Assert(SelectedAttachedFiles.Length == 1);
             CanExecuteCommand = false;
@@ -3819,7 +3913,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void InspectFileCommand_Execute(object parameter)
+        private async void InspectFileCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             AttachProgressIndeterminate = true;
@@ -3839,7 +3933,7 @@ namespace PEBakery.WPF
                         return;
 
                     ResultReport<EncodedFileInfo> report = await EncodedFile.ReadFileInfoAsync(Script, dirName, fileName, true);
-                    if (report.Success)
+                    if (report.Success && report.Result != null)
                     { // Success
                         EncodedFileInfo newInfo = report.Result;
                         file.Info = newInfo;
@@ -3877,10 +3971,10 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (Advanced)
-        private ICommand _enableAdvancedViewCommand;
+        private ICommand? _enableAdvancedViewCommand;
         public ICommand EnableAdvancedViewCommand => GetRelayCommand(ref _enableAdvancedViewCommand, "Enable advanced view", EnableAdvancedViewCommand_Execute, CanExecuteFunc);
 
-        private void EnableAdvancedViewCommand_Execute(object parameter)
+        private void EnableAdvancedViewCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3976,7 +4070,7 @@ namespace PEBakery.WPF
 
             // Change made to interface should not affect script file immediately.
             // Make a copy of uiCtrls to prevent this.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script, InterfaceSectionName);
+            (List<UIControl>? uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script, InterfaceSectionName);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)
@@ -4021,7 +4115,7 @@ namespace PEBakery.WPF
             };
 
             ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(Script, opts);
-            if (!report.Success)
+            if (!report.Success || report.Result == null)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
                 MessageBox.Show(_window, $"Unable to read script attachments\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -4080,6 +4174,9 @@ namespace PEBakery.WPF
 
         public void ReadUIControlInfo(UIControl uiCtrl)
         {
+            if (Renderer == null)
+                return;
+
             UIControlModifiedEventToggle = true;
 
             switch (uiCtrl.Type)
@@ -4205,7 +4302,7 @@ namespace PEBakery.WPF
                 return false;
 
             // Check m.ScriptVersion
-            string verStr = StringEscaper.ProcessVersionString(ScriptVersion);
+            string? verStr = StringEscaper.ProcessVersionString(ScriptVersion);
             if (verStr == null)
             {
                 string errMsg = $"Invalid version string [{ScriptVersion}], please check again";
@@ -4227,7 +4324,17 @@ namespace PEBakery.WPF
             };
 
             IniReadWriter.WriteKeys(Script.RealPath, keys);
-            Script = Script.Project.RefreshScript(Script);
+            Script? newScript = Script.Project.RefreshScript(Script);
+            if (newScript == null)
+            {
+                string errMsg = $"Script [{Script.Title}] refresh error.";
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show(_window, errMsg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                Script = newScript;
+            }
 
             if (refresh)
                 RefreshMainWindow();
@@ -4236,12 +4343,12 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public Task<bool> WriteScriptInterfaceAsync(string activeInterfaceSection = null)
+        public Task<bool> WriteScriptInterfaceAsync(string? activeInterfaceSection = null)
         {
             return Task.Run(() => WriteScriptInterface(activeInterfaceSection));
         }
 
-        public bool WriteScriptInterface(string activeInterfaceSection = null)
+        public bool WriteScriptInterface(string? activeInterfaceSection = null)
         {
             if (Renderer == null)
                 return false;
@@ -4254,7 +4361,8 @@ namespace PEBakery.WPF
                 UIControl.Update(Renderer.UICtrls);
                 UIControl.Delete(UICtrlToBeDeleted);
                 UICtrlToBeDeleted.Clear();
-                IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
+                if (InterfaceSectionName != null)
+                    IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
 
                 if (activeInterfaceSection == null ||
@@ -4268,7 +4376,17 @@ namespace PEBakery.WPF
                 }
 
                 InterfaceStatusBarText = $"Interface [{SelectedInterfaceSectionName}] loaded";
-                Script = Script.Project.RefreshScript(Script);
+                Script? newScript = Script.Project.RefreshScript(Script);
+                if (newScript == null)
+                {
+                    string errMsg = $"Script [{Script.Title}] refresh error.";
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show(_window, errMsg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    Script = newScript;
+                }
             }
             catch (Exception e)
             {
@@ -4325,7 +4443,7 @@ namespace PEBakery.WPF
                         UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
                         UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(Script, info.Picture);
-                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? string.Empty : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;
                         break;
                     }
@@ -4448,7 +4566,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property
-        private string _folderName;
+        private string _folderName = string.Empty;
         public string FolderName
         {
             get => _folderName;
@@ -4456,7 +4574,7 @@ namespace PEBakery.WPF
         }
 
         private readonly object _childrenLock = new object();
-        private ObservableCollection<AttachFileItem> _children;
+        private ObservableCollection<AttachFileItem> _children = new ObservableCollection<AttachFileItem>();
         public ObservableCollection<AttachFileItem> Children
         {
             get => _children;
@@ -4477,7 +4595,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property
-        public EncodedFileInfo Info;
+        public EncodedFileInfo Info { get; set; }
         public string FileName => Info.FileName;
         public string RawSize => NumberHelper.NaturalByteSizeToSIUnit(Info.RawSize);
         public string EncodedSize => NumberHelper.NaturalByteSizeToSIUnit(Info.EncodedSize);

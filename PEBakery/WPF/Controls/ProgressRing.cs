@@ -53,7 +53,7 @@ namespace PEBakery.WPF.Controls
 
         public static readonly DependencyProperty EllipseDiameterScaleProperty = DependencyProperty.Register("EllipseDiameterScale", typeof(double), typeof(ProgressRing), new PropertyMetadata(1D));
 
-        private List<Action> _deferredActions = new List<Action>();
+        private List<Action>? _deferredActions = new List<Action>();
 
         static ProgressRing()
         {
@@ -240,7 +240,7 @@ namespace PEBakery.WPF.Controls
                 return width <= 20 ? 20 : width;
             }
 
-            return null;
+            return Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

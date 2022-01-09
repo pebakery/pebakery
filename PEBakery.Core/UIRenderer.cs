@@ -67,7 +67,8 @@ namespace PEBakery.Core
         // Compatibility Option
         private readonly bool _ignoreWidthOfWebLabel;
 
-        public readonly List<UIControl> UICtrls;
+        // Allow modification of UICtrls list from outside
+        public List<UIControl> UICtrls { get; }
         private IEnumerable<UIControl> VisibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility) : UICtrls;
         private IEnumerable<UIControl> RadioButtons => VisibleCtrls.Where(x => x.Type == UIControlType.RadioButton);
         private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
@@ -84,12 +85,15 @@ namespace PEBakery.Core
             _ignoreWidthOfWebLabel = compatWebLabel;
 
             (List<UIControl>? uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
-            UICtrls = uiCtrls ?? new List<UIControl>(0);
+            if (uiCtrls == null)
+                UICtrls = new List<UIControl>();
+            else
+                UICtrls = uiCtrls.ToList();
 
             Global.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window? window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window? window, Script script, IEnumerable<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
@@ -98,7 +102,7 @@ namespace PEBakery.Core
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
-            UICtrls = uiCtrls ?? new List<UIControl>(0);
+            UICtrls = uiCtrls.ToList();
         }
         #endregion
 

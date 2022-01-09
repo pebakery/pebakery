@@ -834,6 +834,8 @@ namespace PEBakery.Core.ViewModels
             Setting setting = Global.Setting;
             if (setting == null)
                 return Task.CompletedTask;
+            if (Global.Projects == null)
+                return Task.CompletedTask;
 
             // Clear MainTreeItems
             MainTreeItems.Clear();
@@ -1050,6 +1052,8 @@ namespace PEBakery.Core.ViewModels
             if (ScriptCache.DbLock != 0)
                 return Task.CompletedTask;
             if (Global.ScriptCache == null)
+                return Task.CompletedTask;
+            if (Global.Projects == null)
                 return Task.CompletedTask;
 
             return Task.Run(() =>

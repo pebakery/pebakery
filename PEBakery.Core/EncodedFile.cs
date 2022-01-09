@@ -315,12 +315,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachInterface, ContainsInterface
-        public static Task AttachInterfaceAsync(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
+        public static Task AttachInterfaceAsync(Script sc, string fileName, string srcFilePath, IProgress<double>? progress)
         {
             return Task.Run(() => AttachInterface(sc, fileName, srcFilePath, progress));
         }
 
-        public static void AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
+        public static void AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double>? progress)
         {
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"Filename [{fileName}] contains invalid character");

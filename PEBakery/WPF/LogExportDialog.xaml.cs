@@ -357,7 +357,7 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(bool))
-                return null;
+                return Binding.DoNothing;
 
             return !(bool)value;
         }
@@ -365,7 +365,7 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(bool))
-                return null;
+                return Binding.DoNothing;
 
             return !(bool)value;
         }

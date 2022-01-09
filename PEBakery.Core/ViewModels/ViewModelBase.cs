@@ -67,12 +67,12 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region RelayCommand
-        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
+        protected virtual ICommand GetRelayCommand(ref ICommand? cmdRef, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
         {
             return cmdRef ??= new RelayCommand(executeFunc, canExecuteFunc);
         }
 
-        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, string text, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
+        protected virtual ICommand GetRelayCommand(ref ICommand? cmdRef, string text, Action<object?> executeFunc, Func<object?, bool>? canExecuteFunc = null)
         {
             return cmdRef ??= new RelayCommand(text, executeFunc, canExecuteFunc);
         }

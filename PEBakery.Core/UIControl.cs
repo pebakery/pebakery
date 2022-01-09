@@ -139,7 +139,6 @@ namespace PEBakery.Core
     #endregion
 
     #region UIControl
-    [Serializable]
     public class UIControl
     {
         #region Fields and Properties
@@ -880,7 +879,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(Url))
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(StringEscaper.DoubleQuote(Url));
             }
             b.Append(ForgeToolTip());
@@ -932,9 +931,9 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(SectionName));
-            b.Append(",");
+            b.Append(',');
             b.Append(Picture == null ? "0" : StringEscaper.QuoteEscape(Picture));
             b.Append(HideProgress ? ",True" : ",False");
             b.Append(ForgeToolTip());
@@ -963,7 +962,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
+            b.Append(',');
             b.Append(StringEscaper.DoubleQuote(Url));
             b.Append(ForgeToolTip());
             return b.ToString();
@@ -1030,15 +1029,15 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             if (FontSize != null)
             {
-                b.Append(",");
+                b.Append(',');
                 b.Append(FontSize);
                 if (FontWeight != null)
                 {
-                    b.Append(",");
+                    b.Append(',');
                     b.Append(FontWeight);
                     if (FontStyle != null)
                     {
-                        b.Append(",");
+                        b.Append(',');
                         b.Append(FontStyle);
                     }
                 }

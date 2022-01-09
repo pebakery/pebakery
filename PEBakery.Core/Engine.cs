@@ -313,10 +313,10 @@ namespace PEBakery.Core
             }
         }
 
-        public Task? ForceStopWait(bool forceKillSubProc)
+        public Task ForceStopWait(bool forceKillSubProc)
         {
             if (_task is null)
-                return null;
+                return Task.CompletedTask;
             
             ForceStop(forceKillSubProc);
             return Task.Run(() => _task.Wait());

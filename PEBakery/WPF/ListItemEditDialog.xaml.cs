@@ -58,13 +58,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ViewModel_PreRequestClose(object sender, EventArgs e)
+        private void ViewModel_PreRequestClose(object? sender, EventArgs e)
         {
             // Get focus from ListViewEditItem, to trigger LostFocus data binding
             ApplyButton.Focus();
         }
 
-        private void ViewModel_OnRequestClose(object sender, bool e)
+        private void ViewModel_OnRequestClose(object? sender, bool e)
         {
             // Setting DialogResult closes the Window
             DialogResult = e;
@@ -115,16 +115,13 @@ namespace PEBakery.WPF
         #region UIControl Read and Write
         public void ReadListItems()
         {
-            string internalErrorMsg = $"Internal Logic Error at {nameof(ReadListItems)}";
-
-            List<string> ctrlItems = null;
+            List<string>? ctrlItems = null;
             int ctrlItemDefault = -1;
             switch (_uiCtrl.Type)
             {
                 case UIControlType.ComboBox:
                     {
-                        UIInfo_ComboBox info = _uiCtrl.Info.Cast<UIInfo_ComboBox>();
-                        Debug.Assert(info != null, internalErrorMsg);
+                        UIInfo_ComboBox info = (UIInfo_ComboBox)_uiCtrl.Info;
 
                         ctrlItems = info.Items;
                         ctrlItemDefault = info.Index;
@@ -132,8 +129,7 @@ namespace PEBakery.WPF
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        UIInfo_RadioGroup info = _uiCtrl.Info.Cast<UIInfo_RadioGroup>();
-                        Debug.Assert(info != null, internalErrorMsg);
+                        UIInfo_RadioGroup info = (UIInfo_RadioGroup)_uiCtrl.Info;
 
                         ctrlItems = info.Items;
                         ctrlItemDefault = info.Selected;
@@ -143,8 +139,10 @@ namespace PEBakery.WPF
                     throw new InvalidOperationException($"{nameof(ListItemEditDialog)} does not support editing [{_uiCtrl.Type}]");
             }
 
-            Debug.Assert(ctrlItems != null, internalErrorMsg);
-            Debug.Assert(ctrlItemDefault != -1, internalErrorMsg);
+            if (ctrlItems == null)
+                throw new InvalidOperationException($"{nameof(ctrlItems)} is null");
+            if (ctrlItemDefault == -1)
+                throw new InvalidOperationException($"Internal logic error of {nameof(ReadListItems)}");
 
             for (int i = 0; i < ctrlItems.Count; i++)
             {
@@ -158,18 +156,19 @@ namespace PEBakery.WPF
 
         public void WriteListItems()
         {
-            string internalErrorMsg = $"Internal Logic Error at {nameof(WriteListItems)}";
-
             List<string> ctrlItems = Items.Select(x => x.Value).ToList();
-            int ctrlItemDefault = Items.IndexOf(Items.Where(i => i.IsDefault == true).FirstOrDefault());
-            Debug.Assert(ctrlItemDefault != -1, internalErrorMsg); // no default item found
+            ListViewEditItem? ctrlItem = Items.Where(i => i.IsDefault == true).FirstOrDefault();
+            if (ctrlItem == null)
+                throw new InvalidOperationException($"{nameof(ctrlItem)} is null");
+            int ctrlItemDefault = Items.IndexOf(ctrlItem);
+            if (ctrlItemDefault == -1)
+                throw new InvalidOperationException($"Internal logic error of {nameof(WriteListItems)}");
 
             switch (_uiCtrl.Type)
             {
                 case UIControlType.ComboBox:
                     {
-                        UIInfo_ComboBox info = _uiCtrl.Info.Cast<UIInfo_ComboBox>();
-                        Debug.Assert(info != null, internalErrorMsg);
+                        UIInfo_ComboBox info = (UIInfo_ComboBox)_uiCtrl.Info;
 
                         info.Items = ctrlItems;
                         info.Index = ctrlItemDefault;
@@ -177,8 +176,7 @@ namespace PEBakery.WPF
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        UIInfo_RadioGroup info = _uiCtrl.Info.Cast<UIInfo_RadioGroup>();
-                        Debug.Assert(info != null, internalErrorMsg);
+                        UIInfo_RadioGroup info = (UIInfo_RadioGroup)_uiCtrl.Info;
 
                         info.Items = ctrlItems;
                         info.Selected = ctrlItemDefault;
@@ -191,15 +189,15 @@ namespace PEBakery.WPF
         #endregion
 
         #region Commands for ListItemBox
-        private ICommand _listItemAddCommand;
-        private ICommand _listItemInsertCommand;
-        private ICommand _listItemDeleteCommand;
+        private ICommand? _listItemAddCommand;
+        private ICommand? _listItemInsertCommand;
+        private ICommand? _listItemDeleteCommand;
         public ICommand ListItemAddCommand => GetRelayCommand(ref _listItemAddCommand, "Add item", ListItemAddCommand_Execute, ListItemAddCommand_CanExecuteFunc);
         public ICommand ListItemInsertCommand => GetRelayCommand(ref _listItemInsertCommand, "Insert item", ListItemInsertCommand_Execute, ListItemInsertCommand_CanExecuteFunc);
         public ICommand ListItemDeleteCommand => GetRelayCommand(ref _listItemDeleteCommand, "Delete item", ListItemDeleteCommand_Execute, ListItemDeleteCommand_CanExecuteFunc);
 
-        private ICommand _listItemMoveUpCommand;
-        private ICommand _listItemMoveDownCommand;
+        private ICommand? _listItemMoveUpCommand;
+        private ICommand? _listItemMoveDownCommand;
         public ICommand ListItemMoveUpCommand => GetRelayCommand(ref _listItemMoveUpCommand, "Move item one step up", ListItemMoveUpCommand_Execute, ListItemMoveUpCommand_CanExecuteFunc);
         public ICommand ListItemMoveDownCommand => GetRelayCommand(ref _listItemMoveDownCommand, "Move item one step down", ListItemMoveDownCommand_Execute, ListItemMoveDownCommand_CanExecuteFunc);
 
@@ -212,32 +210,32 @@ namespace PEBakery.WPF
             set => SetProperty(ref _canExecuteCommand, value);
         }
 
-        private bool ListItemAddCommand_CanExecuteFunc(object parameter)
+        private bool ListItemAddCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand;
         }
 
-        private bool ListItemInsertCommand_CanExecuteFunc(object parameter)
+        private bool ListItemInsertCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand;
         }
 
-        private bool ListItemDeleteCommand_CanExecuteFunc(object parameter)
+        private bool ListItemDeleteCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand && 2 <= Items.Count;
         }
 
-        private bool ListItemMoveUpCommand_CanExecuteFunc(object arg)
+        private bool ListItemMoveUpCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand && 1 <= SelectedIndex && SelectedIndex < Items.Count;
         }
 
-        private bool ListItemMoveDownCommand_CanExecuteFunc(object arg)
+        private bool ListItemMoveDownCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand && 0 <= SelectedIndex && SelectedIndex < Items.Count - 1;
         }
 
-        private void ListItemAddCommand_Execute(object parameter)
+        private void ListItemAddCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -266,7 +264,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ListItemInsertCommand_Execute(object parameter)
+        private void ListItemInsertCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -295,7 +293,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ListItemDeleteCommand_Execute(object parameter)
+        private void ListItemDeleteCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -328,7 +326,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ListItemMoveUpCommand_Execute(object parameter)
+        private void ListItemMoveUpCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -346,7 +344,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ListItemMoveDownCommand_Execute(object parameter)
+        private void ListItemMoveDownCommand_Execute(object? parameter)
         {
             CanExecuteCommand = false;
             try
@@ -367,29 +365,29 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command/Event for Apply Button
-        private ICommand _applyCommand;
+        private ICommand? _applyCommand;
         public ICommand ApplyCommand => GetRelayCommand(ref _applyCommand, "Apply changes", ApplyCommand_Execute, ApplyCommand_CanExecuteFunc);
 
-        private EventHandler _preRequestClose;
+        private EventHandler? _preRequestClose;
         public event EventHandler PreRequestClose
         {
             add => _preRequestClose += value;
             remove => _preRequestClose -= value;
         }
 
-        private EventHandler<bool> _onRequestClose;
+        private EventHandler<bool>? _onRequestClose;
         public event EventHandler<bool> OnRequestClose
         {
             add => _onRequestClose += value;
             remove => _onRequestClose -= value;
         }
 
-        private bool ApplyCommand_CanExecuteFunc(object parameter)
+        private bool ApplyCommand_CanExecuteFunc(object? parameter)
         {
             return CanExecuteCommand && 1 <= Items.Count;
         }
 
-        private void ApplyCommand_Execute(object parameter)
+        private void ApplyCommand_Execute(object? parameter)
         {
             _preRequestClose?.Invoke(this, new EventArgs());
             WriteListItems();
@@ -409,7 +407,7 @@ namespace PEBakery.WPF
             IsDefault = isDefault;
         }
 
-        private ObservableCollection<ListViewEditItem> _itemList;
+        private readonly ObservableCollection<ListViewEditItem> _itemList;
 
         private bool _isDefault = false;
         public bool IsDefault

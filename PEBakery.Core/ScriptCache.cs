@@ -327,6 +327,9 @@ namespace PEBakery.Core
 
         public static string SerializeAsteriskBugDirLink(ProjectCollection projects)
         {
+            if (Global.Projects == null)
+                return string.Empty;
+
             StringBuilder b = new StringBuilder();
             if (projects.FullyLoaded)
             { // Called by project refresh button

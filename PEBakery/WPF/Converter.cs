@@ -731,7 +731,8 @@ namespace PEBakery.WPF
             if (!(parameter is Array paramArr && paramArr.Length == 2))
                 return Binding.DoNothing;
 
-            return b ? paramArr.GetValue(0) : paramArr.GetValue(1);
+            object? retObj = b ? paramArr.GetValue(0) : paramArr.GetValue(1);
+            return retObj ?? Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

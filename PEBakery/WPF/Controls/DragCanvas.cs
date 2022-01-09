@@ -61,7 +61,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Helper for single move/resize of SelectedElements
         /// </summary>
-        private SelectedElement Selected
+        private SelectedElement? Selected
         {
             get
             {
@@ -107,10 +107,9 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region Events
-        public event UIControlSelectedEventHandler UIControlSelected;
-
-        public event UIControlDraggedEventHandler UIControlMoved;
-        public event UIControlDraggedEventHandler UIControlResized;
+        public event EventHandler<UIControlSelectedEventArgs>? UIControlSelected;
+        public event EventHandler<UIControlDraggedEventArgs>? UIControlMoved;
+        public event EventHandler<UIControlDraggedEventArgs>? UIControlResized;
         #endregion
 
         #region Mouse Event Handler
@@ -150,7 +149,7 @@ namespace PEBakery.WPF.Controls
             _dragStartCursorPos = e.GetPosition(this);
 
             // Which element was selected?
-            FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
+            FrameworkElement? focusedElement = FindRootFrameworkElement(e.Source);
 
             void SetDragToSelect()
             {
@@ -271,7 +270,7 @@ namespace PEBakery.WPF.Controls
             // Change cursor following underlying element
             if (_dragState != DragState.Dragging)
             {
-                FrameworkElement hoverElement = FindRootFrameworkElement(e.Source);
+                FrameworkElement? hoverElement = FindRootFrameworkElement(e.Source);
                 if (hoverElement == null) // Outside
                     ResetMouseCursor();
                 else if (hoverElement is Border border && border.Tag is DragHandleTag info)
@@ -553,7 +552,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         public void DrawSelectedElements()
         {
-            ClearSelectedElements(false);
+            ClearSelectedElementsFromScreen();
 
             if (1 < _selectedElements.Count)
             {
@@ -580,7 +579,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         private void DrawSelectedElement(SelectedElement selected, bool multiSelect)
         {
-            UIControl uiCtrl = selected.Element.Tag as UIControl;
+            UIControl uiCtrl = selected.UIControl;
             Debug.Assert(uiCtrl != null, "Incorrect SelectedElement handling");
 
             int z = MaxZIndex;
@@ -663,7 +662,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Draw border and drag handles around selected element, from outside
         /// </summary>
-        public void DrawSelectedElements(List<UIControl> uiCtrls)
+        public void DrawSelectedElements(IEnumerable<UIControl> uiCtrls)
         {
             if (uiCtrls == null)
                 return;
@@ -735,7 +734,7 @@ namespace PEBakery.WPF.Controls
         #region (public) Mouse Cursor
         public static void SetMouseCursor(ResizeClickPosition clickPos = ResizeClickPosition.Inside)
         {
-            Cursor newCursor = null;
+            Cursor? newCursor = null;
             switch (clickPos)
             {
                 case ResizeClickPosition.Left:
@@ -1248,7 +1247,7 @@ namespace PEBakery.WPF.Controls
             uiCtrl.Y = y;
         }
 
-        public static void ApplyUIControlPositions(List<UIControl> uiCtrls, int deltaX, int deltaY)
+        public static void ApplyUIControlPositions(IEnumerable<UIControl> uiCtrls, int deltaX, int deltaY)
         {
             int caliDeltaX = deltaX;
             int caliDeltaY = deltaY;
@@ -1326,7 +1325,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) FrameworkElement Utility
-        public FrameworkElement FindRootFrameworkElement(object obj)
+        public FrameworkElement? FindRootFrameworkElement(object obj)
         {
             if (obj is DependencyObject dObj)
                 return FindRootFrameworkElement(dObj);
@@ -1334,7 +1333,7 @@ namespace PEBakery.WPF.Controls
                 return null;
         }
 
-        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
+        public FrameworkElement? FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
@@ -1410,46 +1409,49 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// (Single select) Selected an UIControl
         /// </summary>
-        public UIControl UIControl { get; set; }
+        public UIControl UIControl => UIControls[0]; 
         /// <summary>
         /// (Multi select) Selected multiple UIControls
         /// </summary>
-        public List<UIControl> UIControls { get; set; }
+        public UIControl[] UIControls { get; private set; } = Array.Empty<UIControl>();
         /// <summary>
         /// Selected multiple UIControls
         /// </summary>
-        public bool MultiSelect => UIControls != null;
+        public bool MultiSelect { get; private set; }
+        public bool IsReset { get; private set; }
 
         public UIControlSelectedEventArgs()
         {
+            MultiSelect = false;
+            IsReset = true;
         }
 
         public UIControlSelectedEventArgs(UIControl uiCtrl)
         {
-            UIControl = uiCtrl;
+            MultiSelect = false;
+            UIControls = new UIControl[1] { uiCtrl };
         }
 
-        public UIControlSelectedEventArgs(List<UIControl> uiCtrls)
+        public UIControlSelectedEventArgs(IEnumerable<UIControl> uiCtrls)
         {
-            UIControls = uiCtrls;
+            MultiSelect = true;
+            UIControls = uiCtrls.ToArray();
         }
     }
-    public delegate void UIControlSelectedEventHandler(object sender, UIControlSelectedEventArgs e);
 
     public class UIControlDraggedEventArgs : EventArgs
     {
         /// <summary>
         /// (Single select) Selected an UIControl
         /// </summary>
-        public UIControl UIControl { get; set; }
+        public UIControl UIControl => UIControls[0];
         /// <summary>
         /// (Multi select) Selected multiple UIControls
         /// </summary>
-        public List<UIControl> UIControls { get; set; }
-        /// <summary>
+        public UIControl[] UIControls { get; private set; } = Array.Empty<UIControl>();
         /// Selected multiple UIControls
         /// </summary>
-        public bool MultiSelect => UIControls != null;
+        public bool MultiSelect { get; private set; }
         /// <summary>
         /// Original coord/width 
         /// </summary>
@@ -1469,25 +1471,24 @@ namespace PEBakery.WPF.Controls
 
         public UIControlDraggedEventArgs(UIControl uiCtrl, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
-            UIControl = uiCtrl;
-            UIControls = null;
+            MultiSelect = false;
+            UIControls = new UIControl[1] { uiCtrl };
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
             DragState = dragState;
         }
 
-        public UIControlDraggedEventArgs(List<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, DragState dragState)
+        public UIControlDraggedEventArgs(IEnumerable<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
-            UIControl = null;
-            UIControls = uiCtrls;
+            MultiSelect = true;
+            UIControls = uiCtrls.ToArray();
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
             DragState = dragState;
         }
     }
-    public delegate void UIControlDraggedEventHandler(object sender, UIControlDraggedEventArgs e);
     #endregion
 
     #region class DragHandleTag
@@ -1509,23 +1510,26 @@ namespace PEBakery.WPF.Controls
     #region class SelectedElement
     public class SelectedElement
     {
-        public FrameworkElement Element;
-        public UIControl UIControl => Element.Tag as UIControl;
-        public Rect ElementInitialRect;
-        public Border Border;
-        public readonly List<Border> DragHandles = new List<Border>();
+        public FrameworkElement Element { get; private set; }
+        public UIControl UIControl { get; private set; }
+        public Rect ElementInitialRect { get; private set; }
+        public Border? Border { get; set; }
+        public List<Border> DragHandles { get; private set; } = new List<Border>();
 
         public SelectedElement(FrameworkElement element)
         {
-            Debug.Assert(element.Tag.GetType() == typeof(UIControl), "Incorrect Element.Tag");
+            if (element.Tag is not UIControl uiCtrl)
+                throw new InvalidOperationException("Invalid Element.Tag: tag must be UIControl.");
+
             Element = element;
+            UIControl = uiCtrl;
             ElementInitialRect = DragCanvas.GetElementRect(element);
         }
 
         public override string ToString()
         {
             if (UIControl == null)
-                return base.ToString();
+                return $"SelectedElemtn [INVALID]";
             return $"SelectedElement [{UIControl}]";
         }
     }

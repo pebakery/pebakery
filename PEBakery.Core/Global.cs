@@ -115,7 +115,7 @@ namespace PEBakery.Core
             }
             set => _logger = value;
         }
-        public static MainViewModel? MainViewModel { get; set; }
+        public static MainViewModel MainViewModel { get; set; } = new MainViewModel();
         private static Setting? _setting;
         public static Setting Setting
         {
@@ -127,28 +127,8 @@ namespace PEBakery.Core
             }
             set => _setting = value;
         }
-        private static ProjectCollection? _projects;
-        public static ProjectCollection Projects
-        {
-            get
-            {
-                if (_projects == null)
-                    throw new InvalidOperationException($"{nameof(_projects)} is null");
-                return _projects;
-            }
-            private set => _projects = value;
-        }
-        private static ScriptCache? _scriptCache;
-        public static ScriptCache? ScriptCache
-        {
-            get
-            {
-                //if (_scriptCache == null)
-                //    throw new InvalidOperationException($"{nameof(_scriptCache)} is null");
-                return _scriptCache;
-            }
-            private set => _scriptCache = value;
-        }
+        public static ProjectCollection? Projects { get; private set; }
+        public static ScriptCache? ScriptCache { get; private set; }
 
         // FileTypeDetector / LibMagic
         public static string? MagicFile { get; set; }

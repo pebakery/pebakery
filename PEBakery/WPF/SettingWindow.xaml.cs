@@ -466,7 +466,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public Project DefaultProject
+        public Project? DefaultProject
         {
             get
             {
@@ -491,7 +491,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public Project SelectedProject
+        public Project? SelectedProject
         {
             get
             {
@@ -504,15 +504,15 @@ namespace PEBakery.WPF
 
         public class ProjectSourceSetup
         {
-            public bool PathSettingEnabled;
-            public bool Updated;
-            public List<string> SourceDirs;
-            public string TargetDir;
-            public string IsoFile;
+            public bool PathSettingEnabled { get; set; }
+            public bool Updated { get; set; }
+            public List<string> SourceDirs { get; set; } = new List<string>();
+            public string TargetDir { get; set; } = string.Empty;
+            public string IsoFile { get; set; } = string.Empty;
         }
 
         private readonly List<ProjectSourceSetup> _projectSourceSetups = new List<ProjectSourceSetup>();
-        public ProjectSourceSetup SelectedProjectSourceSetup
+        public ProjectSourceSetup? SelectedProjectSourceSetup
         {
             get
             {
@@ -524,7 +524,7 @@ namespace PEBakery.WPF
         }
 
         private readonly object _projectSourceDirsLock = new object();
-        private ObservableCollection<string> _projectSourceDirs;
+        private ObservableCollection<string> _projectSourceDirs = new ObservableCollection<string>();
         public ObservableCollection<string> ProjectSourceDirs
         {
             get => _projectSourceDirs;
@@ -538,14 +538,14 @@ namespace PEBakery.WPF
             set => SetProperty(ref _projectSourceDirIndex, value);
         }
 
-        private string _projectTargetDir;
+        private string _projectTargetDir = string.Empty;
         public string ProjectTargetDir
         {
             get => _projectTargetDir;
             set => SetProperty(ref _projectTargetDir, value);
         }
 
-        private string _projectIsoFile;
+        private string _projectIsoFile = string.Empty;
         public string ProjectIsoFile
         {
             get => _projectIsoFile;
@@ -596,7 +596,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _generalUseCustomUserAgent, value);
         }
 
-        private string _generalCustomUserAgent;
+        private string _generalCustomUserAgent = string.Empty;
         public string GeneralCustomUserAgent
         {
             get => _generalCustomUserAgent;
@@ -619,7 +619,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _interfaceUseCustomTitle, value);
         }
 
-        private string _interfaceCustomTitle;
+        private string _interfaceCustomTitle = string.Empty;
         public string InterfaceCustomTitle
         {
             get => _interfaceCustomTitle;
@@ -633,7 +633,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _interfaceUseCustomEditor, value);
         }
 
-        private string _interfaceCustomEditorPath;
+        private string _interfaceCustomEditorPath = string.Empty;
         public string InterfaceCustomEditorPath
         {
             get => _interfaceCustomEditorPath;
@@ -760,7 +760,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Script
-        private string _scriptCacheState;
+        private string _scriptCacheState = string.Empty;
         public string ScriptCacheState
         {
             get => _scriptCacheState;
@@ -789,7 +789,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Logging
-        private string _logDatabaseState;
+        private string _logDatabaseState = string.Empty;
         public string LogDatabaseState
         {
             get => _logDatabaseState;
@@ -827,7 +827,7 @@ namespace PEBakery.WPF
 
         #region Property - Compatibility
         private readonly List<CompatOption> _compatOptions = new List<CompatOption>();
-        public CompatOption SelectedCompatOption
+        public CompatOption? SelectedCompatOption
         {
             get
             {
@@ -1126,13 +1126,15 @@ namespace PEBakery.WPF
                 }
 
                 // Project
-                ProjectSourceSetup srcSetup = SelectedProjectSourceSetup;
-                Debug.Assert(srcSetup != null, "Invalid SelectedProjectIndex");
+                ProjectSourceSetup? srcSetup = SelectedProjectSourceSetup;
+                if (srcSetup == null)
+                    throw new InvalidOperationException("Invalid SelectedProjectIndex");
                 LoadProjectSourceSetupFrom(srcSetup);
 
                 // Compat Options
-                CompatOption compat = SelectedCompatOption;
-                Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
+                CompatOption? compat = SelectedCompatOption;
+                if (compat == null)
+                    throw new InvalidOperationException("Invalid SelectedProjectIndex");
                 LoadCompatOptionFrom(compat);
 
                 _firstLoad = false;
@@ -1191,9 +1193,9 @@ namespace PEBakery.WPF
             else
             {
                 dest.PathSettingEnabled = false;
-                dest.SourceDirs = null;
-                dest.TargetDir = null;
-                dest.IsoFile = null;
+                dest.SourceDirs.Clear();
+                dest.TargetDir = string.Empty;
+                dest.IsoFile = string.Empty;
             }
         }
         #endregion
@@ -1441,7 +1443,9 @@ namespace PEBakery.WPF
         public void WriteToSetting()
         {
             // Set default project
-            Project defaultProject = DefaultProject;
+            Project? defaultProject = DefaultProject;
+            if (defaultProject == null)
+                return;
             Setting.Project.DefaultProject = defaultProject != null ? defaultProject.ProjectName : string.Empty;
 
             // [Projects]
@@ -1575,7 +1579,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region ShallowCopy
-        public SettingViewModel ShallowCopy() => MemberwiseClone() as SettingViewModel;
+        public SettingViewModel ShallowCopy() => (SettingViewModel)MemberwiseClone();
         #endregion
 
         #region Database Operation

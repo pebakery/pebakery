@@ -36,8 +36,8 @@ namespace PEBakery.WPF.Controls
     public class EditCanvas : Canvas
     {
         #region Fields
-        protected FrameworkElement _selectedElement;
-        protected Border _selectedBorder;
+        protected FrameworkElement? _selectedElement;
+        protected Border? _selectedBorder;
         public SolidColorBrush BorderBrush { get; set; } = Brushes.Red;
         #endregion
 
@@ -70,7 +70,7 @@ namespace PEBakery.WPF.Controls
             }
         }
         public delegate void UIControlSelectedEventHandler(object sender, UIControlSelectedEventArgs e);
-        public event UIControlSelectedEventHandler UIControlSelected;
+        public event UIControlSelectedEventHandler? UIControlSelected;
         #endregion
 
         #region SelectedBorder
@@ -88,7 +88,7 @@ namespace PEBakery.WPF.Controls
             if (uiCtrl == null)
                 return;
 
-            FrameworkElement element = null;
+            FrameworkElement? element = null;
             foreach (FrameworkElement child in Children)
             {
                 if (child.Tag is not UIControl ctrl)
@@ -99,6 +99,9 @@ namespace PEBakery.WPF.Controls
                 element = child;
                 break;
             }
+
+            if (element == null)
+                return;
 
             DrawSelectedBorder(element);
         }
@@ -141,7 +144,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region Utility
-        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
+        public FrameworkElement? FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
@@ -162,7 +165,7 @@ namespace PEBakery.WPF.Controls
         {
             ResetSelectedBorder();
 
-            FrameworkElement element = null;
+            FrameworkElement? element = null;
             if (e.Source is DependencyObject dObj)
                 element = FindRootFrameworkElement(dObj);
 

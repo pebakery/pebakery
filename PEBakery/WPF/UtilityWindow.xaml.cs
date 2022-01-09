@@ -61,6 +61,13 @@ namespace PEBakery.WPF
             DataContext = _m;
 
             // Populate projects
+            if (Global.Projects == null)
+            {
+                DialogResult = false;
+                Close();
+                return;
+            }
+
             List<Project> projects = Global.Projects.ProjectList;
             for (int i = 0; i < projects.Count; i++)
             {
@@ -68,8 +75,12 @@ namespace PEBakery.WPF
 
                 _m.Projects.Add(new Tuple<string, Project>(p.ProjectName, p));
 
-                if (p.ProjectName.Equals(Global.MainViewModel.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
-                    _m.SelectedProjectIndex = i;
+                ProjectTreeItemModel? curMainTree = Global.MainViewModel.CurMainTree;
+                if (curMainTree != null)
+                {
+                    if (p.ProjectName.Equals(curMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
+                        _m.SelectedProjectIndex = i;
+                }
             }
         }
         #endregion
@@ -122,7 +133,11 @@ namespace PEBakery.WPF
 
         private async void CodeBoxRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            CodeBoxRunButton.Focus();
+            // CodeBox not initialized
+            if (_m.CodeFile == null)
+                return;
+
+            CodeBoxRunButton.Focus();           
 
             _m.CanExecuteCommand = false;
             try
@@ -136,7 +151,12 @@ namespace PEBakery.WPF
                     try
                     {
                         Project project = _m.CurrentProject;
-                        Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                        Script? sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                        if (sc == null)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, "[CodeBox] script load failed"));
+                            return;
+                        }
 
                         MainViewModel mainModel = Global.MainViewModel;
                         mainModel.BuildTreeItems.Clear();
@@ -169,13 +189,15 @@ namespace PEBakery.WPF
                         mainModel.BuildTreeItems.Clear();
 
                         // Report elapsed build time
-                        string haltReason = s.RunResultReport();
+                        string? haltReason = s.RunResultReport();
                         if (haltReason != null)
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
                         else
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
-                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
+                        if (mainModel.CurMainTree is ProjectTreeItemModel curMainTree)
+                            s.MainViewModel.DisplayScript(curMainTree.Script);
+
                         if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                         { // Open BuildLogWindow
                             Application.Current?.Dispatcher?.Invoke(() =>
@@ -273,7 +295,7 @@ namespace PEBakery.WPF
                     List<string> lines = new List<string>();
                     using (StringReader r = new StringReader(_m.SyntaxInputCode))
                     {
-                        string line;
+                        string? line;
                         while ((line = r.ReadLine()) != null)
                         {
                             line = line.Trim();
@@ -357,7 +379,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Project Environment
-        private int _selectedProjectIndex;
+        private int _selectedProjectIndex = 0;
         public int SelectedProjectIndex
         {
             get => _selectedProjectIndex;
@@ -384,7 +406,7 @@ namespace PEBakery.WPF
                 if (0 <= i && i < _projects.Count)
                     return _projects[i].Item2;
                 else
-                    return null;
+                    throw new InvalidOperationException("Project not selected");
             }
         }
 
@@ -421,7 +443,7 @@ Description=Test Commands
         #endregion
 
         #region CodeBox
-        public string CodeFile { get; private set; }
+        public string? CodeFile { get; private set; }
 
         private string _codeBoxInput = string.Empty;
         public string CodeBoxInput
@@ -432,6 +454,10 @@ Description=Test Commands
 
         public void SaveCodeBox()
         {
+            // CodeBox not initialized
+            if (CodeFile == null)
+                return;
+
             // Detect encoding of text. 
             Encoding encoding;
             if (File.Exists(CodeFile))
