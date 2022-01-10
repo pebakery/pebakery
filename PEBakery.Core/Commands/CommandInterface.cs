@@ -218,14 +218,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     destStr = subInfo.FontSize.ToString();
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                     if (subInfo.FontSize is int intVal)
                                         destStr = intVal.ToString();
@@ -244,14 +244,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     destStr = subInfo.FontWeight.ToString();
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                     if (subInfo.FontWeight is UIFontWeight fontWeight)
                                         destStr = fontWeight.ToString();
@@ -270,7 +270,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     if (subInfo.FontStyle is UIFontStyle fontStyle)
                                         destStr = fontStyle.ToString();
@@ -280,7 +280,7 @@ namespace PEBakery.Core.Commands
                                 }
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                     if (subInfo.FontStyle is UIFontStyle fontStyle)
                                         destStr = fontStyle.ToString();
@@ -300,7 +300,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Min.ToString();
                     }
@@ -310,7 +310,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Max.ToString();
                     }
@@ -320,7 +320,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Tick.ToString();
                     }
@@ -333,14 +333,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.Image:
                                 {
-                                    UIInfo_Image subInfo = uiCtrl.Info.Cast<UIInfo_Image>();
+                                    UIInfo_Image subInfo = (UIInfo_Image)uiCtrl.Info;
 
                                     destStr = subInfo.Url ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.WebLabel:
                                 {
-                                    UIInfo_WebLabel subInfo = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                                    UIInfo_WebLabel subInfo = (UIInfo_WebLabel)uiCtrl.Info;
 
                                     destStr = subInfo.Url;
                                 }
@@ -357,7 +357,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Button:
                             {
-                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                 if (subInfo.Picture == null)
                                     destStr = string.Empty;
@@ -387,14 +387,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
 
                                     destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
@@ -412,35 +412,42 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
@@ -456,35 +463,42 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
@@ -626,6 +640,7 @@ namespace PEBakery.Core.Commands
             [UIControlType.RadioButton] = new InterfaceElement[] { InterfaceElement.Value },
             [UIControlType.FileBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
             [UIControlType.RadioGroup] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.Items },
+            [UIControlType.PathBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
         };
 
         // ReSharper disable once UnusedMethodReturnValue.Local
@@ -720,14 +735,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     subInfo.FontSize = fontSize;
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                     subInfo.FontSize = fontSize;
                                 }
@@ -742,7 +757,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.TextLabel:
                             {
-                                UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                 UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
                                 if (weight == null)
@@ -752,7 +767,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.Bevel:
                             {
-                                UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                 UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
                                 subInfo.FontWeight = weight ?? throw new InvalidCommandException($"Invalid FontWeight [{finalValue}]");
@@ -767,7 +782,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.TextLabel:
                             {
-                                UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                 UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
                                 subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
@@ -775,7 +790,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.Bevel:
                             {
-                                UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                 UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
                                 subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
@@ -795,7 +810,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int min) || min < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Min = min;
                         if (subInfo.Value < min)
@@ -810,7 +825,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int max) || max < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Max = max;
                         if (max < subInfo.Value)
@@ -825,7 +840,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int tick) || tick < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Tick = tick;
                     }
@@ -837,7 +852,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Image:
                             {
-                                UIInfo_Image subInfo = uiCtrl.Info.Cast<UIInfo_Image>();
+                                UIInfo_Image subInfo = (UIInfo_Image)uiCtrl.Info;
 
                                 if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                                     subInfo.Url = null;
@@ -847,7 +862,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.WebLabel:
                             {
-                                UIInfo_WebLabel subInfo = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                                UIInfo_WebLabel subInfo = (UIInfo_WebLabel)uiCtrl.Info;
 
                                 subInfo.Url = finalValue;
                             }
@@ -863,7 +878,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Button:
                             {
-                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                 if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                                     subInfo.Picture = null;
@@ -901,7 +916,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0)
@@ -912,7 +927,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
 
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0 || newItems.Length <= subInfo.Selected)
@@ -927,7 +942,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 #endregion
-                #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
+                #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup, PathBox
                 case InterfaceElement.SectionName:
                     {
                         string? sectionName;
@@ -940,21 +955,21 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     if (sectionName == null)
                                         return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
@@ -964,14 +979,21 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
@@ -999,7 +1021,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1011,7 +1033,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1023,7 +1045,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     if (newValue == null)
                                         return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
@@ -1033,7 +1055,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1045,7 +1067,19 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if (subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return ReturnErrorLog("Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;

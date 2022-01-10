@@ -891,25 +891,25 @@ namespace PEBakery.Core
                 {
                     case UIControlType.CheckBox:
                         {
-                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
                             sectionToRun = info.SectionName;
                         }
                         break;
                     case UIControlType.Button:
                         {
-                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                            UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
                             sectionToRun = info.SectionName;
                         }
                         break;
                     case UIControlType.RadioButton:
                         {
-                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
                             sectionToRun = info.SectionName;
                         }
                         break;
                     case UIControlType.RadioGroup:
                         {
-                            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
                             sectionToRun = info.SectionName;
                         }
                         break;

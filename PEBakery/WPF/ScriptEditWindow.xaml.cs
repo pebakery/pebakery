@@ -2764,7 +2764,7 @@ namespace PEBakery.WPF
 
                 foreach (UIControl uncheck in UICtrlRadioButtonList.Where(x => !x.Key.Equals(SelectedUICtrl.Key)))
                 {
-                    UIInfo_RadioButton subInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
+                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uncheck.Info;
                     subInfo.Selected = false;
                 }
                 UICtrlRadioButtonInfo.Selected = true;
@@ -3189,7 +3189,7 @@ namespace PEBakery.WPF
                     break;
                 case UIControlType.Button:
                     {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                        UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
                         if (info.Picture != null)
                         {
                             fileName = info.Picture;
@@ -4266,28 +4266,28 @@ namespace PEBakery.WPF
             {
                 case UIControlType.TextBox:
                     {
-                        UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+                        UIInfo_TextBox info = (UIInfo_TextBox)uiCtrl.Info;
 
                         UICtrlTextBoxInfo = info;
                         break;
                     }
                 case UIControlType.TextLabel:
                     {
-                        UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                        UIInfo_TextLabel info = (UIInfo_TextLabel)uiCtrl.Info;
 
                         UICtrlTextLabelInfo = info;
                         break;
                     }
                 case UIControlType.NumberBox:
                     {
-                        UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox info = (UIInfo_NumberBox)uiCtrl.Info;
 
                         UICtrlNumberBoxInfo = info;
                         break;
                     }
                 case UIControlType.CheckBox:
                     {
-                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                        UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
                         UICtrlCheckBoxInfo = info;
                         UICtrlSectionToRun = info.SectionName;
@@ -4296,7 +4296,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.ComboBox:
                     {
-                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                        UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
                         UICtrlComboBoxInfo = info;
                         UICtrlSectionToRun = info.SectionName;
@@ -4307,7 +4307,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Image:
                     {
-                        UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+                        UIInfo_Image info = (UIInfo_Image)uiCtrl.Info;
 
                         UICtrlImageInfo = info;
                         UICtrlImageSet = EncodedFile.ContainsInterface(Script, uiCtrl.Text);
@@ -4322,7 +4322,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Button:
                     {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                        UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
 
                         UICtrlButtonInfo = info;
                         UICtrlSectionToRun = info.SectionName;
@@ -4332,14 +4332,14 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.WebLabel:
                     {
-                        UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                        UIInfo_WebLabel info = (UIInfo_WebLabel)uiCtrl.Info;
 
                         UICtrlWebLabelInfo = info;
                         break;
                     }
                 case UIControlType.RadioButton:
                     {
-                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                        UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
                         UICtrlRadioButtonList = Renderer.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
                         UICtrlRadioButtonInfo = info;
@@ -4349,21 +4349,21 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Bevel:
                     {
-                        UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                        UIInfo_Bevel info = (UIInfo_Bevel)uiCtrl.Info;
 
                         UICtrlBevelInfo = info;
                         break;
                     }
                 case UIControlType.FileBox:
                     {
-                        UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+                        UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
 
                         UICtrlFileBoxInfo = info;
                         break;
                     }
                 case UIControlType.RadioGroup:
                     {
-                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                        UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
                         UICtrlRadioGroupInfo = info;
                         UICtrlSectionToRun = info.SectionName;
@@ -4501,7 +4501,7 @@ namespace PEBakery.WPF
             {
                 case UIControlType.CheckBox:
                     {
-                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                        UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;
@@ -4509,7 +4509,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.ComboBox:
                     {
-                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                        UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
                         uiCtrl.Text = info.Items[info.Index];
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
@@ -4532,7 +4532,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Button:
                     {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                        UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
 
                         UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(Script, info.Picture);
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? string.Empty : UICtrlSectionToRun;
@@ -4541,7 +4541,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.RadioButton:
                     {
-                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                        UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;
@@ -4557,7 +4557,7 @@ namespace PEBakery.WPF
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                        UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;

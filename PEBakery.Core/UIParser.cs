@@ -640,6 +640,8 @@ namespace PEBakery.Core
                 #region PathBox
                 case UIControlType.PathBox:
                     { // <file|dir>,<Title>,[Filter] +[RunOptional]
+                        // FILE,<Tittle>,[Filter] +[RunOptional]
+                        // DIR,<Title> +[RunOptional]
                         const int minOpCount = 2;
                         const int maxOpCount = 5; // +1 for Filter +2 for RunOptional
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for Tooltip

@@ -306,7 +306,7 @@ namespace PEBakery.Core
         public RenderCleanInfo RenderTextBox(UIControl uiCtrl)
         {
             // WB082 textbox control's y co-ord is of textbox's, not textlabel's.
-            UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+            UIInfo_TextBox info = (UIInfo_TextBox)uiCtrl.Info;
 
             TextBox box = new TextBox
             {
@@ -377,7 +377,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.TextBox, $"Wrong UIControlType in [{nameof(TextBox_LostFocus)}]");
-            UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+            UIInfo_TextBox info = (UIInfo_TextBox)uiCtrl.Info;
 
             info.Value = StringEscaper.Escape(box.Text);
             uiCtrl.Update();
@@ -387,7 +387,7 @@ namespace PEBakery.Core
         #region TextLabel
         public void RenderTextLabel(UIControl uiCtrl)
         {
-            UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+            UIInfo_TextLabel info = (UIInfo_TextLabel)uiCtrl.Info;
 
             TextBlock block = new TextBlock
             {
@@ -427,7 +427,7 @@ namespace PEBakery.Core
         #region NumberBox
         public RenderCleanInfo RenderNumberBox(UIControl uiCtrl)
         {
-            UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+            UIInfo_NumberBox info = (UIInfo_NumberBox)uiCtrl.Info;
 
             NumberBox box = new NumberBox
             {
@@ -467,7 +467,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.NumberBox, $"Wrong UIControlType in [{nameof(NumberBox_ValueChanged)}]");
-            UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+            UIInfo_NumberBox info = (UIInfo_NumberBox)uiCtrl.Info;
 
             info.Value = (int)e.NewValue;
             uiCtrl.Update();
@@ -477,7 +477,7 @@ namespace PEBakery.Core
         #region CheckBox
         public RenderCleanInfo RenderCheckBox(UIControl uiCtrl)
         {
-            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
             CheckBox box = new CheckBox
             {
@@ -523,7 +523,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Checked)}]");
-            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
             info.Value = true;
             uiCtrl.Update();
@@ -537,7 +537,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
-            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
             info.Value = false;
             uiCtrl.Update();
@@ -552,7 +552,7 @@ namespace PEBakery.Core
 
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Click)}]");
 
-            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
             if (info.SectionName != null)
                 RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -561,7 +561,7 @@ namespace PEBakery.Core
         #region ComboBox
         public RenderCleanInfo RenderComboBox(UIControl uiCtrl)
         {
-            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
             ComboBox box = new ComboBox
             {
@@ -606,7 +606,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_LostFocus)}]");
-            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
             if (info.Index != box.SelectedIndex)
             {
@@ -625,7 +625,7 @@ namespace PEBakery.Core
 
             Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_SelectionChanged)}]");
 
-            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
             if (info.SectionName != null)
                 RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -634,7 +634,7 @@ namespace PEBakery.Core
         #region Image
         public RenderCleanInfo? RenderImage(UIControl uiCtrl)
         {
-            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+            UIInfo_Image info = (UIInfo_Image)uiCtrl.Info;
 
             string imageSection = uiCtrl.Text;
             if (imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
@@ -784,7 +784,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenUrl)}]");
-            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+            UIInfo_Image info = (UIInfo_Image)uiCtrl.Info;
 
             if (info.Url == null)
                 return;
@@ -855,7 +855,7 @@ namespace PEBakery.Core
         #region TextFile
         public void RenderTextFile(UIControl uiCtrl)
         {
-            UIInfo_TextFile info = uiCtrl.Info.Cast<UIInfo_TextFile>();
+            UIInfo_TextFile info = (UIInfo_TextFile)uiCtrl.Info;
 
             string textSection = uiCtrl.Text;
             TextBoxBase box;
@@ -930,7 +930,7 @@ namespace PEBakery.Core
         #region Button
         public RenderCleanInfo? RenderButton(UIControl uiCtrl)
         {
-            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+            UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
 
             Button button = new Button
             {
@@ -1070,7 +1070,7 @@ namespace PEBakery.Core
 
             Debug.Assert(uiCtrl.Type == UIControlType.Button, $"Wrong UIControlType in [{nameof(Button_Click)}]");
 
-            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+            UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
@@ -1078,7 +1078,7 @@ namespace PEBakery.Core
         #region WebLabel
         public RenderCleanInfo RenderWebLabel(UIControl uiCtrl)
         {
-            UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+            UIInfo_WebLabel info = (UIInfo_WebLabel)uiCtrl.Info;
 
             TextBlock block = new TextBlock
             {
@@ -1140,7 +1140,7 @@ namespace PEBakery.Core
         #region RadioButton
         public RenderCleanInfo RenderRadioButton(UIControl uiCtrl)
         {
-            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
             double fontSize = CalcFontPointScale();
 
@@ -1187,7 +1187,7 @@ namespace PEBakery.Core
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Checked)}]");
-            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
             info.Selected = true;
 
@@ -1195,7 +1195,7 @@ namespace PEBakery.Core
             List<UIControl> updateList = RadioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (UIControl uncheck in updateList)
             {
-                UIInfo_RadioButton unInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
+                UIInfo_RadioButton unInfo = (UIInfo_RadioButton)uncheck.Info;
                 unInfo.Selected = false;
             }
 
@@ -1212,7 +1212,7 @@ namespace PEBakery.Core
 
             Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Click)}]");
 
-            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
             if (info.SectionName != null)
                 RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -1221,7 +1221,7 @@ namespace PEBakery.Core
         #region Bevel
         public void RenderBevel(UIControl uiCtrl)
         {
-            UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
+            UIInfo_Bevel info = (UIInfo_Bevel)uiCtrl.Info;
 
             Border bevel = new Border
             {
@@ -1293,7 +1293,7 @@ namespace PEBakery.Core
         #region FileBox
         public RenderCleanInfo RenderFileBox(UIControl uiCtrl)
         {
-            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+            UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
 
             TextBox box = new TextBox
             {
@@ -1377,7 +1377,7 @@ namespace PEBakery.Core
             TextBox box = tup.Item2;
 
             Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_ButtonClick)}]");
-            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+            UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
 
             if (info.IsFile)
             { // File
@@ -1455,7 +1455,7 @@ namespace PEBakery.Core
         #region RadioGroup
         public RenderCleanInfo RenderRadioGroup(UIControl uiCtrl)
         {
-            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
             double fontSize = CalcFontPointScale();
 
@@ -1531,7 +1531,7 @@ namespace PEBakery.Core
             int idx = tup.Item2;
 
             Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
-            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
             info.Selected = idx;
             uiCtrl.Update();
@@ -1547,7 +1547,7 @@ namespace PEBakery.Core
             UIControl uiCtrl = tup.Item1;
             Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
 
-            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
             if (info.SectionName != null)
                 RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -1556,7 +1556,7 @@ namespace PEBakery.Core
         #region PathBox
         public RenderCleanInfo RenderPathBox(UIControl uiCtrl)
         {
-            UIInfo_PathBox info = uiCtrl.Info.Cast<UIInfo_PathBox>();
+            UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
 
             TextBox box = new TextBox
             {

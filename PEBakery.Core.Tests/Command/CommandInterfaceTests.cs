@@ -34,7 +34,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -339,6 +338,29 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pRadioGroup1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,%Dest%", "None");
 
+            // 20 - PathBox
+            SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pPathBox1,%Dest%", @"C:\Windows\notepad.exe");
+            SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pPathBox1,%Dest%", @"True");
+            SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pPathBox1,%Dest%", @"240");
+            SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pPathBox1,%Dest%", @"290");
+            SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pPathBox1,%Dest%", @"200");
+            SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pPathBox1,%Dest%", @"20");
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pPathBox1,%Dest%", @"C:\Windows\notepad.exe");
+            SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pPathBox1,%Dest%", string.Empty);
+            SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pPathBox1,%Dest%", "Hello");
+            SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pPathBox1,%Dest%", "True");
+
+            SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pPathBox2,%Dest%", @"E:\WinPE\");
+            SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pPathBox2,%Dest%", @"True");
+            SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pPathBox2,%Dest%", @"240");
+            SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pPathBox2,%Dest%", @"320");
+            SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pPathBox2,%Dest%", @"200");
+            SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pPathBox2,%Dest%", @"20");
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pPathBox2,%Dest%", @"E:\WinPE\");
+            SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pPathBox2,%Dest%", @"EXPECTED");
+            SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pPathBox2,%Dest%", string.Empty);
+            SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pPathBox2,%Dest%", "None");
+
             // Visible - False
             SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pTextLabel2,%Dest%", @"False");
 
@@ -586,6 +608,18 @@ namespace PEBakery.Core.Tests.Command
                 null, @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,True", @"pRadioGroup1",
                 null, null, ErrorCheck.RuntimeError);
+
+            // 20 - PathBox
+            SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,True");
+            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,True");
+            SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pPathBox1,World", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_World_,True");
+            SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,None", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe""");
+            SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,False", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,False");
 
             // Optimization
             OptTemplate(new List<string>

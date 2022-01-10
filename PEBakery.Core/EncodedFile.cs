@@ -375,7 +375,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.Button:
                         {
-                            UIInfo_Button info = thisCtrl.Info.Cast<UIInfo_Button>();
+                            UIInfo_Button info = (UIInfo_Button)thisCtrl.Info;
 
                             if (info.Picture != null && ContainsInterface(sc, info.Picture))
                             {

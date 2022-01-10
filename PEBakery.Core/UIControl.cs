@@ -95,7 +95,7 @@ namespace PEBakery.Core
 
     <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[ToolTip]
     Visibility : 1 or 0
-    Type : UIControlType 0 ~ 14 (Except 7, 9)
+    Type : UIControlType 0 ~ 14 (Except 7, 9), 20
 
     <Text>
      0 TextBox     = Caption
@@ -136,7 +136,9 @@ namespace PEBakery.Core
     13 FileBox     = [file|dir],[Title=<StringValue>],[Filter=<StringValue>]
     14 RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                      // IntegerIndex : selected index, starting from 0
-    20 PathBox     = <file|dir>,<Title>,<Filter> +[RunOptional]
+    20 PathBox     = <file|dir>,<Title>,[Filter] +[RunOptional]  // (Added in PEBakery)
+                     FILE: FILE,<Title>,[Filter] +[RunOptional]
+                     DIR: DIR,<Title> +[RunOptional]
 
     [RunOptional]
     For CheckBox, ComboBox, RadioButton, RadioGroup, PathBox
@@ -313,19 +315,19 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.TextBox:
                     { // Value
-                        UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
+                        UIInfo_TextBox info = (UIInfo_TextBox)Info;
                         value = StringEscaper.Unescape(info.Value);
                     }
                     break;
                 case UIControlType.NumberBox:
                     { // Value
-                        UIInfo_NumberBox info = Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox info = (UIInfo_NumberBox)Info;
                         value = info.Value.ToString();
                     }
                     break;
                 case UIControlType.CheckBox:
                     { // Value
-                        UIInfo_CheckBox info = Info.Cast<UIInfo_CheckBox>();
+                        UIInfo_CheckBox info = (UIInfo_CheckBox)Info;
                         value = info.Value ? "True" : "False";
                     }
                     break;
@@ -335,7 +337,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioButton:
                     { // Selected
-                        UIInfo_RadioButton info = Info.Cast<UIInfo_RadioButton>();
+                        UIInfo_RadioButton info = (UIInfo_RadioButton)Info;
                         value = info.Selected ? "True" : "False";
                     }
                     break;
@@ -345,7 +347,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioGroup:
                     { // Selected
-                        UIInfo_RadioGroup info = Info.Cast<UIInfo_RadioGroup>();
+                        UIInfo_RadioGroup info = (UIInfo_RadioGroup)Info;
                         value = info.Selected.ToString();
                     }
                     break;
@@ -372,7 +374,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.TextBox:
                     { // Value
-                        UIInfo_TextBox uiInfo = Info.Cast<UIInfo_TextBox>();
+                        UIInfo_TextBox uiInfo = (UIInfo_TextBox)Info;
                         uiInfo.Value = StringEscaper.Escape(newValue);
 
                         logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
@@ -381,7 +383,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.NumberBox:
                     { // Value
-                        UIInfo_NumberBox uiInfo = Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox uiInfo = (UIInfo_NumberBox)Info;
 
                         // WB082 just write string value in case of error, but PEBakery will throw error
                         if (!NumberHelper.ParseInt32(newValue, out int intVal))
@@ -406,7 +408,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.CheckBox:
                     { // Value
-                        UIInfo_CheckBox uiInfo = Info.Cast<UIInfo_CheckBox>();
+                        UIInfo_CheckBox uiInfo = (UIInfo_CheckBox)Info;
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -431,7 +433,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.ComboBox:
                     { // Text
-                        UIInfo_ComboBox uiInfo = Info.Cast<UIInfo_ComboBox>();
+                        UIInfo_ComboBox uiInfo = (UIInfo_ComboBox)Info;
 
                         int idx = uiInfo.Items.FindIndex(x => newValue.Equals(StringEscaper.Unescape(x), StringComparison.OrdinalIgnoreCase));
                         if (idx == -1)
@@ -449,7 +451,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioButton:
                     {
-                        UIInfo_RadioButton uiInfo = Info.Cast<UIInfo_RadioButton>();
+                        UIInfo_RadioButton uiInfo = (UIInfo_RadioButton)Info;
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -480,7 +482,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        UIInfo_RadioGroup uiInfo = Info.Cast<UIInfo_RadioGroup>();
+                        UIInfo_RadioGroup uiInfo = (UIInfo_RadioGroup)Info;
 
                         if (!NumberHelper.ParseInt32(newValue, out int idx))
                         {
@@ -642,30 +644,6 @@ namespace PEBakery.Core
         {
             ToolTip = tooltip;
         }
-
-        #region Cast
-        /// <summary>
-        /// Type safe casting helper
-        /// </summary>
-        /// <typeparam name="T">Child of UIInfo</typeparam>
-        /// <returns>UIInfo casted as T</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Cast<T>() where T : UIInfo
-        {
-            return (T)this;
-        }
-
-        /// <summary>
-        /// Type safe casting helper
-        /// </summary>
-        /// <typeparam name="T">Child of UIInfo</typeparam>
-        /// <returns>UIInfo casted as T</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Cast<T>(UIInfo info) where T : UIInfo
-        {
-            return info.Cast<T>();
-        }
-        #endregion
 
         #region ForgeRawLine, ToString
         /// <summary>

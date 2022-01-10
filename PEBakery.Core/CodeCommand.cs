@@ -2609,7 +2609,7 @@ namespace PEBakery.Core
         Resource,
         // Items - ComboBox, RadioGroup
         Items,
-        // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
+        // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup, PathBox
         SectionName, HideProgress
     }
 

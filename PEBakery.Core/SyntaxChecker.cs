@@ -404,7 +404,7 @@ namespace PEBakery.Core
                 {
                     case UIControlType.CheckBox:
                         {
-                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -417,7 +417,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.ComboBox:
                         {
-                            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Index < 0 || info.Items.Count <= info.Index)
@@ -432,7 +432,7 @@ namespace PEBakery.Core
                                 !EncodedFile.ContainsInterface(_sc, imageSection))
                                 logs.Add(new LogInfo(LogState.Warning, $"Image resource [{imageSection}] does not exist", uiCtrl));
 
-                            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+                            UIInfo_Image info = (UIInfo_Image)uiCtrl.Info;
 
                             // Check if image control have empty or invalid url.
                             // Ex) Colors_Image=ThemeColors.jpg,1,5,11,228,260,80,
@@ -459,7 +459,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.Button:
                         {
-                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                            UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
 
                             string? pictureSection = info.Picture;
                             if (pictureSection != null &&
@@ -483,7 +483,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.WebLabel:
                         {
-                            UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                            UIInfo_WebLabel info = (UIInfo_WebLabel)uiCtrl.Info;
 
                             // Sometime developers forget to put proper scheme in WebLabel's url.
                             // Ex) PStart_WebLabel="PStart Homepage",1,10,668,122,98,18,www.pegtop.de/start/
@@ -499,7 +499,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioButton:
                         {
-                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -512,7 +512,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.FileBox:
                         {
-                            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+                            UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
 
                             if (info.IsFile)
                             { // Select File
@@ -532,7 +532,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioGroup:
                         {
-                            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -549,7 +549,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.PathBox:
                         {
-                            UIInfo_PathBox info = uiCtrl.Info.Cast<UIInfo_PathBox>();
+                            UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
 
                             if (info.IsFile)
                             { // Select File
