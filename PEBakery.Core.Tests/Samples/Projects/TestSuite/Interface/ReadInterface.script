@@ -25,8 +25,8 @@ pFileBox1=C:\Windows\notepad.exe,1,13,240,230,200,20,file
 pFileBox2=E:\WinPE\,1,13,240,260,200,20,dir
 pTextLabel2=Hidden,0,1,20,50,280,18,8,Normal
 pTextLabel3=ToolTip,1,1,20,50,320,18,8,Normal,__PEBakery
-pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,"Select Editor","Executable Files|*.exe",_Hello_,True
-pPathBox2=E:\WinPE\,1,20,240,320,200,20,dir,"Select WinPE Directory","__EXPECTED"
+pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,"Filter=Executable Files|*.exe",_Hello_,True
+pPathBox2=E:\WinPE\,1,20,240,320,200,20,dir,"Title=Select WinPE Directory","__EXPECTED"
 
 [Process]
 

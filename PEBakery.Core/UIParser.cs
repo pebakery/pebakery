@@ -26,11 +26,11 @@
 */
 
 using PEBakery.Helper;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
 {
@@ -125,7 +125,7 @@ namespace PEBakery.Core
                 return null;
 
             // Line Comment Identifier : '//', '#', ';'
-            if (rawLine.StartsWith("//", StringComparison.Ordinal) || rawLine[0] == '#' || rawLine[0] == ';')
+            if (IniReadWriter.IsLineComment(rawLine))
                 return null;
 
             // Find key of interface control
@@ -640,20 +640,12 @@ namespace PEBakery.Core
                 #region PathBox
                 case UIControlType.PathBox:
                     { // <file|dir>,<Title>,[Filter] +[RunOptional]
-                        // FILE,<Tittle>,[Filter] +[RunOptional]
-                        // DIR,<Title> +[RunOptional]
-                        const int minOpCount = 2;
+                        // FILE,[Title=StringValue],[Filter=StringValue] +[RunOptional]
+                        // DIR,[Title=StringValue] +[RunOptional]
+                        const int minOpCount = 1;
                         const int maxOpCount = 5; // +1 for Filter +2 for RunOptional
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for Tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
-
-                        int cnt = args.Count;
-                        string? tooltip = null;
-                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
-                        {
-                            cnt -= 1;
-                            tooltip = GetInfoTooltip(args, cnt);
-                        }
 
                         bool isFile = false;
                         if (args[0].Equals("file", StringComparison.OrdinalIgnoreCase))
@@ -663,31 +655,53 @@ namespace PEBakery.Core
 
                         string? title = null;
                         string? filter = null;
-
-                        if (args[1].StartsWith("_", StringComparison.Ordinal))
-                            throw new InvalidCommandException("Argument <Title> is required");
-                        else
-                            title = args[1];
-
-                        if (!isFile && !args[2].StartsWith("_", StringComparison.Ordinal))
-                            throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
-
-                        if (!args[2].StartsWith("_", StringComparison.Ordinal))
-                            filter = args[2];
-
+                        string? tooltip = null;
                         string? sectionName = null;
                         bool hideProgress = false;
 
-                        if ((args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                            args[cnt - 2].StartsWith("_", StringComparison.Ordinal) &&
-                            args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
-                            if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                hideProgress = true;
-                            else if (!args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase))
-                                throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
+                        const string titleKey = "Title=";
+                        const string filterKey = "Filter=";
+                        for (int i = 1; i < args.Count; i++)
+                        {
+                            string arg = args[i];
 
-                            sectionName = args[cnt - 2][1..^1];
+                            if (arg.StartsWith(titleKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (title != null)
+                                    throw new InvalidCommandException("Argument <Title> cannot be duplicated");
+                                title = arg[titleKey.Length..];
+                            }
+                            else if (arg.StartsWith(filterKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (!isFile)
+                                    throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
+                                if (filter != null)
+                                    throw new InvalidCommandException("Argument <Filter> cannot be duplicated");
+                                filter = arg[filterKey.Length..];
+                            }
+                            else if (arg.StartsWith("__", StringComparison.OrdinalIgnoreCase)) // ToolTip
+                            {
+                                tooltip = GetInfoTooltip(args, i);
+                            }
+                            else if (arg.StartsWith('_') && arg.EndsWith('_') && i + 1 < args.Count &&
+                                args[i + 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[i + 1].Equals("False", StringComparison.OrdinalIgnoreCase)) // [RunOptinal] -> <SectionName>,<HideProgress>
+                            {  // Has [RunOptional] -> <SectionName>,<HideProgress>
+                                string nextArg = args[i + 1];
+                                if (nextArg.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    hideProgress = true;
+                                else if (!nextArg.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                    throw new InvalidCommandException($"Invalid argument [{nextArg}], must be [True] or [False]");
+
+                                // <SectionName> : _SECTIONNAME_
+                                sectionName = arg[1..^1];
+
+                                // [RunOptional] takes up two argument
+                                i += 1;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]");
+                            }
                         }
 
                         return new UIInfo_PathBox(tooltip, isFile, title, filter, sectionName, hideProgress);
@@ -705,7 +719,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseUITextStyle, ParseUIBevelCaptionStyle
-
         public static UIFontWeight? ParseUIFontWeight(string str)
         {
             UIFontWeight? weight = null;

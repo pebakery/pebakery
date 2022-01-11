@@ -133,11 +133,13 @@ namespace PEBakery.Core
                      [FontWeight] : Normal, Bold (Added in PEBakery) 
                      [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
     13 FileBox     = [file|dir],[Title=<StringValue>],[Filter=<StringValue>]
+                     FILE: FILE,[Title=<StringValue>],[Filter=<StringValue>]
+                     DIR: DIR,[Title=<StringValue>]
     14 RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                      // IntegerIndex : selected index, starting from 0
-    20 PathBox     = <file|dir>,<Title>,[Filter] +[RunOptional]  // (Added in PEBakery)
-                     FILE: FILE,<Title>,[Filter] +[RunOptional]
-                     DIR: DIR,<Title> +[RunOptional]
+    20 PathBox     = <file|dir>,[Title=<StringValue>],[Filter=<StringValue>] +[RunOptional]  (Added in PEBakery)
+                     FILE: FILE,[Title=<StringValue>],[Filter=<StringValue>] +[RunOptional]
+                     DIR: DIR,[Title=<StringValue>] +[RunOptional]
 
     [RunOptional]
     For CheckBox, ComboBox, RadioButton, RadioGroup, PathBox
@@ -795,9 +797,8 @@ namespace PEBakery.Core
             b.Append(Value ? ",True" : ",False");
             if (SectionName != null)
             {
-                b.Append(",_");
-                b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append('_');
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"_{SectionName}_"));
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -835,9 +836,8 @@ namespace PEBakery.Core
             }
             if (SectionName != null)
             {
-                b.Append(",_");
-                b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append('_');
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"_{SectionName}_"));
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -976,9 +976,8 @@ namespace PEBakery.Core
             b.Append(Selected);
             if (SectionName != null)
             {
-                b.Append(",_");
-                b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append('_');
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"_{SectionName}_"));
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -1086,7 +1085,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file";
+        public static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file,\"Filter=All Files|*.*\"";
     }
 
     public class UIInfo_RadioGroup : UIInfo, IControlOptionalRunnable
@@ -1117,9 +1116,8 @@ namespace PEBakery.Core
             b.Append(Selected);
             if (SectionName != null)
             {
-                b.Append(",_");
-                b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append('_');
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"_{SectionName}_"));
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -1134,12 +1132,12 @@ namespace PEBakery.Core
     public class UIInfo_PathBox : UIInfo, IControlOptionalRunnable
     {
         public bool IsFile { get; set; }
-        public string Title { get; set; }
+        public string? Title { get; set; } // Optional
         public string? Filter { get; set; } // Optional
         public string? SectionName { get; set; } // Optional
         public bool HideProgress { get; set; } // Optional
 
-        public UIInfo_PathBox(string? tooltip, bool isFile, string title, string? filter, string? sectionName, bool hideProgress)
+        public UIInfo_PathBox(string? tooltip, bool isFile, string? title, string? filter, string? sectionName, bool hideProgress)
             : base(tooltip)
         {
             IsFile = isFile;
@@ -1153,18 +1151,20 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(IsFile ? ",file" : ",dir");
-            b.Append(',');
-            b.Append(StringEscaper.DoubleQuote(Title));
+            if (!string.IsNullOrWhiteSpace(Title))
+            {
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"Title={Title}"));
+            }
             if (IsFile && !string.IsNullOrWhiteSpace(Filter))
             {
                 b.Append(',');
-                b.Append(StringEscaper.DoubleQuote(Filter));
+                b.Append(StringEscaper.DoubleQuote($"Filter={Filter}"));
             }
             if (SectionName != null)
             {
-                b.Append(",_");
-                b.Append(StringEscaper.DoubleQuote(SectionName));
-                b.Append('_');
+                b.Append(',');
+                b.Append(StringEscaper.DoubleQuote($"_{SectionName}_"));
                 b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(ForgeToolTip());
@@ -1173,7 +1173,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public static string Template(string key) => $"{key}={key},1,{(int)UIControlType.PathBox},10,10,200,20,file,,\"All Files|*.*\"";
+        public static string Template(string key) => $"{key}={key},1,{(int)UIControlType.PathBox},10,10,200,20,file,\"Filter=All Files|*.*\"";
     }
     #endregion
 }

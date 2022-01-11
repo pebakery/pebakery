@@ -611,15 +611,15 @@ namespace PEBakery.Core.Tests.Command
 
             // 20 - PathBox
             SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
-                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,True");
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,True");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
-                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,True");
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,True");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pPathBox1,World", @"pPathBox1",
-                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_World_,True");
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_World_,True");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,None", @"pPathBox1",
-                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe""");
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe""");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,False", @"pPathBox1",
-                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Select Editor"",""Executable Files|*.exe"",_Hello_,False");
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,False");
 
             // Optimization
             OptTemplate(new List<string>
