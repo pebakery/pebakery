@@ -551,7 +551,7 @@ namespace PEBakery.Core
                 case UIControlType.FileBox:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 3;
+                        const int maxOpCount = 4; // +1 for Tooltip
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -643,7 +643,7 @@ namespace PEBakery.Core
                         // FILE,[Title=StringValue],[Filter=StringValue] +[RunOptional]
                         // DIR,[Title=StringValue] +[RunOptional]
                         const int minOpCount = 1;
-                        const int maxOpCount = 5; // +1 for Filter +2 for RunOptional
+                        const int maxOpCount = 6; // +1 for Tooltip +2 for RunOptional
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for Tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -684,7 +684,7 @@ namespace PEBakery.Core
                                 tooltip = GetInfoTooltip(args, i);
                             }
                             else if (arg.StartsWith('_') && arg.EndsWith('_') && i + 1 < args.Count &&
-                                args[i + 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[i + 1].Equals("False", StringComparison.OrdinalIgnoreCase)) // [RunOptinal] -> <SectionName>,<HideProgress>
+                                (args[i + 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[i + 1].Equals("False", StringComparison.OrdinalIgnoreCase))) // [RunOptinal] -> <SectionName>,<HideProgress>
                             {  // Has [RunOptional] -> <SectionName>,<HideProgress>
                                 string nextArg = args[i + 1];
                                 if (nextArg.Equals("True", StringComparison.OrdinalIgnoreCase))
