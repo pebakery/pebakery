@@ -25,10 +25,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 
 // ReSharper disable IdentifierTypo

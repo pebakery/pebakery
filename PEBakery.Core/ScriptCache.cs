@@ -46,7 +46,7 @@ namespace PEBakery.Core
     public class ScriptCache : SQLiteConnection
     {
         #region Fields, Properties
-        public static int DbLock = 0;
+        private static int _dbRefCount = 0;
         private readonly object _cachePoolLock = new object();
         private Dictionary<string, CacheModel.ScriptCache>? _cachePool;
         private readonly MessagePackSerializerOptions _msgPackOpts;
@@ -84,12 +84,29 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _dbRefCount);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _dbRefCount);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _dbRefCount;
+        }
+        #endregion
+
         #region WaitClose
         public async void WaitClose()
         {
             while (true)
             {
-                if (DbLock == 0)
+                if (IsRunning() == false)
                 {
                     Close();
                     return;

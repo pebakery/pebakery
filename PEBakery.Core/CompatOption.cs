@@ -30,7 +30,6 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace PEBakery.Core
 {

@@ -3,7 +3,6 @@
     /// <summary>
     /// Resource identifiers for default animations from shell32.dll.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue")]
     public enum ShellAnimation
     {
         /// <summary>

@@ -355,7 +355,7 @@ namespace PEBakery.Core
             (_, List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls();
             if (uiCtrls == null)
                 return fileRefCountDict;
-            
+
             foreach (UIControl thisCtrl in uiCtrls)
             {
                 switch (thisCtrl.Type)
@@ -1528,7 +1528,7 @@ namespace PEBakery.Core
                             throw new InternalException($"Wrong {nameof(EncodeMode)} [{mode}]");
                     }
                     byte[] fileFooterBytes = fileFooter.Serialize();
-                    
+
                     // [Stage 4] Compress file footer and concat to body
                     long beforeFooterCompressPos = encodeStream.Position;
                     ZLibCompressOptions footerCompOpts = new ZLibCompressOptions()
@@ -2310,7 +2310,7 @@ namespace PEBakery.Core
                 return true;
             }
         }
-        
+
         internal class ArchiveFooter
         {
             public const int FixedLength = 0x24;

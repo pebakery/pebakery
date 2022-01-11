@@ -39,7 +39,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniRead info = cmd.Info.Cast<CodeInfo_IniRead>();
+            CodeInfo_IniRead info = (CodeInfo_IniRead)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
@@ -91,7 +91,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniReadOp infoOp = cmd.Info.Cast<CodeInfo_IniReadOp>();
+            CodeInfo_IniReadOp infoOp = (CodeInfo_IniReadOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
@@ -162,7 +162,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+            CodeInfo_IniWrite info = (CodeInfo_IniWrite)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
@@ -206,7 +206,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWriteOp infoOp = cmd.Info.Cast<CodeInfo_IniWriteOp>();
+            CodeInfo_IniWriteOp infoOp = (CodeInfo_IniWriteOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -273,7 +273,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDelete info = cmd.Info.Cast<CodeInfo_IniDelete>();
+            CodeInfo_IniDelete info = (CodeInfo_IniDelete)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
@@ -309,7 +309,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDeleteOp infoOp = cmd.Info.Cast<CodeInfo_IniDeleteOp>();
+            CodeInfo_IniDeleteOp infoOp = (CodeInfo_IniDeleteOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -365,16 +365,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniReadSection info = cmd.Info.Cast<CodeInfo_IniReadSection>();
+            CodeInfo_IniReadSection info = (CodeInfo_IniReadSection)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
             string delim = "|";
             if (info.Delim != null)
                 delim = StringEscaper.Preprocess(s, info.Delim);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -416,7 +413,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniReadSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniReadSectionOp>();
+            CodeInfo_IniReadSectionOp infoOp = (CodeInfo_IniReadSectionOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -487,13 +484,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniAddSection info = cmd.Info.Cast<CodeInfo_IniAddSection>();
+            CodeInfo_IniAddSection info = (CodeInfo_IniAddSection)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -524,11 +518,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniAddSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniAddSectionOp>();
+            CodeInfo_IniAddSectionOp infoOp = (CodeInfo_IniAddSectionOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -578,13 +570,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDeleteSection info = cmd.Info.Cast<CodeInfo_IniDeleteSection>();
+            CodeInfo_IniDeleteSection info = (CodeInfo_IniDeleteSection)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -605,11 +594,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDeleteSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniDeleteSectionOp>();
+            CodeInfo_IniDeleteSectionOp infoOp = (CodeInfo_IniDeleteSectionOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -649,15 +636,11 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWriteTextLine info = cmd.Info.Cast<CodeInfo_IniWriteTextLine>();
+            CodeInfo_IniWriteTextLine info = (CodeInfo_IniWriteTextLine)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
             string line = StringEscaper.Preprocess(s, info.Line);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
-            Debug.Assert(line != null, $"{nameof(line)} != null");
 
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -690,11 +673,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWriteTextLineOp infoOp = cmd.Info.Cast<CodeInfo_IniWriteTextLineOp>();
+            CodeInfo_IniWriteTextLineOp infoOp = (CodeInfo_IniWriteTextLineOp)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-
-            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             bool append = infoOp.Infos[0].Append;
 
@@ -753,13 +734,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniMerge info = cmd.Info.Cast<CodeInfo_IniMerge>();
+            CodeInfo_IniMerge info = (CodeInfo_IniMerge)cmd.Info;
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destFile = StringEscaper.Preprocess(s, info.DestFile);
-
-            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
-            Debug.Assert(destFile != null, $"{nameof(destFile)} != null");
 
             if (!StringEscaper.PathSecurityCheck(destFile, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -786,11 +764,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_IniCompact info = cmd.Info.Cast<CodeInfo_IniCompact>();
+            CodeInfo_IniCompact info = (CodeInfo_IniCompact)cmd.Info;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-
-            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);

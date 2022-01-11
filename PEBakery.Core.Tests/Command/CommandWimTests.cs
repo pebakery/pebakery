@@ -30,8 +30,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -983,7 +981,6 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Helper
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public enum SampleSet
         {
             // TestSet Src01 is created for basic test and compresstion type test

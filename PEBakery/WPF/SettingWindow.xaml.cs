@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -326,22 +325,22 @@ namespace PEBakery.WPF
         #region Script Setting Commands
         private void ClearCacheDatabaseCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand && ScriptCache.DbLock == 0;
+            e.CanExecute = _m != null && _m.CanExecuteCommand && ScriptCache.IsRunning() == false;
         }
 
         private async void ClearCacheDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            if (ScriptCache.DbLock != 0)
+            if (ScriptCache.IsRunning())
                 return;
 
-            Interlocked.Increment(ref ScriptCache.DbLock);
+            ScriptCache.Acquire();
             try
             {
                 await Task.Run(() => { _m.ClearCacheDatabase(); });
             }
             finally
             {
-                Interlocked.Decrement(ref ScriptCache.DbLock);
+                ScriptCache.Release();
             }
         }
         #endregion
@@ -368,14 +367,14 @@ namespace PEBakery.WPF
         #region Log Setting Commands
         private async void ClearLogDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Interlocked.Increment(ref ScriptCache.DbLock);
+            ScriptCache.Acquire();
             try
             {
                 await Task.Run(() => { _m.ClearLogDatabase(); });
             }
             finally
             {
-                Interlocked.Decrement(ref ScriptCache.DbLock);
+                ScriptCache.Release();
             }
         }
         #endregion

@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -821,14 +820,28 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region Background Tasks
-        public int ProjectsLoading = 0;
-        public int ScriptRefreshing = 0;
-        public int SyntaxChecking = 0;
+        #region Reference Count
+        private int _projectsLoadRefCount = 0;
+        private int _scriptRefreshRefCount = 0;
+        private int _syntaxCheckRefCount = 0;
 
+        public int ProjectsLoadAcquire() => Interlocked.Increment(ref _projectsLoadRefCount);
+        public int ProjectsLoadRelease() => Interlocked.Decrement(ref _projectsLoadRefCount);
+        public bool IsProjectsLoading() => 0 < _projectsLoadRefCount;
+
+        public int ScriptRefreshAcquire() => Interlocked.Increment(ref _scriptRefreshRefCount);
+        public int ScriptRefreshRelease() => Interlocked.Decrement(ref _scriptRefreshRefCount);
+        public bool IsScriptRefreshing() => 0 < _scriptRefreshRefCount;
+
+        public int SyntaxCheckAcquire() => Interlocked.Increment(ref _syntaxCheckRefCount);
+        public int SyntaxCheckRelease() => Interlocked.Decrement(ref _syntaxCheckRefCount);
+        public bool IsSyntaxChecking() => 0 < _syntaxCheckRefCount;
+        #endregion
+
+        #region Background Tasks
         public Task StartLoadingProjects(bool refreshProjectEntries, bool quiet)
         {
-            if (ProjectsLoading != 0)
+            if (IsProjectsLoading())
                 return Task.CompletedTask;
 
             Setting setting = Global.Setting;
@@ -904,7 +917,7 @@ namespace PEBakery.Core.ViewModels
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ProjectsLoading);
+                ProjectsLoadAcquire();
                 if (!quiet)
                     WorkInProgress = true;
                 SwitchStatusProgressBar = StatusProgressSwitch.Progress; // Show Progress Bar
@@ -1039,7 +1052,7 @@ namespace PEBakery.Core.ViewModels
                     if (!quiet)
                         WorkInProgress = false;
                     SwitchStatusProgressBar = StatusProgressSwitch.Status; // Show Status Bar
-                    Interlocked.Decrement(ref ProjectsLoading);
+                    ProjectsLoadRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1049,7 +1062,7 @@ namespace PEBakery.Core.ViewModels
 
         public Task StartScriptCaching()
         {
-            if (ScriptCache.DbLock != 0)
+            if (ScriptCache.IsRunning())
                 return Task.CompletedTask;
             if (Global.ScriptCache == null)
                 return Task.CompletedTask;
@@ -1058,7 +1071,7 @@ namespace PEBakery.Core.ViewModels
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ScriptCache.DbLock);
+                ScriptCache.Acquire();
                 WorkInProgress = true;
                 try
                 {
@@ -1073,7 +1086,7 @@ namespace PEBakery.Core.ViewModels
                 finally
                 {
                     WorkInProgress = false;
-                    Interlocked.Decrement(ref ScriptCache.DbLock);
+                    ScriptCache.Release();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1085,7 +1098,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (CurMainTree?.Script == null)
                 return Task.CompletedTask;
-            if (SyntaxChecking != 0)
+            if (IsSyntaxChecking())
                 return Task.CompletedTask;
 
             Script sc = CurMainTree.Script;
@@ -1097,7 +1110,7 @@ namespace PEBakery.Core.ViewModels
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref SyntaxChecking);
+                SyntaxCheckAcquire();
                 try
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
@@ -1200,7 +1213,7 @@ namespace PEBakery.Core.ViewModels
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref SyntaxChecking);
+                    SyntaxCheckRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1214,13 +1227,13 @@ namespace PEBakery.Core.ViewModels
                 return Task.CompletedTask;
             if (CurMainTree.Script.Type == ScriptType.Directory)
                 return Task.CompletedTask;
-            if (ScriptRefreshing != 0)
+            if (IsScriptRefreshing())
                 return Task.CompletedTask;
 
             ProjectTreeItemModel node = CurMainTree;
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ScriptRefreshing);
+                ScriptRefreshAcquire();
                 if (Engine.WorkingEngine == null)
                     WorkInProgress = true;
                 try
@@ -1248,7 +1261,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     if (Engine.WorkingEngine == null)
                         WorkInProgress = false;
-                    Interlocked.Decrement(ref ScriptRefreshing);
+                    ScriptRefreshRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1329,7 +1342,6 @@ namespace PEBakery.Core.ViewModels
             });
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void DisplayScriptLogo(Script sc)
         {
             if (sc.Type == ScriptType.Directory)

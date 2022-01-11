@@ -11,7 +11,7 @@ namespace Ookii.Dialogs.Wpf
     /// <threadsafety instance="false" static="true" />
     public class HyperlinkClickedEventArgs : EventArgs
     {
-        private string? _href;
+        private readonly string? _href;
 
         /// <summary>
         /// Creates a new instance of the <see cref="HyperlinkClickedEventArgs"/> class with the specified URL.

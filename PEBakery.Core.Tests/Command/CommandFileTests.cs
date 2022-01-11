@@ -28,7 +28,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -480,7 +479,7 @@ namespace PEBakery.Core.Tests.Command
                             Assert.IsTrue(srcDirs.Length == destDirs.Length);
 
                             for (int i = 0; i < srcDirs.Length; i++)
-                                Assert.IsTrue(srcDirs[i].Substring(srcDir.Length).Equals(destDirs[i].Substring(destDir.Length), StringComparison.Ordinal));
+                                Assert.IsTrue(srcDirs[i][srcDir.Length..].Equals(destDirs[i][destDir.Length..], StringComparison.Ordinal));
                         }
                         else
                         {
@@ -505,7 +504,7 @@ namespace PEBakery.Core.Tests.Command
                                 string[] srcDirs = Directory.GetFiles(firstSrcDirs[i], "*", SearchOption.AllDirectories);
                                 string[] destDirs = Directory.GetFiles(firstDestDirs[i], "*", SearchOption.AllDirectories);
                                 Assert.IsTrue(srcDirs.Length == destDirs.Length);
-                                Assert.IsTrue(srcDirs[i].Substring(srcDir.Length).Equals(destDirs[i].Substring(destDir.Length), StringComparison.Ordinal));
+                                Assert.IsTrue(srcDirs[i][srcDir.Length..].Equals(destDirs[i][destDir.Length..], StringComparison.Ordinal));
                             }
                         }
                     }

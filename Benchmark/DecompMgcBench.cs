@@ -63,6 +63,7 @@ namespace Benchmark
         }
 
         [GlobalCleanup]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:멤버를 static으로 표시하세요.", Justification = "<보류 중>")]
         public void GlobalCleanup()
         {
             Program.NativeGlobalCleanup();

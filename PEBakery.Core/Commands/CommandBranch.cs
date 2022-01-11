@@ -33,7 +33,6 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -42,17 +41,17 @@ using System.Windows.Shell;
 
 namespace PEBakery.Core.Commands
 {
+    public class RunExecOptions
+    {
+        public bool PreserveCurrentParams { get; set; }
+        public bool IsMacro { get; set; }
+    }
+
     public static class CommandBranch
     {
-        public struct RunExecOptions
-        {
-            public bool PreserveCurrentParams { get; set; }
-            public bool IsMacro { get; set; }
-        }
-
         public static void RunExec(EngineState s, CodeCommand cmd, RunExecOptions opts)
         {
-            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+            CodeInfo_RunExec info = (CodeInfo_RunExec)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             Debug.Assert((cmd.Type == CodeType.Run || cmd.Type == CodeType.Exec) && info.OutParams == null ||
@@ -136,7 +135,7 @@ namespace PEBakery.Core.Commands
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+            CodeInfo_Loop info = (CodeInfo_Loop)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (info.Break)
@@ -338,7 +337,7 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+            CodeInfo_If info = (CodeInfo_If)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (EvalBranchCondition(s, info.Condition, out string msg))
@@ -361,7 +360,7 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+            CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (s.ElseFlag)
@@ -391,7 +390,7 @@ namespace PEBakery.Core.Commands
                 CodeCommand subCmd = link[0];
                 if (subCmd.Type == CodeType.System)
                 {
-                    CodeInfo_System info = subCmd.Info.Cast<CodeInfo_System>();
+                    CodeInfo_System info = (CodeInfo_System)subCmd.Info;
 
                     if (info.Type == SystemType.ErrorOff)
                         s.ErrorOffDepthMinusOne = true;
@@ -735,7 +734,7 @@ namespace PEBakery.Core.Commands
                                     logMessage = $"Variable [{c.Arg1}] exists";
                                 else
                                     logMessage = $"Variable [{c.Arg1}] does not exist";
-                            }   
+                            }
                         }
                         else
                         {
@@ -751,7 +750,7 @@ namespace PEBakery.Core.Commands
                     {
                         if (c.Arg1 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
-                        
+
                         string macroName = StringEscaper.Preprocess(s, c.Arg1);
                         match = s.Macro.GlobalDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
 
@@ -770,7 +769,7 @@ namespace PEBakery.Core.Commands
                             throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
                         if (c.Arg2 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
-                        
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
 
@@ -821,7 +820,7 @@ namespace PEBakery.Core.Commands
                             throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
                         if (c.Arg3 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
-                        
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
                         string filePath = StringEscaper.Preprocess(s, c.Arg3);
@@ -981,7 +980,7 @@ namespace PEBakery.Core.Commands
                             throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
                         if (c.Arg3 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
-                        
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
                         string key = StringEscaper.Preprocess(s, c.Arg3).ToUpper();
@@ -1029,7 +1028,7 @@ namespace PEBakery.Core.Commands
                     {
                         if (c.Arg1 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
-                        
+
                         string host = StringEscaper.Preprocess(s, c.Arg1);
 
                         try
@@ -1084,7 +1083,7 @@ namespace PEBakery.Core.Commands
                     {
                         if (c.Arg1 == null)
                             throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
-                        
+
                         string message = StringEscaper.Preprocess(s, c.Arg1);
 
                         bool autoTimeout = c.Arg2 != null && c.Arg3 != null;

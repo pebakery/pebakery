@@ -51,10 +51,6 @@ namespace PEBakery.WPF.Controls
                 Foreground = IconForeground,
             };
         }
-
-        ~IconButton()
-        {
-        }
         #endregion
 
         #region Event Handler

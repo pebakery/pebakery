@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // Disable warning CS0108: 'x' hides inherited member 'y'. Use the new keyword if hiding was intended.
-#pragma warning disable 0108
+#pragma warning disable CS0108
 
 namespace Ookii.Dialogs.Wpf.Interop
 {
@@ -391,7 +391,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void GetId(out Guid pkfid);
 
         // Not yet supported - adding to fill slot in vtable
-        void spacer1();
+        void Spacer1();
         //[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
         //void GetCategory(out mbtagKF_CATEGORY pCategory);
 
@@ -409,7 +409,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void GetRedirectionCapabilities(out uint pCapabilities);
 
         // Not yet supported - adding to fill slot in vtable
-        void spacer2();
+        void Spacer2();
         //[MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
         //void GetFolderDefinition(out tagKNOWNFOLDER_DEFINITION pKFD);
     }
@@ -594,3 +594,5 @@ namespace Ookii.Dialogs.Wpf.Interop
         void HeapMinimize();
     }
 }
+
+#pragma warning restore CS0108

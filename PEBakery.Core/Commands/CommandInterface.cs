@@ -46,10 +46,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_Visible info = cmd.Info.Cast<CodeInfo_Visible>();
+            CodeInfo_Visible info = (CodeInfo_Visible)cmd.Info;
 
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-            Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
 
             bool visibility;
             if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -107,7 +106,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
+            CodeInfo_VisibleOp infoOp = (CodeInfo_VisibleOp)cmd.Info;
 
             // Refresh is required to simulate WinBuilder 082 behavior
             Script? sc = s.Project.RefreshScript(cmd.Section.Script, s);
@@ -124,10 +123,9 @@ namespace PEBakery.Core.Commands
             List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_Visible info = subCmd.Info.Cast<CodeInfo_Visible>();
+                CodeInfo_Visible info = (CodeInfo_Visible)subCmd.Info;
 
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-                Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
 
                 bool visibility;
                 if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -522,7 +520,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
+            CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -530,10 +528,6 @@ namespace PEBakery.Core.Commands
             string delim = "|";
             if (info.Delim != null)
                 delim = StringEscaper.Preprocess(s, info.Delim);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
-            Debug.Assert(key != null, $"{nameof(key)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
@@ -567,14 +561,11 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ReadInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_ReadInterfaceOp>();
+            CodeInfo_ReadInterfaceOp infoOp = (CodeInfo_ReadInterfaceOp)cmd.Info;
 
             CodeInfo_ReadInterface firstInfo = infoOp.Infos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
@@ -588,7 +579,7 @@ namespace PEBakery.Core.Commands
             var targets = new List<(UIControl, CodeInfo_ReadInterface, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_ReadInterface info = subCmd.Info.Cast<CodeInfo_ReadInterface>();
+                CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)subCmd.Info;
 
                 string key = StringEscaper.Preprocess(s, info.Key);
 
@@ -1109,7 +1100,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
+            CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -1118,11 +1109,6 @@ namespace PEBakery.Core.Commands
             string delim = "|";
             if (info.Delim != null)
                 delim = StringEscaper.Preprocess(s, info.Delim);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
-            Debug.Assert(key != null, $"{nameof(key)} != null");
-            Debug.Assert(finalValue != null, $"{nameof(finalValue)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
@@ -1172,14 +1158,11 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WriteInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_WriteInterfaceOp>();
+            CodeInfo_WriteInterfaceOp infoOp = (CodeInfo_WriteInterfaceOp)cmd.Info;
 
             CodeInfo_WriteInterface firstInfo = infoOp.Infos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
@@ -1193,7 +1176,7 @@ namespace PEBakery.Core.Commands
             var targets = new List<(UIControl, InterfaceElement, string Delim, string Value, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_WriteInterface info = subCmd.Info.Cast<CodeInfo_WriteInterface>();
+                CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)subCmd.Info;
 
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string finalValue = StringEscaper.Preprocess(s, info.Value);
@@ -1254,11 +1237,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Message info = cmd.Info.Cast<CodeInfo_Message>();
+            CodeInfo_Message info = (CodeInfo_Message)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
-
-            Debug.Assert(message != null, $"{nameof(message)} != null");
 
             MessageBoxImage image;
             switch (info.Action)
@@ -1343,10 +1324,9 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Echo(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
+            CodeInfo_Echo info = (CodeInfo_Echo)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
-            Debug.Assert(message != null, $"{nameof(message)} != null");
 
             s.MainViewModel.BuildEchoMessage = message;
 
@@ -1357,10 +1337,9 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> EchoFile(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_EchoFile info = cmd.Info.Cast<CodeInfo_EchoFile>();
+            CodeInfo_EchoFile info = (CodeInfo_EchoFile)cmd.Info;
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
-            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
 
             if (!File.Exists(srcFile))
             {
@@ -1386,7 +1365,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
+            CodeInfo_UserInput info = (CodeInfo_UserInput)cmd.Info;
 
             UserInputType type = info.Type;
             switch (type)
@@ -1394,7 +1373,7 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
+                        UserInputInfo_DirFile subInfo = (UserInputInfo_DirFile)info.SubInfo;
 
                         TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
                         s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
@@ -1440,7 +1419,7 @@ namespace PEBakery.Core.Commands
                                     { // If wildcard exists, apply to filter.
                                         string ext = Path.GetExtension(initFile);
                                         if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
-                                            ext = ext.Substring(1);
+                                            ext = ext[1..];
                                         filter = $"{ext} Files|{initFile}";
                                     }
                                 }
@@ -1541,7 +1520,7 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
             EngineLocalState ls = s.PeekLocalState();
 
-            CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
+            CodeInfo_AddInterface info = (CodeInfo_AddInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Section);

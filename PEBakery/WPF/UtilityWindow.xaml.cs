@@ -42,18 +42,16 @@ using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
-    // ReSharper disable RedundantExtendsListEntry
     public partial class UtilityWindow : Window
     {
         #region Field and Constructor
-        public static int Count = 0;
+        private static int _count = 0;
 
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly UtilityViewModel _m;
 
         public UtilityWindow(FontHelper.FontInfo monoFont)
         {
-            Interlocked.Increment(ref Count);
+            Acquire();
 
             _m = new UtilityViewModel(monoFont);
 
@@ -85,6 +83,23 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _count);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _count);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _count;
+        }
+        #endregion
+
         #region Window Event
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -93,7 +108,7 @@ namespace PEBakery.WPF
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            Interlocked.Decrement(ref Count);
+            Interlocked.Decrement(ref _count);
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion
@@ -137,7 +152,7 @@ namespace PEBakery.WPF
             if (_m.CodeFile == null)
                 return;
 
-            CodeBoxRunButton.Focus();           
+            CodeBoxRunButton.Focus();
 
             _m.CanExecuteCommand = false;
             try
@@ -198,7 +213,7 @@ namespace PEBakery.WPF
                         if (mainModel.CurMainTree is ProjectTreeItemModel curMainTree)
                             s.MainViewModel.DisplayScript(curMainTree.Script);
 
-                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                         { // Open BuildLogWindow
                             Application.Current?.Dispatcher?.Invoke(() =>
                             {
@@ -313,7 +328,7 @@ namespace PEBakery.WPF
                     {
                         foreach (CodeCommand cmd in cmds.Where(x => x.Type == CodeType.Macro))
                         {
-                            CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
+                            CodeInfo_Macro info = (CodeInfo_Macro)cmd.Info;
 
                             if (!macro.GlobalDict.ContainsKey(info.MacroType))
                                 errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));

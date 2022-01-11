@@ -207,7 +207,7 @@ namespace PEBakery.Core
                     #region Check CodeSections
                     case CodeType.If:
                         {
-                            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                            CodeInfo_If info = (CodeInfo_If)cmd.Info;
 
                             if (info.Condition.Type == BranchConditionType.ExistSection)
                             {
@@ -222,7 +222,7 @@ namespace PEBakery.Core
                                 if (arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.RunEx || info.Embed.Type == CodeType.Exec)
                                 {
-                                    CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
+                                    CodeInfo_RunExec subInfo = (CodeInfo_RunExec)info.Embed.Info;
                                     if (subInfo.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase))
                                     {
                                         if (arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
@@ -236,7 +236,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Else:
                         {
-                            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                            CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
 
                             RecursiveFindCodeSection(info.Link, logs);
                         }
@@ -245,7 +245,7 @@ namespace PEBakery.Core
                     case CodeType.Exec:
                     case CodeType.RunEx:
                         {
-                            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+                            CodeInfo_RunExec info = (CodeInfo_RunExec)cmd.Info;
 
                             // SyntaxChecker does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -258,7 +258,7 @@ namespace PEBakery.Core
                     case CodeType.LoopEx:
                     case CodeType.LoopLetterEx:
                         {
-                            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+                            CodeInfo_Loop info = (CodeInfo_Loop)cmd.Info;
 
                             // info.Break -> CodeInfo_Loop is empty
                             if (info.Break)
@@ -278,7 +278,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.UserInput:
                         {
-                            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
+                            CodeInfo_UserInput info = (CodeInfo_UserInput)cmd.Info;
 
                             UserInputType type = info.Type;
                             switch (type)
@@ -287,7 +287,7 @@ namespace PEBakery.Core
                                 case UserInputType.FilePath:
                                     {
 
-                                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
+                                        UserInputInfo_DirFile subInfo = (UserInputInfo_DirFile)info.SubInfo;
 
                                         if (info.Type == UserInputType.FilePath)
                                         { // Select File
@@ -312,7 +312,7 @@ namespace PEBakery.Core
                     #region Check InterfaceSections
                     case CodeType.AddInterface:
                         {
-                            CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
+                            CodeInfo_AddInterface info = (CodeInfo_AddInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -322,7 +322,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.ReadInterface:
                         {
-                            CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
+                            CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -332,7 +332,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.WriteInterface:
                         {
-                            CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
+                            CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -344,7 +344,7 @@ namespace PEBakery.Core
                         {
                             // To detect multi-interface without `InterfaceList=`,
                             // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
-                            CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+                            CodeInfo_IniWrite info = (CodeInfo_IniWrite)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.FileName.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&

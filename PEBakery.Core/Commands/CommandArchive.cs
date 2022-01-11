@@ -30,7 +30,6 @@ using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -38,12 +37,11 @@ namespace PEBakery.Core.Commands
 {
     public class CommandArchive
     {
-        [SuppressMessage("ReSharper", "RedundantNameQualifier")]
         public static List<LogInfo> Compress(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
+            CodeInfo_Compress info = (CodeInfo_Compress)cmd.Info;
 
             #region Event Handlers
             void ReportCompressProgress(object? sender, ProgressEventArgs e)
@@ -218,7 +216,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
+            CodeInfo_Decompress info = (CodeInfo_Decompress)cmd.Info;
 
             #region Event Handlers
             void ReportDecompressProgress(object? sender, ProgressEventArgs e)
@@ -285,7 +283,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Expand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_Expand info = cmd.Info.Cast<CodeInfo_Expand>();
+            CodeInfo_Expand info = (CodeInfo_Expand)cmd.Info;
             List<string> extractedFiles = new List<string>();
 
             #region Event Handlers
@@ -419,7 +417,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> CopyOrExpand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_CopyOrExpand info = cmd.Info.Cast<CodeInfo_CopyOrExpand>();
+            CodeInfo_CopyOrExpand info = (CodeInfo_CopyOrExpand)cmd.Info;
 
             #region Event Handlers
             void ReportExpandProgress(object? sender, ProgressEventArgs e)
@@ -491,8 +489,8 @@ namespace PEBakery.Core.Commands
               // Terminate if a file does not have equivalent cabinet file
                 if (srcFileExt.Length == ".".Length)
                     return logs;
-                string srcCabExt = srcFileExt.Substring(0, srcFileExt.Length - 1) + "_";
-                string srcCab = srcFile.Substring(0, srcFile.Length - srcCabExt.Length) + srcCabExt;
+                string srcCabExt = string.Concat(srcFileExt.AsSpan(0, srcFileExt.Length - 1), "_");
+                string srcCab = string.Concat(srcFile.AsSpan(0, srcFile.Length - srcCabExt.Length), srcCabExt);
 
                 if (File.Exists(srcCab))
                 {

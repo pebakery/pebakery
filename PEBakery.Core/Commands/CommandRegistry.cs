@@ -46,7 +46,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegHiveLoad info = cmd.Info.Cast<CodeInfo_RegHiveLoad>();
+            CodeInfo_RegHiveLoad info = (CodeInfo_RegHiveLoad)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
@@ -77,7 +77,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegHiveUnload info = cmd.Info.Cast<CodeInfo_RegHiveUnload>();
+            CodeInfo_RegHiveUnload info = (CodeInfo_RegHiveUnload)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
@@ -105,7 +105,7 @@ namespace PEBakery.Core.Commands
         { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegRead info = cmd.Info.Cast<CodeInfo_RegRead>();
+            CodeInfo_RegRead info = (CodeInfo_RegRead)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -173,7 +173,7 @@ namespace PEBakery.Core.Commands
         { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>,[OptionalData]
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegWrite info = cmd.Info.Cast<CodeInfo_RegWrite>();
+            CodeInfo_RegWrite info = (CodeInfo_RegWrite)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string? valueName = null;
@@ -325,7 +325,7 @@ namespace PEBakery.Core.Commands
         { // Compatibility Shim for WinBuilder 082
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegWriteLegacy info = cmd.Info.Cast<CodeInfo_RegWriteLegacy>();
+            CodeInfo_RegWriteLegacy info = (CodeInfo_RegWriteLegacy)cmd.Info;
 
             string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
             RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
@@ -353,7 +353,7 @@ namespace PEBakery.Core.Commands
         { // RegDelete,<HKey>,<KeyPath>,[ValueName]
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegDelete info = cmd.Info.Cast<CodeInfo_RegDelete>();
+            CodeInfo_RegDelete info = (CodeInfo_RegDelete)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
@@ -406,7 +406,7 @@ namespace PEBakery.Core.Commands
         { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Action>,<Arg1>,[Arg2]
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_RegMulti info = cmd.Info.Cast<CodeInfo_RegMulti>();
+            CodeInfo_RegMulti info = (CodeInfo_RegMulti)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -595,7 +595,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_RegImport info = cmd.Info.Cast<CodeInfo_RegImport>();
+            CodeInfo_RegImport info = (CodeInfo_RegImport)cmd.Info;
 
             // Consider using RegRestoreKeyW
             // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regrestorekeyw
@@ -626,7 +626,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_RegExport info = cmd.Info.Cast<CodeInfo_RegExport>();
+            CodeInfo_RegExport info = (CodeInfo_RegExport)cmd.Info;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
@@ -665,7 +665,7 @@ namespace PEBakery.Core.Commands
         { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_RegCopy info = cmd.Info.Cast<CodeInfo_RegCopy>();
+            CodeInfo_RegCopy info = (CodeInfo_RegCopy)cmd.Info;
 
             string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
             string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);

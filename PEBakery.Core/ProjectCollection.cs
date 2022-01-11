@@ -246,7 +246,7 @@ namespace PEBakery.Core
                     ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x)
                     {
                         string realPath = x.Path;
-                        string treePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\'));
+                        string treePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path[dirPath.Length..].TrimStart('\\'));
                         bool isDir = x.IsDir;
                         bool isDirLink = true;
                         return new ScriptParseInfo(realPath, treePath, isDir, isDirLink);

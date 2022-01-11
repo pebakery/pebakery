@@ -32,7 +32,7 @@ namespace Ookii.Dialogs.Wpf
         }
 
         private string? _windowTitle;
-        private string ?_text;
+        private string? _text;
         private string? _description;
         private Interop.IProgressDialog? _dialog;
         private string? _cancellationText;
@@ -563,7 +563,7 @@ namespace Ookii.Dialogs.Wpf
         public void ReportProgress(int percentProgress, string? text, string? description, object? userState)
         {
             if (percentProgress < 0 || percentProgress > 100)
-                throw new ArgumentOutOfRangeException("percentProgress");
+                throw new ArgumentOutOfRangeException(nameof(percentProgress));
             if (_dialog == null)
                 throw new InvalidOperationException(Properties.Resources.ProgressDialogNotRunningError);
             _backgroundWorker.ReportProgress(percentProgress, new ProgressChangedData() { Text = text, Description = description, UserState = userState });
@@ -618,7 +618,7 @@ namespace Ookii.Dialogs.Wpf
             }
 
             _cancellationPending = false;
-            _dialog = new Interop.ProgressDialog();
+            _dialog = new Interop.IInteropProgressDialog();
             _dialog.SetTitle(WindowTitle);
             if (Animation != null)
                 _dialog.SetAnimation(_currentAnimationModuleHandle, (ushort)Animation.ResourceId);
@@ -654,12 +654,12 @@ namespace Ookii.Dialogs.Wpf
             _backgroundWorker.RunWorkerAsync(argument);
         }
 
-        private void _backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             OnDoWork(e);
         }
 
-        private void _backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (_dialog == null)
                 return;
@@ -676,7 +676,7 @@ namespace Ookii.Dialogs.Wpf
             OnRunWorkerCompleted(new RunWorkerCompletedEventArgs((!e.Cancelled && e.Error == null) ? e.Result : null, e.Error, e.Cancelled));
         }
 
-        private void _backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             if (_dialog == null)
                 return;
@@ -687,8 +687,7 @@ namespace Ookii.Dialogs.Wpf
             if (e.ProgressPercentage >= 0 && e.ProgressPercentage <= 100)
             {
                 _dialog.SetProgress((uint)e.ProgressPercentage, 100);
-                ProgressChangedData? data = e.UserState as ProgressChangedData;
-                if (data != null)
+                if (e.UserState is ProgressChangedData data)
                 {
                     if (data.Text != null)
                         Text = data.Text;

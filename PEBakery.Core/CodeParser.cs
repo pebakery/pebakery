@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -142,7 +141,7 @@ namespace PEBakery.Core
 
             List<LogInfo> errLogs = cmds
                 .Where(x => x.Type == CodeType.Error)
-                .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
+                .Select(x => new LogInfo(LogState.Error, ((CodeInfo_Error)x.Info).ErrorMessage, x))
                 .ToList();
 
             List<CodeCommand> foldedList = cmds.Where(x => x.Type != CodeType.None).ToList();
@@ -2630,7 +2629,7 @@ namespace PEBakery.Core
                 #region Error
                 default: // Error
                     throw new InternalParserException($"Invalid CodeType [{type}]");
-                #endregion
+                    #endregion
             }
         }
         #endregion

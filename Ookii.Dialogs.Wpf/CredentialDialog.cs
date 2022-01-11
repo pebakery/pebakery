@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Text;
 using System.Windows;
 using System.Windows.Interop;
@@ -37,7 +36,7 @@ namespace Ookii.Dialogs.Wpf
     public partial class CredentialDialog : Component
     {
         private string? _confirmTarget;
-        private NetworkCredential _credentials = new NetworkCredential();
+        private readonly NetworkCredential _credentials = new NetworkCredential();
         private bool _isSaveChecked;
         private string? _target;
 
@@ -525,16 +524,18 @@ namespace Ookii.Dialogs.Wpf
         public static void StoreCredential(string target, NetworkCredential credential)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (target.Length == 0)
-                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, "target");
+                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, nameof(target));
             if (credential == null)
-                throw new ArgumentNullException("credential");
+                throw new ArgumentNullException(nameof(credential));
 
-            NativeMethods.CREDENTIAL c = new NativeMethods.CREDENTIAL();
-            c.UserName = credential.UserName;
-            c.TargetName = target;
-            c.Persist = NativeMethods.CredPersist.Enterprise;
+            NativeMethods.CREDENTIAL c = new NativeMethods.CREDENTIAL
+            {
+                UserName = credential.UserName,
+                TargetName = target,
+                Persist = NativeMethods.CredPersist.Enterprise
+            };
             byte[] encryptedPassword = EncryptPassword(credential.Password);
             c.CredentialBlob = System.Runtime.InteropServices.Marshal.AllocHGlobal(encryptedPassword.Length);
             try
@@ -580,8 +581,7 @@ namespace Ookii.Dialogs.Wpf
             if (cred != null)
                 return cred;
 
-            IntPtr credential;
-            bool result = NativeMethods.CredRead(target, NativeMethods.CredTypes.CRED_TYPE_GENERIC, 0, out credential);
+            bool result = NativeMethods.CredRead(target, NativeMethods.CredTypes.CRED_TYPE_GENERIC, 0, out IntPtr credential);
             int error = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
             if (result)
             {
@@ -623,14 +623,13 @@ namespace Ookii.Dialogs.Wpf
         public static NetworkCredential? RetrieveCredentialFromApplicationInstanceCache(string target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (target.Length == 0)
-                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, "target");
+                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, nameof(target));
 
             lock (_applicationInstanceCredentialCache)
             {
-                System.Net.NetworkCredential? cred;
-                if (_applicationInstanceCredentialCache.TryGetValue(target, out cred))
+                if (_applicationInstanceCredentialCache.TryGetValue(target, out NetworkCredential? cred))
                 {
                     return cred;
                 }
@@ -657,9 +656,9 @@ namespace Ookii.Dialogs.Wpf
         public static bool DeleteCredential(string target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (target.Length == 0)
-                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, "target");
+                throw new ArgumentException(Properties.Resources.CredentialEmptyTargetError, nameof(target));
 
             bool found = false;
             lock (_applicationInstanceCredentialCache)
@@ -686,8 +685,7 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">The <see cref="EventArgs"/> containing data for the event.</param>
         protected virtual void OnUserNameChanged(EventArgs e)
         {
-            if (UserNameChanged != null)
-                UserNameChanged(this, e);
+            UserNameChanged?.Invoke(this, e);
         }
 
         /// <summary>
@@ -696,8 +694,7 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">The <see cref="EventArgs"/> containing data for the event.</param>
         protected virtual void OnPasswordChanged(EventArgs e)
         {
-            if (PasswordChanged != null)
-                PasswordChanged(this, e);
+            PasswordChanged?.Invoke(this, e);
         }
 
         private bool PromptForCredentialsCredUI(IntPtr owner, bool storedCredentials)
@@ -757,9 +754,8 @@ namespace Ookii.Dialogs.Wpf
                     }
                 }
 
-                uint outBufferSize;
                 uint package = 0;
-                NativeMethods.CredUIReturnCodes result = NativeMethods.CredUIPromptForWindowsCredentials(ref info, 0, ref package, inBuffer, inBufferSize, out outBuffer, out outBufferSize, ref _isSaveChecked, flags);
+                NativeMethods.CredUIReturnCodes result = NativeMethods.CredUIPromptForWindowsCredentials(ref info, 0, ref package, inBuffer, inBufferSize, out outBuffer, out uint outBufferSize, ref _isSaveChecked, flags);
                 switch (result)
                 {
                     case NativeMethods.CredUIReturnCodes.NO_ERROR:

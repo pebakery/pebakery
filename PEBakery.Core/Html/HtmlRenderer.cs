@@ -201,7 +201,7 @@ namespace PEBakery.Core.Html
                 case LogState.Error:
                 case LogState.CriticalError:
                     return @"<i class=""bi bi-x-circle-fill""></i>";
-                    // return @"<i class=""bi bi-x""></i>";
+                // return @"<i class=""bi bi-x""></i>";
                 case LogState.Info:
                     return @"<i class=""bi bi-info-circle-fill""></i>";
                 case LogState.Ignore:

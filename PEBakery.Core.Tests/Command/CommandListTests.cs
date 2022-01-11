@@ -27,12 +27,10 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandListTests
     {
         #region ListGet
@@ -353,7 +351,7 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Template
-        public void ReadTemplate(EngineState s, string rawCode, string listStr, string? expected, ErrorCheck check = ErrorCheck.Success)
+        public static void ReadTemplate(EngineState s, string rawCode, string listStr, string? expected, ErrorCheck check = ErrorCheck.Success)
         {
             s.Variables.DeleteKey(VarsType.Local, "Dest");
             s.Variables["ListStr"] = listStr;
@@ -366,7 +364,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WriteTemplate(EngineState s, string rawCode, string? listStr, string? expected, ErrorCheck check = ErrorCheck.Success)
+        public static void WriteTemplate(EngineState s, string rawCode, string? listStr, string? expected, ErrorCheck check = ErrorCheck.Success)
         {
             if (listStr == null)
                 s.Variables.DeleteKey(VarsType.Local, "listStr");

@@ -26,7 +26,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Tree
@@ -58,7 +57,7 @@ namespace PEBakery.Tree
 
             if (parentId == 0)
             { // Root NodeList
-    
+
                 KwayTreeNode<T> node = new KwayTreeNode<T>(parentId, id, data, null);
                 Root.Add(node);
             }
@@ -308,7 +307,7 @@ namespace PEBakery.Tree
     {
         public const int RootNodeId = 0;
         public const int InvalidNodeId = -1;
-        
+
         public int Id;
         public int ParentId { get; set; } // 0 is root NodeList
         public T Data { get; set; }
@@ -317,7 +316,7 @@ namespace PEBakery.Tree
         /// </summary>
         public List<KwayTreeNode<T>>? Parent { get; set; }
         public List<KwayTreeNode<T>> Child { get; set; }
-        
+
         public bool IsRoot => ParentId == RootNodeId;
 
         public KwayTreeNode(int parentId, int id, T data, List<KwayTreeNode<T>>? parent)

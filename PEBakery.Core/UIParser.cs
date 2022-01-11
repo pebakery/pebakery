@@ -672,7 +672,7 @@ namespace PEBakery.Core
                         if (!isFile && !args[2].StartsWith("_", StringComparison.Ordinal))
                             throw new InvalidCommandException("Argument <Filter> can only be used for file selection");
 
-                        if(!args[2].StartsWith("_", StringComparison.Ordinal))
+                        if (!args[2].StartsWith("_", StringComparison.Ordinal))
                             filter = args[2];
 
                         string? sectionName = null;

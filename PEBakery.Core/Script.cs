@@ -165,7 +165,7 @@ namespace PEBakery.Core
                 {
                     return _link.MainInfo;
                 }
-                    
+
                 if (_sections.ContainsKey(ScriptSection.Names.Main))
                 {
                     Dictionary<string, string>? iniDict = _sections[ScriptSection.Names.Main].IniDict;
@@ -782,13 +782,11 @@ namespace PEBakery.Core
                     if (!pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase))
                         filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
                 {
                     LogInfo log = new LogInfo(LogState.Warning, Logger.LogExceptionMessage(e));
                     errorLogs.Add(log);
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
             }
 
             return filteredPaths.ToArray();
@@ -945,14 +943,14 @@ namespace PEBakery.Core
                     {
                         case CodeType.If:
                             {
-                                CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                                CodeInfo_If info = (CodeInfo_If)cmd.Info;
                                 foreach (CodeCommand nextCmd in info.Link)
                                     commandQueue.Enqueue(nextCmd);
                             }
                             break;
                         case CodeType.Else:
                             {
-                                CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                                CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
                                 foreach (CodeCommand nextCmd in info.Link)
                                     commandQueue.Enqueue(nextCmd);
                             }
@@ -961,7 +959,7 @@ namespace PEBakery.Core
                         case CodeType.Exec:
                         case CodeType.RunEx:
                             {
-                                CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+                                CodeInfo_RunExec info = (CodeInfo_RunExec)cmd.Info;
 
                                 if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     !CodeParser.StringContainsVariable(info.SectionName) &&
@@ -974,7 +972,7 @@ namespace PEBakery.Core
                         case CodeType.LoopEx:
                         case CodeType.LoopLetterEx:
                             {
-                                CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+                                CodeInfo_Loop info = (CodeInfo_Loop)cmd.Info;
 
                                 if (info.Break)
                                     continue;
@@ -991,7 +989,7 @@ namespace PEBakery.Core
                             break;
                         case CodeType.IniWrite:
                             {
-                                CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+                                CodeInfo_IniWrite info = (CodeInfo_IniWrite)cmd.Info;
 
                                 // To detect multi-interface without `InterfaceList=`,
                                 // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
@@ -1149,7 +1147,7 @@ namespace PEBakery.Core
         public string TreePath { get; private set; }
         public bool IsDir { get; private set; }
         public bool IsDirLink { get; private set; }
-        
+
         public ScriptParseInfo(string realPath, string treePath, bool isDir, bool isDirLink)
         {
             RealPath = realPath;
@@ -1157,7 +1155,7 @@ namespace PEBakery.Core
             IsDir = isDir;
             IsDirLink = isDirLink;
         }
-        
+
         public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
 
         public bool Equals(ScriptParseInfo? y)

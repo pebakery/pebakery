@@ -1,10 +1,7 @@
 ﻿using Ookii.Dialogs.Wpf.Interop;
 using System;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
-
-#pragma warning disable CA1712 // Do not prefix enum values with type name -> Keep original name of Win32 C enum names
 
 namespace Ookii.Dialogs.Wpf
 {
@@ -63,7 +60,7 @@ namespace Ookii.Dialogs.Wpf
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         public static extern int GetCurrentThreadId();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1400:PInvokeEntryPointsShouldExist"), DllImport("comctl32.dll", PreserveSig = false)]
+        [DllImport("comctl32.dll", PreserveSig = false)]
         public static extern void TaskDialogIndirect([In] ref TASKDIALOGCONFIG pTaskConfig, out int pnButton, out int pnRadioButton, [MarshalAs(UnmanagedType.Bool)] out bool pfVerificationFlagChecked);
 
 
@@ -157,7 +154,7 @@ namespace Ookii.Dialogs.Wpf
             public string pszButtonText;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable"), StructLayout(LayoutKind.Sequential, Pack = 4)]
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct TASKDIALOGCONFIG
         {
             public uint cbSize;
@@ -173,8 +170,8 @@ namespace Ookii.Dialogs.Wpf
             [MarshalAs(UnmanagedType.LPWStr)]
             public string? pszContent;
             public uint cButtons;
+
             //[MarshalAs(UnmanagedType.LPArray)]
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             public IntPtr pButtons;
             public int nDefaultButton;
             public uint cRadioButtons;
@@ -388,9 +385,8 @@ namespace Ookii.Dialogs.Wpf
 
         public static Interop.IShellItem CreateItemFromParsingName(string path)
         {
-            object item;
             Guid guid = new Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"); // IID_IShellItem
-            int hr = NativeMethods.SHCreateItemFromParsingName(path, IntPtr.Zero, ref guid, out item);
+            int hr = SHCreateItemFromParsingName(path, IntPtr.Zero, ref guid, out object item);
             if (hr != 0)
                 throw new System.ComponentModel.Win32Exception(hr);
             return (Interop.IShellItem)item;
@@ -411,11 +407,11 @@ namespace Ookii.Dialogs.Wpf
             FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000
         }
 
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern int LoadString(SafeModuleHandle hInstance, uint uID, StringBuilder lpBuffer, int nBufferMax);
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        public static extern int LoadStringW(SafeModuleHandle hInstance, uint uID, StringBuilder lpBuffer, int nBufferMax);
 
-        [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern uint FormatMessage([MarshalAs(UnmanagedType.U4)] FormatMessageFlags dwFlags, IntPtr lpSource,
+        [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern uint FormatMessageW([MarshalAs(UnmanagedType.U4)] FormatMessageFlags dwFlags, IntPtr lpSource,
            uint dwMessageId, uint dwLanguageId, ref IntPtr lpBuffer,
            uint nSize, string[] Arguments);
 
@@ -488,7 +484,6 @@ namespace Ookii.Dialogs.Wpf
             Enterprise = 3
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
         internal struct CREDUI_INFO
         {
             public int cbSize;
@@ -553,7 +548,6 @@ namespace Ookii.Dialogs.Wpf
         // This type does not own the IntPtr native resource; when CredRead is used, CredFree must be called on the
         // IntPtr that the struct was marshalled from to release all resources including the CredentialBlob IntPtr,
         // When allocating the struct manually for CredWrite you should also manually deallocate the CredentialBlob.
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
         public struct CREDENTIAL
         {
             public int Flags;
@@ -564,8 +558,8 @@ namespace Ookii.Dialogs.Wpf
             public string Comment;
             public long LastWritten;
             public uint CredentialBlobSize;
+
             // Since the resource pointed to must be either released manually or by CredFree, SafeHandle is not appropriate here
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             public IntPtr CredentialBlob;
             [MarshalAs(UnmanagedType.U4)]
             public CredPersist Persist;
@@ -646,5 +640,3 @@ namespace Ookii.Dialogs.Wpf
         #endregion
     }
 }
-
-#pragma warning restore CA1712 // Do not prefix enum values with type name

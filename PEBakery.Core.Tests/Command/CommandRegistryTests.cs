@@ -29,7 +29,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Win32;
 using PEBakery.Helper;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -38,7 +37,6 @@ using System.Text;
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandRegistryTests
     {
         #region Const String
@@ -98,7 +96,7 @@ namespace PEBakery.Core.Tests.Command
                 ReadWriteTemplate(s, CodeType.RegRead, $@"RegRead,HKCU,{subKeyStr},Extra,%Dest%", "08,09",
                     Registry.CurrentUser, 0xffFF100d, subKeyStr, "Extra", new byte[] { 08, 09 });
                 ReadWriteTemplate(s, CodeType.RegRead, $@"RegRead,HKCU,{subKeyStr},Extra,%Dest%", string.Empty,
-                    Registry.CurrentUser, 0xFFff2012, subKeyStr, "Extra", new byte[0]);
+                    Registry.CurrentUser, 0xFFff2012, subKeyStr, "Extra", Array.Empty<byte>());
                 // REG_DWORD
                 ReadWriteTemplate(s, CodeType.RegRead, $@"RegRead,HKCU,{subKeyStr},UInt32,%Dest%", "1234",
                     Registry.CurrentUser, (uint)RegistryValueKind.DWord, subKeyStr, "UInt32", 1234u);
@@ -179,7 +177,6 @@ namespace PEBakery.Core.Tests.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandRegistry")]
-        [SuppressMessage("ReSharper", "StringLiteralTypo")]
         public void RegWriteEx()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -200,7 +197,7 @@ namespace PEBakery.Core.Tests.Command
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0xffFF100d,{subKeyStr},Extra,""08,09"",NOWARN",
                     Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 08, 09 });
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0xFFff2012,{subKeyStr},Extra,,NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[0]);
+                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", Array.Empty<byte>());
 
                 // Error
                 WriteErrorTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x200000,{subKeyStr},Extra,00,01,02", ErrorCheck.ParserError);
@@ -571,13 +568,13 @@ namespace PEBakery.Core.Tests.Command
                 {
                     Assert.IsNotNull(key);
 
-                    key.SetValue("None", new byte[0], RegistryValueKind.None);
+                    key.SetValue("None", Array.Empty<byte>(), RegistryValueKind.None);
                     key.SetValue("Binary", new byte[] { 0x01, 0x02, 0x03 }, RegistryValueKind.Binary);
                     key.SetValue("Integer", 1225, RegistryValueKind.DWord);
                     key.SetValue("String", "English", RegistryValueKind.String);
 
                     // .Net Framework's RegistryKey.SetValue do not allow arbitrary type, so call Win32 API directly.
-                    RegistryHelper.RegSetValue(hKey, subKeyPath, "Strange10", new byte[0], 0x100000);
+                    RegistryHelper.RegSetValue(hKey, subKeyPath, "Strange10", Array.Empty<byte>(), 0x100000);
                     RegistryHelper.RegSetValue(hKey, subKeyPath, "Strange20", new byte[] { 0x01, 0x02, 0x03 }, 0x200000);
 
                     using (RegistryKey subKey = key.CreateSubKey("SubKey", true))

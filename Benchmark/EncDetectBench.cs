@@ -133,7 +133,7 @@ namespace Benchmark
 
             // "utf-16be", "utf-16le", "utf-8", "us-ascii"/"iso-8859-1"/"unknown-8bit" - "text/plain", "text/html"
             _magic.SetFlags(MagicFlags.MimeType);
-            string mimeType = _magic.CheckBuffer(rawData.Slice(0, Math.Min(rawData.Length, sizeLimit)));
+            string mimeType = _magic.CheckBuffer(rawData[..Math.Min(rawData.Length, sizeLimit)]);
 
             if (!mimeType.StartsWith("text/", StringComparison.Ordinal))
                 return TextType.Binary;
@@ -158,10 +158,10 @@ namespace Benchmark
             if (_autoitDetect == null)
                 throw new InvalidOperationException($"{nameof(_autoitDetect)} is null");
 
-            return _autoitDetect.DetectEncoding(rawData.Slice(0, Math.Min(sizeLimit, rawData.Length)));
+            return _autoitDetect.DetectEncoding(rawData[..Math.Min(sizeLimit, rawData.Length)]);
         }
 
-        public DetectionResult DetectUtfUnknown(byte[] rawData, int sizeLimit)
+        public static DetectionResult DetectUtfUnknown(byte[] rawData, int sizeLimit)
         {
             using (MemoryStream ms = new MemoryStream(rawData, 0, Math.Min(sizeLimit, rawData.Length)))
             {

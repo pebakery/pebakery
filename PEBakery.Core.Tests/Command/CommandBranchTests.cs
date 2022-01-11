@@ -46,7 +46,7 @@ namespace PEBakery.Core.Tests.Command
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
 
-            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
@@ -104,7 +104,7 @@ namespace PEBakery.Core.Tests.Command
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
 
-            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 string destStr = s.Variables["Dest"];
@@ -125,7 +125,7 @@ namespace PEBakery.Core.Tests.Command
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
 
-            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 string destStr = s.Variables["Dest"];
@@ -636,7 +636,7 @@ namespace PEBakery.Core.Tests.Command
             {
                 s.Variables["Dest"] = "F";
                 EngineTests.EvalLines(s, new List<string> { "If,ExistSection,Equal,ExistSection,Set,%Dest%,T" }, ErrorCheck.RuntimeError, out CodeCommand[] cmds);
-                CodeInfo_If info = cmds[0].Info.Cast<CodeInfo_If>();
+                CodeInfo_If info = (CodeInfo_If)cmds[0].Info;
                 Assert.AreEqual(BranchConditionType.ExistSection, info.Condition.Type);
             }
         }
@@ -970,14 +970,14 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Utility
-        public void SingleTemplate(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        public static void SingleTemplate(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Dest"] = "F";
             EngineTests.EvalLines(s, new List<string> { rawCode }, check);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ComparisonTemplate(EngineState s, string src, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        public static void ComparisonTemplate(EngineState s, string src, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Src"] = src;
             s.Variables["Dest"] = "F";

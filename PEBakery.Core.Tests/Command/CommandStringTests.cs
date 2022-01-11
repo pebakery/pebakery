@@ -164,8 +164,8 @@ namespace PEBakery.Core.Tests.Command
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
             CodeCommand cmd = parser.ParseStatement(rawCode);
 
-            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
-            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
+            CodeInfo_StrFormat info = (CodeInfo_StrFormat)cmd.Info;
+            StrFormatInfo_Date subInfo = (StrFormatInfo_Date)info.SubInfo;
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyy-MM-dd_HH:mm:ss.fff", StringComparison.Ordinal));
         }
@@ -176,8 +176,8 @@ namespace PEBakery.Core.Tests.Command
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
             CodeCommand cmd = parser.ParseStatement(rawCode);
 
-            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
-            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
+            CodeInfo_StrFormat info = (CodeInfo_StrFormat)cmd.Info;
+            StrFormatInfo_Date subInfo = (StrFormatInfo_Date)info.SubInfo;
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddHHmmssfff", StringComparison.Ordinal));
         }
@@ -212,8 +212,8 @@ namespace PEBakery.Core.Tests.Command
             CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
             CodeCommand cmd = parser.ParseStatement(rawCode);
 
-            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
-            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
+            CodeInfo_StrFormat info = (CodeInfo_StrFormat)cmd.Info;
+            StrFormatInfo_Date subInfo = (StrFormatInfo_Date)info.SubInfo;
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddhhmmssfff tt", StringComparison.Ordinal));
         }

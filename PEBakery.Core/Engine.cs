@@ -30,7 +30,6 @@ using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -317,12 +316,11 @@ namespace PEBakery.Core
         {
             if (_task is null)
                 return Task.CompletedTask;
-            
+
             ForceStop(forceKillSubProc);
             return Task.Run(() => _task.Wait());
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public void KillSubProcess()
         {
             lock (s.KillSubProcLock)
@@ -475,7 +473,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Error:
-                        logs.Add(new LogInfo(LogState.Error, cmd.Info.Cast<CodeInfo_Error>().ErrorMessage));
+                        logs.Add(new LogInfo(LogState.Error, ((CodeInfo_Error)cmd.Info).ErrorMessage));
                         break;
                     case CodeType.Comment:
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
@@ -772,7 +770,7 @@ namespace PEBakery.Core
                     case CodeType.Run:
                     case CodeType.Exec:
                     case CodeType.RunEx:
-                        CommandBranch.RunExec(s, cmd, new CommandBranch.RunExecOptions());
+                        CommandBranch.RunExec(s, cmd, new RunExecOptions());
                         break;
                     case CodeType.Loop:
                     case CodeType.LoopLetter:
@@ -901,14 +899,14 @@ namespace PEBakery.Core
             s.InitLocalStateStack();
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
-                CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
+                CodeInfo_RunExec info = (CodeInfo_RunExec)cbCmd.Info;
 
                 if (1 <= info.InParams.Count)
                     info.InParams[0] = eventParam;
                 else
                     info.InParams.Add(eventParam);
 
-                CommandBranch.RunExec(s, cbCmd, new CommandBranch.RunExecOptions());
+                CommandBranch.RunExec(s, cbCmd, new RunExecOptions());
             }
             else
             {

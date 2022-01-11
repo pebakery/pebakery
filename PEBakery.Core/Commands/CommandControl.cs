@@ -40,7 +40,7 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> Set(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Set info = cmd.Info.Cast<CodeInfo_Set>();
+            CodeInfo_Set info = (CodeInfo_Set)cmd.Info;
 
             Variables.VarKeyType varType = Variables.DetectType(info.VarKey);
             if (varType == Variables.VarKeyType.None)
@@ -115,7 +115,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
         {
             // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
-            CodeInfo_SetMacro info = cmd.Info.Cast<CodeInfo_SetMacro>();
+            CodeInfo_SetMacro info = (CodeInfo_SetMacro)cmd.Info;
 
             string? macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
 
@@ -128,7 +128,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_AddVariables info = cmd.Info.Cast<CodeInfo_AddVariables>();
+            CodeInfo_AddVariables info = (CodeInfo_AddVariables)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -166,7 +166,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Exit info = cmd.Info.Cast<CodeInfo_Exit>();
+            CodeInfo_Exit info = (CodeInfo_Exit)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -181,7 +181,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Halt info = cmd.Info.Cast<CodeInfo_Halt>();
+            CodeInfo_Halt info = (CodeInfo_Halt)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -198,7 +198,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Wait info = cmd.Info.Cast<CodeInfo_Wait>();
+            CodeInfo_Wait info = (CodeInfo_Wait)cmd.Info;
 
             if (!NumberHelper.ParseInt32(info.Second, out int second))
             {
@@ -223,7 +223,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
+            CodeInfo_Beep info = (CodeInfo_Beep)cmd.Info;
 
             switch (info.Type)
             {
@@ -251,7 +251,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(2);
 
-            CodeInfo_GetParam info = cmd.Info.Cast<CodeInfo_GetParam>();
+            CodeInfo_GetParam info = (CodeInfo_GetParam)cmd.Info;
 
             string indexStr = StringEscaper.Preprocess(s, info.Index);
             if (!NumberHelper.ParseInt32(indexStr, out int index))
@@ -280,7 +280,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(4);
 
-            CodeInfo_PackParam info = cmd.Info.Cast<CodeInfo_PackParam>();
+            CodeInfo_PackParam info = (CodeInfo_PackParam)cmd.Info;
 
             string startIndexStr = StringEscaper.Preprocess(s, info.StartIndex);
             if (!NumberHelper.ParseInt32(startIndexStr, out int startIndex))

@@ -44,12 +44,12 @@ namespace PEBakery.WPF
     public partial class LogWindow : Window
     {
         #region Field and Constructor
-        public static int Count = 0;
+        private static int _refCount = 0;
         private readonly LogViewModel _m = new LogViewModel();
 
         public LogWindow(int selectedTabIndex = 0)
         {
-            Interlocked.Increment(ref LogWindow.Count);
+            Acquire();
 
             DataContext = _m;
             InitializeComponent();
@@ -71,6 +71,23 @@ namespace PEBakery.WPF
                 int idx = SystemLogListView.Items.Count - 1;
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[idx]);
             }
+        }
+        #endregion
+
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _refCount);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _refCount);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _refCount;
         }
         #endregion
 
@@ -189,7 +206,7 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine == null)
                 Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
 
-            Interlocked.Decrement(ref LogWindow.Count);
+            Release();
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion

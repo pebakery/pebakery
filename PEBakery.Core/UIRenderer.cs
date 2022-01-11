@@ -270,7 +270,7 @@ namespace PEBakery.Core
                     case UIControlType.RadioButton:
                         {
                             if (ci.Element is RadioButton radioButton && ci.Tag is string sectionName)
-                            ManageRadioButtonEvent(radioButton, false, sectionName);
+                                ManageRadioButtonEvent(radioButton, false, sectionName);
                         }
                         break;
                     case UIControlType.FileBox:
@@ -282,7 +282,7 @@ namespace PEBakery.Core
                     case UIControlType.RadioGroup:
                         {
                             if (ci.Element is RadioButton[] radioButtons && ci.Tag is string sectionName)
-                            ManageRadioGroupEvent(radioButtons, false, sectionName);
+                                ManageRadioGroupEvent(radioButtons, false, sectionName);
                         }
                         break;
                     case UIControlType.PathBox:

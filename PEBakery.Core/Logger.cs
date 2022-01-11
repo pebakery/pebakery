@@ -1207,7 +1207,7 @@ namespace PEBakery.Core
 
         public class ScriptEqualityComparer : IEqualityComparer<Script>
         {
-            public static ScriptEqualityComparer Instance = new ScriptEqualityComparer();
+            public static ScriptEqualityComparer Instance { get; } = new ScriptEqualityComparer();
 
             private ScriptEqualityComparer()
             {

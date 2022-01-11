@@ -46,7 +46,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimMount info = cmd.Info.Cast<CodeInfo_WimMount>();
+            CodeInfo_WimMount info = (CodeInfo_WimMount)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -176,7 +176,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimUnmount info = cmd.Info.Cast<CodeInfo_WimUnmount>();
+            CodeInfo_WimUnmount info = (CodeInfo_WimUnmount)cmd.Info;
 
             string mountDir = StringEscaper.Preprocess(s, info.MountDir);
             string unmountOptionStr = StringEscaper.Preprocess(s, info.UnmountOption);
@@ -207,7 +207,7 @@ namespace PEBakery.Core.Commands
                 // Prepare Command Progress Report
                 WimgApi.RegisterMessageCallback(hWim, WimgApiUnmountCallback);
                 s.MainViewModel.SetBuildCommandProgress("WimUnmount Progress");
-                
+
                 try
                 {
                     // Commit 
@@ -347,7 +347,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimInfo info = cmd.Info.Cast<CodeInfo_WimInfo>();
+            CodeInfo_WimInfo info = (CodeInfo_WimInfo)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -419,7 +419,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimApply info = cmd.Info.Cast<CodeInfo_WimApply>();
+            CodeInfo_WimApply info = (CodeInfo_WimApply)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -566,7 +566,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExtract info = cmd.Info.Cast<CodeInfo_WimExtract>();
+            CodeInfo_WimExtract info = (CodeInfo_WimExtract)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -654,7 +654,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimExtractOp infoOp = cmd.Info.Cast<CodeInfo_WimExtractOp>();
+            CodeInfo_WimExtractOp infoOp = (CodeInfo_WimExtractOp)cmd.Info;
 
             CodeInfo_WimExtract firstInfo = infoOp.Infos[0];
             string srcWim = StringEscaper.Preprocess(s, firstInfo.SrcWim);
@@ -752,7 +752,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExtractBulk info = cmd.Info.Cast<CodeInfo_WimExtractBulk>();
+            CodeInfo_WimExtractBulk info = (CodeInfo_WimExtractBulk)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -915,7 +915,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimCapture info = cmd.Info.Cast<CodeInfo_WimCapture>();
+            CodeInfo_WimCapture info = (CodeInfo_WimCapture)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -1012,7 +1012,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimAppend info = cmd.Info.Cast<CodeInfo_WimAppend>();
+            CodeInfo_WimAppend info = (CodeInfo_WimAppend)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -1166,7 +1166,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimDelete info = cmd.Info.Cast<CodeInfo_WimDelete>();
+            CodeInfo_WimDelete info = (CodeInfo_WimDelete)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1260,7 +1260,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathAdd info = cmd.Info.Cast<CodeInfo_WimPathAdd>();
+            CodeInfo_WimPathAdd info = (CodeInfo_WimPathAdd)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1328,7 +1328,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathDelete info = cmd.Info.Cast<CodeInfo_WimPathDelete>();
+            CodeInfo_WimPathDelete info = (CodeInfo_WimPathDelete)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1389,7 +1389,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathRename info = cmd.Info.Cast<CodeInfo_WimPathRename>();
+            CodeInfo_WimPathRename info = (CodeInfo_WimPathRename)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1450,7 +1450,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimPathOp infoOp = cmd.Info.Cast<CodeInfo_WimPathOp>();
+            CodeInfo_WimPathOp infoOp = (CodeInfo_WimPathOp)cmd.Info;
 
             string wimFile;
             string imageIndexStr;
@@ -1462,7 +1462,7 @@ namespace PEBakery.Core.Commands
             {
                 case CodeType.WimPathAdd:
                     {
-                        CodeInfo_WimPathAdd firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                        CodeInfo_WimPathAdd firstInfo = (CodeInfo_WimPathAdd)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1471,7 +1471,7 @@ namespace PEBakery.Core.Commands
                     }
                 case CodeType.WimPathDelete:
                     {
-                        CodeInfo_WimPathDelete firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                        CodeInfo_WimPathDelete firstInfo = (CodeInfo_WimPathDelete)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1480,7 +1480,7 @@ namespace PEBakery.Core.Commands
                     }
                 case CodeType.WimPathRename:
                     {
-                        CodeInfo_WimPathRename firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathRename>();
+                        CodeInfo_WimPathRename firstInfo = (CodeInfo_WimPathRename)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1515,7 +1515,7 @@ namespace PEBakery.Core.Commands
                 {
                     case CodeType.WimPathAdd:
                         {
-                            CodeInfo_WimPathAdd info = subCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                            CodeInfo_WimPathAdd info = (CodeInfo_WimPathAdd)subCmd.Info;
 
                             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
                             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -1534,7 +1534,7 @@ namespace PEBakery.Core.Commands
                         }
                     case CodeType.WimPathDelete:
                         {
-                            CodeInfo_WimPathDelete info = subCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                            CodeInfo_WimPathDelete info = (CodeInfo_WimPathDelete)subCmd.Info;
 
                             string path = StringEscaper.Preprocess(s, info.Path);
 
@@ -1548,7 +1548,7 @@ namespace PEBakery.Core.Commands
                         }
                     case CodeType.WimPathRename:
                         {
-                            CodeInfo_WimPathRename info = subCmd.Info.Cast<CodeInfo_WimPathRename>();
+                            CodeInfo_WimPathRename info = (CodeInfo_WimPathRename)subCmd.Info;
 
                             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
                             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -1672,7 +1672,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimOptimize info = cmd.Info.Cast<CodeInfo_WimOptimize>();
+            CodeInfo_WimOptimize info = (CodeInfo_WimOptimize)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
 
@@ -1756,7 +1756,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExport info = cmd.Info.Cast<CodeInfo_WimExport>();
+            CodeInfo_WimExport info = (CodeInfo_WimExport)cmd.Info;
 
             string srcWimPath = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);

@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -623,13 +622,13 @@ namespace PEBakery.Core
 
                     if (x == 0)
                     {
-                        b.Append(str.Substring(0, matches[0].Index));
+                        b.Append(str[..matches[0].Index]);
                     }
                     else
                     {
                         int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
                         int endOffset = matches[x].Index - startOffset;
-                        b.Append(str.Substring(startOffset, endOffset));
+                        b.Append(str.AsSpan(startOffset, endOffset));
                     }
 
                     if (_opts.OverridableFixedVariables)
@@ -678,7 +677,7 @@ namespace PEBakery.Core
                     }
 
                     if (x + 1 == matches.Count) // Last iteration
-                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                        b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
                 }
 
                 if (0 < matches.Count) // Copy it only if variable exists
@@ -760,7 +759,7 @@ namespace PEBakery.Core
         {
             if (!(varKey.StartsWith("%", StringComparison.Ordinal) && varKey.EndsWith("%", StringComparison.Ordinal)))
                 return null;
-            varKey = varKey.Substring(1, varKey.Length - 2);
+            varKey = varKey[1..^1];
             if (varKey.Contains('%'))
                 return null;
             return varKey;
@@ -779,7 +778,7 @@ namespace PEBakery.Core
                 return null;
             if (StringHelper.CountSubStr(varName, "%") != 2)
                 return null;
-            string varKey = varName.Substring(1, varName.Length - 2);
+            string varKey = varName[1..^1];
             return StringEscaper.ExpandSectionParams(s, varKey);
         }
 
@@ -810,7 +809,7 @@ namespace PEBakery.Core
             Match match = Regex.Match(secParam, VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
-                if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
+                if (NumberHelper.ParseInt32(secParam[1..], out int paramIdx))
                     return paramIdx;
                 else
                     return 0; // Error
@@ -824,7 +823,7 @@ namespace PEBakery.Core
             Match match = Regex.Match(secParam, VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
-                if (NumberHelper.ParseInt32(secParam.Substring(2), out int paramIdx))
+                if (NumberHelper.ParseInt32(secParam[2..], out int paramIdx))
                     return paramIdx;
                 else
                     return 0; // Error

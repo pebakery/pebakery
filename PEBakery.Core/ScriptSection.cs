@@ -87,7 +87,7 @@ namespace PEBakery.Core
         private Script? _script;
         [IgnoreMember]
         public Script Script
-        { 
+        {
             get
             {
                 if (_script == null)

@@ -28,7 +28,6 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 namespace PEBakery.Core.Commands
@@ -43,12 +42,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Hash info = cmd.Info.Cast<CodeInfo_Hash>();
+            CodeInfo_Hash info = (CodeInfo_Hash)cmd.Info;
 
             string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-            Debug.Assert(hashTypeStr != null, $"{nameof(hashTypeStr)} != null");
-            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             if (!File.Exists(filePath))
                 return LogInfo.LogErrorMessage(logs, $"File [{filePath}] does not exist");

@@ -34,7 +34,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -154,7 +153,7 @@ namespace PEBakery.WPF
                 else
                     Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
 
-                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                 { // Open BuildLogWindow
                     LogDialog = new LogWindow(1);
                     LogDialog.Show();
@@ -184,7 +183,7 @@ namespace PEBakery.WPF
 
         private void ProjectLoading_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false;
         }
 
         private void ProjectRefreshCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
@@ -227,7 +226,7 @@ namespace PEBakery.WPF
 
         private void UtilityWindowCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0 && UtilityWindow.Count == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false && UtilityWindow.IsRunning() == false;
         }
 
         private void UtilityWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
@@ -241,7 +240,7 @@ namespace PEBakery.WPF
 
         private void LogWindowCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0 && LogWindow.Count == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false && LogWindow.IsRunning() == false;
         }
 
         private void LogWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
@@ -394,7 +393,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Clear();
                     Model.DisplayScript(Model.CurMainTree.Script);
 
-                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                     { // Open BuildLogWindow
                         LogDialog = new LogWindow(1);
                         LogDialog.Show();
@@ -449,7 +448,7 @@ namespace PEBakery.WPF
                 return;
 
             Script sc = curMainTree.Script;
-            if (ScriptEditWindow.Count != 0)
+            if (ScriptEditWindow.IsRunning())
                 return;
 
             ScriptEditDialog = new ScriptEditWindow(sc, Model) { Owner = this };
@@ -752,7 +751,6 @@ namespace PEBakery.WPF
             }
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         private async void CreateScriptMetaFilesCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
@@ -841,7 +839,7 @@ namespace PEBakery.WPF
                     Model.DisplayScriptTexts(sc, null);
                     Model.ScriptTitleText = Model.ScriptTitleText;
                     Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
-                    Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
+                    Application.Current?.Dispatcher?.BeginInvoke(() =>
                     {
                         Model.DisplayScriptLogo(sc);
 
@@ -854,7 +852,7 @@ namespace PEBakery.WPF
                         Model.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(Model.BuildTreeItems[0], sc.RealPath);
                         if (Model.CurBuildTree != null)
                             Model.CurBuildTree.Focus = true;
-                    }));
+                    });
 
                     // Do the real job
                     string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
@@ -988,30 +986,30 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine != null)
                 await Engine.WorkingEngine.ForceStopWait(false);
 
-            if (LogDialog != null && 0 < LogWindow.Count)
+            if (LogDialog != null && LogWindow.IsRunning())
             {
                 LogDialog.Close();
                 LogDialog = null;
             }
 
-            if (UtilityDialog != null && 0 < UtilityWindow.Count)
+            if (UtilityDialog != null && UtilityWindow.IsRunning())
             {
                 UtilityDialog.Close();
                 UtilityDialog = null;
             }
 
-            if (ScriptEditDialog != null && 0 < ScriptEditWindow.Count)
+            if (ScriptEditDialog != null && ScriptEditWindow.IsRunning())
             {
                 ScriptEditDialog.Close();
                 ScriptEditDialog = null;
             }
 
             // TODO: No better way?
-            while (Model.ScriptRefreshing != 0)
+            while (Model.IsProjectsLoading())
                 await Task.Delay(500);
-            while (ScriptCache.DbLock != 0)
+            while (ScriptCache.IsRunning())
                 await Task.Delay(500);
-            if (Model.ProjectsLoading != 0)
+            if (Model.IsProjectsLoading())
                 await Task.Delay(500);
 
             Global.Cleanup();

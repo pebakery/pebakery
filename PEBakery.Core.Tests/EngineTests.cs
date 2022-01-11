@@ -173,7 +173,7 @@ namespace PEBakery.Core.Tests
             cmd = parser.ParseStatement(rawCode);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                 Console.WriteLine(info.ErrorMessage);
 
                 Assert.AreEqual(ErrorCheck.ParserError, check);
@@ -197,7 +197,7 @@ namespace PEBakery.Core.Tests
             cmd = parser.ParseStatement(rawCode);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                 Console.WriteLine(info.ErrorMessage);
 
                 Assert.AreEqual(ErrorCheck.ParserError, check);

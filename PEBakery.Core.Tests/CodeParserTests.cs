@@ -69,7 +69,7 @@ namespace PEBakery.Core.Tests
             }
         }
 
-        public void CodeParser_GetNextArgument_1()
+        public static void CodeParser_GetNextArgument_1()
         {
             const string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
             List<(string, string?)> testCases = new List<(string, string?)>
@@ -83,7 +83,7 @@ namespace PEBakery.Core.Tests
             CodeParser_GetNextArgument_Test(code, testCases);
         }
 
-        public void CodeParser_GetNextArgument_2()
+        public static void CodeParser_GetNextArgument_2()
         {
             const string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
             List<(string, string?)> testCases = new List<(string, string?)>
@@ -97,7 +97,7 @@ namespace PEBakery.Core.Tests
             CodeParser_GetNextArgument_Test(code, testCases);
         }
 
-        public void CodeParser_GetNextArgument_3()
+        public static void CodeParser_GetNextArgument_3()
         {
             const string code = @"StrFormat,REPLACE,#2,\,,#8";
             List<(string, string?)> testCases = new List<(string, string?)>
@@ -113,7 +113,7 @@ namespace PEBakery.Core.Tests
             CodeParser_GetNextArgument_Test(code, testCases);
         }
 
-        public void CodeParser_GetNextArgument_4()
+        public static void CodeParser_GetNextArgument_4()
         {
             const string code = @"Set,%Waik2Tools%,";
             List<(string, string?)> testCases = new List<(string, string?)>
@@ -126,7 +126,7 @@ namespace PEBakery.Core.Tests
             CodeParser_GetNextArgument_Test(code, testCases);
         }
 
-        public void CodeParser_GetNextArgument_5()
+        public static void CodeParser_GetNextArgument_5()
         {
             const string code = "Message,\"Hello\"\"World\",Information";
             List<(string, string?)> testCases = new List<(string, string?)>

@@ -124,7 +124,7 @@ namespace PEBakery.Core
         {
             // If baseUrl is not a proper uri, throw an exception
             if (StringHelper.GetUriProtocol(baseUrl) == null)
-                throw new ArgumentException(nameof(baseUrl));
+                throw new ArgumentException(null, nameof(baseUrl));
 
             SelectedChannel = selectedChannel ?? throw new ArgumentNullException(nameof(selectedChannel));
             BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));

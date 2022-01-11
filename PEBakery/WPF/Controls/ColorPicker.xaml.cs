@@ -230,7 +230,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region GuardPointCoordinate
-        public (double x, double y) GuardPointCoordinate(Point p, double widthLimit, double heightLimit)
+        public static (double x, double y) GuardPointCoordinate(Point p, double widthLimit, double heightLimit)
         {
             double x = p.X;
             double y = p.Y;
@@ -348,9 +348,9 @@ namespace PEBakery.WPF.Controls
 
             // Convert R, G, B to [0, 255] range
             double m = v - c;
-            r = r + m;
-            g = g + m;
-            b = b + m;
+            r += m;
+            g += m;
+            b += m;
 
             // Return R, G, B
             return Color.FromRgb((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));

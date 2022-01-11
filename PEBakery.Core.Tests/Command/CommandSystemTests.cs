@@ -84,7 +84,7 @@ namespace PEBakery.Core.Tests.Command
         [TestCategory("CommandSystem")]
         public void OnBuildScriptExit()
         {
-            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            static void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
                 string destStr = s.Variables["Dest"];
@@ -107,7 +107,7 @@ namespace PEBakery.Core.Tests.Command
         [TestCategory("CommandSystem")]
         public void LoadNewScript()
         {
-            void Template(string rawCode, string[] destTreePaths, ErrorCheck check = ErrorCheck.Success)
+            static void Template(string rawCode, string[] destTreePaths, ErrorCheck check = ErrorCheck.Success)
             { // Need new EngineState for every test
                 EngineState s = EngineTests.CreateEngineState();
                 EngineTests.Eval(s, rawCode, CodeType.System, check);

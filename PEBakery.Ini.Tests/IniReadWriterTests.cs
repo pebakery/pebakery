@@ -1612,7 +1612,7 @@ namespace PEBakery.Ini.Tests
                     IniKey[]? keys = IniReadWriter.ReadSection(tempFile, "Section");
                     Assert.IsNotNull(keys);
                     Assert.AreEqual(2, keys.Length);
-                    
+
                     IniKey iniKey = keys[0];
                     Assert.IsTrue(iniKey.Key != null && iniKey.Key.Equals("1", StringComparison.Ordinal));
                     Assert.IsTrue(iniKey.Value != null && iniKey.Value.Equals("A", StringComparison.Ordinal));
@@ -4005,7 +4005,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region Template
-        void WriteTemplate(string srcStr, string expectStr, Func<string, bool> testFunc)
+        static void WriteTemplate(string srcStr, string expectStr, Func<string, bool> testFunc)
         {
             foreach (Encoding srcEnc in Encodings)
             {
@@ -4037,7 +4037,7 @@ namespace PEBakery.Ini.Tests
             }
         }
 
-        void Merge2Template(string srcStr1, string srcStr2, string expectStr, bool compact = false)
+        static void Merge2Template(string srcStr1, string srcStr2, string expectStr, bool compact = false)
         {
             foreach (Encoding srcEnc in Encodings)
             {

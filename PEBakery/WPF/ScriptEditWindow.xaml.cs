@@ -79,7 +79,7 @@ namespace PEBakery.WPF
     public partial class ScriptEditWindow : Window
     {
         #region Field and Property
-        public static int Count = 0;
+        private static int _refCount = 0;
 
         private readonly ScriptEditViewModel m;
         #endregion
@@ -87,7 +87,7 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditWindow(Script sc, MainViewModel mainViewModel)
         {
-            Interlocked.Increment(ref Count);
+            Acquire();
             m = new ScriptEditViewModel(sc, this, mainViewModel);
 
             try
@@ -108,11 +108,28 @@ namespace PEBakery.WPF
             }
             catch (Exception e)
             { // Rollback Count to 0
-                Interlocked.Decrement(ref Count);
+                Interlocked.Decrement(ref _refCount);
 
                 Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
                 MessageBox.Show(this, $"[Error Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        #endregion
+
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _refCount);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _refCount);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _refCount;
         }
         #endregion
 
@@ -180,7 +197,7 @@ namespace PEBakery.WPF
 
             if (m.Renderer != null)
                 m.Renderer.Clear();
-            Interlocked.Decrement(ref Count);
+            Interlocked.Decrement(ref _refCount);
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion

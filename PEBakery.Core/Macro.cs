@@ -28,7 +28,6 @@
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
@@ -195,7 +194,6 @@ namespace PEBakery.Core
             return LoadMacroDict(type, section, dict, append);
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         private List<LogInfo> LoadMacroDict(MacroType type, ScriptSection section, Dictionary<string, string> newDict, bool append)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -319,7 +317,7 @@ namespace PEBakery.Core
                 CodeCommand cmd = parser.ParseStatement(macroCommand);
                 if (cmd.Type == CodeType.Error)
                 {
-                    CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                    CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                     return new LogInfo(LogState.Error, info.ErrorMessage);
                 }
 

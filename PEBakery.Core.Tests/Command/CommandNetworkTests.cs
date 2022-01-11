@@ -128,7 +128,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_Http(EngineState s)
+        public static void WebGet_Http(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -152,7 +152,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_Https(EngineState s)
+        public static void WebGet_Https(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_NonExistDomain(EngineState s)
+        public static void WebGet_NonExistDomain(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -208,7 +208,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_Compat(EngineState s)
+        public static void WebGet_Compat(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.GetTempFile("html");
@@ -232,7 +232,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_TimeOut(EngineState s)
+        public static void WebGet_TimeOut(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -277,7 +277,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_Referer(EngineState s)
+        public static void WebGet_Referer(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -312,7 +312,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_UserAgent(EngineState s)
+        public static void WebGet_UserAgent(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
@@ -337,7 +337,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_HashSuccess(EngineState s)
+        public static void WebGet_HashSuccess(EngineState s)
         {
             Assert.IsNotNull(_sampleSrcFile);
 
@@ -363,7 +363,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_HashError(EngineState s)
+        public static void WebGet_HashError(EngineState s)
         {
             string destFile = FileHelper.ReserveTempFile("html");
             try

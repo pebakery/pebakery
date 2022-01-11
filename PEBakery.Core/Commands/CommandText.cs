@@ -28,22 +28,19 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands
 {
-    [SuppressMessage("ReSharper", "LocalizableElement")]
     public static class CommandText
     {
         public static List<LogInfo> TXTAddLine(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTAddLine info = cmd.Info.Cast<CodeInfo_TXTAddLine>();
+            CodeInfo_TXTAddLine info = (CodeInfo_TXTAddLine)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string line = StringEscaper.Preprocess(s, info.Line);
@@ -119,7 +116,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_TXTAddLineOp infoOp = cmd.Info.Cast<CodeInfo_TXTAddLineOp>();
+            CodeInfo_TXTAddLineOp infoOp = (CodeInfo_TXTAddLineOp)cmd.Info;
 
             CodeInfo_TXTAddLine firstInfo = infoOp.Infos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
@@ -207,7 +204,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTReplace info = cmd.Info.Cast<CodeInfo_TXTReplace>();
+            CodeInfo_TXTReplace info = (CodeInfo_TXTReplace)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string oldStr = StringEscaper.Preprocess(s, info.OldStr);
@@ -257,7 +254,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_TXTReplaceOp infoOp = cmd.Info.Cast<CodeInfo_TXTReplaceOp>();
+            CodeInfo_TXTReplaceOp infoOp = (CodeInfo_TXTReplaceOp)cmd.Info;
 
             CodeInfo_TXTReplace firstInfo = infoOp.Infos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
@@ -272,7 +269,7 @@ namespace PEBakery.Core.Commands
             // foreach (CodeInfo_TXTReplace info in infoOp.Infos)
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_TXTReplace info = subCmd.Info.Cast<CodeInfo_TXTReplace>();
+                CodeInfo_TXTReplace info = (CodeInfo_TXTReplace)subCmd.Info;
 
                 string oldStr = StringEscaper.Preprocess(s, info.OldStr);
                 string newStr = StringEscaper.Preprocess(s, info.NewStr);
@@ -323,7 +320,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTDelLine info = cmd.Info.Cast<CodeInfo_TXTDelLine>();
+            CodeInfo_TXTDelLine info = (CodeInfo_TXTDelLine)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
@@ -364,7 +361,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTDelLineOp infoOp = cmd.Info.Cast<CodeInfo_TXTDelLineOp>();
+            CodeInfo_TXTDelLineOp infoOp = (CodeInfo_TXTDelLineOp)cmd.Info;
 
             CodeInfo_TXTDelLine firstInfo = infoOp.Infos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
@@ -378,7 +375,7 @@ namespace PEBakery.Core.Commands
             List<(CodeCommand, string)> prepDeleteLine = new List<(CodeCommand, string)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_TXTDelLine info = subCmd.Info.Cast<CodeInfo_TXTDelLine>();
+                CodeInfo_TXTDelLine info = (CodeInfo_TXTDelLine)subCmd.Info;
 
                 string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
                 prepDeleteLine.Add((subCmd, deleteLine));
@@ -425,7 +422,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTDelSpaces info = cmd.Info.Cast<CodeInfo_TXTDelSpaces>();
+            CodeInfo_TXTDelSpaces info = (CodeInfo_TXTDelSpaces)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
@@ -466,7 +463,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTDelEmptyLines info = cmd.Info.Cast<CodeInfo_TXTDelEmptyLines>();
+            CodeInfo_TXTDelEmptyLines info = (CodeInfo_TXTDelEmptyLines)cmd.Info;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))

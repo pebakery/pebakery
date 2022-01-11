@@ -69,7 +69,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteTemplate
-        void WriteTemplate(string srcFileName, string expectFileName, Func<string, bool> testFunc)
+        static void WriteTemplate(string srcFileName, string expectFileName, Func<string, bool> testFunc)
         {
             string srcFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, srcFileName);
             string expectFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, expectFileName);

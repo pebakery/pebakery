@@ -125,7 +125,7 @@ namespace PEBakery.Core
     #endregion
 
     #region class ProgramInfoSection
-    public sealed  class ProgramInfoSection : EnvInfoSectionBase
+    public sealed class ProgramInfoSection : EnvInfoSectionBase
     {
         public Version PEBakeryVersion { get; }
         public DateTime PEBakeryBuildDate { get; }

@@ -896,7 +896,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (_progressBarMaximum <= value)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 _progressBarMinimimum = value;
                 UpdateProgressBarRange();
             }
@@ -920,7 +920,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (value <= _progressBarMinimimum)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 _progressBarMaximum = value;
                 UpdateProgressBarRange();
             }
@@ -948,7 +948,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (value < ProgressBarMinimum || value > ProgressBarMaximum)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 _progressBarValue = value;
                 UpdateProgressBarValue();

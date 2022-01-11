@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -144,30 +143,6 @@ namespace PEBakery.Core
     #region CodeInfo
     public class CodeInfo
     {
-        #region Cast
-        /// <summary>
-        /// Type safe casting helper
-        /// </summary>
-        /// <typeparam name="T">Child of CodeInfo</typeparam>
-        /// <returns>CodeInfo casted as T</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Cast<T>() where T : CodeInfo
-        {
-            return (T)this;
-        }
-
-        /// <summary>
-        /// Type safe casting helper
-        /// </summary>
-        /// <typeparam name="T">Child of CodeInfo</typeparam>
-        /// <returns>CodeInfo casted as T</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Cast<T>(CodeInfo info) where T : CodeInfo
-        {
-            return info.Cast<T>();
-        }
-        #endregion
-
         #region Optimize
         public virtual bool OptimizeCompare(CodeInfo info) => false;
         #endregion
@@ -753,8 +728,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_TXTAddLine info = cmpInfo.Cast<CodeInfo_TXTAddLine>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_TXTAddLine info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase) &&
@@ -783,12 +757,13 @@ namespace PEBakery.Core
                 List<CodeInfo_TXTAddLine> infos = new List<CodeInfo_TXTAddLine>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_TXTAddLine info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTAddLine)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_TXTAddLine>());
+
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -815,8 +790,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_TXTReplace info = cmpInfo.Cast<CodeInfo_TXTReplace>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_TXTReplace info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -844,12 +818,12 @@ namespace PEBakery.Core
                 List<CodeInfo_TXTReplace> infos = new List<CodeInfo_TXTReplace>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_TXTReplace info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTReplace)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_TXTReplace>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -874,8 +848,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_TXTDelLine info = cmpInfo.Cast<CodeInfo_TXTDelLine>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_TXTDelLine info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -901,12 +874,12 @@ namespace PEBakery.Core
                 List<CodeInfo_TXTDelLine> infos = new List<CodeInfo_TXTDelLine>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_TXTDelLine info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTDelLine)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_TXTDelLine>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -973,8 +946,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniRead info = cmpInfo.Cast<CodeInfo_IniRead>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniRead info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -1010,12 +982,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniRead> infos = new List<CodeInfo_IniRead>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniRead info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniRead)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniRead>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1044,8 +1016,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniWrite info = cmpInfo.Cast<CodeInfo_IniWrite>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniWrite info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -1075,12 +1046,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniWrite> infos = new List<CodeInfo_IniWrite>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniWrite info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWrite)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniWrite>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1107,8 +1078,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniDelete info = cmpInfo.Cast<CodeInfo_IniDelete>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniDelete info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -1136,12 +1106,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniDelete> infos = new List<CodeInfo_IniDelete>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniDelete info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDelete)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniDelete>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1170,7 +1140,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniReadSection info = cmpInfo.Cast<CodeInfo_IniReadSection>();
+            CodeInfo_IniReadSection info = (CodeInfo_IniReadSection)cmpInfo;
             if (info == null)
                 return false;
 
@@ -1204,12 +1174,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniReadSection> infos = new List<CodeInfo_IniReadSection>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniReadSection info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniReadSection)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniReadSection>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1234,8 +1204,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniAddSection info = cmpInfo.Cast<CodeInfo_IniAddSection>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniAddSection info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -1261,12 +1230,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniAddSection> infos = new List<CodeInfo_IniAddSection>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniAddSection info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniAddSection)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniAddSection>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1291,8 +1260,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniDeleteSection info = cmpInfo.Cast<CodeInfo_IniDeleteSection>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniDeleteSection info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
@@ -1318,12 +1286,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniDeleteSection> infos = new List<CodeInfo_IniDeleteSection>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniDeleteSection info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDeleteSection)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniDeleteSection>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1352,8 +1320,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_IniWriteTextLine info = cmpInfo.Cast<CodeInfo_IniWriteTextLine>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_IniWriteTextLine info)
                 return false;
 
             return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase) &&
@@ -1384,12 +1351,12 @@ namespace PEBakery.Core
                 List<CodeInfo_IniWriteTextLine> infos = new List<CodeInfo_IniWriteTextLine>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_IniWriteTextLine info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWriteTextLine)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_IniWriteTextLine>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1576,23 +1543,22 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         { // Condition : Every argument except DestDir should be identical
-            CodeInfo_WimExtract info = cmpInfo.Cast<CodeInfo_WimExtract>();
-            if (info != null)
+            if (cmpInfo is not CodeInfo_WimExtract info)
+                return false;
+
+            if (SrcWim.Equals(info.SrcWim, StringComparison.OrdinalIgnoreCase) &&
+                ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                DestDir.Equals(info.DestDir, StringComparison.OrdinalIgnoreCase) &&
+                CheckFlag == info.CheckFlag &&
+                NoAclFlag == info.NoAclFlag &&
+                NoAttribFlag == info.NoAttribFlag)
             {
-                if (SrcWim.Equals(info.SrcWim, StringComparison.OrdinalIgnoreCase) &&
-                    ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                    DestDir.Equals(info.DestDir, StringComparison.OrdinalIgnoreCase) &&
-                    CheckFlag == info.CheckFlag &&
-                    NoAclFlag == info.NoAclFlag &&
-                    NoAttribFlag == info.NoAttribFlag)
-                {
-                    if (Split == null && info.Split == null)
-                        return true;
-                    if (Split != null && info.Split != null &&
-                        Split.Equals(info.Split, StringComparison.OrdinalIgnoreCase))
-                        return true;
-                    return false;
-                }
+                if (Split == null && info.Split == null)
+                    return true;
+                if (Split != null && info.Split != null &&
+                    Split.Equals(info.Split, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                return false;
             }
 
             return false;
@@ -1635,12 +1601,12 @@ namespace PEBakery.Core
                 List<CodeInfo_WimExtract> infos = new List<CodeInfo_WimExtract>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_WimExtract info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WimExtract)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_WimExtract>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -1909,38 +1875,26 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
-                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(addInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(addInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == addInfo.CheckFlag &&
+                        RebuildFlag == addInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            else if (cmpInfo is CodeInfo_WimPathRename renameInfo)
             {
-                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(renameInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(renameInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == renameInfo.CheckFlag &&
+                        RebuildFlag == renameInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            else if (cmpInfo is CodeInfo_WimPathDelete delInfo)
             {
-                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(delInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(delInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == delInfo.CheckFlag &&
+                        RebuildFlag == delInfo.RebuildFlag;
             }
 
             return false;
@@ -1991,38 +1945,26 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
-                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(addInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(addInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == addInfo.CheckFlag &&
+                        RebuildFlag == addInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            else if (cmpInfo is CodeInfo_WimPathRename renInfo)
             {
-                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(renInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(renInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == renInfo.CheckFlag &&
+                        RebuildFlag == renInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            else if (cmpInfo is CodeInfo_WimPathDelete delInfo)
             {
-                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(delInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(delInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == delInfo.CheckFlag &&
+                        RebuildFlag == delInfo.RebuildFlag;
             }
 
             return false;
@@ -2069,38 +2011,26 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
-                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(addInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(addInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == addInfo.CheckFlag &&
+                        RebuildFlag == addInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            else if (cmpInfo is CodeInfo_WimPathRename renInfo)
             {
-                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(renInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(renInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == renInfo.CheckFlag &&
+                        RebuildFlag == renInfo.RebuildFlag;
             }
-            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            else if (cmpInfo is CodeInfo_WimPathDelete delInfo)
             {
-                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
-                if (info != null)
-                {
-                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
-                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
-                           CheckFlag == info.CheckFlag &&
-                           RebuildFlag == info.RebuildFlag;
-                }
+                return WimFile.Equals(delInfo.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                        ImageIndex.Equals(delInfo.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                        CheckFlag == delInfo.CheckFlag &&
+                        RebuildFlag == delInfo.RebuildFlag;
             }
 
             return false;
@@ -2578,12 +2508,12 @@ namespace PEBakery.Core
                 List<CodeInfo_Visible> infos = new List<CodeInfo_Visible>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_Visible info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_Visible)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_Visible>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -2635,8 +2565,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_ReadInterface info)
                 return false;
 
             return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -2674,12 +2603,12 @@ namespace PEBakery.Core
                 List<CodeInfo_ReadInterface> infos = new List<CodeInfo_ReadInterface>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_ReadInterface info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_ReadInterface)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_ReadInterface>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -2713,8 +2642,7 @@ namespace PEBakery.Core
 
         public override bool OptimizeCompare(CodeInfo cmpInfo)
         {
-            CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
-            if (info == null)
+            if (cmpInfo is not CodeInfo_WriteInterface info)
                 return false;
 
             return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -2752,12 +2680,12 @@ namespace PEBakery.Core
                 List<CodeInfo_WriteInterface> infos = new List<CodeInfo_WriteInterface>();
                 foreach (CodeCommand cmd in Cmds)
                 {
-                    if (cmd.Info is not CodeInfo info)
+                    if (cmd.Info is not CodeInfo_WriteInterface info)
                     {
                         Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WriteInterface)}");
                         continue;
                     }
-                    infos.Add(info.Cast<CodeInfo_WriteInterface>());
+                    infos.Add(info);
                 }
                 return infos;
             }
@@ -3446,6 +3374,29 @@ namespace PEBakery.Core
             b.Append(SubInfo);
             return b.ToString();
         }
+
+        #region Deprecate
+        public override bool IsInfoDeprecated
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case StrFormatType.ShortPath:
+                    case StrFormatType.LongPath:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+        public override string DeprecateMessage()
+        {
+            if (IsInfoDeprecated == false)
+                return string.Empty;
+            return $"Command [StrFormat,{Type}] is deprecated.";
+        }
+        #endregion
     }
     #endregion
 
@@ -3834,7 +3785,7 @@ namespace PEBakery.Core
         public string DestVar { get; private set; }
         public string? Delim { get; private set; }
 
-        public ListInfo_Get(string listVar, string index, string destVar, string? delim) 
+        public ListInfo_Get(string listVar, string index, string destVar, string? delim)
             : base(listVar)
         {
             Index = index;
@@ -4688,6 +4639,30 @@ namespace PEBakery.Core
         {
             return $"{Type},{SubInfo}";
         }
+
+        #region Deprecate
+        public override bool IsInfoDeprecated
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case SystemType.HasUAC:
+                    case SystemType.FileRedirect:
+                    case SystemType.RegRedirect:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+        public override string DeprecateMessage()
+        {
+            if (IsInfoDeprecated == false)
+                return string.Empty;
+            return $"Command [System,{Type}] is deprecated.";
+        }
+        #endregion
     }
 
     #region SystemType, SystemInfo

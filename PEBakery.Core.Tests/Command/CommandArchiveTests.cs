@@ -281,8 +281,8 @@ namespace PEBakery.Core.Tests.Command
             void DirTemplate(string archiveFile)
             {
                 Debug.Assert(archiveFile != null);
-                string archiveType = Path.GetExtension(archiveFile).Substring(1);
-                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
+                string archiveType = Path.GetExtension(archiveFile)[1..];
+                string archiveName = archiveFile[..^(archiveType.Length + 1)];
 
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -496,7 +496,7 @@ namespace PEBakery.Core.Tests.Command
             CopyOrExpand_3(s);
         }
 
-        public void CopyOrExpand_1(EngineState s)
+        public static void CopyOrExpand_1(EngineState s)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
@@ -526,7 +526,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void CopyOrExpand_2(EngineState s)
+        public static void CopyOrExpand_2(EngineState s)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
@@ -556,7 +556,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void CopyOrExpand_3(EngineState s)
+        public static void CopyOrExpand_3(EngineState s)
         {
             string destDir = FileHelper.GetTempDir();
             try

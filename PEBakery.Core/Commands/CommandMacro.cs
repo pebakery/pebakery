@@ -33,7 +33,7 @@ namespace PEBakery.Core.Commands
     {
         public static void Macro(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
+            CodeInfo_Macro info = (CodeInfo_Macro)cmd.Info;
 
             CodeCommand macroCmd;
             if (s.Macro.GlobalDict.ContainsKey(info.MacroType))
@@ -58,7 +58,7 @@ namespace PEBakery.Core.Commands
 
             if (macroCmd.Type == CodeType.Run || macroCmd.Type == CodeType.RunEx || macroCmd.Type == CodeType.Exec)
             {
-                CommandBranch.RunExec(s, macroCmd, new CommandBranch.RunExecOptions
+                CommandBranch.RunExec(s, macroCmd, new RunExecOptions
                 {
                     PreserveCurrentParams = true,
                     IsMacro = true,

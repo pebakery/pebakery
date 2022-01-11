@@ -262,7 +262,6 @@ namespace Ookii.Dialogs.Wpf
         /// <value>
         /// An array of type <see cref="String"/>, containing the file names of all selected files in the dialog box.
         /// </value>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")] // suppressed because it matches FileDialog
         [Description("The file names of all selected files in the dialog box."), Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string[]? FileNames
         {
@@ -592,7 +591,7 @@ namespace Ookii.Dialogs.Wpf
                             throw e;
                         return false;
                     }
-                        
+
                 }
                 return true;
             }

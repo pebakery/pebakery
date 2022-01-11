@@ -33,7 +33,6 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -55,7 +54,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void AttachFile()
         {
-            void Template(string fileName, EncodeMode encodeMode)
+            static void Template(string fileName, EncodeMode encodeMode)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
@@ -129,7 +128,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsFile()
         {
-            void Template(string scriptPath, string folderName, string fileName, bool result)
+            static void Template(string scriptPath, string folderName, string fileName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", scriptPath);
@@ -152,7 +151,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsLogo()
         {
-            void Template(string fileName, bool result)
+            static void Template(string fileName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -171,10 +170,9 @@ namespace PEBakery.Core.Tests
 
         #region AddFolder
         [TestMethod]
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public void AddFolder()
         {
-            void Template(string folderName, bool overwrite, bool result)
+            static void Template(string folderName, bool overwrite, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
@@ -243,7 +241,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsFolder()
         {
-            void Template(string folderName, bool result)
+            static void Template(string folderName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
@@ -283,7 +281,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ExtractFile()
         {
-            void Template(string fileName)
+            static void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
                 string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
@@ -321,7 +319,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ExtractFileInMem()
         {
-            void Template(string fileName)
+            static void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
                 string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");

@@ -70,7 +70,7 @@ namespace PEBakery.Core
                         {
                             if (cmd.Info is null)
                                 throw new InvalidCodeCommandException("cmd.Info is null", cmd);
-                            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                            CodeInfo_If info = (CodeInfo_If)cmd.Info;
                             info.Link = Optimize(info.Link);
                         }
                         break;
@@ -78,7 +78,7 @@ namespace PEBakery.Core
                         {
                             if (cmd.Info is null)
                                 throw new InvalidCodeCommandException("cmd.Info is null", cmd);
-                            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                            CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
                             info.Link = Optimize(info.Link);
                         }
                         break;
@@ -137,12 +137,12 @@ namespace PEBakery.Core
                         #endregion
                         #region TXTAddLine
                         case CodeType.TXTAddLine:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_TXTAddLine), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_TXTAddLine, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTAddLine:
                                     {
-                                        CodeInfo_TXTAddLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTAddLine>();
+                                        CodeInfo_TXTAddLine firstInfo = (CodeInfo_TXTAddLine)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -161,12 +161,12 @@ namespace PEBakery.Core
                         #endregion
                         #region TXTReplace
                         case CodeType.TXTReplace:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_TXTReplace));
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_TXTReplace);
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTReplace:
                                     {
-                                        CodeInfo_TXTReplace firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTReplace>();
+                                        CodeInfo_TXTReplace firstInfo = (CodeInfo_TXTReplace)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -185,12 +185,12 @@ namespace PEBakery.Core
                         #endregion
                         #region TXTDelLine
                         case CodeType.TXTDelLine:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_TXTDelLine), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_TXTDelLine, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTDelLine:
                                     {
-                                        CodeInfo_TXTDelLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTDelLine>();
+                                        CodeInfo_TXTDelLine firstInfo = (CodeInfo_TXTDelLine)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -209,12 +209,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniRead
                         case CodeType.IniRead:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniRead), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniRead, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniRead:
                                     {
-                                        CodeInfo_IniRead firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniRead>();
+                                        CodeInfo_IniRead firstInfo = (CodeInfo_IniRead)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -233,12 +233,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniWrite
                         case CodeType.IniWrite:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniWrite), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniWrite, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniWrite:
                                     {
-                                        CodeInfo_IniWrite firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWrite>();
+                                        CodeInfo_IniWrite firstInfo = (CodeInfo_IniWrite)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -257,12 +257,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IinDelete
                         case CodeType.IniDelete:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniDelete), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniDelete, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniDelete:
                                     {
-                                        CodeInfo_IniDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDelete>();
+                                        CodeInfo_IniDelete firstInfo = (CodeInfo_IniDelete)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -281,12 +281,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniReadSection
                         case CodeType.IniReadSection:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniReadSection));
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniReadSection);
                             switch (cmd.Type)
                             {
                                 case CodeType.IniReadSection:
                                     {
-                                        CodeInfo_IniReadSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniReadSection>();
+                                        CodeInfo_IniReadSection firstInfo = (CodeInfo_IniReadSection)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -305,12 +305,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniAddSection
                         case CodeType.IniAddSection:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniAddSection), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniAddSection, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniAddSection:
                                     {
-                                        CodeInfo_IniAddSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniAddSection>();
+                                        CodeInfo_IniAddSection firstInfo = (CodeInfo_IniAddSection)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -329,12 +329,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniDeleteSection
                         case CodeType.IniDeleteSection:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniDeleteSection), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniDeleteSection, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniDeleteSection:
                                     {
-                                        CodeInfo_IniDeleteSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDeleteSection>();
+                                        CodeInfo_IniDeleteSection firstInfo = (CodeInfo_IniDeleteSection)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -353,12 +353,12 @@ namespace PEBakery.Core
                         #endregion
                         #region IniWriteTextLine
                         case CodeType.IniWriteTextLine:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniWriteTextLine), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_IniWriteTextLine, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.IniWriteTextLine:
                                     {
-                                        CodeInfo_IniWriteTextLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWriteTextLine>();
+                                        CodeInfo_IniWriteTextLine firstInfo = (CodeInfo_IniWriteTextLine)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -394,12 +394,12 @@ namespace PEBakery.Core
                         #endregion
                         #region ReadInterface
                         case CodeType.ReadInterface:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_ReadInterface), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_ReadInterface, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.ReadInterface:
                                     {
-                                        CodeInfo_ReadInterface firstInfo = opDict[s][0].Info.Cast<CodeInfo_ReadInterface>();
+                                        CodeInfo_ReadInterface firstInfo = (CodeInfo_ReadInterface)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -418,12 +418,12 @@ namespace PEBakery.Core
                         #endregion
                         #region WriteInterface
                         case CodeType.WriteInterface:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_WriteInterface), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_WriteInterface, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.WriteInterface:
                                     {
-                                        CodeInfo_WriteInterface firstInfo = opDict[s][0].Info.Cast<CodeInfo_WriteInterface>();
+                                        CodeInfo_WriteInterface firstInfo = (CodeInfo_WriteInterface)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -442,12 +442,12 @@ namespace PEBakery.Core
                         #endregion
                         #region WimExtract
                         case CodeType.WimExtract:
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_WimExtract), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_WimExtract, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.WimExtract:
                                     {
-                                        CodeInfo_WimExtract firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimExtract>();
+                                        CodeInfo_WimExtract firstInfo = (CodeInfo_WimExtract)opDict[s][0].Info;
                                         if (firstInfo.OptimizeCompare(cmd.Info))
                                             opDict[s].Add(cmd);
                                         else
@@ -466,9 +466,9 @@ namespace PEBakery.Core
                         #endregion
                         #region WimPath Series
                         case CodeType.WimPathAdd: // Use WimPathAdd as a representative of WimPath{Add, Delete, Rename}
-                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_WimPathAdd) ||
-                                         opDict[s][0].Info.GetType() == typeof(CodeInfo_WimPathDelete) ||
-                                         opDict[s][0].Info.GetType() == typeof(CodeInfo_WimPathRename), "Invalid CodeInfo");
+                            Debug.Assert(opDict[s][0].Info is CodeInfo_WimPathAdd ||
+                                         opDict[s][0].Info is CodeInfo_WimPathDelete ||
+                                         opDict[s][0].Info is CodeInfo_WimPathRename, "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
                                 case CodeType.WimPathAdd:
@@ -478,7 +478,7 @@ namespace PEBakery.Core
                                         CodeCommand firstCmd = opDict[s][0];
                                         if (firstCmd.Type == CodeType.WimPathAdd)
                                         {
-                                            CodeInfo_WimPathAdd firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathAdd>();
+                                            CodeInfo_WimPathAdd firstInfo = (CodeInfo_WimPathAdd)opDict[s][0].Info;
                                             if (firstInfo.OptimizeCompare(cmd.Info))
                                                 opDict[s].Add(cmd);
                                             else
@@ -486,7 +486,7 @@ namespace PEBakery.Core
                                         }
                                         else if (firstCmd.Type == CodeType.WimPathDelete)
                                         {
-                                            CodeInfo_WimPathDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathDelete>();
+                                            CodeInfo_WimPathDelete firstInfo = (CodeInfo_WimPathDelete)opDict[s][0].Info;
                                             if (firstInfo.OptimizeCompare(cmd.Info))
                                                 opDict[s].Add(cmd);
                                             else
@@ -494,7 +494,7 @@ namespace PEBakery.Core
                                         }
                                         else if (firstCmd.Type == CodeType.WimPathRename)
                                         {
-                                            CodeInfo_WimPathRename firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathRename>();
+                                            CodeInfo_WimPathRename firstInfo = (CodeInfo_WimPathRename)opDict[s][0].Info;
                                             if (firstInfo.OptimizeCompare(cmd.Info))
                                                 opDict[s].Add(cmd);
                                             else

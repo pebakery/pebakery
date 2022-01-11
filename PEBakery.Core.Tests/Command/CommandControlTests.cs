@@ -377,7 +377,7 @@ namespace PEBakery.Core.Tests.Command
                 CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
                 CodeCommand cmd = parser.ParseStatement(rawCode);
 
-                CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
+                CodeInfo_Beep info = (CodeInfo_Beep)cmd.Info;
                 Assert.AreEqual(beepType, info.Type);
             }
 

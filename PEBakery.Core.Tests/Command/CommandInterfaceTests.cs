@@ -422,7 +422,7 @@ namespace PEBakery.Core.Tests.Command
                 File.Copy(srcFile, scriptFile, true);
                 try
                 {
-                    CodeType? opType = optSuccess ? (CodeType?)CodeType.WriteInterfaceOp : null;
+                    CodeType? opType = optSuccess ? CodeType.WriteInterfaceOp : null;
                     EngineTests.EvalOptLines(s, opType, rawCodes, check);
                     if (check == ErrorCheck.Success)
                     {

@@ -41,7 +41,7 @@ namespace PEBakery.Core.Commands
         { // WebGet,<URL>,<DestPath>[<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,UserAgent=<Agent>][,NOERR]
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WebGet info = cmd.Info.Cast<CodeInfo_WebGet>();
+            CodeInfo_WebGet info = (CodeInfo_WebGet)cmd.Info;
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);

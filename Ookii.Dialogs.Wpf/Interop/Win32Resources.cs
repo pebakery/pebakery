@@ -8,7 +8,7 @@ namespace Ookii.Dialogs.Wpf.Interop
 {
     class Win32Resources : IDisposable
     {
-        private SafeModuleHandle _moduleHandle;
+        private readonly SafeModuleHandle _moduleHandle;
         private const int _bufferSize = 500;
 
         public Win32Resources(string module)
@@ -23,7 +23,7 @@ namespace Ookii.Dialogs.Wpf.Interop
             CheckDisposed();
 
             StringBuilder buffer = new StringBuilder(_bufferSize);
-            if (NativeMethods.LoadString(_moduleHandle, id, buffer, buffer.Capacity + 1) == 0)
+            if (NativeMethods.LoadStringW(_moduleHandle, id, buffer, buffer.Capacity + 1) == 0)
                 throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
             return buffer.ToString();
         }
@@ -41,7 +41,7 @@ namespace Ookii.Dialogs.Wpf.Interop
             IntPtr sourcePtr = System.Runtime.InteropServices.Marshal.StringToHGlobalAuto(source);
             try
             {
-                if (NativeMethods.FormatMessage(flags, sourcePtr, id, 0, ref buffer, 0, args) == 0)
+                if (NativeMethods.FormatMessageW(flags, sourcePtr, id, 0, ref buffer, 0, args) == 0)
                     throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
             }
             finally

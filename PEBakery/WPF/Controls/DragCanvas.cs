@@ -298,7 +298,7 @@ namespace PEBakery.WPF.Controls
                     {
                         Debug.Assert(Selected != null, "SelectedElement is null");
                         (Point newElementPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
-                       
+
                         // If delta is too small, do not update Canvas and fire an event to prevent unintended 1px shift.
                         if (IsDeltaRelevant(delta))
                         {
@@ -1409,7 +1409,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// (Single select) Selected an UIControl
         /// </summary>
-        public UIControl UIControl => UIControls[0]; 
+        public UIControl UIControl => UIControls[0];
         /// <summary>
         /// (Multi select) Selected multiple UIControls
         /// </summary>

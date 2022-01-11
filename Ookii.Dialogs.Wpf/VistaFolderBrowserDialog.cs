@@ -173,7 +173,7 @@ namespace Ookii.Dialogs.Wpf
                             throw e;
                         return false;
                     }
-                        
+
                 }
                 GetResult(dialog);
                 return true;
@@ -271,8 +271,7 @@ namespace Ookii.Dialogs.Wpf
 
         private void GetResult(Ookii.Dialogs.Wpf.Interop.IFileDialog dialog)
         {
-            Ookii.Dialogs.Wpf.Interop.IShellItem item;
-            dialog.GetResult(out item);
+            dialog.GetResult(out Ookii.Dialogs.Wpf.Interop.IShellItem item);
             item.GetDisplayName(NativeMethods.SIGDN.SIGDN_FILESYSPATH, out _selectedPath);
         }
 

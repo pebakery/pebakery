@@ -575,7 +575,7 @@ namespace PEBakery.Ini
             // null check
             if (inputKeys.Any(x => x.Key == null || x.Value == null))
                 return false;
-            
+
             #region FinalizeFile
             void FinalizeFile(StreamWriter w, ReadOnlySpan<char> lastLine, bool firstEmptyLine)
             {
