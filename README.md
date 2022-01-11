@@ -36,7 +36,7 @@ A nightly build is provided for testing purposes.
       - Sizes about 40MB
       - Supports both x64, x86, ARM64 architecture
 
-**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
+**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from WinBuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
 ## Prerequisites
 
@@ -51,7 +51,7 @@ If you are using Windows 10 v1803 or later, no action is necessary. If not, plea
 Starting from beta 7, PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
-- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARm64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARM64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 
@@ -79,7 +79,7 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 - [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) to build and test `PEBakery.exe`.
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
-    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
+    - Requires [Microsoft C++ Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
 If you are a contributor, we recommend using a full-featured Visual Studio Community for the best development experience.
 

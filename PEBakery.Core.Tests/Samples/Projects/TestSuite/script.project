@@ -6,6 +6,9 @@ Version=001
 Level=0
 Selected=True
 Mandatory=False
+SourceDir=
+TargetDir=
+ISOFile=
 
 [Variables]
 %ProjectName%=TestSuite

@@ -604,7 +604,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Interface
-        private FontHelper.FontInfo _interfaceMonospacedFont;
+        private FontHelper.FontInfo _interfaceMonospacedFont = FontHelper.DefaultMonospacedFontInfo();
         public FontHelper.FontInfo InterfaceMonospacedFont
         {
             get => _interfaceMonospacedFont;

@@ -24,9 +24,11 @@
 */
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Markup;
 using System.Windows.Media;
 
 // ReSharper disable InconsistentNaming
@@ -106,8 +108,8 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region struct FontInfo, ChooseFontDialog
-        public struct FontInfo
+        #region class FontInfo
+        public class FontInfo
         {
             public FontFamily FontFamily;
             public FontWeight FontWeight;
@@ -117,9 +119,6 @@ namespace PEBakery.Helper
             /// For LOGFONT struct
             /// </summary>
             public int Win32Size => -(int)Math.Round(PointSize * 96 / 72f);
-
-            // Every Windows PC has Consolas pre-installed.
-            public static FontInfo DefaultMonospaced => new FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
 
             public FontInfo(FontFamily fontFamily, FontWeight fontWeight, int fontSize)
             {
@@ -133,7 +132,9 @@ namespace PEBakery.Helper
                 return $"{FontFamily.Source}, {PointSize}pt";
             }
         }
+        #endregion
 
+        #region ChooseFontDialog
         public static FontInfo ChooseFontDialog(FontInfo font, Window window, bool useStyle = false, bool monospaced = false)
         {
             NativeMethods.LOGFONT logFont = new NativeMethods.LOGFONT
@@ -210,6 +211,88 @@ namespace PEBakery.Helper
                 return FontWeights.Regular;
 
             return wpfWeight;
+        }
+        #endregion
+
+        #region IsFontInstalled
+        /// <summary>
+        /// Is the given font is installed on system?
+        /// Fontname is searched as Culture-neutral (English).
+        /// </summary>
+        /// <param name="fontName">Culture-neutral (English) fontname</param>
+        public static bool IsFontInstalled(string fontName)
+        {
+            foreach (FontFamily f in Fonts.SystemFontFamilies)
+            {
+                // FontFamily.Source: English font name
+                if (f.Source.Equals(fontName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Is the given font is installed on system?
+        /// Fontname is searched as given culture language.
+        /// </summary>
+        /// <param name="fontName">Culture-specific fontname</param>
+        /// <param name="culture">Fontname in specific language</param>
+        public static bool IsFontInstalled(string fontName, CultureInfo culture)
+        {
+            // Korean font "맑은 고딕" is represented as
+            // en-US: Malgun Gothic
+            // ko-KR: 맑은 고딕
+            XmlLanguage lang = XmlLanguage.GetLanguage(culture.IetfLanguageTag);
+
+            foreach (FontFamily f in Fonts.SystemFontFamilies)
+            {
+                LanguageSpecificStringDictionary dict = f.FamilyNames;
+                if (dict.ContainsKey(lang))
+                {
+                    string cultureFontName = dict[lang];
+                    if (cultureFontName.Equals(fontName, StringComparison.InvariantCultureIgnoreCase))
+                        return true;
+                }
+            }
+            return false;
+        }
+        #endregion
+
+        #region DefaultMonospaceFont
+        public static string DefaultMonospacedFontName()
+        {
+            // The monospace font is bundled with Windows Terminal. Glyph width is the modest.
+            // https://docs.microsoft.com/en-us/windows/terminal/cascadia-code
+            // https://github.com/microsoft/cascadia-code
+            const string cascadiaMono = "Cascadia Mono";
+            // The monospace font supports both English and Korean, and glyphs are the slimmest.
+            const string d2coding = "d2coding";
+            // The monospace font that is pre-installed even on Windows 7. Glyph width is the thickest.
+            const string consolas = "Consolas";
+
+            if (IsFontInstalled(cascadiaMono))
+                return cascadiaMono;
+            if (IsFontInstalled(d2coding))
+                return d2coding;
+            return consolas;
+        }
+
+        public static FontInfo DefaultMonospacedFontInfo()
+        {
+            // The monospace font is bundled with Windows Terminal. Glyph width is the modest.
+            // https://docs.microsoft.com/en-us/windows/terminal/cascadia-code
+            // https://github.com/microsoft/cascadia-code
+            const string cascadiaMono = "Cascadia Mono";
+            // The monospace font supports both English and Korean, and glyphs are the slimmest.
+            const string d2coding = "d2coding";
+            // The monospace font that is pre-installed even on Windows 7. Glyph width is the thickest.
+            const string consolas = "Consolas";
+
+            if (IsFontInstalled(cascadiaMono))
+                return new FontInfo(new FontFamily(cascadiaMono), FontWeights.Regular, 11);
+            if (IsFontInstalled(d2coding))
+                return new FontInfo(new FontFamily(d2coding), FontWeights.Regular, 12);
+            return new FontInfo(new FontFamily(consolas), FontWeights.Regular, 11);
         }
         #endregion
     }

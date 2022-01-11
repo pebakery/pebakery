@@ -108,7 +108,7 @@ namespace PEBakery.Core
             public string CustomTitle { get; set; } = string.Empty;
             public bool UseCustomEditor { get; set; }
             public string CustomEditorPath { get; set; } = string.Empty;
-            public FontHelper.FontInfo MonospacedFont { get; set; }
+            public FontHelper.FontInfo MonospacedFont { get; set; } = FontHelper.DefaultMonospacedFontInfo();
             public int ScaleFactor { get; set; }
             public bool DisplayShellExecuteConOut { get; set; }
             public InterfaceSize InterfaceSize { get; set; }
@@ -129,8 +129,7 @@ namespace PEBakery.Core
                 // Every Windows PC has notepad pre-installed.
                 UseCustomEditor = false;
                 CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
-                // Every Windows PC has Consolas pre-installed.
-                MonospacedFont = FontHelper.FontInfo.DefaultMonospaced;
+                MonospacedFont = FontHelper.DefaultMonospacedFontInfo();
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
                 InterfaceSize = InterfaceSize.Adaptive;
@@ -706,7 +705,12 @@ namespace PEBakery.Core
                 FontFamily monoFontFamily = Interface.MonospacedFont.FontFamily;
                 FontWeight monoFontWeight = Interface.MonospacedFont.FontWeight;
                 if (ifaceDict[nameof(Interface.MonospacedFontFamily)] is string monoFontFamilyStr)
+                {
+                    // If `monoFontFamilyStr` font does not exist on this system, fallback to system default monospaced font.
+                    if (FontHelper.IsFontInstalled(monoFontFamilyStr) == false)
+                        monoFontFamilyStr = FontHelper.DefaultMonospacedFontName();
                     monoFontFamily = new FontFamily(monoFontFamilyStr);
+                }
                 if (ifaceDict[nameof(Interface.MonospacedFontWeight)] is string monoFontWeightStr)
                     monoFontWeight = FontHelper.ParseFontWeight(monoFontWeightStr);
                 int monoFontSize = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, null);

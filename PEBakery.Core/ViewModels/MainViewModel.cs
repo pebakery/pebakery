@@ -710,7 +710,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildConOutRedirectVisibility, value);
         }
 
-        private FontHelper.FontInfo _monospacedFont = FontHelper.FontInfo.DefaultMonospaced;
+        private FontHelper.FontInfo _monospacedFont = FontHelper.DefaultMonospacedFontInfo();
         public FontHelper.FontInfo MonospacedFont
         {
             get => _monospacedFont;
