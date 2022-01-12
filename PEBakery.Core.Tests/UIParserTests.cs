@@ -27,10 +27,6 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
 {
@@ -38,11 +34,15 @@ namespace PEBakery.Core.Tests
     public class UIParserTests
     {
         #region ParseTemplate
-        private static UIControl? ParseTemplate(string rawLine)
+        private static (UIControl, TUIInfo) ParseTemplate<TUIInfo>(string rawLine) where TUIInfo : UIInfo
         {
             int idx = 0;
             ScriptSection section = EngineTests.DummySection();
-            return UIParser.ParseUIControl(new string[1] { rawLine }, section, ref idx);
+            UIControl? uiCtrl = UIParser.ParseUIControl(new string[1] { rawLine }, section, ref idx);
+            Assert.IsNotNull(uiCtrl);
+            Assert.IsTrue(uiCtrl.Info is TUIInfo);
+            TUIInfo info = (TUIInfo)uiCtrl.Info;
+            return (uiCtrl, info);
         }
         #endregion
 
@@ -52,7 +52,9 @@ namespace PEBakery.Core.Tests
             UIControl? uiCtrl = null;
             try
             {
-                uiCtrl = ParseTemplate(rawLine);
+                int idx = 0;
+                ScriptSection section = EngineTests.DummySection();
+                uiCtrl = UIParser.ParseUIControl(new string[1] { rawLine }, section, ref idx);
             }
             catch
             {
@@ -63,116 +65,161 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
+        #region ParseFileBox
+        [TestMethod]
+        [TestCategory(nameof(UIParser))]
+        public void ParseFileBox()
+        {
+            UIControl uiCtrl;
+            UIInfo_FileBox info;
+
+            // File select dialog, with Title/Filter/RunOptional
+            (uiCtrl, info) = ParseTemplate<UIInfo_FileBox>(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,file,""Title=Select Files"",""Filter=Executable Files|*.exe""");
+            // Check UIControl
+            Assert.AreEqual(UIControlType.FileBox, uiCtrl.Type);
+            Assert.IsTrue(uiCtrl.Text.Equals(@"C:\Windows\notepad.exe", StringComparison.Ordinal));
+            Assert.IsTrue(uiCtrl.Visibility);
+            Assert.AreEqual(240, uiCtrl.X);
+            Assert.AreEqual(290, uiCtrl.Y);
+            Assert.AreEqual(200, uiCtrl.Width);
+            Assert.AreEqual(20, uiCtrl.Height);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
+            Assert.IsNotNull(info.Filter);
+            Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
+            Assert.IsNull(info.ToolTip);
+
+            // File select dialog, with RunOptional
+            (uiCtrl, info) = ParseTemplate<UIInfo_FileBox>(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,FILE,__IrisService");
+            Assert.AreEqual(UIControlType.FileBox, uiCtrl.Type);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNull(info.Title);
+            Assert.IsNull(info.Filter);
+            Assert.IsNotNull(info.ToolTip);
+            Assert.IsTrue(info.ToolTip.Equals("IrisService", StringComparison.Ordinal));
+
+            // File select dialog, with random arg order
+            (uiCtrl, info) = ParseTemplate<UIInfo_FileBox>(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,file,__TOOLTIP,""Title=Select Files"",""Filter=Executable Files|*.exe""");
+            Assert.AreEqual(UIControlType.FileBox, uiCtrl.Type);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
+            Assert.IsNotNull(info.Filter);
+            Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
+            Assert.IsNotNull(info.ToolTip);
+            Assert.IsTrue(info.ToolTip.Equals("TOOLTIP", StringComparison.Ordinal));
+
+            // Directory select dialog, with Title
+            (uiCtrl, info) = ParseTemplate<UIInfo_FileBox>(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,dir,""Title=Windows 11""");
+            Assert.AreEqual(UIControlType.FileBox, uiCtrl.Type);
+            Assert.IsFalse(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Windows 11", StringComparison.Ordinal));
+            Assert.IsNull(info.Filter);
+
+            // File select dialog, with implicit IsFile
+            (uiCtrl, info) = ParseTemplate<UIInfo_FileBox>(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20");
+            Assert.AreEqual(UIControlType.FileBox, uiCtrl.Type);
+            Assert.IsFalse(info.IsFile);
+            Assert.IsNull(info.Title);
+            Assert.IsNull(info.Filter);
+
+            // Parse error - Too many arguments
+            FailTemplate(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,file,""Title=Windows 11"",""Filter=All Files|*.*"",_Hello_,True,""Vulkan=Leaks""");
+            // Parse error - Not supported RunOptional
+            FailTemplate(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,file,_Hello_,True");
+            // Parse error - Invalid TitleKey/FilterKey
+            FailTemplate(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,file,""Invalid=Select Files""");
+            // Parse error - DIR with FilterKey
+            FailTemplate(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,dir,""Filter=All Files|*.*""");
+            // Parse error - Invalid IsFile
+            FailTemplate(@"pFileBox1=C:\Windows\notepad.exe,1,13,240,290,200,20,Ad");
+        }
+        #endregion
+
+        #region ParsePathBox
         [TestMethod]
         [TestCategory(nameof(UIParser))]
         public void ParsePathBox()
         {
+            UIControl uiCtrl;
+            UIInfo_PathBox info;
+
             // File select dialog, with Title/Filter/RunOptional
-            {
-                const string rawLine = @"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Title=Select Files"",""Filter=Executable Files|*.exe"",_Hello_,True";
-                UIControl? uiCtrl = ParseTemplate(rawLine);
-                Assert.IsNotNull(uiCtrl);
-
-                // Check UIControl
-                Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
-                Assert.IsTrue(uiCtrl.Text.Equals(@"C:\Windows\notepad.exe", StringComparison.Ordinal));
-                Assert.IsTrue(uiCtrl.Visibility);
-                Assert.AreEqual(240, uiCtrl.X);
-                Assert.AreEqual(290, uiCtrl.Y);
-                Assert.AreEqual(200, uiCtrl.Width);
-                Assert.AreEqual(20, uiCtrl.Height);
-
-                // Check UIInfo_PathBox
-                UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
-                Assert.AreEqual(true, info.IsFile);
-                Assert.IsNotNull(info.Title);
-                Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
-                Assert.IsNotNull(info.Filter);
-                Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
-                Assert.IsNotNull(info.SectionName);
-                Assert.IsTrue(info.SectionName.Equals("Hello", StringComparison.Ordinal));
-                Assert.IsTrue(info.HideProgress);
-                Assert.IsNull(info.ToolTip);
-            }
+            (uiCtrl, info) = ParseTemplate<UIInfo_PathBox>(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Title=Select Files"",""Filter=Executable Files|*.exe"",_Hello_,True");
+            // Check UIControl
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            Assert.IsTrue(uiCtrl.Key.Equals("pPathBox1", StringComparison.Ordinal));
+            Assert.IsTrue(uiCtrl.Text.Equals(@"C:\Windows\notepad.exe", StringComparison.Ordinal));
+            Assert.IsTrue(uiCtrl.Visibility);
+            Assert.AreEqual(240, uiCtrl.X);
+            Assert.AreEqual(290, uiCtrl.Y);
+            Assert.AreEqual(200, uiCtrl.Width);
+            Assert.AreEqual(20, uiCtrl.Height);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
+            Assert.IsNotNull(info.Filter);
+            Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
+            Assert.IsNotNull(info.SectionName);
+            Assert.IsTrue(info.SectionName.Equals("Hello", StringComparison.Ordinal));
+            Assert.IsTrue(info.HideProgress);
+            Assert.IsNull(info.ToolTip);
 
             // File select dialog, with RunOptional
-            {
-                const string rawLine = @"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,FILE,_World_,False,__IrisService";
-                UIControl? uiCtrl = ParseTemplate(rawLine);
-                Assert.IsNotNull(uiCtrl);
-
-                // Check UIControl
-                Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
-
-                // Check UIInfo_PathBox
-                UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
-                Assert.IsTrue(info.IsFile);
-                Assert.IsNull(info.Title);
-                Assert.IsNull(info.Filter);
-                Assert.IsNotNull(info.SectionName);
-                Assert.IsTrue(info.SectionName.Equals("World", StringComparison.Ordinal));
-                Assert.IsFalse(info.HideProgress);
-                Assert.IsNotNull(info.ToolTip);
-                Assert.IsTrue(info.ToolTip.Equals("IrisService", StringComparison.Ordinal));
-            }
+            (uiCtrl, info) = ParseTemplate<UIInfo_PathBox>(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,FILE,_World_,False,__IrisService");
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNull(info.Title);
+            Assert.IsNull(info.Filter);
+            Assert.IsNotNull(info.SectionName);
+            Assert.IsTrue(info.SectionName.Equals("World", StringComparison.Ordinal));
+            Assert.IsFalse(info.HideProgress);
+            Assert.IsNotNull(info.ToolTip);
+            Assert.IsTrue(info.ToolTip.Equals("IrisService", StringComparison.Ordinal));
 
             // File select dialog, with random arg order
-            {
-                const string rawLine = @"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,_Hello_,True,__TOOLTIP,""Title=Select Files"",""Filter=Executable Files|*.exe""";
-                UIControl? uiCtrl = ParseTemplate(rawLine);
-                Assert.IsNotNull(uiCtrl);
-
-                // Check UIControl
-                Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
-
-                // Check UIInfo_PathBox
-                UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
-                Assert.IsTrue(info.IsFile);
-                Assert.IsNotNull(info.Title);
-                Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
-                Assert.IsNotNull(info.Filter);
-                Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
-                Assert.IsNotNull(info.SectionName);
-                Assert.IsTrue(info.SectionName.Equals("Hello", StringComparison.Ordinal));
-                Assert.IsTrue(info.HideProgress);
-                Assert.IsNotNull(info.ToolTip);
-                Assert.IsTrue(info.ToolTip.Equals("TOOLTIP", StringComparison.Ordinal));
-            }
+            (uiCtrl, info) = ParseTemplate<UIInfo_PathBox>(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,_Hello_,True,__TOOLTIP,""Title=Select Files"",""Filter=Executable Files|*.exe""");
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            // Check UIInfo_PathBox
+            Assert.IsTrue(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Select Files", StringComparison.Ordinal));
+            Assert.IsNotNull(info.Filter);
+            Assert.IsTrue(info.Filter.Equals("Executable Files|*.exe", StringComparison.Ordinal));
+            Assert.IsNotNull(info.SectionName);
+            Assert.IsTrue(info.SectionName.Equals("Hello", StringComparison.Ordinal));
+            Assert.IsTrue(info.HideProgress);
+            Assert.IsNotNull(info.ToolTip);
+            Assert.IsTrue(info.ToolTip.Equals("TOOLTIP", StringComparison.Ordinal));
 
             // Directory select dialog, with Title
-            {
-                const string rawLine = @"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,dir,""Title=Windows 11""";
-                UIControl? uiCtrl = ParseTemplate(rawLine);
-                Assert.IsNotNull(uiCtrl);
-                Assert.IsTrue(uiCtrl.Info is UIInfo_PathBox);
-                UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
-
-                Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
-                Assert.IsFalse(info.IsFile);
-                Assert.IsNotNull(info.Title);
-                Assert.IsTrue(info.Title.Equals("Windows 11", StringComparison.Ordinal));
-                Assert.IsNull(info.Filter);
-                Assert.IsNull(info.SectionName);
-                Assert.IsFalse(info.HideProgress);
-            }
+            (uiCtrl, info) = ParseTemplate<UIInfo_PathBox>(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,dir,""Title=Windows 11""");
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            Assert.IsFalse(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Windows 11", StringComparison.Ordinal));
+            Assert.IsNull(info.Filter);
+            Assert.IsNull(info.SectionName);
+            Assert.IsFalse(info.HideProgress);
 
             // Directory select dialog, with Title/RunOptional
-            {
-                const string rawLine = @"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,dir,""Title=Windows 11"",_I_Hate_Memory_Leak_,True";
-                UIControl? uiCtrl = ParseTemplate(rawLine);
-                Assert.IsNotNull(uiCtrl);
-                Assert.IsTrue(uiCtrl.Info is UIInfo_PathBox);
-                UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
-
-                Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
-                Assert.IsFalse(info.IsFile);
-                Assert.IsNotNull(info.Title);
-                Assert.IsTrue(info.Title.Equals("Windows 11", StringComparison.Ordinal));
-                Assert.IsNull(info.Filter);
-                Assert.IsNotNull(info.SectionName);
-                Assert.IsTrue(info.SectionName.Equals("I_Hate_Memory_Leak", StringComparison.Ordinal));
-                Assert.IsTrue(info.HideProgress);
-            }
+            (uiCtrl, info) = ParseTemplate<UIInfo_PathBox>(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,dir,""Title=Windows 11"",_I_Hate_Memory_Leak_,True");
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            Assert.AreEqual(UIControlType.PathBox, uiCtrl.Type);
+            Assert.IsFalse(info.IsFile);
+            Assert.IsNotNull(info.Title);
+            Assert.IsTrue(info.Title.Equals("Windows 11", StringComparison.Ordinal));
+            Assert.IsNull(info.Filter);
+            Assert.IsNotNull(info.SectionName);
+            Assert.IsTrue(info.SectionName.Equals("I_Hate_Memory_Leak", StringComparison.Ordinal));
+            Assert.IsTrue(info.HideProgress);
 
             // Parse error - Too many arguments
             FailTemplate(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Title=Windows 11"",""Filter=All Files|*.*"",_Hello_,True,""Vulkan=Leaks""");
@@ -189,5 +236,6 @@ namespace PEBakery.Core.Tests
             // Parse error - HideProgress without SectionName
             FailTemplate(@"pPathBox1=C:\Windows\notepad.exe,1,20,240,290,200,20,dir,False");
         }
+        #endregion
     }
 }
