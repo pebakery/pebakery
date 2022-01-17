@@ -594,8 +594,7 @@ namespace PEBakery.Helper
                 {
                     try
                     {
-                        DirectoryInfo[] dirs = subDir.GetDirectories();
-                        foreach (DirectoryInfo dir in dirs)
+                        foreach (DirectoryInfo dir in subDir.EnumerateDirectories())
                             fileFound |= InternalGetFilesExWithDirs(dir);
                     }
                     catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
@@ -939,9 +938,6 @@ namespace PEBakery.Helper
         /// Remove the <paramref name="rootDir"/> (aka prefix) from <paramref name="path"/>.<br/>
         /// Ex) path = D:\A\B\C, rootDir = D:\A -> B\C
         /// </summary>
-        /// <remarks>
-        /// Using TrimStart('\\') helps to deal with abnormal path string (such as D:\A\\B\C).
-        /// </remarks>
         /// <param name="path">The path to remove root directory path (aka prefix). Must start with <paramref name="rootDir"/>.</param>
         /// <param name="rootDir">The root directory path (aka prefix) to remove from the <paramref name="path"/>.</param>
         /// <returns>
@@ -951,6 +947,7 @@ namespace PEBakery.Helper
         {
             if (!path.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException($"{nameof(path)} must start with {nameof(rootDir)}");
+            // Using TrimStart('\\') helps to deal with abnormal path string (such as D:\A\\B\C).
             return path.AsSpan(rootDir.Length).TrimStart('\\').ToString();
         }
         #endregion
