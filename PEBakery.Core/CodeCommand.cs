@@ -4648,9 +4648,12 @@ namespace PEBakery.Core
                 switch (Type)
                 {
                     case SystemType.HasUAC:
+                        return true;
+                    // FileRedirect and RegRedirect was defined in WB082 to break through WOW64 virtualization.
+                    // PEBakery does not need such command, but this command is used a lot in WB082 projects.
+                    // Marking them as deprecated would generate a lot of warning, so exclude them.
                     case SystemType.FileRedirect:
                     case SystemType.RegRedirect:
-                        return true;
                     default:
                         return false;
                 }
