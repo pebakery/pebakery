@@ -929,11 +929,14 @@ namespace PEBakery.WPF
         private void MainTreeView_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Space &&
-                Keyboard.FocusedElement is FrameworkElement focusedElement &&
-                focusedElement.DataContext is ProjectTreeItemModel node)
+                Keyboard.FocusedElement is TreeViewItem focusedItem &&
+                focusedItem.DataContext is ProjectTreeItemModel node)
             {
                 node.Checked = !node.Checked;
-                // node.Focus = true;
+
+                focusedItem.IsSelected = true;
+                MainTreeView.Focus();
+
                 e.Handled = true;
             }
         }

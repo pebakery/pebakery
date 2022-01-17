@@ -177,7 +177,7 @@ namespace PEBakery.Core.ViewModels
 
             OnPropertyUpdate(nameof(Checked));
 
-            // No meaning on using try-finally, if exception is thrown, the program just dies.
+            // No meaning on using try-finally, if any exception is thrown, the program just dies.
             if (first && Global.MainViewModel != null)
             {
                 Global.MainViewModel.EnableTreeItems = true;
