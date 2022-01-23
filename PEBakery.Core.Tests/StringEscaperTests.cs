@@ -459,7 +459,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             try { StringEscaper.ExpandVariables(s, src); }
-            catch (VariableCircularReferenceException) { return; }
+            catch (InvalidOperationException) { return; }
 
             Assert.Fail();
         }
@@ -569,7 +569,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             try { StringEscaper.Preprocess(s, src); }
-            catch (VariableCircularReferenceException) { return; }
+            catch (InvalidOperationException) { return; }
 
             Assert.Fail();
         }

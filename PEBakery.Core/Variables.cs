@@ -685,7 +685,7 @@ namespace PEBakery.Core
 
                 iteration++;
                 if (32 < iteration)
-                    throw new VariableCircularReferenceException($"Circular reference by [{str}]");
+                    throw new InvalidOperationException($"Circular reference by [{str}]");
             }
             while (0 < matches.Count);
 

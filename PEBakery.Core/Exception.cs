@@ -66,18 +66,11 @@ namespace PEBakery.Core
         public ScriptParseException(string message) : base(message) { }
         public ScriptParseException(string message, Exception inner) : base(message, inner) { }
     }
-
-    public class ScriptSectionException : Exception
-    {
-        public ScriptSectionException() { }
-        public ScriptSectionException(string message) : base(message) { }
-        public ScriptSectionException(string message, Exception inner) : base(message, inner) { }
-    }
     #endregion
 
     #region Engine
     /// <summary>
-    /// Such a critical error that build must be halt
+    /// Such a critical error that build must be halt (Logged as CriticalError)
     /// </summary>
     public class CriticalErrorException : Exception
     {
@@ -86,6 +79,9 @@ namespace PEBakery.Core
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
+    /// <summary>
+    /// Execute Exception
+    /// </summary>
     public class ExecuteException : Exception
     {
         public ExecuteException() { }
@@ -94,16 +90,10 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Variables
-    public class VariableCircularReferenceException : Exception
-    {
-        public VariableCircularReferenceException() { }
-        public VariableCircularReferenceException(string message) : base(message) { }
-        public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
     #region Internal
+    /// <summary>
+    /// The exception which represents internal logic error (Logged as CriticalError)
+    /// </summary>
     public class InternalException : Exception
     {
         public InternalException() { }

@@ -168,7 +168,7 @@ namespace PEBakery.Core
         {
             str = str.Trim();
 
-            int dqIdx = str.IndexOf("\"", StringComparison.Ordinal);
+            int dqIdx = str.IndexOf('\"');
 
             if (dqIdx == 0) // With DoubleQuote, dqIdx should be 0
             { // Ex) "   Return SetError(@error,0,0)",Append

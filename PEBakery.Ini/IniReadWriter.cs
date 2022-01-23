@@ -3075,11 +3075,12 @@ namespace PEBakery.Ini
         /// </summary>
         private static Dictionary<string, string> InternalParseIniLinesRegex(string regex, IEnumerable<string> lines)
         {
+            Regex regexInst = new Regex(regex, RegexOptions.Compiled);
+
             Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string line in lines)
             {
-                Regex regexInstance = new Regex(regex, RegexOptions.Compiled);
-                MatchCollection matches = regexInstance.Matches(line);
+                MatchCollection matches = regexInst.Matches(line);
 
                 // Make instances of sections
                 for (int i = 0; i < matches.Count; i++)
@@ -3154,7 +3155,6 @@ namespace PEBakery.Ini
         /// </remarks>
         /// <param name="lineSpan">A text line to compact.</param>
         /// <returns>Compacted string</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string CompactKeyValuePairLine(ReadOnlySpan<char> lineSpan)
         {
             int idx = lineSpan.IndexOf('=');
