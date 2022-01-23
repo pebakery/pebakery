@@ -1361,7 +1361,7 @@ namespace PEBakery.Core
 
                             if (State == LogState.None)
                             { // No State
-                                if (RawCode == null)
+                                if (string.IsNullOrWhiteSpace(RawCode))
                                 {
                                     if (!logFlags || Flags == BuildLogFlag.None)
                                         b.Append(Message);
@@ -1378,7 +1378,7 @@ namespace PEBakery.Core
                             }
                             else
                             { // Has State
-                                if (RawCode == null)
+                                if (string.IsNullOrWhiteSpace(RawCode))
                                 {
                                     if (!logFlags || Flags == BuildLogFlag.None)
                                         b.Append($"[{State}] {Message}");
@@ -1413,7 +1413,7 @@ namespace PEBakery.Core
                                     b.Append("  ");
                             }
 
-                            if (RawCode == null)
+                            if (string.IsNullOrWhiteSpace(RawCode))
                                 b.Append(Message);
                             else
                                 b.Append($"{Message} ({RawCode})");
