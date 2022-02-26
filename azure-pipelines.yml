@@ -1,0 +1,48 @@
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+  branches:
+    include:
+    - master
+    - develop
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK 6.0'
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.x'
+- task: DotNetCoreCLI@2
+  displayName: 'Restore Nuget Pacakges'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+    feedsToUse: 'select'
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'Build Projects'
+- task: DotNetCoreCLI@2
+  displayName: 'Run Tests'
+  inputs:
+    command: 'test'
+    projects: '**/*.Tests/*.csproj'
+    arguments: '--configuration $(buildConfiguration) --logger="console;verbosity=detailed" --collect:"XPlat Code Coverage" --settings:"$(Build.SourcesDirectory)/coverlet.runsettings"'
+# https://stackoverflow.com/questions/64592534/publish-a-pipeline-azure-devops-code-coverage-report
+- task: DotNetCoreCLI@2
+  displayName: 'Install ReportGenerator Tool'
+  inputs:
+    command: 'custom'
+    custom: 'tool'
+    arguments: 'install --global dotnet-reportgenerator-globaltool'
+- script: 'reportgenerator -reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml -targetdir:"$(Build.ArtifactStagingDirectory)/coverlet" -reporttypes:"Cobertura" -verbosity:"Verbose"'
+  displayName: 'Merge Code Coverage Reports'
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Code Coverage Report'
+  inputs:
+    codeCoverageTool: 'Cobertura'
+    summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'

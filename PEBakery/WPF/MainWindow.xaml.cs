@@ -941,6 +941,9 @@ namespace PEBakery.WPF
             }
         }
 
+        /// <summary>
+        /// A new script is selected in MainTreeView
+        /// </summary>
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (sender is not TreeView tree || tree.SelectedItem is not ProjectTreeItemModel selectedModel)
@@ -949,6 +952,7 @@ namespace PEBakery.WPF
             Model.CurMainTree = selectedModel;
             Script sc = selectedModel.Script;
 
+            // Display new selected script
             Dispatcher?.BeginInvoke(new Action(() =>
             {
                 Stopwatch watch = Stopwatch.StartNew();
