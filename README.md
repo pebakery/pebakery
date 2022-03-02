@@ -6,10 +6,12 @@
 
 PEBakery is a script engine that specializes in customizing the Windows Preinstalled Environment (WinPE/WinRE).
 
-| Branch    | Build Status   |
-|-----------|----------------|
-| Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
-| Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
+| CI Server       | Branch  | Build Status   |
+|-----------------|---------|----------------|
+| AppVeyor        | Master  | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
+| AppVeyor        | Develop | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
+| Azure Pipelines | Master  | [![Azure Pipelines CI Master Branch Build Status](https://dev.azure.com/ied206/pebakery/_apis/build/status/pebakery.pebakery?branchName=master)](https://dev.azure.com/ied206/pebakery/_build/latest?definitionId=5&branchName=master) |
+| Azure Pipelines | Develop | [![Azure Pipelines CI Develop Branch Build Status](https://dev.azure.com/ied206/pebakery/_apis/build/status/pebakery.pebakery?branchName=develop)](https://dev.azure.com/ied206/pebakery/_build/latest?definitionId=5&branchName=develop) |
 
 PEBakery is backward compatible with WinBuilder 082 and makes significant improvements upon it.
 

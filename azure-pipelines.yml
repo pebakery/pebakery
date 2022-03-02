@@ -46,8 +46,12 @@ steps:
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
-- script: '.\BinaryPublish.ps1 -nightly -noclean'
+- task: PowerShell@2
   displayName: 'Build Nightly Artifact'
+  inputs:
+    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
+    arguments: '-nightly -noclean'
+    pwsh: true
 - task: PublishPipelineArtifact@1
   displayName: 'Upload Runtime-dependent Nightly Artifact'
   inputs:
