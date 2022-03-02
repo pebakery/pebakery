@@ -319,7 +319,7 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 EngineTests.Eval(s, rawCode, CodeType.Exit, check);
 
-                Assert.IsTrue(s.HaltFlags.ScriptHalt);
+                Assert.IsTrue(s.HaltReturnFlags.ScriptHalt);
             }
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
@@ -349,7 +349,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.HaltFlags.CmdHalt);
+            Assert.IsTrue(s.HaltReturnFlags.CmdHalt);
         }
         #endregion
 
@@ -410,6 +410,51 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-GetParam12");
             ScriptTemplate(scPath, "Process-GetParam16");
             ScriptTemplate(scPath, "Process-GetParam18");
+        }
+        #endregion
+
+        #region Return
+        [TestMethod]
+        public void Return()
+        {
+            static void LineTemplate(string rawCode, ErrorCheck check, string? expectReturnValue = null, Action<EngineState>? preFunc = null)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                preFunc?.Invoke(s);
+                EngineTests.Eval(s, rawCode, CodeType.Return, check);
+
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    Assert.IsTrue(s.HaltReturnFlags.SectionReturn);
+                    if (expectReturnValue != null)
+                        Assert.IsTrue(expectReturnValue.Equals(s.ReturnValue, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
+            static void ScriptTemplate(string treePath, string entrySection, string expectReturnValue, ErrorCheck check)
+            {
+                (EngineState s, List<LogInfo> logs) = EngineTests.EvalScript(treePath, check, entrySection);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destVal = s.Variables.GetValue(VarsType.Local, "Dest");
+                    Assert.IsTrue(destVal.Equals("TT", StringComparison.OrdinalIgnoreCase));
+                    Assert.IsTrue(s.ReturnValue.Equals(expectReturnValue, StringComparison.Ordinal));
+                }
+            }
+
+            LineTemplate("Return", ErrorCheck.Success, string.Empty);
+            LineTemplate("Return,True", ErrorCheck.Success, "True");
+            LineTemplate("Return,%Dest%", ErrorCheck.Success, "VarTest", (s) =>
+            {
+                s.Variables.SetValue(VarsType.Local, "Dest", "VarTest");
+            });
+            LineTemplate("Return,Val,Error", ErrorCheck.ParserError);
+
+            ScriptTemplate(scPath, "Process-Return01", string.Empty, ErrorCheck.Success);
+            ScriptTemplate(scPath, "Process-Return02", string.Empty, ErrorCheck.Success);
+            ScriptTemplate(scPath, "Process-Return03", string.Empty, ErrorCheck.Success);
+            ScriptTemplate(scPath, "Process-Return04", "True", ErrorCheck.Success);
         }
         #endregion
     }

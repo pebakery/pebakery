@@ -2574,6 +2574,19 @@ namespace PEBakery.Core
 
                         return new CodeInfo_PackParam(args[0], args[1], varCount);
                     }
+                case CodeType.Return:
+                    { // Return,[ReturnValue]
+                        const int minArgCount = 0;
+                        const int maxArgCount = 1;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string? returnValue = null;
+                        if (0 < args.Count)
+                            returnValue = args[0];
+
+                        return new CodeInfo_Return(returnValue);
+                    }
                 #endregion
                 #region 82 System
                 case CodeType.System:

@@ -1045,7 +1045,7 @@ namespace PEBakery.WPF
 
             // Stop and wait for the build to end, or forcefully stop it immediately.
             EngineState s = Engine.WorkingEngine.State;
-            if (s.HaltFlags.UserHalt && s.RunningSubProcess != null)
+            if (s.HaltReturnFlags.UserHalt && s.RunningSubProcess != null)
             { // Stop is already requested, but waiting for sub-process to end
                 MessageBoxResult result;
                 lock (s.RunningSubProcLock)

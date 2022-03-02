@@ -80,7 +80,7 @@ namespace PEBakery.Core
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
         // 81 Control
-        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam,
+        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam, Return,
         PackParam = 8199, // Will be deprecated
         // 82 System
         System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
@@ -4619,6 +4619,27 @@ namespace PEBakery.Core
         public CodeInfo_Beep(BeepType type)
         {
             Type = type;
+        }
+    }
+
+    public class CodeInfo_Return : CodeInfo
+    { // Return,[ReturnValue]
+        public string? ReturnValue { get; private set; }
+        
+        public CodeInfo_Return(string? returnValue)
+        {
+            ReturnValue = returnValue;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            if (ReturnValue != null)
+            {
+                b.Append(',');
+                b.Append(ReturnValue);
+            }
+            return b.ToString();
         }
     }
     #endregion

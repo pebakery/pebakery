@@ -170,7 +170,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            s.HaltFlags.ScriptHalt = true;
+            s.HaltReturnFlags.ScriptHalt = true;
 
             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, message, cmd));
 
@@ -187,7 +187,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             s.RunningSubProcess?.Kill();
-            s.HaltFlags.CmdHalt = true;
+            s.HaltReturnFlags.CmdHalt = true;
 
             logs.Add(new LogInfo(LogState.Warning, message, cmd));
 
@@ -242,6 +242,37 @@ namespace PEBakery.Core.Commands
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Played sound [{info.Type}]", cmd));
+
+            return logs;
+        }
+
+        /// <summary>
+        /// Stop processing of current section and return.
+        /// </summary>
+        public static List<LogInfo> Return(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            CodeInfo_Return info = (CodeInfo_Return)cmd.Info;
+
+            string? returnValue = null;
+            if (info.ReturnValue != null)
+                returnValue = StringEscaper.Preprocess(s, info.ReturnValue);
+
+            s.HaltReturnFlags.SectionReturn = true;
+
+            string msg;
+            if (returnValue == null)
+            {
+                msg = $"Returned from section [{s.CurrentSection.Name}]";
+            }
+            else
+            {
+                s.ReturnValue = returnValue;
+                msg = $"Returned [{returnValue}] from section [{s.CurrentSection.Name}]";
+            }
+
+            logs.Add(new LogInfo(LogState.Info, msg, cmd));
 
             return logs;
         }
