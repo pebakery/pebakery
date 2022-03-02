@@ -46,7 +46,17 @@ steps:
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
+- script: ''.\BinaryPublish.ps1 -nightly -noclean'
+  displayName: 'Build Nightly Artifact'
 - task: PublishPipelineArtifact@1
+  displayName: 'Upload Runtime-dependent Nightly Artifact'
   inputs:
-    targetPath: $(System.DefaultWorkingDirectory)/bin/WebApp
-    artifactName: WebApp
+    targetPath: $(Build.SourcesDirectory)/Publish/PEBakery-nightly-rt.7z
+    artifactName: nightly-rt
+    artifactType: pipeline
+- task: PublishPipelineArtifact@1
+  displayName: 'Upload Standalone Nightly Artifact'
+  inputs:
+    targetPath: $(Build.SourcesDirectory)/Publish/Publish/PEBakery-nightly-sc.7z
+    artifactName: nightly-sc
+    artifactType: pipeline
