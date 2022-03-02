@@ -451,8 +451,8 @@ namespace PEBakery.Core.Tests.Command
             });
             LineTemplate("Return,Val,Error", ErrorCheck.ParserError);
 
-            ScriptTemplate(scPath, "Process-Return01", string.Empty, ErrorCheck.Success);
-            ScriptTemplate(scPath, "Process-Return02", string.Empty, ErrorCheck.Success);
+            ScriptTemplate(scPath, "Process-Return01", "SUB", ErrorCheck.Success);
+            ScriptTemplate(scPath, "Process-Return02", "SUB", ErrorCheck.Success);
             ScriptTemplate(scPath, "Process-Return03", string.Empty, ErrorCheck.Success);
             ScriptTemplate(scPath, "Process-Return04", "True", ErrorCheck.Success);
         }

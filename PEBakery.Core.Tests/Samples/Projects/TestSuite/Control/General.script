@@ -100,10 +100,12 @@ Set,%Dest%,"%Dest%T"
 
 [Process-SubReturn-NoValue]
 Set,%Dest%,T
+Set,#r,SUB
 Return
 Set,%Dest%,F
 
 [Process-SubReturn-WithValue]
 Set,%Dest%,T
+Set,#r,SUB
 Return,#1
 Set,%Dest%,F
