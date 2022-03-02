@@ -24,8 +24,12 @@ steps:
     command: 'restore'
     projects: '**/*.csproj'
     feedsToUse: 'select'
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'Build Projects'
+- task: PowerShell@2
+  displayName: 'Build Projects & Nightly Artifact'
+  inputs:
+    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
+    arguments: '-nightly -noclean'
+    pwsh: true
 - task: DotNetCoreCLI@2
   displayName: 'Run Tests'
   inputs:
@@ -46,21 +50,13 @@ steps:
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
-- task: PowerShell@2
-  displayName: 'Build Nightly Artifact'
-  inputs:
-    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
-    arguments: '-nightly -noclean'
-    pwsh: true
-- task: PublishPipelineArtifact@1
+- task: PublishBuildArtifact@1
   displayName: 'Upload Runtime-dependent Nightly Artifact'
   inputs:
     targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-rt.7z'
     artifactName: nightly-rt
-    artifactType: pipeline
-- task: PublishPipelineArtifact@1
+- task: PublishBuildArtifact@1
   displayName: 'Upload Standalone Nightly Artifact'
   inputs:
-    targetPath: '$(Build.SourcesDirectory)/Publish/Publish/PEBakery-nightly-sc.7z'
+    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc.7z'
     artifactName: nightly-sc
-    artifactType: pipeline
