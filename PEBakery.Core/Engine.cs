@@ -454,7 +454,7 @@ namespace PEBakery.Core
             if (DisableSetLocal(s))
             {
                 // If SetLocal is implicitly disabled due to the halt flags, do not log the warning.
-                if (!s.HaltReturnFlags.CheckScriptHalt())
+                if (!s.HaltReturnFlags.CheckScriptHalt() && !s.HaltReturnFlags.CheckSectionReturn() )
                 {
                     int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
