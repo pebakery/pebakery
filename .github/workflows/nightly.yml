@@ -38,11 +38,11 @@ jobs:
         path: Publish/PEBakery-nightly-rt.7z
     - name: '[4-2] Upload nightly artifact (runtime-dependent)'
       uses: actions/upload-artifact@v2
-        with:
-          name: nightly-sc_x64
-          path: Publish/PEBakery-nightly-sc_x64.7z
+      with:
+        name: nightly-sc_x64
+        path: Publish/PEBakery-nightly-sc_x64.7z
     - name: '[4-3] Upload nightly artifact (runtime-dependent)'
       uses: actions/upload-artifact@v2
-        with:
-          name: nightly-sc_arm64
-          path: Publish/PEBakery-nightly-sc_arm64.7z
+      with:
+        name: nightly-sc_arm64
+        path: Publish/PEBakery-nightly-sc_arm64.7z
