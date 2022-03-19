@@ -4,6 +4,7 @@
 # Joveler-specific Resoures
 Publish/
 !Publish/_tools/
+!.github/
 res/
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
