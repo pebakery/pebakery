@@ -5,6 +5,7 @@ trigger:
     include:
     - master
     - develop
+    - cibuild # Dedicated branch for testing ci and build script
 
 pool:
   vmImage: 'windows-latest'

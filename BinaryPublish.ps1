@@ -17,8 +17,26 @@ Write-Host "[*] Publishing PEBakery ${BinaryName} binaries..." -ForegroundColor 
 
 # Find MSBuild location
 $VSWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$MSBuild = & "$VSWhere" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
-Write-Output "MSBuild Path = ${MSBuild}"
+$MSBuild = & "$VSWhere" -latest -requires "Microsoft.Component.MSBuild" -find "MSBuild\**\Bin\MSBuild.exe"
+If ($null -eq $MSBuild || $MSBuild -eq "") { # Microsoft Visual Studio Build Tools requires '-products' argument.
+    $MSBuild = & "$VSWhere" -latest -products "Microsoft.VisualStudio.Product.BuildTools" -requires "Microsoft.Component.MSBuild" -find "MSBuild\**\Bin\MSBuild.exe"
+}
+If ($null -eq $MSBuild || $MSBuild -eq "") { # As a last resort, try fixed VS2022 (x64) MSBuild path
+    $TryPath = "${Env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+    if (Test-Path -Path $TryPath) { 
+        $MSBuild = $TryPath 
+    }
+}
+If ($null -eq $MSBuild || $MSBuild -eq "") { # As a last resort, try fixed VS2022 (x86) MSBuild path
+    $TryPath = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+    if (Test-Path -Path $TryPath) { 
+        $MSBuild = $TryPath 
+    }
+}
+Write-Output "MSBuild Path = [${MSBuild}]"
+If ($null -eq $MSBuild || $MSBuild -eq "") {
+    Write-Output "Failed to find MSBuild path. Unable to build the Launcher."
+}
 
 # Get directory paths
 $BaseDir = $PSScriptRoot
