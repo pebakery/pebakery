@@ -1,0 +1,48 @@
+name: nightly
+
+on:
+  push:
+    branches: [ master, develop, cibuild ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    # [1] Setup
+    - name: '[1-1] Repo checkout'
+      uses: actions/checkout@v2
+    - name: '[1-2] Setup .NET'
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: '[1-3] Install ReportGenerator Tool'
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+    # [2] Build & Test
+    - name: '[2-1] Restore Nuget Pacakges'
+      run: dotnet restore
+    - name: '[2-2] Build'
+      run: dotnet build --no-restore --configuration Release
+    - name: '[2-3] Run Tests'
+      run: dotnet test --no-build --configuration Release --logger="console;verbosity=detailed" --collect:"XPlat Code Coverage" --settings:"mstest.runsettings"
+    # [3] Build nightly artifacts
+    - name: '[3] Build Arfifacts'
+      run: 'pwsh .\BinaryPublish.ps1 -nightly -noclean'
+    # [4] Publish nightly artifacts
+    - name: '[4-1] Upload nightly artifact (runtime-dependent)'
+      uses: actions/upload-artifact@v2
+        with:
+          name: nightly-rt
+          path: Publish/PEBakery-nightly-rt.7z
+    - name: '[4-2] Upload nightly artifact (runtime-dependent)'
+        uses: actions/upload-artifact@v2
+          with:
+            name: nightly-sc_x64
+            path: Publish/PEBakery-nightly-sc_x64.7z
+    - name: '[4-3] Upload nightly artifact (runtime-dependent)'
+        uses: actions/upload-artifact@v2
+          with:
+            name: nightly-sc_arm64
+            path: Publish/PEBakery-nightly-sc_arm64.7z
