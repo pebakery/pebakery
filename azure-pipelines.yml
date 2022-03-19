@@ -5,6 +5,7 @@ trigger:
     include:
     - master
     - develop
+    - cibuild # Dedicated branch for testing ci and build script
 
 pool:
   vmImage: 'windows-latest'
@@ -14,49 +15,60 @@ variables:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Install .NET SDK 6.0'
+  displayName: '[1-1] Install .NET SDK 6.0'
   inputs:
     packageType: 'sdk'
     version: '6.0.x'
 - task: DotNetCoreCLI@2
-  displayName: 'Restore Nuget Pacakges'
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-    feedsToUse: 'select'
-- task: PowerShell@2
-  displayName: 'Build Projects & Nightly Artifact'
-  inputs:
-    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
-    arguments: '-nightly -noclean'
-    pwsh: true
-- task: DotNetCoreCLI@2
-  displayName: 'Run Tests'
-  inputs:
-    command: 'test'
-    projects: '**/*.Tests/*.csproj'
-    arguments: '--configuration $(buildConfiguration) --logger="console;verbosity=detailed" --collect:"XPlat Code Coverage" --settings:"$(Build.SourcesDirectory)/coverlet.runsettings"'
-# https://stackoverflow.com/questions/64592534/publish-a-pipeline-azure-devops-code-coverage-report
-- task: DotNetCoreCLI@2
-  displayName: 'Install ReportGenerator Tool'
+  displayName: '[1-2] Install ReportGenerator Tool'
   inputs:
     command: 'custom'
     custom: 'tool'
     arguments: 'install --global dotnet-reportgenerator-globaltool'
+- task: DotNetCoreCLI@2
+  displayName: '[2-1] Restore Nuget Pacakges'
+  inputs:
+    command: 'restore'
+    feedsToUse: 'select'
+# Run tests first
+- task: DotNetCoreCLI@2
+  displayName: '[2-2] Run Tests'
+  inputs:
+    command: 'test'
+    projects: '**/*.Tests/*.csproj'
+    arguments: '--configuration $(buildConfiguration) --logger="console;verbosity=detailed" --collect:"XPlat Code Coverage" --settings:"$(Build.SourcesDirectory)/mstest.runsettings"'
 - script: 'reportgenerator -reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml -targetdir:"$(Build.ArtifactStagingDirectory)/coverlet" -reporttypes:"Cobertura" -verbosity:"Verbose"'
-  displayName: 'Merge Code Coverage Reports'
+  displayName: '[2-3] Merge Code Coverage Reports'
 - task: PublishCodeCoverageResults@1
-  displayName: 'Publish Code Coverage Report'
+  displayName: '[2-4] Publish Code Coverage Report'
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload Runtime-dependent Nightly Artifact'
+# Publish nightly artifacts
+- task: PowerShell@2
+  displayName: '[3] Build Artifacts'
+  inputs:
+    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
+    arguments: '-nightly -noclean'
+    pwsh: true
+- task: PublishPipelineArtifact@1
+  displayName: '[4-1] Upload nightly artifact (runtime-dependent)'
   inputs:
     targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-rt.7z'
-    artifactName: nightly-rt
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload Standalone Nightly Artifact'
+    artifact: 'nightly-rt'
+    publishLocation: 'pipeline'
+- task: PublishPipelineArtifact@1
+  displayName: '[4-2] Upload nightly artifact (self-contained x64)'
   inputs:
-    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc.7z'
-    artifactName: nightly-sc
+    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc_x64.7z'
+    artifact: 'nightly-sc_x64'
+    publishLocation: 'pipeline'
+- task: PublishPipelineArtifact@1
+  displayName: '[4-3] Upload nightly artifact (self-contained arm64)'
+  inputs:
+    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc_arm64.7z'
+    artifact: 'nightly-sc_arm64'
+    publishLocation: 'pipeline'
+
+# https://stackoverflow.com/questions/64592534/publish-a-pipeline-azure-devops-code-coverage-report
+# https://www.gustavwengel.dk/optimize-dotnet-piplines-azure
