@@ -52,12 +52,12 @@ steps:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
 - task: PublishBuildArtifacts@1
-  displayName: 'Upload Runtime-dependent Nightly Artifact'
+  displayName: 'Upload nightly artifact (runtime-dependent)'
   inputs:
     targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-rt.7z'
     artifactName: nightly-rt
 - task: PublishBuildArtifacts@1
-  displayName: 'Upload Standalone Nightly Artifact'
+  displayName: 'Upload nightly artifact (self-contained x64)'
   inputs:
-    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc.7z'
-    artifactName: nightly-sc
+    targetPath: '$(Build.SourcesDirectory)/Publish/PEBakery-nightly-sc_x64.7z'
+    artifactName: nightly-sc_x64
