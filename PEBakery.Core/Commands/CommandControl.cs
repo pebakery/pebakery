@@ -40,7 +40,7 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> Set(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Set info = cmd.Info.Cast<CodeInfo_Set>();
+            CodeInfo_Set info = (CodeInfo_Set)cmd.Info;
 
             Variables.VarKeyType varType = Variables.DetectType(info.VarKey);
             if (varType == Variables.VarKeyType.None)
@@ -49,7 +49,7 @@ namespace PEBakery.Core.Commands
                 if (Regex.Match(info.VarKey, Macro.MacroNameRegex,
                     RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                 {
-                    string macroCommand = StringEscaper.Preprocess(s, info.VarValue);
+                    string? macroCommand = StringEscaper.Preprocess(s, info.VarValue);
 
                     if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                         macroCommand = null;
@@ -75,16 +75,16 @@ namespace PEBakery.Core.Commands
                         #region Set interface control's value (Compat)
                         if (s.CompatAllowSetModifyInterface)
                         {
-                            string varKey = Variables.TrimPercentMark(info.VarKey);
+                            string? varKey = Variables.TrimPercentMark(info.VarKey);
                             string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
                             Script sc = cmd.Section.Script;
-                            ScriptSection iface = sc.GetInterfaceSection(out _);
+                            ScriptSection? iface = sc.GetInterfaceSection(out _);
                             if (iface == null)
                                 goto case false;
 
                             (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
-                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                            UIControl? uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
                             if (uiCtrl == null)
                                 goto case false;
 
@@ -115,9 +115,9 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
         {
             // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
-            CodeInfo_SetMacro info = cmd.Info.Cast<CodeInfo_SetMacro>();
+            CodeInfo_SetMacro info = (CodeInfo_SetMacro)cmd.Info;
 
-            string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
+            string? macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
 
             if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                 macroCommand = null;
@@ -128,7 +128,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_AddVariables info = cmd.Info.Cast<CodeInfo_AddVariables>();
+            CodeInfo_AddVariables info = (CodeInfo_AddVariables)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -141,7 +141,7 @@ namespace PEBakery.Core.Commands
                     {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};
 
             // Directly read from file
-            List<string> lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
+            List<string>? lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
             if (lines == null)
                 return new List<LogInfo>
                     {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};
@@ -166,11 +166,11 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Exit info = cmd.Info.Cast<CodeInfo_Exit>();
+            CodeInfo_Exit info = (CodeInfo_Exit)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            s.HaltFlags.ScriptHalt = true;
+            s.HaltReturnFlags.ScriptHalt = true;
 
             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, message, cmd));
 
@@ -181,13 +181,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Halt info = cmd.Info.Cast<CodeInfo_Halt>();
+            CodeInfo_Halt info = (CodeInfo_Halt)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
             s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             s.RunningSubProcess?.Kill();
-            s.HaltFlags.CmdHalt = true;
+            s.HaltReturnFlags.CmdHalt = true;
 
             logs.Add(new LogInfo(LogState.Warning, message, cmd));
 
@@ -198,7 +198,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Wait info = cmd.Info.Cast<CodeInfo_Wait>();
+            CodeInfo_Wait info = (CodeInfo_Wait)cmd.Info;
 
             if (!NumberHelper.ParseInt32(info.Second, out int second))
             {
@@ -223,7 +223,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
+            CodeInfo_Beep info = (CodeInfo_Beep)cmd.Info;
 
             switch (info.Type)
             {
@@ -246,12 +246,43 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        /// <summary>
+        /// Stop processing of current section and return.
+        /// </summary>
+        public static List<LogInfo> Return(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            CodeInfo_Return info = (CodeInfo_Return)cmd.Info;
+
+            string? returnValue = null;
+            if (info.ReturnValue != null)
+                returnValue = StringEscaper.Preprocess(s, info.ReturnValue);
+
+            s.HaltReturnFlags.SectionReturn = true;
+
+            string msg;
+            if (returnValue == null)
+            {
+                msg = $"Returned from section [{s.CurrentSection.Name}]";
+            }
+            else
+            {
+                s.ReturnValue = returnValue;
+                msg = $"Returned [{returnValue}] from section [{s.CurrentSection.Name}]";
+            }
+
+            logs.Add(new LogInfo(LogState.Info, msg, cmd));
+
+            return logs;
+        }
+
         #region GetParam, PackParam
         public static List<LogInfo> GetParam(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(2);
 
-            CodeInfo_GetParam info = cmd.Info.Cast<CodeInfo_GetParam>();
+            CodeInfo_GetParam info = (CodeInfo_GetParam)cmd.Info;
 
             string indexStr = StringEscaper.Preprocess(s, info.Index);
             if (!NumberHelper.ParseInt32(indexStr, out int index))
@@ -280,7 +311,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(4);
 
-            CodeInfo_PackParam info = cmd.Info.Cast<CodeInfo_PackParam>();
+            CodeInfo_PackParam info = (CodeInfo_PackParam)cmd.Info;
 
             string startIndexStr = StringEscaper.Preprocess(s, info.StartIndex);
             if (!NumberHelper.ParseInt32(startIndexStr, out int startIndex))

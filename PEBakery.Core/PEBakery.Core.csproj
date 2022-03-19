@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows7.0</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWPF>true</UseWPF>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -19,6 +19,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <SignAssembly>false</SignAssembly>
     <TrimMode>copyused</TrimMode>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702;CA2235</NoWarn>
@@ -58,16 +59,16 @@
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Joveler.Compression.XZ" Version="4.1.0" />
     <PackageReference Include="Joveler.Compression.ZLib" Version="4.1.0" />
-    <PackageReference Include="Joveler.FileMagician" Version="2.1.0" />
+    <PackageReference Include="Joveler.FileMagician" Version="2.2.0" />
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" />
-    <PackageReference Include="ManagedWimLib" Version="2.2.0" />
+    <PackageReference Include="ManagedWimLib" Version="2.4.0" />
     <PackageReference Include="MessagePack" Version="2.3.85" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.0" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
     <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="NUglify" Version="1.17.3" />
-    <PackageReference Include="Scriban" Version="5.0.0" />
+    <PackageReference Include="NUglify" Version="1.17.10" />
+    <PackageReference Include="Scriban" Version="5.4.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.5.0.366" />
     <PackageReference Include="Timestamp" Version="1.0.2" />

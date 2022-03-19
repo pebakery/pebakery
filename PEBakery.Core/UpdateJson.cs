@@ -85,7 +85,7 @@ namespace PEBakery.Core
             JsonSerializer serializer = CreateJsonSerializer();
 
             // Read json file
-            Root jsonRoot;
+            Root? jsonRoot;
             try
             {
                 // Use UTF-8 without a BOM signature, as the file was served by a web server
@@ -99,6 +99,9 @@ namespace PEBakery.Core
             {
                 return new ResultReport<Root>(false, null, $"Update json file is corrupted: {Logger.LogExceptionMessage(e)}");
             }
+
+            if (jsonRoot == null)
+                return new ResultReport<Root>(false, null, $"Update json file is corrupted: deserialize failure");
 
             // Validate json instance
             ResultReport report = jsonRoot.Validate();
@@ -205,12 +208,12 @@ namespace PEBakery.Core
             /// UpdateJson Schema version
             /// </summary>
             [JsonProperty(PropertyName = "schema_ver")]
-            public VersionEx SchemaVer { get; set; }
+            public VersionEx SchemaVer { get; set; } = new VersionEx(0, 0);
             /// <summary>
             /// Minimum required PEBakery version
             /// </summary>
             [JsonProperty(PropertyName = "pebakery_min_ver")]
-            public VersionEx PEBakeryMinVer { get; set; }
+            public VersionEx PEBakeryMinVer { get; set; } = new VersionEx(0, 0);
 
             /// <summary>
             /// Json creation time in UTC
@@ -218,7 +221,7 @@ namespace PEBakery.Core
             [JsonProperty(PropertyName = "created_at")]
             public DateTime CreatedAt { get; set; }
             [JsonProperty(PropertyName = "index")]
-            public FileIndex Index { get; set; }
+            public FileIndex Index { get; set; } = new FileIndex();
             #endregion
 
             #region CreateInstance
@@ -296,23 +299,23 @@ namespace PEBakery.Core
             /// Filename or foldername
             /// </summary>
             [JsonProperty(PropertyName = "name")]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             /// <summary>
             /// Valid for EntryType.Folder
             /// </summary>
             [JsonProperty(PropertyName = "children")]
-            public List<FileIndex> Children { get; set; }
+            public List<FileIndex>? Children { get; set; }
             /// <summary>
             /// Valid for EntryType.Script and EntryType.NonScriptFile
             /// </summary>
             [JsonProperty(PropertyName = "file_metadata")]
-            public FileMetadata FileMetadata { get; set; }
+            public FileMetadata? FileMetadata { get; set; }
             /// <summary>
             /// Valid for EntryType.Script
             /// </summary>
             [JsonProperty(PropertyName = "script_info")]
-            public ScriptInfo ScriptInfo { get; set; }
+            public ScriptInfo? ScriptInfo { get; set; }
             #endregion
 
             #region CreateInstance
@@ -359,6 +362,9 @@ namespace PEBakery.Core
                 do
                 {
                     (FileIndex dirIndex, DirectoryInfo di) = dirQueue.Dequeue();
+                    if (dirIndex.Children is null)
+                        throw new InvalidOperationException($"{nameof(dirIndex.Children)} is null, even though it is Folder");
+
                     foreach (DirectoryInfo subDir in di.GetDirectories())
                     {
                         FileIndex subIndex = new FileIndex
@@ -482,14 +488,14 @@ namespace PEBakery.Core
             /// SHA256 hash of the file.
             /// </summary>
             [JsonProperty(PropertyName = "sha256")]
-            public byte[] Sha256 { get; set; }
+            public byte[] Sha256 { get; set; } = Array.Empty<byte>();
             #endregion
 
             #region CreateInstance
             public static FileMetadata CreateInstance(string targetFile)
             {
                 // Calculate SHA256 of the file
-                byte[] hashDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, targetFile);
+                byte[] hashDigest = HashHelper.GetHash(HashType.SHA256, targetFile);
 
                 // Get UpdatedAt and FileSize
                 FileInfo fi = new FileInfo(targetFile);
@@ -518,7 +524,7 @@ namespace PEBakery.Core
                 if (UpdatedAt.Equals(DateTime.MinValue))
                     return new ResultReport(false, "File metadata is corrupted");
 
-                if (Sha256.Length != HashHelper.HashLenDict[HashHelper.HashType.SHA256])
+                if (Sha256.Length != HashHelper.HashLenDict[HashType.SHA256])
                     return new ResultReport(false, "File metadata is corrupted");
 
                 return new ResultReport(true);
@@ -535,7 +541,7 @@ namespace PEBakery.Core
 
                 // Check the SHA256 hash laster, as this check is more slower
                 // Avoid using LINQ SequenceEqual for maximum performance (34% faster)
-                byte[] targetDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, targetFile);
+                byte[] targetDigest = HashHelper.GetHash(HashType.SHA256, targetFile);
                 if (Sha256.Length != targetDigest.Length) // Failing to ensure this will result in out-of-bound exception
                     return new ResultReport(false, "Hash of the file is corrupted");
                 for (int i = 0; i < targetDigest.Length; i++)
@@ -561,7 +567,7 @@ namespace PEBakery.Core
             /// Script information of the IniBased format
             /// </summary>
             [JsonProperty(PropertyName = "ini_based")]
-            public IniBasedScript IniBased { get; set; }
+            public IniBasedScript? IniBased { get; set; }
             #endregion
 
             #region CreateInstance
@@ -610,13 +616,13 @@ namespace PEBakery.Core
         {
             #region Properties
             [JsonProperty(PropertyName = "title")]
-            public string Title { get; set; }
+            public string Title { get; set; } = string.Empty;
             [JsonProperty(PropertyName = "desc")]
-            public string Desc { get; set; }
+            public string Desc { get; set; } = string.Empty;
             [JsonProperty(PropertyName = "author")]
-            public string Author { get; set; }
+            public string Author { get; set; } = string.Empty;
             [JsonProperty(PropertyName = "version")]
-            public VersionEx Version { get; set; }
+            public VersionEx Version { get; set; } = new VersionEx(0, 0);
             #endregion
 
             #region CreateInstance

@@ -46,7 +46,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimMount info = cmd.Info.Cast<CodeInfo_WimMount>();
+            CodeInfo_WimMount info = (CodeInfo_WimMount)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -134,7 +134,8 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+                        // Prepare Command Progress Report
+                        WimgApi.RegisterMessageCallback(hWim, WimgApiMountCallback);
 
                         using (WimHandle hImage = WimgApi.LoadImage(hWim, imageIndex))
                         {
@@ -152,7 +153,7 @@ namespace PEBakery.Core.Commands
                     finally
                     {
                         s.MainViewModel.ResetBuildCommandProgress();
-                        WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
+                        WimgApi.UnregisterMessageCallback(hWim, WimgApiMountCallback);
                     }
                 }
             }
@@ -175,7 +176,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimUnmount info = cmd.Info.Cast<CodeInfo_WimUnmount>();
+            CodeInfo_WimUnmount info = (CodeInfo_WimUnmount)cmd.Info;
 
             string mountDir = StringEscaper.Preprocess(s, info.MountDir);
             string unmountOptionStr = StringEscaper.Preprocess(s, info.UnmountOption);
@@ -194,8 +195,8 @@ namespace PEBakery.Core.Commands
 
             // Unmount Wim
             // https://msdn.microsoft.com/ko-kr/library/windows/desktop/dd834953.aspx
-            WimHandle hWim = null;
-            WimHandle hImage = null;
+            WimHandle? hWim = null;
+            WimHandle? hImage = null;
             try
             {
                 hWim = WimgApi.GetMountedImageHandle(mountDir, !commit, out hImage);
@@ -204,7 +205,7 @@ namespace PEBakery.Core.Commands
                 Debug.Assert(wimInfo.MountPath.Equals(mountDir, StringComparison.OrdinalIgnoreCase));
 
                 // Prepare Command Progress Report
-                WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+                WimgApi.RegisterMessageCallback(hWim, WimgApiUnmountCallback);
                 s.MainViewModel.SetBuildCommandProgress("WimUnmount Progress");
 
                 try
@@ -240,7 +241,7 @@ namespace PEBakery.Core.Commands
                 finally
                 { // Finalize Command Progress Report
                     s.MainViewModel.ResetBuildCommandProgress();
-                    WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
+                    WimgApi.UnregisterMessageCallback(hWim, WimgApiUnmountCallback);
                 }
             }
             catch (Win32Exception e)
@@ -257,7 +258,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimMessageResult WimgApiCallback(WimMessageType msgType, object msg, object userData)
+        private static WimMessageResult WimgApiMountCallback(WimMessageType msgType, object msg, object userData)
         { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
             Debug.Assert(Engine.WorkingEngine != null);
             EngineState s = Engine.WorkingEngine.State;
@@ -265,7 +266,7 @@ namespace PEBakery.Core.Commands
             switch (msgType)
             {
                 case WimMessageType.Progress:
-                    { // For WimMount
+                    { // For Mount
                         WimMessageProgress wMsg = (WimMessageProgress)msg;
 
                         s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
@@ -274,16 +275,46 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"Mounting image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
                         }
                         else
                         {
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%";
+                            s.MainViewModel.BuildCommandProgressText = $"Mounting image... ({wMsg.PercentComplete}%)";
+                        }
+                    }
+                    break;
+            }
+
+            return WimMessageResult.Success;
+        }
+
+        private static WimMessageResult WimgApiUnmountCallback(WimMessageType msgType, object msg, object userData)
+        { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
+            Debug.Assert(Engine.WorkingEngine != null);
+            EngineState s = Engine.WorkingEngine.State;
+
+            switch (msgType)
+            {
+                case WimMessageType.Progress:
+                    { // For Commit
+                        WimMessageProgress wMsg = (WimMessageProgress)msg;
+
+                        s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
+
+                        if (0 < wMsg.EstimatedTimeRemaining.TotalSeconds)
+                        {
+                            int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
+                            int sec = wMsg.EstimatedTimeRemaining.Seconds;
+                            s.MainViewModel.BuildCommandProgressText = $"Saving image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
+                        }
+                        else
+                        {
+                            s.MainViewModel.BuildCommandProgressText = $"Saving image... ({wMsg.PercentComplete}%)";
                         }
                     }
                     break;
                 case WimMessageType.MountCleanupProgress:
-                    { // For WimUnmount
+                    { // For Unmount
                         WimMessageMountCleanupProgress wMsg = (WimMessageMountCleanupProgress)msg;
 
                         s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
@@ -292,11 +323,11 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"Unmounting image... ({wMsg.PercentComplete}%)\r\nRemaining Time: {min}m {sec}s";
                         }
                         else
                         {
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%";
+                            s.MainViewModel.BuildCommandProgressText = $"Unmounting image... ({wMsg.PercentComplete}%)";
                         }
                     }
                     break;
@@ -316,7 +347,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimInfo info = cmd.Info.Cast<CodeInfo_WimInfo>();
+            CodeInfo_WimInfo info = (CodeInfo_WimInfo)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -388,7 +419,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimApply info = cmd.Info.Cast<CodeInfo_WimApply>();
+            CodeInfo_WimApply info = (CodeInfo_WimApply)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -468,8 +499,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimApplyExtractProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // EXTRACT_IMAGE_BEGIN
             // EXTRACT_FILE_STRUCTURE (Stage 1)
@@ -535,7 +566,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExtract info = cmd.Info.Cast<CodeInfo_WimExtract>();
+            CodeInfo_WimExtract info = (CodeInfo_WimExtract)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -623,7 +654,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimExtractOp infoOp = cmd.Info.Cast<CodeInfo_WimExtractOp>();
+            CodeInfo_WimExtractOp infoOp = (CodeInfo_WimExtractOp)cmd.Info;
 
             CodeInfo_WimExtract firstInfo = infoOp.Infos[0];
             string srcWim = StringEscaper.Preprocess(s, firstInfo.SrcWim);
@@ -721,7 +752,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExtractBulk info = cmd.Info.Cast<CodeInfo_WimExtractBulk>();
+            CodeInfo_WimExtractBulk info = (CodeInfo_WimExtractBulk)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -884,7 +915,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimCapture info = cmd.Info.Cast<CodeInfo_WimCapture>();
+            CodeInfo_WimCapture info = (CodeInfo_WimCapture)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -981,7 +1012,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimAppend info = cmd.Info.Cast<CodeInfo_WimAppend>();
+            CodeInfo_WimAppend info = (CodeInfo_WimAppend)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -1080,8 +1111,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimWriteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // SCAN_BEGIN
             // SCAN_DENTRY (Stage 1)
@@ -1135,7 +1166,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimDelete info = cmd.Info.Cast<CodeInfo_WimDelete>();
+            CodeInfo_WimDelete info = (CodeInfo_WimDelete)cmd.Info;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1190,8 +1221,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimDeleteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // WRITE_STREAMS 
             switch (msg)
@@ -1229,7 +1260,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathAdd info = cmd.Info.Cast<CodeInfo_WimPathAdd>();
+            CodeInfo_WimPathAdd info = (CodeInfo_WimPathAdd)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1297,7 +1328,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathDelete info = cmd.Info.Cast<CodeInfo_WimPathDelete>();
+            CodeInfo_WimPathDelete info = (CodeInfo_WimPathDelete)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1358,7 +1389,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimPathRename info = cmd.Info.Cast<CodeInfo_WimPathRename>();
+            CodeInfo_WimPathRename info = (CodeInfo_WimPathRename)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1419,7 +1450,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimPathOp infoOp = cmd.Info.Cast<CodeInfo_WimPathOp>();
+            CodeInfo_WimPathOp infoOp = (CodeInfo_WimPathOp)cmd.Info;
 
             string wimFile;
             string imageIndexStr;
@@ -1431,7 +1462,7 @@ namespace PEBakery.Core.Commands
             {
                 case CodeType.WimPathAdd:
                     {
-                        CodeInfo_WimPathAdd firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                        CodeInfo_WimPathAdd firstInfo = (CodeInfo_WimPathAdd)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1440,7 +1471,7 @@ namespace PEBakery.Core.Commands
                     }
                 case CodeType.WimPathDelete:
                     {
-                        CodeInfo_WimPathDelete firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                        CodeInfo_WimPathDelete firstInfo = (CodeInfo_WimPathDelete)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1449,7 +1480,7 @@ namespace PEBakery.Core.Commands
                     }
                 case CodeType.WimPathRename:
                     {
-                        CodeInfo_WimPathRename firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathRename>();
+                        CodeInfo_WimPathRename firstInfo = (CodeInfo_WimPathRename)firstCmd.Info;
                         wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
                         imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
                         checkFlag = firstInfo.CheckFlag;
@@ -1484,7 +1515,7 @@ namespace PEBakery.Core.Commands
                 {
                     case CodeType.WimPathAdd:
                         {
-                            CodeInfo_WimPathAdd info = subCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                            CodeInfo_WimPathAdd info = (CodeInfo_WimPathAdd)subCmd.Info;
 
                             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
                             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -1503,7 +1534,7 @@ namespace PEBakery.Core.Commands
                         }
                     case CodeType.WimPathDelete:
                         {
-                            CodeInfo_WimPathDelete info = subCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                            CodeInfo_WimPathDelete info = (CodeInfo_WimPathDelete)subCmd.Info;
 
                             string path = StringEscaper.Preprocess(s, info.Path);
 
@@ -1517,7 +1548,7 @@ namespace PEBakery.Core.Commands
                         }
                     case CodeType.WimPathRename:
                         {
-                            CodeInfo_WimPathRename info = subCmd.Info.Cast<CodeInfo_WimPathRename>();
+                            CodeInfo_WimPathRename info = (CodeInfo_WimPathRename)subCmd.Info;
 
                             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
                             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -1570,8 +1601,8 @@ namespace PEBakery.Core.Commands
 
         private static CallbackStatus WimPathProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // UPDATE_BEGIN_COMMAND
             // SCAN_BEGIN
@@ -1641,7 +1672,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimOptimize info = cmd.Info.Cast<CodeInfo_WimOptimize>();
+            CodeInfo_WimOptimize info = (CodeInfo_WimOptimize)cmd.Info;
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
 
@@ -1725,15 +1756,15 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_WimExport info = cmd.Info.Cast<CodeInfo_WimExport>();
+            CodeInfo_WimExport info = (CodeInfo_WimExport)cmd.Info;
 
             string srcWimPath = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
             string destWimPath = StringEscaper.Preprocess(s, info.DestWim);
-            string imageName = null;
+            string? imageName = null;
             if (info.ImageName != null)
                 imageName = StringEscaper.Preprocess(s, info.ImageName);
-            string imageDesc = null;
+            string? imageDesc = null;
             if (info.ImageDesc != null)
                 imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
 
@@ -1875,8 +1906,8 @@ namespace PEBakery.Core.Commands
         #region WimLib - WimSimpleWriteProgress
         private static CallbackStatus WimSimpleWriteProgress(ProgressMsg msg, object info, object progctx)
         {
-            EngineState s = progctx as EngineState;
-            Debug.Assert(s != null);
+            if (progctx is not EngineState s)
+                return CallbackStatus.Continue;
 
             // WRITE_STREAMS 
             switch (msg)

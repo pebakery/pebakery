@@ -30,7 +30,6 @@ using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -38,15 +37,14 @@ namespace PEBakery.Core.Commands
 {
     public class CommandArchive
     {
-        [SuppressMessage("ReSharper", "RedundantNameQualifier")]
         public static List<LogInfo> Compress(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
+            CodeInfo_Compress info = (CodeInfo_Compress)cmd.Info;
 
             #region Event Handlers
-            void ReportCompressProgress(object sender, ProgressEventArgs e)
+            void ReportCompressProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Compressing... ({e.PercentDone}%)";
@@ -58,7 +56,7 @@ namespace PEBakery.Core.Commands
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
             SevenZip.OutArchiveFormat outFormat = ArchiveFile.ToSevenZipOutFormat(info.Format);
             SevenZip.CompressionLevel compLevel = SevenZip.CompressionLevel.Normal;
-            if (info.CompressLevel is ArchiveFile.CompressLevel level)
+            if (info.CompressLevel is CompressLevel level)
             {
                 try
                 {
@@ -170,7 +168,9 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // With wildcard
-                    string srcDirToFind = Path.GetDirectoryName(srcPath);
+                    string? srcDirToFind = Path.GetDirectoryName(srcPath);
+                    if (srcDirToFind == null) // srcPath is root directory
+                        return LogInfo.LogErrorMessage(logs, $"SrcPath [{srcPath}] is a root directory");
                     string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
 
                     // Compressor Options
@@ -216,10 +216,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
+            CodeInfo_Decompress info = (CodeInfo_Decompress)cmd.Info;
 
             #region Event Handlers
-            void ReportDecompressProgress(object sender, ProgressEventArgs e)
+            void ReportDecompressProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Decompressing... ({e.PercentDone}%)";
@@ -246,7 +246,7 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            SevenZipExtractor extractor = null;
+            SevenZipExtractor? extractor = null;
             try
             {
                 if (info.Password == null)
@@ -283,18 +283,18 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Expand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_Expand info = cmd.Info.Cast<CodeInfo_Expand>();
+            CodeInfo_Expand info = (CodeInfo_Expand)cmd.Info;
             List<string> extractedFiles = new List<string>();
 
             #region Event Handlers
-            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            void ReportExpandProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";
             }
 
             object trackLock = new object();
-            void TrackExtractedFile(object sender, FileInfoEventArgs e)
+            void TrackExtractedFile(object? sender, FileInfoEventArgs e)
             {
                 lock (trackLock)
                     extractedFiles.Add(e.FileInfo.FileName);
@@ -303,7 +303,7 @@ namespace PEBakery.Core.Commands
 
             string srcCab = StringEscaper.Preprocess(s, info.SrcCab);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
-            string singleFile = null;
+            string? singleFile = null;
             if (info.SingleFile != null)
                 singleFile = StringEscaper.Preprocess(s, info.SingleFile);
 
@@ -417,10 +417,10 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> CopyOrExpand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_CopyOrExpand info = cmd.Info.Cast<CodeInfo_CopyOrExpand>();
+            CodeInfo_CopyOrExpand info = (CodeInfo_CopyOrExpand)cmd.Info;
 
             #region Event Handlers
-            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            void ReportExpandProgress(object? sender, ProgressEventArgs e)
             {
                 s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
                 s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";
@@ -489,8 +489,8 @@ namespace PEBakery.Core.Commands
               // Terminate if a file does not have equivalent cabinet file
                 if (srcFileExt.Length == ".".Length)
                     return logs;
-                string srcCabExt = srcFileExt.Substring(0, srcFileExt.Length - 1) + "_";
-                string srcCab = srcFile.Substring(0, srcFile.Length - srcCabExt.Length) + srcCabExt;
+                string srcCabExt = string.Concat(srcFileExt.AsSpan(0, srcFileExt.Length - 1), "_");
+                string srcCab = string.Concat(srcFile.AsSpan(0, srcFile.Length - srcCabExt.Length), srcCabExt);
 
                 if (File.Exists(srcCab))
                 {

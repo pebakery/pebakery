@@ -37,7 +37,7 @@ namespace Ookii.Dialogs.Wpf
         /// is created and before it is displayed.
         /// </remarks>
         [Category("Behavior"), Description("Event raised when the task dialog has been created.")]
-        public event EventHandler Created;
+        public event EventHandler? Created;
         /// <summary>
         /// Event raised when the task dialog has been destroyed.
         /// </summary>
@@ -45,7 +45,7 @@ namespace Ookii.Dialogs.Wpf
         /// The task dialog window no longer exists when this event is raised.
         /// </remarks>
         [Category("Behavior"), Description("Event raised when the task dialog has been destroyed.")]
-        public event EventHandler Destroyed;
+        public event EventHandler? Destroyed;
         /// <summary>
         /// Event raised when the user clicks a button on the task dialog.
         /// </summary>
@@ -53,7 +53,7 @@ namespace Ookii.Dialogs.Wpf
         /// Set the <see cref="CancelEventArgs.Cancel"/> property to <see langword="true" /> to prevent the dialog from being closed.
         /// </remarks>
         [Category("Action"), Description("Event raised when the user clicks a button.")]
-        public event EventHandler<TaskDialogItemClickedEventArgs> ButtonClicked;
+        public event EventHandler<TaskDialogItemClickedEventArgs>? ButtonClicked;
         /// <summary>
         /// Event raised when the user clicks a radio button on the task dialog.
         /// </summary>
@@ -61,17 +61,17 @@ namespace Ookii.Dialogs.Wpf
         /// The <see cref="CancelEventArgs.Cancel"/> property is ignored for this event.
         /// </remarks>
         [Category("Action"), Description("Event raised when the user clicks a button.")]
-        public event EventHandler<TaskDialogItemClickedEventArgs> RadioButtonClicked;
+        public event EventHandler<TaskDialogItemClickedEventArgs>? RadioButtonClicked;
         /// <summary>
         /// Event raised when the user clicks a hyperlink.
         /// </summary>
         [Category("Action"), Description("Event raised when the user clicks a hyperlink.")]
-        public event EventHandler<HyperlinkClickedEventArgs> HyperlinkClicked;
+        public event EventHandler<HyperlinkClickedEventArgs>? HyperlinkClicked;
         /// <summary>
         /// Event raised when the user clicks the verification check box.
         /// </summary>
         [Category("Action"), Description("Event raised when the user clicks the verification check box.")]
-        public event EventHandler VerificationClicked;
+        public event EventHandler? VerificationClicked;
         /// <summary>
         /// Event raised periodically while the dialog is displayed.
         /// </summary>
@@ -86,7 +86,7 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </remarks>
         [Category("Behavior"), Description("Event raised periodically while the dialog is displayed.")]
-        public event EventHandler<TimerEventArgs> Timer;
+        public event EventHandler<TimerEventArgs>? Timer;
         /// <summary>
         /// Event raised when the user clicks the expand button on the task dialog.
         /// </summary>
@@ -95,26 +95,26 @@ namespace Ookii.Dialogs.Wpf
         /// or not after the click.
         /// </remarks>
         [Category("Action"), Description("Event raised when the user clicks the expand button on the task dialog.")]
-        public event EventHandler<ExpandButtonClickedEventArgs> ExpandButtonClicked;
+        public event EventHandler<ExpandButtonClickedEventArgs>? ExpandButtonClicked;
         /// <summary>
         /// Event raised when the user presses F1 while the dialog has focus.
         /// </summary>
         [Category("Action"), Description("Event raised when the user presses F1 while the dialog has focus.")]
-        public event EventHandler HelpRequested;
+        public event EventHandler? HelpRequested;
 
         #endregion
 
         #region Fields
 
-        private TaskDialogItemCollection<TaskDialogButton> _buttons;
-        private TaskDialogItemCollection<TaskDialogRadioButton> _radioButtons;
+        private TaskDialogItemCollection<TaskDialogButton>? _buttons;
+        private TaskDialogItemCollection<TaskDialogRadioButton>? _radioButtons;
         private NativeMethods.TASKDIALOGCONFIG _config = new NativeMethods.TASKDIALOGCONFIG();
         private TaskDialogIcon _mainIcon;
-        private System.Drawing.Icon _customMainIcon;
-        private System.Drawing.Icon _customFooterIcon;
+        private System.Drawing.Icon? _customMainIcon;
+        private System.Drawing.Icon? _customFooterIcon;
         private TaskDialogIcon _footerIcon;
-        private Dictionary<int, TaskDialogButton> _buttonsById;
-        private Dictionary<int, TaskDialogRadioButton> _radioButtonsById;
+        private Dictionary<int, TaskDialogButton>? _buttonsById;
+        private Dictionary<int, TaskDialogRadioButton>? _radioButtonsById;
         private IntPtr _handle;
         private int _progressBarMarqueeAnimationSpeed = 100;
         private int _progressBarMinimimum;
@@ -123,8 +123,8 @@ namespace Ookii.Dialogs.Wpf
         private ProgressBarState _progressBarState = ProgressBarState.Normal;
         private int _inEventHandler;
         private bool _updatePending;
-        private object _tag;
-        private System.Drawing.Icon _windowIcon;
+        private object? _tag;
+        private System.Drawing.Icon? _windowIcon;
 
         #endregion
 
@@ -187,7 +187,7 @@ namespace Ookii.Dialogs.Wpf
         [Localizable(true), DesignerSerializationVisibility(DesignerSerializationVisibility.Content), Category("Appearance"), Description("A list of the buttons on the Task Dialog.")]
         public TaskDialogItemCollection<TaskDialogButton> Buttons
         {
-            get { return _buttons ?? (_buttons = new TaskDialogItemCollection<TaskDialogButton>(this)); }
+            get { return _buttons ??= new TaskDialogItemCollection<TaskDialogButton>(this); }
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace Ookii.Dialogs.Wpf
         [Localizable(true), DesignerSerializationVisibility(DesignerSerializationVisibility.Content), Category("Appearance"), Description("A list of the radio buttons on the Task Dialog.")]
         public TaskDialogItemCollection<TaskDialogRadioButton> RadioButtons
         {
-            get { return _radioButtons ?? (_radioButtons = new TaskDialogItemCollection<TaskDialogRadioButton>(this)); }
+            get { return _radioButtons ??= new TaskDialogItemCollection<TaskDialogRadioButton>(this); }
         }
 
 
@@ -272,7 +272,7 @@ namespace Ookii.Dialogs.Wpf
         /// is modal, it will have no icon.
         /// </remarks>
         [Localizable(true), Category("Appearance"), Description("The icon to be used in the title bar of the dialog. Used only when the dialog is shown as a modeless dialog."), DefaultValue(null)]
-        public System.Drawing.Icon WindowIcon
+        public System.Drawing.Icon? WindowIcon
         {
             get
             {
@@ -323,7 +323,7 @@ namespace Ookii.Dialogs.Wpf
         /// This property is ignored if the <see cref="MainIcon"/> property has a value other than <see cref="TaskDialogIcon.Custom"/>.
         /// </remarks>
         [Localizable(true), Category("Appearance"), Description("A custom icon to display in the dialog."), DefaultValue(null)]
-        public System.Drawing.Icon CustomMainIcon
+        public System.Drawing.Icon? CustomMainIcon
         {
             get { return _customMainIcon; }
             set
@@ -382,7 +382,7 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </remarks>
         [Localizable(true), Category("Appearance"), Description("A custom icon to display in the footer area of the task dialog."), DefaultValue(null)]
-        public System.Drawing.Icon CustomFooterIcon
+        public System.Drawing.Icon? CustomFooterIcon
         {
             get { return _customFooterIcon; }
             set
@@ -447,7 +447,7 @@ namespace Ookii.Dialogs.Wpf
             get { return _config.pszVerificationText ?? string.Empty; }
             set
             {
-                string realValue = string.IsNullOrEmpty(value) ? null : value;
+                string? realValue = string.IsNullOrEmpty(value) ? null : value;
                 if (_config.pszVerificationText != realValue)
                 {
                     _config.pszVerificationText = realValue;
@@ -540,7 +540,7 @@ namespace Ookii.Dialogs.Wpf
             get { return _config.pszExpandedControlText ?? string.Empty; }
             set
             {
-                string realValue = string.IsNullOrEmpty(value) ? null : value;
+                string? realValue = string.IsNullOrEmpty(value) ? null : value;
                 if (_config.pszExpandedControlText != realValue)
                 {
                     _config.pszExpandedControlText = realValue;
@@ -572,7 +572,7 @@ namespace Ookii.Dialogs.Wpf
             get { return _config.pszCollapsedControlText ?? string.Empty; }
             set
             {
-                string realValue = string.IsNullOrEmpty(value) ? null : value;
+                string? realValue = string.IsNullOrEmpty(value) ? null : value;
                 if (_config.pszCollapsedControlText != realValue)
                 {
                     _config.pszCollapsedControlText = string.IsNullOrEmpty(value) ? null : value;
@@ -896,7 +896,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (_progressBarMaximum <= value)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 _progressBarMinimimum = value;
                 UpdateProgressBarRange();
             }
@@ -920,7 +920,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (value <= _progressBarMinimimum)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 _progressBarMaximum = value;
                 UpdateProgressBarRange();
             }
@@ -948,7 +948,7 @@ namespace Ookii.Dialogs.Wpf
             set
             {
                 if (value < ProgressBarMinimum || value > ProgressBarMaximum)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 _progressBarValue = value;
                 UpdateProgressBarValue();
@@ -987,7 +987,7 @@ namespace Ookii.Dialogs.Wpf
         /// Use this property to store arbitrary information about the dialog.
         /// </remarks>
         [Category("Data"), Description("User-defined data about the component."), DefaultValue(null)]
-        public object Tag
+        public object? Tag
         {
             get { return _tag; }
             set { _tag = value; }
@@ -1020,7 +1020,7 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </exception>
         /// <exception cref="NotSupportedException">Task dialogs are not supported on the current operating system.</exception>
-        public TaskDialogButton Show()
+        public TaskDialogButton? Show()
         {
             return ShowDialog(IntPtr.Zero);
         }
@@ -1046,9 +1046,9 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </exception>
         /// <exception cref="NotSupportedException">Task dialogs are not supported on the current operating system.</exception>
-        public TaskDialogButton ShowDialog()
+        public TaskDialogButton? ShowDialog()
         {
-            return ShowDialog((Window)null);
+            return ShowDialog(null);
         }
 
         /// <summary>
@@ -1069,7 +1069,7 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </exception>
         /// <exception cref="NotSupportedException">Task dialogs are not supported on the current operating system.</exception>
-        public TaskDialogButton ShowDialog(Window owner)
+        public TaskDialogButton? ShowDialog(Window? owner)
         {
             IntPtr ownerHandle;
             if (owner == null)
@@ -1219,7 +1219,7 @@ namespace Ookii.Dialogs.Wpf
 
         #region Private members
 
-        private TaskDialogButton ShowDialog(IntPtr owner)
+        private TaskDialogButton? ShowDialog(IntPtr owner)
         {
             if (!OSSupportsTaskDialogs)
                 throw new NotSupportedException(Properties.Resources.TaskDialogsNotSupportedError);
@@ -1227,7 +1227,7 @@ namespace Ookii.Dialogs.Wpf
             if (IsDialogRunning)
                 throw new InvalidOperationException(Properties.Resources.TaskDialogRunningError);
 
-            if (_buttons.Count == 0)
+            if (_buttons == null || _buttons.Count == 0)
                 throw new InvalidOperationException(Properties.Resources.TaskDialogNoButtonsError);
 
             _config.hwndParent = owner;
@@ -1252,12 +1252,12 @@ namespace Ookii.Dialogs.Wpf
                 }
                 IsVerificationChecked = verificationFlagChecked;
 
-                TaskDialogRadioButton selectedRadioButton;
-                if (_radioButtonsById.TryGetValue(radioButton, out selectedRadioButton))
+                TaskDialogRadioButton? selectedRadioButton;
+                if (_radioButtonsById != null && _radioButtonsById.TryGetValue(radioButton, out selectedRadioButton))
                     selectedRadioButton.Checked = true;
 
-                TaskDialogButton selectedButton;
-                if (_buttonsById.TryGetValue(buttonId, out selectedButton))
+                TaskDialogButton? selectedButton;
+                if (_buttonsById != null && _buttonsById.TryGetValue(buttonId, out selectedButton))
                     return selectedButton;
                 else
                     return null;
@@ -1342,7 +1342,7 @@ namespace Ookii.Dialogs.Wpf
             SetupIcon(FooterIcon, CustomFooterIcon, NativeMethods.TaskDialogFlags.UseHIconFooter);
         }
 
-        private void SetupIcon(TaskDialogIcon icon, System.Drawing.Icon customIcon, NativeMethods.TaskDialogFlags flag)
+        private void SetupIcon(TaskDialogIcon icon, System.Drawing.Icon? customIcon, NativeMethods.TaskDialogFlags flag)
         {
             SetFlag(flag, false);
             if (icon == TaskDialogIcon.Custom)
@@ -1489,12 +1489,12 @@ namespace Ookii.Dialogs.Wpf
                         DialogCreated();
                         break;
                     case NativeMethods.TaskDialogNotifications.HyperlinkClicked:
-                        string url = Marshal.PtrToStringUni(lParam);
+                        string? url = Marshal.PtrToStringUni(lParam);
                         OnHyperlinkClicked(new HyperlinkClickedEventArgs(url));
                         break;
                     case NativeMethods.TaskDialogNotifications.ButtonClicked:
-                        TaskDialogButton button;
-                        if (_buttonsById.TryGetValue((int)wParam, out button))
+                        TaskDialogButton? button;
+                        if (_buttonsById != null && _buttonsById.TryGetValue((int)wParam, out button))
                         {
                             TaskDialogItemClickedEventArgs e = new TaskDialogItemClickedEventArgs(button);
                             OnButtonClicked(e);
@@ -1507,8 +1507,8 @@ namespace Ookii.Dialogs.Wpf
                         OnVerificationClicked(EventArgs.Empty);
                         break;
                     case NativeMethods.TaskDialogNotifications.RadioButtonClicked:
-                        TaskDialogRadioButton radioButton;
-                        if (_radioButtonsById.TryGetValue((int)wParam, out radioButton))
+                        TaskDialogRadioButton? radioButton;
+                        if (_radioButtonsById != null && _radioButtonsById.TryGetValue((int)wParam, out radioButton))
                         {
                             radioButton.Checked = true; // there's no way to click a radio button without checking it, is there?
                             TaskDialogItemClickedEventArgs e = new TaskDialogItemClickedEventArgs(radioButton);

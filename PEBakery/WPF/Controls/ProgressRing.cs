@@ -53,7 +53,7 @@ namespace PEBakery.WPF.Controls
 
         public static readonly DependencyProperty EllipseDiameterScaleProperty = DependencyProperty.Register("EllipseDiameterScale", typeof(double), typeof(ProgressRing), new PropertyMetadata(1D));
 
-        private List<Action> _deferredActions = new List<Action>();
+        private List<Action>? _deferredActions = new List<Action>();
 
         static ProgressRing()
         {
@@ -130,7 +130,7 @@ namespace PEBakery.WPF.Controls
 
         private static void BindableWidthCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             var action = new Action(() =>
@@ -167,7 +167,7 @@ namespace PEBakery.WPF.Controls
 
         private static void IsLargeChangedCallback(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             ring.UpdateLargeState();
@@ -196,7 +196,7 @@ namespace PEBakery.WPF.Controls
 
         private static void IsActiveChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs dependencyPropertyChangedEventArgs)
         {
-            if (!(dependencyObject is ProgressRing ring))
+            if (dependencyObject is not ProgressRing ring)
                 return;
 
             ring.UpdateActiveState();
@@ -240,7 +240,7 @@ namespace PEBakery.WPF.Controls
                 return width <= 20 ? 20 : width;
             }
 
-            return null;
+            return Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

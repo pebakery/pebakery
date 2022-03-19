@@ -153,7 +153,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is Script sc))
+            if (value is not Script sc)
                 return Binding.DoNothing;
 
             return sc.Title;
@@ -171,7 +171,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is Script sc))
+            if (value is not Script sc)
                 return Binding.DoNothing;
 
             return sc.Selected == SelectedState.None ? Visibility.Collapsed : Visibility.Visible;
@@ -209,7 +209,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return false;
-            if (!(value is Project p))
+            if (value is not Project p)
                 return false;
 
             return p.IsPathSettingEnabled();
@@ -227,7 +227,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Visibility.Collapsed;
-            if (!(value is Project p))
+            if (value is not Project p)
                 return Visibility.Collapsed;
 
             return p.IsPathSettingEnabled() ? Visibility.Collapsed : Visibility.Visible;
@@ -280,7 +280,7 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is double progress))
+            if (value is not double progress)
                 return string.Empty;
             return 0 < progress ? $"{progress * 100:0.0}%" : string.Empty;
         }
@@ -295,7 +295,7 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is double progress))
+            if (value is not double progress)
                 return false;
             return 0 <= progress;
         }
@@ -310,7 +310,7 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is ObservableCollection<string> collection))
+            if (value is not ObservableCollection<string> collection)
                 return false;
             return 2 <= collection.Count ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -328,7 +328,7 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is string escapedStr))
+            if (value is not string escapedStr)
                 return string.Empty;
 
             return StringEscaper.Unescape(escapedStr);
@@ -336,7 +336,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is string rawStr))
+            if (value is not string rawStr)
                 return Binding.DoNothing;
 
             return StringEscaper.Escape(rawStr, false, true);
@@ -358,7 +358,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is string str))
+            if (value is not string str)
                 return DateTime.Now;
             return DateTime.TryParse(str, out DateTime time) ? time : DateTime.Now;
         }
@@ -426,11 +426,11 @@ namespace PEBakery.WPF
             if (values == null || values.Length != 3)
                 return string.Empty;
 
-            if (!(values[0] is int scriptId))
+            if (values[0] is not int scriptId)
                 return string.Empty;
-            if (!(values[1] is int refScriptId))
+            if (values[1] is not int refScriptId)
                 return string.Empty;
-            if (!(values[2] is Dictionary<int, string> scTitleDict))
+            if (values[2] is not Dictionary<int, string> scTitleDict)
                 return string.Empty;
 
             if (refScriptId != 0) // Referenced Script
@@ -471,10 +471,125 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return LogModel.BuildLogFlag.None;
-            if (!(value is string str))
+            if (value is not string str)
                 return LogModel.BuildLogFlag.None;
 
             return LogModel.ParseBuildLogFlag(str);
+        }
+    }
+
+    public class LogStateToForegroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not LogState state)
+                return Binding.DoNothing;
+
+            switch (state)
+            {
+                case LogState.Ignore:
+                case LogState.Muted:
+                    return new SolidColorBrush(Color.FromRgb(108, 117, 125));
+                default:
+                    return new SolidColorBrush(Color.FromRgb(0, 0, 0));
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class LogStateToStatBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not LogState state)
+                return Binding.DoNothing;
+
+            switch (state)
+            {
+                case LogState.Success:
+                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
+                case LogState.Warning:
+                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
+                case LogState.Overwrite:
+                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
+                case LogState.Info:
+                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
+                case LogState.Ignore:
+                    return new SolidColorBrush(Color.FromRgb(226, 227, 229));
+                case LogState.Muted:
+                    return new SolidColorBrush(Color.FromRgb(214, 216, 217));
+                default:
+                    return Binding.DoNothing;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class LogStateToAlternateBackgroundConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length != 2)
+                return Binding.DoNothing;
+            if (values[0] is not LogState state)
+                return Binding.DoNothing;
+            if (values[1] is not int alterIdx)
+                return Binding.DoNothing;
+
+            switch (state)
+            {
+                case LogState.CriticalError:
+                case LogState.Error:
+                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
+                case LogState.Warning:
+                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
+            }
+
+            if (alterIdx % 2 == 0)
+                return new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            else
+                return new SolidColorBrush(Color.FromRgb(242, 242, 242));
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[2] { Binding.DoNothing, Binding.DoNothing };
+        }
+    }
+
+    public class VarsTypeToBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not VarsType varsType)
+                return Binding.DoNothing;
+
+            switch (varsType)
+            {
+                case VarsType.Fixed:
+                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
+                case VarsType.Global:
+                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
+                case VarsType.Local:
+                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
+            }
+            return Binding.DoNothing;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
         }
     }
     #endregion
@@ -486,7 +601,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return string.Empty;
-            if (!(value is FontHelper.FontInfo fi))
+            if (value is not FontHelper.FontInfo fi)
                 return string.Empty;
 
             return fi.ToString();
@@ -504,7 +619,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is FontHelper.FontInfo fi))
+            if (value is not FontHelper.FontInfo fi)
                 return Binding.DoNothing;
 
             return fi.FontFamily;
@@ -522,7 +637,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is FontHelper.FontInfo fi))
+            if (value is not FontHelper.FontInfo fi)
                 return Binding.DoNothing;
 
             return fi.FontWeight;
@@ -540,7 +655,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is FontHelper.FontInfo fi))
+            if (value is not FontHelper.FontInfo fi)
                 return Binding.DoNothing;
 
             return fi.DeviceIndependentPixelSize;
@@ -558,7 +673,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return FontWeights.Regular;
-            if (!(value is bool b))
+            if (value is not bool b)
                 return FontWeights.Regular;
 
             return b ? FontWeights.Bold : FontWeights.Regular;
@@ -595,7 +710,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Visibility.Collapsed;
-            if (!(value is bool valBool))
+            if (value is not bool valBool)
                 return Visibility.Collapsed;
 
             return valBool ? Visibility.Collapsed : Visibility.Visible;
@@ -611,12 +726,13 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is bool b))
+            if (value is not bool b)
                 return Binding.DoNothing;
             if (!(parameter is Array paramArr && paramArr.Length == 2))
                 return Binding.DoNothing;
 
-            return b ? paramArr.GetValue(0) : paramArr.GetValue(1);
+            object? retObj = b ? paramArr.GetValue(0) : paramArr.GetValue(1);
+            return retObj ?? Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -633,7 +749,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is Color c))
+            if (value is not Color c)
                 return Binding.DoNothing;
 
             return new SolidColorBrush(c);
@@ -643,7 +759,7 @@ namespace PEBakery.WPF
         {
             if (value == null)
                 return Binding.DoNothing;
-            if (!(value is SolidColorBrush b))
+            if (value is not SolidColorBrush b)
                 return Binding.DoNothing;
 
             return b.Color;

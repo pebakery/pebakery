@@ -22,8 +22,8 @@ namespace Ookii.Dialogs.Wpf
     [DefaultEvent("HelpRequest"), Designer("System.Windows.Forms.Design.FolderBrowserDialogDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"), DefaultProperty("SelectedPath"), Description("Prompts the user to select a folder.")]
     public sealed class VistaFolderBrowserDialog : Microsoft.Win32.CommonDialog
     {
-        private string _description;
-        private string _selectedPath;
+        private string? _description;
+        private string? _selectedPath;
 
         /// <summary>
         /// Creates a new instance of the <see cref="VistaFolderBrowserDialog" /> class.
@@ -155,7 +155,7 @@ namespace Ookii.Dialogs.Wpf
         protected override bool RunDialog(IntPtr owner)
         {
             if (!IsVistaFolderDialogSupported) return RunDialogDownlevel(owner);
-            Ookii.Dialogs.Wpf.Interop.IFileDialog dialog = null;
+            Ookii.Dialogs.Wpf.Interop.IFileDialog? dialog = null;
             try
             {
                 dialog = new Ookii.Dialogs.Wpf.Interop.NativeFileOpenDialog();
@@ -164,9 +164,16 @@ namespace Ookii.Dialogs.Wpf
                 if (result < 0)
                 {
                     if (result == (int)HRESULT.ERROR_CANCELLED)
+                    {
                         return false;
+                    }
                     else
-                        throw System.Runtime.InteropServices.Marshal.GetExceptionForHR(result);
+                    {
+                        if (Marshal.GetExceptionForHR(result) is Exception e)
+                            throw e;
+                        return false;
+                    }
+
                 }
                 GetResult(dialog);
                 return true;
@@ -191,13 +198,15 @@ namespace Ookii.Dialogs.Wpf
             }
             try
             {
-                NativeMethods.BROWSEINFO info = new NativeMethods.BROWSEINFO();
-                info.hwndOwner = owner;
-                info.lpfn = new NativeMethods.BrowseCallbackProc(BrowseCallbackProc);
-                info.lpszTitle = Description;
-                info.pidlRoot = rootItemIdList;
-                info.pszDisplayName = new string('\0', 260);
-                info.ulFlags = NativeMethods.BrowseInfoFlags.NewDialogStyle | NativeMethods.BrowseInfoFlags.ReturnOnlyFsDirs;
+                NativeMethods.BROWSEINFO info = new NativeMethods.BROWSEINFO
+                {
+                    hwndOwner = owner,
+                    lpfn = new NativeMethods.BrowseCallbackProc(BrowseCallbackProc),
+                    lpszTitle = Description,
+                    pidlRoot = rootItemIdList,
+                    pszDisplayName = new string('\0', 260),
+                    ulFlags = NativeMethods.BrowseInfoFlags.NewDialogStyle | NativeMethods.BrowseInfoFlags.ReturnOnlyFsDirs
+                };
                 if (!ShowNewFolderButton)
                     info.ulFlags |= NativeMethods.BrowseInfoFlags.NoNewFolderButton;
                 resultItemIdList = NativeMethods.SHBrowseForFolder(ref info);
@@ -246,7 +255,7 @@ namespace Ookii.Dialogs.Wpf
 
             if (!string.IsNullOrEmpty(_selectedPath))
             {
-                string parent = Path.GetDirectoryName(_selectedPath);
+                string? parent = Path.GetDirectoryName(_selectedPath);
                 if (parent == null || !Directory.Exists(parent))
                 {
                     dialog.SetFileName(_selectedPath);
@@ -262,8 +271,7 @@ namespace Ookii.Dialogs.Wpf
 
         private void GetResult(Ookii.Dialogs.Wpf.Interop.IFileDialog dialog)
         {
-            Ookii.Dialogs.Wpf.Interop.IShellItem item;
-            dialog.GetResult(out item);
+            dialog.GetResult(out Ookii.Dialogs.Wpf.Interop.IShellItem item);
             item.GetDisplayName(NativeMethods.SIGDN.SIGDN_FILESYSPATH, out _selectedPath);
         }
 

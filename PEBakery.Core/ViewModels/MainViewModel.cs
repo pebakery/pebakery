@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -52,19 +51,21 @@ namespace PEBakery.Core.ViewModels
         #region Constructor
         public MainViewModel()
         {
-            MainTreeItems = new ObservableCollection<ProjectTreeItemModel>();
-            BuildTreeItems = new ObservableCollection<ProjectTreeItemModel>();
+            // Always assign these values to prevent thread-owner exception.
             BuildConOutRedirectTextLines = new ObservableCollection<Tuple<string, bool>>();
+            BuildTreeItems = new ObservableCollection<ProjectTreeItemModel>();
+            MainTreeItems = new ObservableCollection<ProjectTreeItemModel>();
 
             Canvas canvas = new Canvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(10, 10, 10, 10),
+                Margin = new Thickness(10, 10, 10, 10)
             };
             Grid.SetRow(canvas, 0);
             Grid.SetColumn(canvas, 0);
             Panel.SetZIndex(canvas, -1);
+            // Always assign new canvas to prevent thread-owner exception.
             MainCanvas = canvas;
         }
         #endregion
@@ -74,26 +75,25 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region UIRenderer Properties
-        private UIRenderer _renderer;
+        private UIRenderer? _renderer;
         #endregion
 
         #region TreeItem Properties
-        private ProjectTreeItemModel _curMainTree;
-        public ProjectTreeItemModel CurMainTree
+        private ProjectTreeItemModel? _curMainTree;
+        public ProjectTreeItemModel? CurMainTree
         {
             get => _curMainTree;
             set
             {
                 SetProperty(ref _curMainTree, value);
 
-                Script sc = value?.Script;
-                if (sc == null)
+                if (value?.Script is not Script sc)
                     return;
                 IsTreeEntryFile = sc.Type != ScriptType.Directory;
                 IsTreeEntryMain = sc.Equals(sc.Project.MainScript);
             }
         }
-        public ProjectTreeItemModel CurBuildTree { get; set; }
+        public ProjectTreeItemModel? CurBuildTree { get; set; }
         #endregion
 
         #region Working Properties
@@ -168,6 +168,7 @@ namespace PEBakery.Core.ViewModels
             // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
+            OnPropertyUpdate(nameof(ScriptTreeFontSize));
             OnPropertyUpdate(nameof(TopPanelHeight));
             OnPropertyUpdate(nameof(BannerIconSize));
             OnPropertyUpdate(nameof(BannerFontSize));
@@ -178,6 +179,7 @@ namespace PEBakery.Core.ViewModels
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
+        public int ScriptTreeFontSize => GetAdaptiveSize(12, 11);
         public int TopPanelHeight => GetAdaptiveSize(80, 60);
         public int BannerIconSize => GetAdaptiveSize(56, 36);
         public int BannerFontSize => GetAdaptiveSize(40, 32);
@@ -328,10 +330,16 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private ImageSource _scriptLogoImage;
-        public ImageSource ScriptLogoImage
+        private ImageSource? _scriptLogoImage;
+        public ImageSource? ScriptLogoImage
         {
-            get => _scriptLogoImage;
+            get
+            {
+                // TODO: proper empty source
+                //if (_scriptLogoImage == null)
+                //    return new ImageSource();
+                return _scriptLogoImage;
+            }
             set
             {
                 _scriptLogoIcon = PackIconMaterialKind.None;
@@ -357,10 +365,15 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _scriptLogoImageHeight, value);
         }
 
-        private DrawingBrush _scriptLogoSvg;
+        private DrawingBrush? _scriptLogoSvg;
         public DrawingBrush ScriptLogoSvg
         {
-            get => _scriptLogoSvg;
+            get
+            {
+                if (_scriptLogoSvg == null)
+                    return new DrawingBrush();
+                return _scriptLogoSvg;
+            }
             set
             {
                 _scriptLogoIcon = PackIconMaterialKind.None;
@@ -563,14 +576,14 @@ namespace PEBakery.Core.ViewModels
         }
 
         private readonly object _mainTreeItemsLock = new object();
-        private ObservableCollection<ProjectTreeItemModel> _mainTreeItems;
+        private ObservableCollection<ProjectTreeItemModel> _mainTreeItems = new ObservableCollection<ProjectTreeItemModel>();
         public ObservableCollection<ProjectTreeItemModel> MainTreeItems
         {
             get => _mainTreeItems;
             set => SetCollectionProperty(ref _mainTreeItems, _mainTreeItemsLock, value);
         }
 
-        private Canvas _mainCanvas;
+        private Canvas _mainCanvas = new Canvas();
         public Canvas MainCanvas
         {
             get => _mainCanvas;
@@ -580,7 +593,7 @@ namespace PEBakery.Core.ViewModels
 
         #region Build Interface Properties
         private readonly object _buildTreeItemsLock = new object();
-        private ObservableCollection<ProjectTreeItemModel> _buildTreeItems;
+        private ObservableCollection<ProjectTreeItemModel> _buildTreeItems = new ObservableCollection<ProjectTreeItemModel>();
         public ObservableCollection<ProjectTreeItemModel> BuildTreeItems
         {
             get => _buildTreeItems;
@@ -682,7 +695,7 @@ namespace PEBakery.Core.ViewModels
 
         // ShellExecute Console Output
         private readonly object _buildConOutRedirectTextLinesLock = new object();
-        private ObservableCollection<Tuple<string, bool>> _buildConOutRedirectTextLines;
+        private ObservableCollection<Tuple<string, bool>> _buildConOutRedirectTextLines = new ObservableCollection<Tuple<string, bool>>();
         public ObservableCollection<Tuple<string, bool>> BuildConOutRedirectTextLines
         {
             get => _buildConOutRedirectTextLines;
@@ -697,7 +710,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildConOutRedirectVisibility, value);
         }
 
-        private FontHelper.FontInfo _monospacedFont = FontHelper.FontInfo.DefaultMonospaced;
+        private FontHelper.FontInfo _monospacedFont = FontHelper.DefaultMonospacedFontInfo();
         public FontHelper.FontInfo MonospacedFont
         {
             get => _monospacedFont;
@@ -807,14 +820,34 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region Background Tasks
-        public int ProjectsLoading = 0;
-        public int ScriptRefreshing = 0;
-        public int SyntaxChecking = 0;
+        #region Reference Count
+        private int _projectsLoadRefCount = 0;
+        private int _scriptRefreshRefCount = 0;
+        private int _syntaxCheckRefCount = 0;
 
+        public int ProjectsLoadAcquire() => Interlocked.Increment(ref _projectsLoadRefCount);
+        public int ProjectsLoadRelease() => Interlocked.Decrement(ref _projectsLoadRefCount);
+        public bool IsProjectsLoading() => 0 < _projectsLoadRefCount;
+
+        public int ScriptRefreshAcquire() => Interlocked.Increment(ref _scriptRefreshRefCount);
+        public int ScriptRefreshRelease() => Interlocked.Decrement(ref _scriptRefreshRefCount);
+        public bool IsScriptRefreshing() => 0 < _scriptRefreshRefCount;
+
+        public int SyntaxCheckAcquire() => Interlocked.Increment(ref _syntaxCheckRefCount);
+        public int SyntaxCheckRelease() => Interlocked.Decrement(ref _syntaxCheckRefCount);
+        public bool IsSyntaxChecking() => 0 < _syntaxCheckRefCount;
+        #endregion
+
+        #region Background Tasks
         public Task StartLoadingProjects(bool refreshProjectEntries, bool quiet)
         {
-            if (ProjectsLoading != 0)
+            if (IsProjectsLoading())
+                return Task.CompletedTask;
+
+            Setting setting = Global.Setting;
+            if (setting == null)
+                return Task.CompletedTask;
+            if (Global.Projects == null)
                 return Task.CompletedTask;
 
             // Clear MainTreeItems
@@ -835,7 +868,7 @@ namespace PEBakery.Core.ViewModels
             int stage1CachedCount = 0;
             int stage2LoadedCount = 0;
             int stage2CachedCount = 0;
-            IProgress<(Project.LoadReport Type, string Path)> progress = new Progress<(Project.LoadReport Type, string Path)>(x =>
+            IProgress<(Project.LoadReport Type, string? Path)> progress = new Progress<(Project.LoadReport Type, string? Path)>(x =>
             {
                 Interlocked.Increment(ref loadedScriptCount);
                 BottomProgressBarValue = loadedScriptCount;
@@ -884,7 +917,7 @@ namespace PEBakery.Core.ViewModels
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ProjectsLoading);
+                ProjectsLoadAcquire();
                 if (!quiet)
                     WorkInProgress = true;
                 SwitchStatusProgressBar = StatusProgressSwitch.Progress; // Show Progress Bar
@@ -920,8 +953,8 @@ namespace PEBakery.Core.ViewModels
                         Global.Projects.RefreshProjectEntries();
 
                     // Get ScriptCache
-                    ScriptCache scriptCache;
-                    if (Global.Setting.Script.EnableCache && Global.ScriptCache != null)
+                    ScriptCache? scriptCache;
+                    if (Global.Setting != null && Global.Setting.Script.EnableCache && Global.ScriptCache != null)
                     { // Use ScriptCache
                         if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir, Global.Projects))
                         {
@@ -969,8 +1002,8 @@ namespace PEBakery.Core.ViewModels
 
                         // Select default project
                         // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
-                        string defaultProjectName = Global.Setting.Project.DefaultProject;
-                        ProjectTreeItemModel itemModel = MainTreeItems
+                        string defaultProjectName = setting.Project.DefaultProject;
+                        ProjectTreeItemModel? itemModel = MainTreeItems
                             .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
                         CurMainTree = itemModel ?? MainTreeItems.Last();
                         CurMainTree.IsExpanded = true;
@@ -981,7 +1014,7 @@ namespace PEBakery.Core.ViewModels
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg;
-                        if (Global.Setting.Script.EnableCache)
+                        if (setting.Script.EnableCache)
                         {
                             double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (scriptCount + 2 * linkCount);
                             cachePercent = Math.Min(cachePercent, 100);
@@ -999,7 +1032,7 @@ namespace PEBakery.Core.ViewModels
 
                         // If script cache is enabled, update cache.
                         // Do not use await, let it run aside.
-                        if (Global.Setting.Script.EnableCache)
+                        if (setting.Script.EnableCache)
                             StartScriptCaching();
 
 #if FILESYSTEM_WATCHER
@@ -1019,7 +1052,7 @@ namespace PEBakery.Core.ViewModels
                     if (!quiet)
                         WorkInProgress = false;
                     SwitchStatusProgressBar = StatusProgressSwitch.Status; // Show Status Bar
-                    Interlocked.Decrement(ref ProjectsLoading);
+                    ProjectsLoadRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1029,12 +1062,16 @@ namespace PEBakery.Core.ViewModels
 
         public Task StartScriptCaching()
         {
-            if (ScriptCache.DbLock != 0)
+            if (ScriptCache.IsRunning())
+                return Task.CompletedTask;
+            if (Global.ScriptCache == null)
+                return Task.CompletedTask;
+            if (Global.Projects == null)
                 return Task.CompletedTask;
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ScriptCache.DbLock);
+                ScriptCache.Acquire();
                 WorkInProgress = true;
                 try
                 {
@@ -1049,7 +1086,7 @@ namespace PEBakery.Core.ViewModels
                 finally
                 {
                     WorkInProgress = false;
-                    Interlocked.Decrement(ref ScriptCache.DbLock);
+                    ScriptCache.Release();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1061,7 +1098,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (CurMainTree?.Script == null)
                 return Task.CompletedTask;
-            if (SyntaxChecking != 0)
+            if (IsSyntaxChecking())
                 return Task.CompletedTask;
 
             Script sc = CurMainTree.Script;
@@ -1073,7 +1110,7 @@ namespace PEBakery.Core.ViewModels
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref SyntaxChecking);
+                SyntaxCheckAcquire();
                 try
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
@@ -1176,7 +1213,7 @@ namespace PEBakery.Core.ViewModels
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref SyntaxChecking);
+                    SyntaxCheckRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1190,20 +1227,20 @@ namespace PEBakery.Core.ViewModels
                 return Task.CompletedTask;
             if (CurMainTree.Script.Type == ScriptType.Directory)
                 return Task.CompletedTask;
-            if (ScriptRefreshing != 0)
+            if (IsScriptRefreshing())
                 return Task.CompletedTask;
 
             ProjectTreeItemModel node = CurMainTree;
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref ScriptRefreshing);
+                ScriptRefreshAcquire();
                 if (Engine.WorkingEngine == null)
                     WorkInProgress = true;
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
 
-                    Script sc = node.Script;
+                    Script? sc = node.Script;
                     if (sc.Type != ScriptType.Directory)
                         sc = sc.Project.RefreshScript(node.Script);
 
@@ -1224,7 +1261,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     if (Engine.WorkingEngine == null)
                         WorkInProgress = false;
-                    Interlocked.Decrement(ref ScriptRefreshing);
+                    ScriptRefreshRelease();
 
                     // Enable Button/Context Menu Commands
                     Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
@@ -1305,7 +1342,6 @@ namespace PEBakery.Core.ViewModels
             });
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public void DisplayScriptLogo(Script sc)
         {
             if (sc.Type == ScriptType.Directory)
@@ -1371,7 +1407,7 @@ namespace PEBakery.Core.ViewModels
         /// </summary>
         /// <param name="sc">Source script to read information</param>
         /// <param name="s">Set to non-null to notify running in build mode</param>
-        public void DisplayScriptTexts(Script sc, EngineState s)
+        public void DisplayScriptTexts(Script sc, EngineState? s)
         {
             if (sc.Type == ScriptType.Directory && s == null)
             { // In build mode, there are no directory scripts
@@ -1392,7 +1428,7 @@ namespace PEBakery.Core.ViewModels
                 ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
 
                 // Script Version
-                string verStr = StringEscaper.ProcessVersionString(sc.RawVersion);
+                string? verStr = StringEscaper.ProcessVersionString(sc.RawVersion);
                 if (verStr == null)
                 {
                     if (s != null)
@@ -1413,7 +1449,7 @@ namespace PEBakery.Core.ViewModels
                 // Script Author
                 string author = StringEscaper.Unescape(sc.Author);
                 if (ScriptAuthorLenLimit < author.Length)
-                    ScriptAuthorText = author.Substring(0, ScriptAuthorLenLimit) + "...";
+                    ScriptAuthorText = string.Concat(author.AsSpan(0, ScriptAuthorLenLimit), "...");
                 else
                     ScriptAuthorText = author;
             }
@@ -1423,7 +1459,7 @@ namespace PEBakery.Core.ViewModels
         #region TreeView Methods
         public void UpdateScriptTree(Project project, bool redrawProject, bool assertDirExist = true)
         {
-            ProjectTreeItemModel projectRoot = MainTreeItems.FirstOrDefault(x => x.Script.Project.Equals(project));
+            ProjectTreeItemModel? projectRoot = MainTreeItems.FirstOrDefault(x => x.Script.Project.Equals(project));
             if (projectRoot == null)
                 return; // Unable to continue
 
@@ -1479,9 +1515,9 @@ namespace PEBakery.Core.ViewModels
             return item;
         }
 
-        public static ProjectTreeItemModel PopulateOneTreeItem(Script sc, ProjectTreeItemModel projectRoot, ProjectTreeItemModel parent)
+        public static ProjectTreeItemModel PopulateOneTreeItem(Script sc, ProjectTreeItemModel? projectRoot, ProjectTreeItemModel? parent)
         {
-            ProjectTreeItemModel item = new ProjectTreeItemModel(projectRoot, parent) { Script = sc };
+            ProjectTreeItemModel item = new ProjectTreeItemModel(projectRoot, parent, sc);
             UpdateTreeViewIcon(item);
             parent?.Children.Add(item);
 
@@ -1509,9 +1545,7 @@ namespace PEBakery.Core.ViewModels
                 int idx = sc.TreePath.IndexOf('\\');
                 if (idx == -1)
                     continue;
-                string[] paths = sc.TreePath
-                    .Substring(idx + 1)
-                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string[] paths = sc.TreePath[(idx + 1)..].Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
                 for (int i = 0; i < paths.Length - 1; i++)
@@ -1525,7 +1559,7 @@ namespace PEBakery.Core.ViewModels
                     else
                     {
                         string treePath = Path.Combine(project.ProjectName, pathKey);
-                        Script ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
+                        Script? ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                         Script dirScript;
 
                         if (assertDirExist)
@@ -1664,7 +1698,6 @@ namespace PEBakery.Core.ViewModels
         /// <summary>
         /// Open text file using specified/default code editor, without Administrator privilege.
         /// </summary>
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         public static void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))

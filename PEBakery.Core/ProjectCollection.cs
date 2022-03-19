@@ -165,33 +165,19 @@ namespace PEBakery.Core
                 string projectDir = Path.Combine(ProjectRoot, projectName);
 
                 // Path of root script
-                ScriptParseInfo rootScript = new ScriptParseInfo
-                {
-                    RealPath = Path.Combine(projectDir, Project.Names.MainScriptFile),
-                    TreePath = Path.Combine(projectName, Project.Names.MainScriptFile),
-                    IsDir = false,
-                    IsDirLink = false,
-                };
+                string rootRealPath = Path.Combine(projectDir, Project.Names.MainScriptFile);
+                string rootTreePath = Path.Combine(projectName, Project.Names.MainScriptFile);
+                ScriptParseInfo rootScript = new ScriptParseInfo(rootRealPath, rootTreePath, false, false);
 
                 // Path of normal and link scripts
                 ScriptParseInfo[] scripts = FileHelper
                     .GetDirFilesEx(projectDir, "*.script", SearchOption.AllDirectories)
-                    .Select(x => new ScriptParseInfo
-                    {
-                        RealPath = x.Path,
-                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
-                        IsDir = x.IsDir,
-                        IsDirLink = false,
-                    }).ToArray();
+                    .Select(x => new ScriptParseInfo(x.Path, FileHelper.SubRootDirPath(x.Path, ProjectRoot), x.IsDir, false))
+                    .ToArray();
                 ScriptParseInfo[] links = FileHelper
                     .GetDirFilesEx(projectDir, "*.link", SearchOption.AllDirectories)
-                    .Select(x => new ScriptParseInfo
-                    {
-                        RealPath = x.Path,
-                        TreePath = FileHelper.SubRootDirPath(x.Path, ProjectRoot),
-                        IsDir = x.IsDir,
-                        IsDirLink = false,
-                    }).ToArray();
+                    .Select(x => new ScriptParseInfo(x.Path, FileHelper.SubRootDirPath(x.Path, ProjectRoot), x.IsDir, false))
+                    .ToArray();
 
                 // Path of directory-linked scripts
                 List<ScriptParseInfo> dirLinks = GetDirLinks(projectDir, _compatDict[projectName].AsteriskBugDirLink);
@@ -236,53 +222,117 @@ namespace PEBakery.Core
         #endregion
 
         #region GetDirLinks
+        /// <summary>
+        /// Handle directory links described by folder.project.
+        /// </summary>
+        /// <param name="projectDir">The root of a project.</param>
+        /// <param name="asteriskBugDirLink">WB082 compat option.</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         private List<ScriptParseInfo> GetDirLinks(string projectDir, bool asteriskBugDirLink)
         {
             List<ScriptParseInfo> dirLinks = new List<ScriptParseInfo>();
+
+            if (projectDir.StartsWith(_baseDir) == false)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Project path [{projectDir}] is invalid"));
+                return dirLinks;
+            }
+
             IEnumerable<string> linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
             foreach (string linkFile in linkFiles)
             {
-                Debug.Assert(linkFile != null, $"{nameof(linkFile)} is wrong");
                 Debug.Assert(linkFile.StartsWith(_baseDir), $"{nameof(linkFile)} [{linkFile}] does not start with %BaseDir%");
 
-                List<string> rawPaths = IniReadWriter.ParseRawSection(linkFile, "Links");
+                List<string>? rawPaths = IniReadWriter.ParseRawSection(linkFile, "Links");
                 if (rawPaths == null) // No [Links] section -> do not process
                     continue;
 
                 // TreePath of directory where folder.project exists
-                string prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot));
-                Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
+                string? prefix = Path.GetDirectoryName(FileHelper.SubRootDirPath(linkFile, ProjectRoot));
+                if (prefix == null)
+                    throw new InvalidOperationException($"Invalid prefix of [{linkFile}]");
 
-                // Local functions fo collect ScriptParseInfo
+                // Local functions for collect ScriptParseInfo
+                ScriptParseInfo CreateScriptParseInfo(string realPath, bool isDir, string dirPath)
+                {
+                    // [Disk]
+                    // MyApps\Compat\Test.script
+                    // [folder.project]
+                    // Projects\MyApps
+                    // [Project Tree]
+                    // %BaseDir%\{Compat,System}
+                    
+                    // dirPath: %BaseDir%\MyApps
+                    // realPath: %BaseDir%\MyApps\Compat\Test.script
+
+                    // string treePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path[dirPath.Length..].TrimStart('\\'));
+                    string treePath = Path.Combine(prefix, FileHelper.SubRootDirPath(realPath, dirPath));
+                    return new ScriptParseInfo(realPath, treePath, isDir, true);
+                }
+
                 void CollectScriptsFromDir(string dirPath)
                 {
-                    ScriptParseInfo CreateScriptParseInfo((string Path, bool IsDir) x) => new ScriptParseInfo
-                    {
-                        RealPath = x.Path,
-                        TreePath = Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\')),
-                        IsDir = x.IsDir,
-                        IsDirLink = true,
-                    };
+                    Debug.Assert(Path.IsPathRooted(dirPath), $"Directory link path [{dirPath}] must be rooted.");
 
                     IEnumerable<ScriptParseInfo> scInfos = FileHelper.GetDirFilesEx(dirPath, "*.script", SearchOption.AllDirectories)
-                        .Select(x => CreateScriptParseInfo(x));
+                        .Select(x => CreateScriptParseInfo(x.Path, x.IsDir, dirPath));
                     IEnumerable<ScriptParseInfo> linkInfos = FileHelper.GetDirFilesEx(dirPath, "*.link", SearchOption.AllDirectories)
-                        .Select(x => CreateScriptParseInfo(x));
+                        .Select(x => CreateScriptParseInfo(x.Path, x.IsDir, dirPath));
 
                     // Duplicated ScriptParseInfo is removed later by GetScriptPaths.
                     dirLinks.AddRange(scInfos);
                     dirLinks.AddRange(linkInfos);
                 }
 
+                // main foreach loop
                 foreach (string path in rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0))
                 {
-                    Debug.Assert(path != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
+                    string dirPath = path;
 
                     bool isWildcard = StringHelper.IsWildcard(Path.GetFileName(path));
+                    if (isWildcard)
+                    { // Simulate WinBuilder *.* bug
+                        // Remove *.*
+                        string? compatDirPath = Path.GetDirectoryName(path);
+                        if (compatDirPath == null)
+                        { // Ex) *.* -> null
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Directory link path [{path}] is invalid"));
+                            continue;
+                        }
+                        dirPath = compatDirPath;
+                    }
+
+                    if (Path.IsPathRooted(dirPath))
+                    { // Absolute Path
+                        if (!Directory.Exists(dirPath))
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
+                            continue;
+                        }
+
+                        CollectScriptsFromDir(dirPath);
+                    }
+                    else
+                    { // Relative to %BaseDir%
+                        string fullPath = Path.Combine(_baseDir, dirPath);
+                        if (!Directory.Exists(fullPath))
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
+                            continue;
+                        }
+
+                        CollectScriptsFromDir(fullPath);
+                    }
+                    /*
                     if (asteriskBugDirLink && isWildcard)
                     { // Simulate WinBuilder *.* bug
-                        string dirPath = Path.GetDirectoryName(path);
-                        Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
+                        string? dirPath = Path.GetDirectoryName(path);
+                        if (dirPath == null)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Path [{path}] is invalid"));
+                            continue;
+                        }
 
                         if (Path.IsPathRooted(dirPath))
                         { // Absolute Path
@@ -292,13 +342,9 @@ namespace PEBakery.Core
                                 continue;
                             }
 
-                            string[] subDirs = Directory.GetDirectories(dirPath);
-                            foreach (string subDir in subDirs)
-                            {
-                                Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
-
-                                CollectScriptsFromDir(subDir);
-                            }
+                            //foreach (string subDir in Directory.EnumerateDirectories(dirPath))
+                            //    CollectScriptsFromDir(subDir);
+                            CollectScriptsFromDir(dirPath);
                         }
                         else
                         { // Relative to %BaseDir%
@@ -309,25 +355,24 @@ namespace PEBakery.Core
                                 continue;
                             }
 
-                            string[] subDirs = Directory.GetDirectories(fullPath);
-                            foreach (string subDir in subDirs)
-                            {
-                                Debug.Assert(subDir != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
-
-                                CollectScriptsFromDir(subDir);
-                            }
+                            //foreach (string subDir in Directory.EnumerateDirectories(dirPath))
+                            //    CollectScriptsFromDir(subDir);
+                            CollectScriptsFromDir(dirPath);
                         }
                     }
                     else
                     { // Ignore wildcard
-                        string dirPath = path;
+                        string? dirPath = path;
                         if (isWildcard)
                             dirPath = Path.GetDirectoryName(path);
+                        if (dirPath == null)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Path [{path}] is invalid"));
+                            continue;
+                        }
 
                         if (Path.IsPathRooted(dirPath))
                         { // Absolute Path
-                            Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
-
                             if (!Directory.Exists(dirPath))
                             {
                                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
@@ -338,8 +383,6 @@ namespace PEBakery.Core
                         }
                         else
                         { // Relative to %BaseDir%
-                            Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
-
                             string fullPath = Path.Combine(_baseDir, dirPath);
                             if (!Directory.Exists(fullPath))
                             {
@@ -350,6 +393,7 @@ namespace PEBakery.Core
                             CollectScriptsFromDir(fullPath);
                         }
                     }
+                    */
                 }
             }
 
@@ -358,7 +402,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Load, LoadLinks
-        public List<LogInfo> Load(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
+        public List<LogInfo> Load(ScriptCache? scriptCache, IProgress<(Project.LoadReport Type, string? Path)>? progress)
         {
             if (_projectNames.Count == 0)
             {
@@ -422,12 +466,12 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
+        private List<LogInfo> LoadLinks(ScriptCache? scriptCache, IProgress<(Project.LoadReport Type, string? Path)>? progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
 
-            string CheckLinkPath(Script sc, string linkRawPath)
+            string? CheckLinkPath(Script sc, string linkRawPath)
             {
                 // PEBakery's TreePath strips "%BaseDir%\Project" (ProjectRoot) from RealPath.
                 // WinBuilder's .link file's link= path strips "%BaseDir%" from RealPath.
@@ -454,7 +498,7 @@ namespace PEBakery.Core
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Parallel.ForEach(linkSources, sc =>
             {
-                Script linkTarget = null;
+                Script? linkTarget = null;
                 bool valid = false;
                 Project.LoadReport cached = Project.LoadReport.Stage2;
                 try
@@ -462,7 +506,7 @@ namespace PEBakery.Core
                     do
                     {
                         string linkRawPath = sc.Sections["Main"].IniDict["Link"];
-                        string linkRealPath = CheckLinkPath(sc, linkRawPath);
+                        string? linkRealPath = CheckLinkPath(sc, linkRawPath);
                         if (linkRealPath == null)
                             return;
 
@@ -497,14 +541,14 @@ namespace PEBakery.Core
                         }
                         linkTarget = linkTarget.Link;
                     }
-                    while (linkTarget.Type != ScriptType.Script);
+                    while (linkTarget != null && linkTarget.Type != ScriptType.Script);
                 }
                 catch (Exception e)
                 { // Parser Error
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                 }
 
-                if (valid)
+                if (valid && linkTarget != null)
                 {
                     sc.SetLink(linkTarget);
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));

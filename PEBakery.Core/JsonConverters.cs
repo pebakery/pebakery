@@ -36,12 +36,15 @@ namespace PEBakery.Helper
     /// </summary>
     public class VersionExJsonConverter : JsonConverter<VersionEx>
     {
-        public override void WriteJson(JsonWriter writer, VersionEx value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, VersionEx? value, JsonSerializer serializer)
         {
-            writer.WriteValue(value.ToString());
+            if (value is null)
+                writer.WriteValue((string?)null);
+            else
+                writer.WriteValue(value.ToString());
         }
 
-        public override VersionEx ReadJson(JsonReader reader, Type objectType, VersionEx existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override VersionEx? ReadJson(JsonReader reader, Type objectType, VersionEx? existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             if (reader.Value is string str)
                 return VersionEx.Parse(str);
@@ -57,12 +60,15 @@ namespace PEBakery.Helper
     /// </summary>
     public class VersionJsonConverter : JsonConverter<Version>
     {
-        public override void WriteJson(JsonWriter writer, Version value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, Version? value, JsonSerializer serializer)
         {
-            writer.WriteValue(value.ToString());
+            if (value is null)
+                writer.WriteValue((string?)null);
+            else
+                writer.WriteValue(value.ToString());
         }
 
-        public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override Version? ReadJson(JsonReader reader, Type objectType, Version? existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             if (reader.Value is string str)
             {

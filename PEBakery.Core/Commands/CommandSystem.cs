@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -43,14 +44,14 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> SystemCmd(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
-            CodeInfo_System info = cmd.Info.Cast<CodeInfo_System>();
+            CodeInfo_System info = (CodeInfo_System)cmd.Info;
 
             SystemType type = info.Type;
             switch (type)
             {
                 case SystemType.Cursor:
                     {
-                        SystemInfo_Cursor subInfo = info.SubInfo.Cast<SystemInfo_Cursor>();
+                        SystemInfo_Cursor subInfo = (SystemInfo_Cursor)info.SubInfo;
 
                         string iconStr = StringEscaper.Preprocess(s, subInfo.State);
 
@@ -80,7 +81,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.ErrorOff:
                     {
-                        SystemInfo_ErrorOff subInfo = info.SubInfo.Cast<SystemInfo_ErrorOff>();
+                        SystemInfo_ErrorOff subInfo = (SystemInfo_ErrorOff)info.SubInfo;
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
@@ -96,12 +97,7 @@ namespace PEBakery.Core.Commands
                             if (s.ErrorOffDepthMinusOne)
                                 ls = ls.UpdateDepth(ls.Depth - 1);
 
-                            ErrorOffState newState = new ErrorOffState
-                            {
-                                LocalState = ls,
-                                StartLineIdx = cmd.LineIdx,
-                                LineCount = lines,
-                            };
+                            ErrorOffState newState = new ErrorOffState(ls, cmd.LineIdx, lines);
 
                             s.ErrorOffWaitingRegister = newState;
                             s.ErrorOffDepthMinusOne = false;
@@ -115,10 +111,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetEnv:
                     {
-                        SystemInfo_GetEnv subInfo = info.SubInfo.Cast<SystemInfo_GetEnv>();
+                        SystemInfo_GetEnv subInfo = (SystemInfo_GetEnv)info.SubInfo;
 
                         string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVar);
-                        string envVarValue = Environment.GetEnvironmentVariable(envVarName);
+                        string? envVarValue = Environment.GetEnvironmentVariable(envVarName);
                         if (envVarValue == null) // Failure
                         {
                             logs.Add(new LogInfo(LogState.Ignore, $"Cannot get environment variable [%{envVarName}%]'s value"));
@@ -132,7 +128,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeDrive:
                     {
-                        SystemInfo_GetFreeDrive subInfo = info.SubInfo.Cast<SystemInfo_GetFreeDrive>();
+                        SystemInfo_GetFreeDrive subInfo = (SystemInfo_GetFreeDrive)info.SubInfo;
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         // ReSharper disable once StringLiteralTypo
@@ -156,11 +152,15 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeSpace:
                     {
-                        SystemInfo_GetFreeSpace subInfo = info.SubInfo.Cast<SystemInfo_GetFreeSpace>();
+                        SystemInfo_GetFreeSpace subInfo = (SystemInfo_GetFreeSpace)info.SubInfo;
 
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
-                        DriveInfo drive = new DriveInfo(Path.GetPathRoot(path));
+                        string? pathRoot = Path.GetPathRoot(path);
+                        if (pathRoot == null)
+                            return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(subInfo.Path)} [{path}]");
+
+                        DriveInfo drive = new DriveInfo(pathRoot);
                         long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString(CultureInfo.InvariantCulture));
@@ -169,7 +169,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.IsAdmin:
                     {
-                        SystemInfo_IsAdmin subInfo = info.SubInfo.Cast<SystemInfo_IsAdmin>();
+                        SystemInfo_IsAdmin subInfo = (SystemInfo_IsAdmin)info.SubInfo;
 
                         bool isAdmin;
                         using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
@@ -189,7 +189,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.OnBuildExit:
                     {
-                        SystemInfo_OnBuildExit subInfo = info.SubInfo.Cast<SystemInfo_OnBuildExit>();
+                        SystemInfo_OnBuildExit subInfo = (SystemInfo_OnBuildExit)info.SubInfo;
 
                         s.OnBuildExit = subInfo.Cmd;
 
@@ -198,7 +198,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.OnScriptExit:
                     {
-                        SystemInfo_OnScriptExit subInfo = info.SubInfo.Cast<SystemInfo_OnScriptExit>();
+                        SystemInfo_OnScriptExit subInfo = (SystemInfo_OnScriptExit)info.SubInfo;
 
                         s.OnScriptExit = subInfo.Cmd;
 
@@ -207,8 +207,6 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshInterface:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
-
                         s.MainViewModel.StartRefreshScript().Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Re-rendered script [{cmd.Section.Script.Title}]"));
@@ -217,8 +215,6 @@ namespace PEBakery.Core.Commands
                 case SystemType.RescanScripts:
                 case SystemType.RefreshAllScripts:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
-
                         // Refresh Project
                         s.MainViewModel.StartLoadingProjects(true, true).Wait();
 
@@ -227,7 +223,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.LoadNewScript:
                     {
-                        SystemInfo_LoadNewScript subInfo = info.SubInfo.Cast<SystemInfo_LoadNewScript>();
+                        SystemInfo_LoadNewScript subInfo = (SystemInfo_LoadNewScript)info.SubInfo;
 
                         string srcFilePath = StringEscaper.Preprocess(s, subInfo.SrcFilePath);
                         string destTreeDir = StringEscaper.Preprocess(s, subInfo.DestTreeDir);
@@ -257,11 +253,12 @@ namespace PEBakery.Core.Commands
                         }
                         List<Script> newScripts = new List<Script>(files.Length);
 
-                        string srcDirPath = Path.GetDirectoryName(srcFilePath);
-                        Debug.Assert(srcDirPath != null, $"{nameof(srcDirPath)} is null (CommandSystem.LoadNewScript)");
+                        string? srcDirPath = Path.GetDirectoryName(srcFilePath);
+                        if (srcDirPath == null)
+                            return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(subInfo.SrcFilePath)} [{srcDirPath}]");
 
                         (string realPath, string treePath)[] fileTuples = files
-                            .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
+                            .Select(x => (x, x.AsSpan(srcDirPath.Length).Trim('\\').ToString()))
                             .ToArray();
 
                         int successCount = 0;
@@ -282,7 +279,7 @@ namespace PEBakery.Core.Commands
                                 logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
                             }
 
-                            Script sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
+                            Script? sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
                             {
                                 AddToProjectTree = true,
                                 OverwriteToProjectTree = true,
@@ -320,7 +317,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshScript:
                     {
-                        SystemInfo_RefreshScript subInfo = info.SubInfo.Cast<SystemInfo_RefreshScript>();
+                        SystemInfo_RefreshScript subInfo = (SystemInfo_RefreshScript)info.SubInfo;
 
                         string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
                         SearchOption searchOption = SearchOption.AllDirectories;
@@ -329,7 +326,7 @@ namespace PEBakery.Core.Commands
 
                         // Check wildcard
                         string wildcard = Path.GetFileName(filePath);
-                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
+                        bool containsWildcard = wildcard.IndexOfAny(new[] { '*', '?' }) != -1;
 
                         string[] files;
                         if (containsWildcard)
@@ -366,12 +363,13 @@ namespace PEBakery.Core.Commands
 
                             // RefreshScript -> Update Project.AllScripts
                             Script sc = Engine.GetScriptInstance(s, cmd.Section.Script.RealPath, scRealPath, out _);
-                            sc = s.Project.RefreshScript(sc, s);
-                            if (sc == null)
+                            Script? newScript = s.Project.RefreshScript(sc, s);
+                            if (newScript == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
                                 continue;
                             }
+                            sc = newScript;
 
                             newScripts.Add(sc);
                             logs.Add(new LogInfo(LogState.Success, $"Refreshed script [{scRealPath}]"));
@@ -383,12 +381,16 @@ namespace PEBakery.Core.Commands
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false);
                         });
-                        foreach (Script sc in newScripts)
+                        ProjectTreeItemModel? curMainTree = s.MainViewModel.CurMainTree;
+                        if (curMainTree != null)
                         {
-                            if (sc.Equals(s.MainViewModel.CurMainTree.Script))
+                            foreach (Script sc in newScripts)
                             {
-                                s.MainViewModel.CurMainTree.Script = sc;
-                                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
+                                if (sc.Equals(curMainTree.Script))
+                                {
+                                    curMainTree.Script = sc;
+                                    s.MainViewModel.DisplayScript(curMainTree.Script);
+                                }
                             }
                         }
 
@@ -398,17 +400,15 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.SaveLog:
                     {
-                        SystemInfo_SaveLog subInfo = info.SubInfo.Cast<SystemInfo_SaveLog>();
+                        SystemInfo_SaveLog subInfo = (SystemInfo_SaveLog)info.SubInfo;
 
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
-                        Debug.Assert(destPath != null, "Invalid SubInfo");
 
                         LogExportType logFormat;
                         if (subInfo.LogFormat == null)
                         {
                             string ext = Path.GetExtension(destPath);
-                            if (ext.Equals(".htm", StringComparison.OrdinalIgnoreCase) ||
-                                ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
+                            if (ext.Equals(".htm", StringComparison.OrdinalIgnoreCase) || ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
                                 logFormat = LogExportType.Html;
                             else
                                 logFormat = LogExportType.Text;
@@ -439,8 +439,6 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.SetLocal:
                     { // SetLocal
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
-
                         Engine.EnableSetLocal(s);
 
                         logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count}) enabled"));
@@ -448,9 +446,6 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.EndLocal:
                     { // EndLocal
-                        // No CodeInfo
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
-
                         if (Engine.DisableSetLocal(s)) // If SetLocal is disabled, SetLocalStack is decremented.
                             logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count + 1}) disabled"));
                         else
@@ -460,9 +455,7 @@ namespace PEBakery.Core.Commands
                 // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
-                        SystemInfo_HasUAC subInfo = info.SubInfo.Cast<SystemInfo_HasUAC>();
-
-                        logs.Add(new LogInfo(LogState.Warning, "[System,HasUAC] is deprecated"));
+                        SystemInfo_HasUAC subInfo = (SystemInfo_HasUAC)info.SubInfo;
 
                         // Deprecated, WB082 Compability Shim
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
@@ -508,7 +501,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(4);
 
-            CodeInfo_ShellExecute info = cmd.Info.Cast<CodeInfo_ShellExecute>();
+            CodeInfo_ShellExecute info = (CodeInfo_ShellExecute)cmd.Info;
 
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
@@ -531,11 +524,11 @@ namespace PEBakery.Core.Commands
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
                     proc.StartInfo.Arguments = parameters;
-                    b.Append(" ");
+                    b.Append(' ');
                     b.Append(parameters);
                 }
 
-                string pathVarBak = null;
+                string? pathVarBak = null;
                 if (info.WorkDir != null)
                 {
                     string workDir = StringEscaper.Preprocess(s, info.WorkDir);
@@ -555,6 +548,10 @@ namespace PEBakery.Core.Commands
                     if (e.Data == null)
                         return;
 
+                    // ShellExecute console remains collapsed until there is output to display
+                    if (s.MainViewModel.BuildConOutRedirectVisibility != Visibility.Visible)
+                        s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
+
                     lock (bConOutLock)
                     {
                         bStdOut.AppendLine(e.Data);
@@ -565,6 +562,10 @@ namespace PEBakery.Core.Commands
                 {
                     if (e.Data == null)
                         return;
+
+                    // ShellExecute console remains collapsed until there is output to display
+                    if (s.MainViewModel.BuildConOutRedirectVisibility != Visibility.Visible)
+                        s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
 
                     lock (bConOutLock)
                     {
@@ -597,7 +598,8 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.CreateNoWindow = true;
 
                         // Redirecting standard stream without reading can full buffer, which leads to hang
-                        if (Global.MainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
+                        MainViewModel? mainViewModel = Global.MainViewModel;
+                        if (mainViewModel != null && mainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
                         {
                             redirectStandardStream = true;
 
@@ -620,7 +622,6 @@ namespace PEBakery.Core.Commands
                             proc.StartInfo.RedirectStandardInput = true;
 
                             s.MainViewModel.BuildConOutRedirectTextLines.Clear();
-                            s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
                         }
                     }
                     else
@@ -685,7 +686,7 @@ namespace PEBakery.Core.Commands
                         // %ExitOutVar% must be defined before it can be used.
                         if (info.ExitOutVar != null)
                         {
-                            string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
+                            string? exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
                             if (exitOutVar != null && s.Variables.ContainsKey(exitOutVar))
                             {
                                 log = Variables.SetVariable(s, info.ExitOutVar, exitCodeStr).First();
@@ -719,7 +720,7 @@ namespace PEBakery.Core.Commands
 
                             if (0 < stdOut.Length)
                             {
-                                if (stdOut.IndexOf('\n') == -1) // No NewLine
+                                if (!stdOut.Contains('\n')) // No NewLine
                                     logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdOut}"));
                                 else // With NewLine
                                     logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdOut}\r\n"));
@@ -727,7 +728,7 @@ namespace PEBakery.Core.Commands
 
                             if (0 < stdErr.Length)
                             {
-                                if (stdErr.IndexOf('\n') == -1) // No NewLine
+                                if (!stdErr.Contains('\n')) // No NewLine
                                     logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stdErr}"));
                                 else // With NewLine
                                     logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stdErr}\r\n"));

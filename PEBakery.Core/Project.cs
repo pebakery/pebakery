@@ -59,13 +59,23 @@ namespace PEBakery.Core
         public string ProjectRoot { get; } // {BaseDir}\Projects
         public string ProjectDir { get; } // {BaseDir}\Projects\{ProjectDirName}
         public Script MainScript => AllScripts[_mainScriptIdx];
-        public List<Script> AllScripts { get; private set; }
+        public List<Script> AllScripts { get; private set; } = new List<Script>();
         public List<Script> ActiveScripts => CollectActiveScripts(AllScripts);
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
-        public List<ScriptParseInfo> DirEntries { get; set; }
-        public Variables Variables { get; set; }
+        public List<ScriptParseInfo> DirEntries { get; set; } = new List<ScriptParseInfo>();
+        private Variables? _variable;
+        public Variables Variables
+        {
+            get
+            {
+                if (_variable == null)
+                    throw new InternalException($"{nameof(_variable)} is null");
+                return _variable;
+            }
+            set => _variable = value;
+        }
         public CompatOption Compat { get; }
-        public ProjectUpdateInfo UpdateInfo { get; private set; }
+        public ProjectUpdateInfo UpdateInfo { get; private set; } = new ProjectUpdateInfo();
         public bool IsUpdateable => UpdateInfo != null && UpdateInfo.IsUpdateable;
 
         public int LoadedScriptCount { get; private set; }
@@ -131,7 +141,7 @@ namespace PEBakery.Core
         /// <param name="scriptCache">ScriptCache instance. Set to null if cache is disabled.</param>
         /// <param name="progress">Delegate for reporting progress</param>
         /// <returns></returns>
-        internal List<LogInfo> Load(ScriptCache scriptCache, IList<ScriptParseInfo> spis, IProgress<(LoadReport Type, string Path)> progress)
+        internal List<LogInfo> Load(ScriptCache? scriptCache, IList<ScriptParseInfo> spis, IProgress<(LoadReport Type, string? Path)>? progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -148,7 +158,7 @@ namespace PEBakery.Core
                 Debug.Assert(!spi.IsDir, $"{nameof(Project)}.{nameof(Load)} must not handle directory script instance");
 
                 LoadReport cached = LoadReport.Stage1;
-                Script sc = null;
+                Script? sc = null;
                 try
                 {
                     if (scriptCache != null && cacheValid)
@@ -246,12 +256,10 @@ namespace PEBakery.Core
             {
                 UpdateInfo = new ProjectUpdateInfo(selectedChannel, pBaseUrl);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (ArgumentException)
             {
                 UpdateInfo = new ProjectUpdateInfo();
             }
-#pragma warning restore CA1031 // Do not catch general exception types
         }
         #endregion
 
@@ -303,10 +311,11 @@ namespace PEBakery.Core
                         // Find ts, skeleton script instance of the directory
                         string treePath = Path.Combine(ProjectName, pathKey);
 
-                        ScriptParseInfo dpi = dpis.FirstOrDefault(x =>
+                        ScriptParseInfo? dpi = dpis.FirstOrDefault(x =>
                             x.IsDirLink == sc.IsDirLink &&
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                        Debug.Assert(dpi != null, $"Unable to find proper directory of ({sc.TreePath})");
+                        if (dpi == null)
+                            throw new InvalidOperationException($"Unable to find proper directory of ({sc.TreePath})");
 
                         // Create new directory script instance from a directory parse info.
                         // Do not have to cache these scripts, these directory script instance is only used once.
@@ -368,36 +377,37 @@ namespace PEBakery.Core
         /// Create new script instance from old one.
         /// While Project.RefreshScript create new script instance, Script.RefreshSections refresh only sections.
         /// </summary>
-        public Script RefreshScript(Script sc, EngineState s = null)
+        public Script? RefreshScript(Script sc, EngineState? s = null)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
             if (sc.Type == ScriptType.Directory)
                 return null;
 
+            Script? newScript = null;
             int aIdx = AllScripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
             if (aIdx == -1)
             { // Even if idx is not found in Projects directory, just proceed to deal with runtime-loaded scripts.
-                sc = InternalLoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
+                newScript = InternalLoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
             }
             else
             {
                 // This one is in legit Project list, so [Main] cannot be ignored
-                sc = InternalLoadScript(sc.RealPath, sc.TreePath, false, sc.IsDirLink);
-                if (sc == null)
+                newScript = InternalLoadScript(sc.RealPath, sc.TreePath, false, sc.IsDirLink);
+                if (newScript == null)
                     return null;
 
-                AllScripts[aIdx] = sc;
+                AllScripts[aIdx] = newScript;
 
                 // Investigate EngineState to update it on build list
                 if (s == null)
-                    return sc;
+                    return newScript;
 
                 int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
                 if (sIdx != -1)
-                    s.Scripts[sIdx] = sc;
+                    s.Scripts[sIdx] = newScript;
             }
-            return sc;
+            return newScript;
         }
         #endregion
 
@@ -413,7 +423,7 @@ namespace PEBakery.Core
         /// Project loader uses customized version of script loader. It bypasses caching.
         /// </remarks>
         /// <returns>Script instance of {realPath}</returns>
-        private Script InternalLoadScript(string realPath, string treePath, bool ignoreMain, bool isDirLink)
+        private Script? InternalLoadScript(string realPath, string treePath, bool ignoreMain, bool isDirLink)
         {
             Script sc;
             try
@@ -436,7 +446,7 @@ namespace PEBakery.Core
                 // Also, convert nested link to one-depth link
                 if (sc.Type == ScriptType.Link)
                 {
-                    Script link = sc.Link;
+                    Script? link = sc.Link;
                     bool valid = false;
                     do
                     {
@@ -449,9 +459,9 @@ namespace PEBakery.Core
                         }
                         link = link.Link;
                     }
-                    while (link.Type != ScriptType.Script);
+                    while (link != null && link.Type != ScriptType.Script);
 
-                    if (valid)
+                    if (valid && link != null)
                         sc.SetLink(link);
                     else
                         return null;
@@ -469,9 +479,9 @@ namespace PEBakery.Core
         #region LoadScriptRuntime
         /// <summary>
         /// Load scripts into project while running
-        /// Return true if error
+        /// Return null if error
         /// </summary>
-        public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
+        public Script? LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
         {
             Debug.Assert(realPath != null, $"nameof({realPath}) is null");
 
@@ -488,19 +498,18 @@ namespace PEBakery.Core
 
         /// <summary>
         /// Load scripts into project while running
-        /// Return true if error
+        /// Return null if error
         /// </summary>
-        public Script LoadScriptRuntime(string realPath, string treePath, LoadScriptRuntimeOptions opts)
+        public Script? LoadScriptRuntime(string realPath, string treePath, LoadScriptRuntimeOptions opts)
         {
-            Debug.Assert(realPath != null, $"nameof({realPath}) is null");
-            Debug.Assert(treePath != null, $"nameof({treePath}) is null");
-
             // To use opts.AddToProjectTree, treePath should be valid
             if (opts.AddToProjectTree && treePath.Length == 0)
                 throw new ArgumentException("Cannot add script to project tree because of empty treePath");
 
             // Load Script
-            Script sc = InternalLoadScript(realPath, treePath, opts.IgnoreMain, false);
+            Script? sc = InternalLoadScript(realPath, treePath, opts.IgnoreMain, false);
+            if (sc == null)
+                return null;
 
             // Add to project tree if option is set
             if (opts.AddToProjectTree)
@@ -527,13 +536,15 @@ namespace PEBakery.Core
                             string pathKey = PathKeyGenerator(paths, i);
 
                             // Need to create directory script instance?
-                            Script ts = AllScripts.FirstOrDefault(x =>
+                            Script? ts = AllScripts.FirstOrDefault(x =>
                                 x.Level == sc.Level &&
                                 x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
                             {
-                                string dirRealPath = Path.GetDirectoryName(realPath);
+                                string? dirRealPath = Path.GetDirectoryName(realPath);
+                                if (dirRealPath == null)
+                                    throw new InvalidOperationException($"Invalid {nameof(realPath)} [{realPath}]");
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
 
                                 Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, sc.Level, false, false, sc.IsDirLink);
@@ -541,21 +552,17 @@ namespace PEBakery.Core
                             }
 
                             // Need to create directory parse info?
-                            ScriptParseInfo dpi = DirEntries.FirstOrDefault(x =>
+                            ScriptParseInfo? dpi = DirEntries.FirstOrDefault(x =>
                                 x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                             if (dpi == null)
                             {
-                                string dirRealPath = Path.GetDirectoryName(realPath);
+                                string? dirRealPath = Path.GetDirectoryName(realPath);
+                                if (dirRealPath == null)
+                                    throw new InvalidOperationException($"Invalid {nameof(realPath)} [{realPath}]");
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
 
-                                DirEntries.Add(new ScriptParseInfo
-                                {
-                                    RealPath = dirRealPath,
-                                    TreePath = dirTreePath,
-                                    IsDir = true,
-                                    IsDirLink = sc.IsDirLink,
-                                });
+                                DirEntries.Add(new ScriptParseInfo(dirRealPath, dirTreePath, true, sc.IsDirLink));
                             }
                         }
                     }
@@ -624,12 +631,12 @@ namespace PEBakery.Core
         #endregion
 
         #region GetScriptByPath, ContainsScript
-        public Script GetScriptByRealPath(string sRealPath)
+        public Script? GetScriptByRealPath(string sRealPath)
         {
             return AllScripts.Find(x => x.RealPath.Equals(sRealPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public Script GetScriptByTreePath(string sTreePath)
+        public Script? GetScriptByTreePath(string sTreePath)
         {
             return AllScripts.Find(x => x.TreePath.Equals(sTreePath, StringComparison.OrdinalIgnoreCase));
         }
@@ -651,7 +658,7 @@ namespace PEBakery.Core
             if (Variables == null)
                 return new List<LogInfo>();
 
-            ScriptSection section = MainScript.RefreshSection(ScriptSection.Names.Variables);
+            ScriptSection? section = MainScript.RefreshSection(ScriptSection.Names.Variables);
             if (section != null)
                 return Variables.AddVariables(VarsType.Global, section);
 
@@ -716,13 +723,14 @@ namespace PEBakery.Core
         #endregion
 
         #region Equals, GetHashCode, ToString
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            Project project = obj as Project;
+            if (obj is not Project project)
+                return false;
             return Equals(project);
         }
 
-        public bool Equals(Project project)
+        public bool Equals(Project? project)
         {
             if (project == null)
                 return false;
@@ -752,15 +760,15 @@ namespace PEBakery.Core
         /// <summary>
         /// Do not check integrity of [Main] section
         /// </summary>
-        public bool IgnoreMain;
+        public bool IgnoreMain { get; set; }
         /// <summary>
         /// Add to project tree if the script was not
         /// </summary>
-        public bool AddToProjectTree;
+        public bool AddToProjectTree { get; set; }
         /// <summary>
         /// Overwrite script if project tree already has it
         /// </summary>
-        public bool OverwriteToProjectTree;
+        public bool OverwriteToProjectTree { get; set; }
     }
     #endregion
 }

@@ -42,18 +42,16 @@ using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
-    // ReSharper disable RedundantExtendsListEntry
     public partial class UtilityWindow : Window
     {
         #region Field and Constructor
-        public static int Count = 0;
+        private static int _count = 0;
 
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly UtilityViewModel _m;
 
         public UtilityWindow(FontHelper.FontInfo monoFont)
         {
-            Interlocked.Increment(ref Count);
+            Acquire();
 
             _m = new UtilityViewModel(monoFont);
 
@@ -61,6 +59,13 @@ namespace PEBakery.WPF
             DataContext = _m;
 
             // Populate projects
+            if (Global.Projects == null)
+            {
+                DialogResult = false;
+                Close();
+                return;
+            }
+
             List<Project> projects = Global.Projects.ProjectList;
             for (int i = 0; i < projects.Count; i++)
             {
@@ -68,9 +73,30 @@ namespace PEBakery.WPF
 
                 _m.Projects.Add(new Tuple<string, Project>(p.ProjectName, p));
 
-                if (p.ProjectName.Equals(Global.MainViewModel.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
-                    _m.SelectedProjectIndex = i;
+                ProjectTreeItemModel? curMainTree = Global.MainViewModel.CurMainTree;
+                if (curMainTree != null)
+                {
+                    if (p.ProjectName.Equals(curMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
+                        _m.SelectedProjectIndex = i;
+                }
             }
+        }
+        #endregion
+
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _count);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _count);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _count;
         }
         #endregion
 
@@ -82,7 +108,7 @@ namespace PEBakery.WPF
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            Interlocked.Decrement(ref Count);
+            Interlocked.Decrement(ref _count);
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion
@@ -122,6 +148,10 @@ namespace PEBakery.WPF
 
         private async void CodeBoxRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // CodeBox not initialized
+            if (_m.CodeFile == null)
+                return;
+
             CodeBoxRunButton.Focus();
 
             _m.CanExecuteCommand = false;
@@ -136,7 +166,12 @@ namespace PEBakery.WPF
                     try
                     {
                         Project project = _m.CurrentProject;
-                        Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                        Script? sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                        if (sc == null)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, "[CodeBox] script load failed"));
+                            return;
+                        }
 
                         MainViewModel mainModel = Global.MainViewModel;
                         mainModel.BuildTreeItems.Clear();
@@ -169,18 +204,20 @@ namespace PEBakery.WPF
                         mainModel.BuildTreeItems.Clear();
 
                         // Report elapsed build time
-                        string haltReason = s.RunResultReport();
+                        string? haltReason = s.RunResultReport();
                         if (haltReason != null)
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
                         else
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
-                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
-                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                        if (mainModel.CurMainTree is ProjectTreeItemModel curMainTree)
+                            s.MainViewModel.DisplayScript(curMainTree.Script);
+
+                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                         { // Open BuildLogWindow
                             Application.Current?.Dispatcher?.Invoke(() =>
                             {
-                                if (!(Application.Current.MainWindow is MainWindow w))
+                                if (Application.Current.MainWindow is not MainWindow w)
                                     return;
 
                                 w.LogDialog = new LogWindow(1);
@@ -267,13 +304,13 @@ namespace PEBakery.WPF
                     if (p.MainScript.Sections.ContainsKey(ScriptSection.Names.Process))
                         section = sc.Sections[ScriptSection.Names.Process];
                     else // Create dummy [Process] section instance
-                        section = new ScriptSection(sc, ScriptSection.Names.Process, SectionType.Code, new string[0], 1);
+                        section = new ScriptSection(sc, ScriptSection.Names.Process, SectionType.Code, Array.Empty<string>(), 1);
 
                     // Split lines from SyntaxInputCode
                     List<string> lines = new List<string>();
                     using (StringReader r = new StringReader(_m.SyntaxInputCode))
                     {
-                        string line;
+                        string? line;
                         while ((line = r.ReadLine()) != null)
                         {
                             line = line.Trim();
@@ -291,7 +328,7 @@ namespace PEBakery.WPF
                     {
                         foreach (CodeCommand cmd in cmds.Where(x => x.Type == CodeType.Macro))
                         {
-                            CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
+                            CodeInfo_Macro info = (CodeInfo_Macro)cmd.Info;
 
                             if (!macro.GlobalDict.ContainsKey(info.MacroType))
                                 errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
@@ -357,7 +394,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Project Environment
-        private int _selectedProjectIndex;
+        private int _selectedProjectIndex = 0;
         public int SelectedProjectIndex
         {
             get => _selectedProjectIndex;
@@ -384,7 +421,7 @@ namespace PEBakery.WPF
                 if (0 <= i && i < _projects.Count)
                     return _projects[i].Item2;
                 else
-                    return null;
+                    throw new InvalidOperationException("Project not selected");
             }
         }
 
@@ -421,7 +458,7 @@ Description=Test Commands
         #endregion
 
         #region CodeBox
-        public string CodeFile { get; private set; }
+        public string? CodeFile { get; private set; }
 
         private string _codeBoxInput = string.Empty;
         public string CodeBoxInput
@@ -432,6 +469,10 @@ Description=Test Commands
 
         public void SaveCodeBox()
         {
+            // CodeBox not initialized
+            if (CodeFile == null)
+                return;
+
             // Detect encoding of text. 
             Encoding encoding;
             if (File.Exists(CodeFile))

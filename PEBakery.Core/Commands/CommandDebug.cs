@@ -34,13 +34,13 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> DebugCmd(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_Debug info = cmd.Info.Cast<CodeInfo_Debug>();
+            CodeInfo_Debug info = (CodeInfo_Debug)cmd.Info;
 
             switch (info.Type)
             {
                 case DebugType.Breakpoint:
                     {
-                        DebugInfo_Breakpoint subInfo = info.SubInfo.Cast<DebugInfo_Breakpoint>();
+                        DebugInfo_Breakpoint subInfo = (DebugInfo_Breakpoint)info.SubInfo;
 
                         bool pause = true;
                         if (subInfo.Cond != null)

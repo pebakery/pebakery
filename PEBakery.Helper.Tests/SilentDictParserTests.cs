@@ -25,7 +25,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
 
 namespace PEBakery.Helper.Tests
@@ -34,8 +33,7 @@ namespace PEBakery.Helper.Tests
     public class SilentDictParserTests
     {
         #region Test Dictionary, Enum
-        [SuppressMessage("ReSharper", "StringLiteralTypo")]
-        private static readonly Dictionary<string, string> TestDict = new Dictionary<string, string>(StringComparer.Ordinal)
+        private static readonly Dictionary<string, string?> TestDict = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             ["Null"] = null,
             ["Str"] = "ing",
@@ -68,36 +66,44 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseString()
         {
-            string result = SilentDictParser.ParseString(TestDict, "Str", "Default", out bool notFound);
+            string? result = SilentDictParser.ParseStringNullable(TestDict, "Str", "Default", out bool notFound);
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseString(TestDict, "Str", null, out notFound);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "Str", null, out notFound);
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseString(TestDict, "None", "Default", out notFound);
+            result = SilentDictParser.ParseStringNullable(TestDict, "None", "Default", out notFound);
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseString(TestDict, "None", null, out notFound);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "None", null, out notFound);
             Assert.IsNull(result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseString(TestDict, "Null", "Default", out notFound);
+            result = SilentDictParser.ParseStringNullable(TestDict, "Null", "Default", out notFound);
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseString(TestDict, "Null", null, out notFound);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "Null", null, out notFound);
             Assert.IsNull(result);
             Assert.IsTrue(notFound);
 
-            result = SilentDictParser.ParseString(TestDict, "Str", "Default");
+            result = SilentDictParser.ParseStringNullable(TestDict, "Str", "Default");
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
-            result = SilentDictParser.ParseString(TestDict, "Str", null);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "Str", null);
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
-            result = SilentDictParser.ParseString(TestDict, "None", "Default");
+            result = SilentDictParser.ParseStringNullable(TestDict, "None", "Default");
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
-            result = SilentDictParser.ParseString(TestDict, "None", null);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "None", null);
             Assert.IsNull(result);
-            result = SilentDictParser.ParseString(TestDict, "Null", "Default");
+            result = SilentDictParser.ParseStringNullable(TestDict, "Null", "Default");
+            Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
-            result = SilentDictParser.ParseString(TestDict, "Null", null);
+            result = SilentDictParser.ParseStringNullDefault(TestDict, "Null", null);
             Assert.IsNull(result);
         }
         #endregion
@@ -108,31 +114,31 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseInteger()
         {
-            int result = SilentDictParser.ParseInteger(TestDict, "Int1", 0, out bool notFound);
+            int result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0, out bool notFound);
             Assert.AreEqual(100, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseInteger(TestDict, "Int2", 0, out notFound);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0, out notFound);
             Assert.AreEqual(0x100, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseInteger(TestDict, "Int3", 0, out notFound);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0, out notFound);
             Assert.AreEqual(-1, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseInteger(TestDict, "None", 0, out notFound);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0, out notFound);
             Assert.AreEqual(0, result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseInteger(TestDict, "None", -128, out notFound);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128, out notFound);
             Assert.AreEqual(-128, result);
             Assert.IsTrue(notFound);
 
-            result = SilentDictParser.ParseInteger(TestDict, "Int1", 0);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0);
             Assert.AreEqual(100, result);
-            result = SilentDictParser.ParseInteger(TestDict, "Int2", 0);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0);
             Assert.AreEqual(0x100, result);
-            result = SilentDictParser.ParseInteger(TestDict, "Int3", 0);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0);
             Assert.AreEqual(-1, result);
-            result = SilentDictParser.ParseInteger(TestDict, "None", 0);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0);
             Assert.AreEqual(0, result);
-            result = SilentDictParser.ParseInteger(TestDict, "None", -128);
+            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128);
             Assert.AreEqual(-128, result);
         }
         #endregion
@@ -143,31 +149,31 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseStrEnum()
         {
-            TestEnum result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum1", TestEnum.None, out bool notFound);
+            TestEnum result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None, out bool notFound);
             Assert.AreEqual(TestEnum.First, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum2", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.Second, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum3", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseStrEnum(TestDict, "None", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseStrEnum(TestDict, "Null", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
 
-            result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum1", TestEnum.None);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None);
             Assert.AreEqual(TestEnum.First, result);
-            result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum2", TestEnum.None);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None);
             Assert.AreEqual(TestEnum.Second, result);
-            result = SilentDictParser.ParseStrEnum(TestDict, "StrEnum3", TestEnum.None);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseStrEnum(TestDict, "None", TestEnum.None);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseStrEnum(TestDict, "Null", TestEnum.None);
+            result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
         }
         #endregion
@@ -178,31 +184,31 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseIntEnum()
         {
-            TestEnum result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum1", TestEnum.None, out bool notFound);
+            TestEnum result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None, out bool notFound);
             Assert.AreEqual(TestEnum.First, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum2", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum3", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.Third, result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseIntEnum(TestDict, "None", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseIntEnum(TestDict, "Null", TestEnum.None, out notFound);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None, out notFound);
             Assert.AreEqual(TestEnum.None, result);
             Assert.IsTrue(notFound);
 
-            result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum1", TestEnum.None);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None);
             Assert.AreEqual(TestEnum.First, result);
-            result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum2", TestEnum.None);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseIntEnum(TestDict, "IntEnum3", TestEnum.None);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None);
             Assert.AreEqual(TestEnum.Third, result);
-            result = SilentDictParser.ParseIntEnum(TestDict, "None", TestEnum.None);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseIntEnum(TestDict, "Null", TestEnum.None);
+            result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None);
             Assert.AreEqual(TestEnum.None, result);
         }
         #endregion
@@ -213,31 +219,31 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseColor()
         {
-            Color result = SilentDictParser.ParseColor(TestDict, "Color1", Color.FromRgb(255, 255, 255), out bool notFound);
+            Color result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255), out bool notFound);
             Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseColor(TestDict, "Color2", Color.FromRgb(255, 255, 255), out notFound);
+            result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255), out notFound);
             Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
             Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseColor(TestDict, "Color3", Color.FromRgb(255, 255, 255), out notFound);
+            result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255), out notFound);
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseColor(TestDict, "None", Color.FromRgb(255, 255, 255), out notFound);
+            result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255), out notFound);
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
             Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseColor(TestDict, "Null", Color.FromRgb(255, 255, 255), out notFound);
+            result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255), out notFound);
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
             Assert.IsTrue(notFound);
 
-            result = SilentDictParser.ParseColor(TestDict, "Color1", Color.FromRgb(255, 255, 255));
+            result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255));
             Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
-            result = SilentDictParser.ParseColor(TestDict, "Color2", Color.FromRgb(255, 255, 255));
+            result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255));
             Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
-            result = SilentDictParser.ParseColor(TestDict, "Color3", Color.FromRgb(255, 255, 255));
+            result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255));
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            result = SilentDictParser.ParseColor(TestDict, "None", Color.FromRgb(255, 255, 255));
+            result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255));
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            result = SilentDictParser.ParseColor(TestDict, "Null", Color.FromRgb(255, 255, 255));
+            result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255));
             Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
         }
         #endregion

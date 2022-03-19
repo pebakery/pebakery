@@ -9,7 +9,7 @@ namespace Ookii.Dialogs.Wpf
         // Private data
         private IntPtr _cookie;
         private static NativeMethods.ACTCTX _enableThemingActivationContext;
-        private static ActivationContextSafeHandle _activationContext;
+        private static ActivationContextSafeHandle? _activationContext;
         private static bool _contextCreationSucceeded;
         private static readonly object _contextCreationLock = new object();
 
@@ -17,7 +17,7 @@ namespace Ookii.Dialogs.Wpf
         {
             if (enable && NativeMethods.IsWindowsXPOrLater)
             {
-                if (EnsureActivateContextCreated())
+                if (EnsureActivateContextCreated() && _activationContext != null)
                 {
                     if (!NativeMethods.ActivateActCtx(_activationContext, out _cookie))
                     {
@@ -60,32 +60,37 @@ namespace Ookii.Dialogs.Wpf
                     // Pull manifest from the .NET Framework install
                     // directory
 
-                    string assemblyLoc = null;
+                    string? assemblyLoc = null;
 
                     assemblyLoc = typeof(Object).Assembly.Location;
 
-                    string manifestLoc = null;
-                    string installDir = null;
+                    string? manifestLoc = null;
+                    string? installDir = null;
                     if (assemblyLoc != null)
                     {
                         installDir = Path.GetDirectoryName(assemblyLoc);
-                        const string manifestName = "XPThemes.manifest";
-                        manifestLoc = Path.Combine(installDir, manifestName);
+                        if (installDir != null)
+                        {
+                            const string manifestName = "XPThemes.manifest";
+                            manifestLoc = Path.Combine(installDir, manifestName);
+                        }
                     }
 
                     if (manifestLoc != null && installDir != null)
                     {
-                        _enableThemingActivationContext = new NativeMethods.ACTCTX();
-                        _enableThemingActivationContext.cbSize = Marshal.SizeOf(typeof(NativeMethods.ACTCTX));
-                        _enableThemingActivationContext.lpSource = manifestLoc;
+                        _enableThemingActivationContext = new NativeMethods.ACTCTX
+                        {
+                            cbSize = Marshal.SizeOf(typeof(NativeMethods.ACTCTX)),
+                            lpSource = manifestLoc,
 
-                        // Set the lpAssemblyDirectory to the install
-                        // directory to prevent Win32 Side by Side from
-                        // looking for comctl32 in the application
-                        // directory, which could cause a bogus dll to be
-                        // placed there and open a security hole.
-                        _enableThemingActivationContext.lpAssemblyDirectory = installDir;
-                        _enableThemingActivationContext.dwFlags = NativeMethods.ACTCTX_FLAG_ASSEMBLY_DIRECTORY_VALID;
+                            // Set the lpAssemblyDirectory to the install
+                            // directory to prevent Win32 Side by Side from
+                            // looking for comctl32 in the application
+                            // directory, which could cause a bogus dll to be
+                            // placed there and open a security hole.
+                            lpAssemblyDirectory = installDir,
+                            dwFlags = NativeMethods.ACTCTX_FLAG_ASSEMBLY_DIRECTORY_VALID
+                        };
 
                         // Note this will fail gracefully if file specified
                         // by manifestLoc doesn't exist.

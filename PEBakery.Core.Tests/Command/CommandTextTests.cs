@@ -195,7 +195,7 @@ namespace PEBakery.Core.Tests.Command
                 Directory.Delete(tempDir, true);
             }
 
-            string GenerateSampleText(bool t1, bool t2, bool t3, bool t4)
+            static string GenerateSampleText(bool t1, bool t2, bool t3, bool t4)
             {
                 StringBuilder b = new StringBuilder();
                 if (t1) b.AppendLine("ABC");

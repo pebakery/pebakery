@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> List(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_List info = cmd.Info.Cast<CodeInfo_List>();
+            CodeInfo_List info = (CodeInfo_List)cmd.Info;
 
             string listStr = string.Empty;
             string listVar = info.SubInfo.ListVar;
@@ -57,7 +57,7 @@ namespace PEBakery.Core.Commands
             {
                 case ListType.Get:
                     {
-                        ListInfo_Get subInfo = info.SubInfo.Cast<ListInfo_Get>();
+                        ListInfo_Get subInfo = (ListInfo_Get)info.SubInfo;
 
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
 
@@ -78,7 +78,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.Set:
                     {
-                        ListInfo_Set subInfo = info.SubInfo.Cast<ListInfo_Set>();
+                        ListInfo_Set subInfo = (ListInfo_Set)info.SubInfo;
 
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
@@ -101,7 +101,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.Append:
                     {
-                        ListInfo_Append subInfo = info.SubInfo.Cast<ListInfo_Append>();
+                        ListInfo_Append subInfo = (ListInfo_Append)info.SubInfo;
 
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
@@ -118,7 +118,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.Insert:
                     {
-                        ListInfo_Insert subInfo = info.SubInfo.Cast<ListInfo_Insert>();
+                        ListInfo_Insert subInfo = (ListInfo_Insert)info.SubInfo;
 
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
@@ -142,7 +142,7 @@ namespace PEBakery.Core.Commands
                 case ListType.Remove:
                 case ListType.RemoveX:
                     {
-                        ListInfo_Remove subInfo = info.SubInfo.Cast<ListInfo_Remove>();
+                        ListInfo_Remove subInfo = (ListInfo_Remove)info.SubInfo;
 
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
@@ -179,7 +179,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.RemoveAt:
                     {
-                        ListInfo_RemoveAt subInfo = info.SubInfo.Cast<ListInfo_RemoveAt>();
+                        ListInfo_RemoveAt subInfo = (ListInfo_RemoveAt)info.SubInfo;
 
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
 
@@ -201,7 +201,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.Count:
                     {
-                        ListInfo_Count subInfo = info.SubInfo.Cast<ListInfo_Count>();
+                        ListInfo_Count subInfo = (ListInfo_Count)info.SubInfo;
 
                         if (subInfo.Delim != null)
                             delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
@@ -218,7 +218,7 @@ namespace PEBakery.Core.Commands
                 case ListType.LastPos:
                 case ListType.LastPosX:
                     {
-                        ListInfo_Pos subInfo = info.SubInfo.Cast<ListInfo_Pos>();
+                        ListInfo_Pos subInfo = (ListInfo_Pos)info.SubInfo;
 
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
@@ -255,7 +255,7 @@ namespace PEBakery.Core.Commands
                 case ListType.SortN:
                 case ListType.SortNX:
                     {
-                        ListInfo_Sort subInfo = info.SubInfo.Cast<ListInfo_Sort>();
+                        ListInfo_Sort subInfo = (ListInfo_Sort)info.SubInfo;
 
                         string order = StringEscaper.Preprocess(s, subInfo.Order);
 

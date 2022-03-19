@@ -32,14 +32,14 @@ namespace PEBakery.Helper
 {
     public static class ControlsHelper
     {
-        public static T VisualUpwardSearch<T>(DependencyObject source) where T : FrameworkElement
+        public static T? VisualUpwardSearch<T>(DependencyObject source) where T : FrameworkElement
         {
-            while (source != null && !(source is TreeViewItem))
+            while (source != null && source is not TreeViewItem)
                 source = VisualTreeHelper.GetParent(source);
             return source as T;
         }
 
-        public static T VisualDownwardSearch<T>(DependencyObject source) where T : FrameworkElement
+        public static T? VisualDownwardSearch<T>(DependencyObject source) where T : FrameworkElement
         {
             Queue<DependencyObject> q = new Queue<DependencyObject>(new[] { source });
             do

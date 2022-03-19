@@ -71,7 +71,7 @@ namespace PEBakery.Helper.Tests
             string baseTempDir = FileHelper.BaseTempDir();
             Console.WriteLine($"BaseTempDir = {baseTempDir}");
 
-            void Template(string ext)
+            void Template(string? ext)
             {
                 string tempFile = FileHelper.GetTempFile(ext);
                 Console.WriteLine($"TempFile    = {tempFile}");
@@ -279,7 +279,8 @@ namespace PEBakery.Helper.Tests
             Directory.CreateDirectory(destDir);
             try
             {
-                string destRoot = Path.GetPathRoot(destDir);
+                string? destRoot = Path.GetPathRoot(destDir);
+                Assert.IsNotNull(destRoot);
                 Assert.IsFalse(FileHelper.IsPathNonExistDir(destRoot));
                 Assert.IsFalse(FileHelper.IsPathNonExistDir(destDir));
 
@@ -326,7 +327,7 @@ namespace PEBakery.Helper.Tests
         [TestMethod]
         public void SubRootDirPath()
         {
-            static void Template(string path, string rootDir, string expected, bool success)
+            static void Template(string path, string rootDir, string? expected, bool success)
             {
                 try
                 {

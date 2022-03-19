@@ -77,7 +77,6 @@ namespace PEBakery.Core.Tests
             StopWebFileServer();
 
             Global.Cleanup();
-            EngineTests.Logger = null;
         }
         #endregion
 
@@ -113,13 +112,13 @@ namespace PEBakery.Core.Tests
             byte[] h1;
             using (FileStream fs = new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                h1 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                h1 = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             byte[] h2;
             using (FileStream fs = new FileStream(y, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                h2 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                h2 = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             return h1.SequenceEqual(h2);
@@ -135,11 +134,11 @@ namespace PEBakery.Core.Tests
         }
 
         private static readonly object FileServerLock = new object();
-        private static Task _fileServerTask;
-        private static CancellationTokenSource _fileServerCancel;
+        private static Task? _fileServerTask;
+        private static CancellationTokenSource? _fileServerCancel;
 
-        public static string WebRoot { get; private set; }
-        public static string UrlRoot { get; private set; }
+        public static string WebRoot { get; private set; } = string.Empty;
+        public static string? UrlRoot { get; private set; }
         public static bool IsServerRunning
         {
             get
@@ -199,6 +198,8 @@ namespace PEBakery.Core.Tests
             lock (FileServerLock)
             {
                 if (_fileServerTask == null)
+                    return;
+                if (_fileServerCancel == null)
                     return;
 
                 _fileServerCancel.Cancel();

@@ -73,9 +73,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnColorChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is ColorPicker control))
+            if (obj is not ColorPicker control)
                 return;
-            if (!(args.NewValue is Color c))
+            if (args.NewValue is not Color c)
                 return;
 
             control.SampleColor.Background = new SolidColorBrush(c);
@@ -132,7 +132,7 @@ namespace PEBakery.WPF.Controls
         {
             if (!_dragSaturationValueCanvas)
                 return;
-            if (!(sender is IInputElement ie))
+            if (sender is not IInputElement ie)
                 return;
 
             // Get mouse position in the canvas
@@ -178,7 +178,7 @@ namespace PEBakery.WPF.Controls
         {
             if (!_dragHueCanvas)
                 return;
-            if (!(sender is IInputElement ie))
+            if (sender is not IInputElement ie)
                 return;
 
             // Get mouse position in the canvas
@@ -230,7 +230,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region GuardPointCoordinate
-        public (double x, double y) GuardPointCoordinate(Point p, double widthLimit, double heightLimit)
+        public static (double x, double y) GuardPointCoordinate(Point p, double widthLimit, double heightLimit)
         {
             double x = p.X;
             double y = p.Y;
@@ -348,9 +348,9 @@ namespace PEBakery.WPF.Controls
 
             // Convert R, G, B to [0, 255] range
             double m = v - c;
-            r = r + m;
-            g = g + m;
-            b = b + m;
+            r += m;
+            g += m;
+            b += m;
 
             // Return R, G, B
             return Color.FromRgb((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));

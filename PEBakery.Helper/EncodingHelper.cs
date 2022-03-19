@@ -110,7 +110,7 @@ namespace PEBakery.Helper
 
         public static Encoding DetectBom(ReadOnlySpan<byte> span)
         {
-            Encoding encoding = null;
+            Encoding? encoding = null;
             if (3 <= span.Length && span[0] == Utf8Bom[0] && span[1] == Utf8Bom[1] && span[2] == Utf8Bom[2])
             {
                 encoding = Encoding.UTF8;

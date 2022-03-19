@@ -12,6 +12,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="CredentialDialog.cs" />

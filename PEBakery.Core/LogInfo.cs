@@ -51,13 +51,12 @@ namespace PEBakery.Core
     public class LogInfo
     {
         #region Fields
-        public LogState State;
-        public string Message;
-        public CodeCommand Command;
-        // ReSharper disable once InconsistentNaming
-        public UIControl UIControl;
-        public bool IsException;
-        public int Depth;
+        public LogState State { get; set; }
+        public string Message { get; set; }
+        public CodeCommand? Command { get; set; }
+        public UIControl? UIControl { get; set; }
+        public bool IsException { get; set; }
+        public int Depth { get; set; }
         #endregion
 
         #region Constructor - LogState, Message
@@ -231,12 +230,18 @@ namespace PEBakery.Core
         /// <summary>
         /// Wrapper for one-line error terminate
         /// </summary>
-        /// <param name="logs"></param>
-        /// <param name="msg"></param>
-        /// <returns></returns>
         public static List<LogInfo> LogErrorMessage(List<LogInfo> logs, string msg)
         {
             logs.Add(new LogInfo(LogState.Error, msg));
+            return logs;
+        }
+
+        /// <summary>
+        /// Wrapper for one-line critical error terminate
+        /// </summary>
+        public static List<LogInfo> LogCriticalErrorMessage(List<LogInfo> logs, string msg)
+        {
+            logs.Add(new LogInfo(LogState.CriticalError, msg));
             return logs;
         }
         #endregion

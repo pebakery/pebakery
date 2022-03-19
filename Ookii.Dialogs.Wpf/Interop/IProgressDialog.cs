@@ -12,7 +12,7 @@ namespace Ookii.Dialogs.Wpf.Interop
     [ComImport,
     Guid(IIDGuid.IProgressDialog),
     CoClass(typeof(ProgressDialogRCW))]
-    internal interface ProgressDialog : IProgressDialog
+    internal interface IInteropProgressDialog : IProgressDialog
     {
     }
 
@@ -38,7 +38,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void StartProgressDialog(
             IntPtr hwndParent,
             [MarshalAs(UnmanagedType.IUnknown)]
-            object punkEnableModless,
+            object? punkEnableModless,
             ProgressDialogFlags dwFlags,
             IntPtr pvReserved
             );
@@ -50,7 +50,7 @@ namespace Ookii.Dialogs.Wpf.Interop
         void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pwzTitle);
 
         [PreserveSig]
-        void SetAnimation(SafeModuleHandle hInstAnimation, ushort idAnimation);
+        void SetAnimation(SafeModuleHandle? hInstAnimation, ushort idAnimation);
 
         [PreserveSig]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -73,7 +73,7 @@ namespace Ookii.Dialogs.Wpf.Interop
             );
 
         [PreserveSig]
-        void SetCancelMsg([MarshalAs(UnmanagedType.LPWStr)] string pwzCancelMsg, object pvReserved);
+        void SetCancelMsg([MarshalAs(UnmanagedType.LPWStr)] string pwzCancelMsg, object? pvReserved);
 
         [PreserveSig]
         void Timer(uint dwTimerAction, object pvReserved);

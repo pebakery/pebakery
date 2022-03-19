@@ -103,16 +103,17 @@ namespace PEBakery.Core.Tests
                 IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", @$"http://localhost:{TestSetup.ServerPort}/Updater/Standalone/PreserveInterface_r2.script");
 
                 Project p = EngineTests.Project;
-                Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
+                Script? sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
                 {
                     AddToProjectTree = true,
                     IgnoreMain = false,
                     OverwriteToProjectTree = true,
                 });
+                Assert.IsNotNull(sc);
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                (Script newScript, LogInfo log) = await updater.UpdateScriptAsync(sc, true);
+                (Script? newScript, LogInfo log) = await updater.UpdateScriptAsync(sc, true);
 
                 // Validate updated script
                 Console.WriteLine(log);
@@ -135,8 +136,13 @@ namespace PEBakery.Core.Tests
                 };
 
                 keys = IniReadWriter.ReadKeys(newScript.RealPath, keys);
-                Dictionary<string, string> ifaceDict = keys.Where(x => x.Section.Equals("Interface"))
-                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, string> ifaceDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (IniKey key in keys.Where(x => x.Section.Equals(ScriptSection.Names.Interface)))
+                {
+                    if (key.Key == null || key.Value == null)
+                        continue;
+                    ifaceDict[key.Key] = key.Value;
+                }
                 Assert.IsTrue(ifaceDict["checkbox02"].Equals("checkbox02,1,3,10,10,200,18,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["ComboBox02"].Equals("C,1,4,262,120,150,22,A,B,C", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["bvl_Top"].Equals("\"Updated\",1,12,254,101,228,70,8,Normal", StringComparison.Ordinal));
@@ -145,12 +151,22 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(ifaceDict["Button01"].Equals("Button01,1,8,262,46,80,25,TestSection,0,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["CheckBox03"].Equals("CheckBox03,1,3,100,400,200,18,True", StringComparison.Ordinal));
 
-                ifaceDict = keys.Where(x => x.Section.Equals("ThirdInterface"))
-                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                ifaceDict.Clear();
+                foreach (IniKey key in keys.Where(x => x.Section.Equals("ThirdInterface")))
+                {
+                    if (key.Key == null || key.Value == null)
+                        continue;
+                    ifaceDict[key.Key] = key.Value;
+                }
                 Assert.IsTrue(ifaceDict["RadioGroup01"].Equals("RadioGroup01,1,14,10,30,150,60,A,B,C,1", StringComparison.Ordinal));
 
-                ifaceDict = keys.Where(x => x.Section.Equals("FourthInterface"))
-                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                ifaceDict.Clear();
+                foreach (IniKey key in keys.Where(x => x.Section.Equals("FourthInterface")))
+                {
+                    if (key.Key == null || key.Value == null)
+                        continue;
+                    ifaceDict[key.Key] = key.Value;
+                }
                 Assert.IsTrue(ifaceDict["RadioButton01"].Equals("A,1,11,10,30,120,20,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["RadioButton02"].Equals("B,1,11,10,50,120,20,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["RadioButton03"].Equals("C,1,11,10,70,120,20,True", StringComparison.Ordinal));
@@ -181,16 +197,17 @@ namespace PEBakery.Core.Tests
                 IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", @$"http://localhost:{TestSetup.ServerPort}/Updater/Standalone/Removed.script");
 
                 Project p = EngineTests.Project;
-                Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
+                Script? sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
                 {
                     AddToProjectTree = true,
                     IgnoreMain = false,
                     OverwriteToProjectTree = true,
                 });
+                Assert.IsNotNull(sc);
 
                 // Run an update, which must fail
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                (Script newScript, LogInfo log) = await updater.UpdateScriptAsync(sc, true);
+                (Script? newScript, LogInfo log) = await updater.UpdateScriptAsync(sc, true);
 
                 Console.WriteLine(log.ToString());
                 Assert.IsTrue(log.Message.Equals($"[{sc.Title}] was deleted from the server", StringComparison.Ordinal));

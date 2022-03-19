@@ -34,13 +34,13 @@ namespace PEBakery.Core.Html
     public class LogLayoutModel
     {
         // Information
-        public string HeadTitle { get; set; }
-        public string ExportEngineVersion { get; set; }
-        public string ExportTimeStr { get; set; }
+        public string HeadTitle { get; set; } = string.Empty;
+        public string ExportEngineVersion { get; set; } = string.Empty;
+        public string ExportTimeStr { get; set; } = string.Empty;
         // Embed
-        public string EmbedBootstrapCss { get; set; }
-        public string EmbedJQuerySlimJs { get; set; }
-        public string EmbedBootstrapJs { get; set; }
+        public string? EmbedBootstrapCss { get; set; }
+        public string? EmbedJQuerySlimJs { get; set; }
+        public string? EmbedBootstrapJs { get; set; }
     }
     #endregion
 
@@ -53,10 +53,10 @@ namespace PEBakery.Core.Html
 
     public class SystemLogItem
     {
-        public string TimeStr { get; set; }
+        public string TimeStr { get; set; } = string.Empty;
         public LogState State { get; set; }
         public string StateStr => State.ToString();
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
     #endregion
 
@@ -64,11 +64,14 @@ namespace PEBakery.Core.Html
     public class BuildLogModel : LogLayoutModel
     {
         // Information
-        public string BuiltEngineVersion { get; set; }
-        public string BuildStartTimeStr { get; set; }
-        public string BuildEndTimeStr { get; set; }
-        public string BuildTookTimeStr { get; set; }
+        public string BuiltEngineVersion { get; set; } = string.Empty;
+        public string BuildStartTimeStr { get; set; } = string.Empty;
+        public string BuildEndTimeStr { get; set; } = string.Empty;
+        public string BuildTookTimeStr { get; set; } = string.Empty;
         public bool ShowLogFlags { get; set; }
+        // Host Environment
+        public string BuildHostWindowsVersion { get; set; } = string.Empty;
+        public string BuildHostDotnetVersion { get; set; } = string.Empty;
         // Data
         // type: LogStatItem[]
         public ScriptArray LogStats { get; private set; } = new ScriptArray();
@@ -109,25 +112,25 @@ namespace PEBakery.Core.Html
 
     public class ScriptLogItem
     {
-        public string IndexStr { get; set; } // int Index or "Macro"
-        public string Name { get; set; }
-        public string Path { get; set; }
-        public string Version { get; set; }
-        public string TimeStr { get; set; }
+        public string IndexStr { get; set; } = string.Empty; // int Index or "Macro"
+        public string Name { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string TimeStr { get; set; } = string.Empty;
     }
 
     public class VariableLogItem
     {
         public VarsType Type { get; set; }
         public string TypeStr => Type.ToString();
-        public string Key { get; set; }
-        public string Value { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 
     public class CodeLogItem
     {
         public LogState State { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
         /// <summary>
         /// From LogModel.BuildLogFlag
         /// </summary>
@@ -135,12 +138,12 @@ namespace PEBakery.Core.Html
         /// <summary>
         /// Set to null if a log was not generated from a referenced script
         /// </summary>
-        public string RefScriptTitle { get; set; }
+        public string RefScriptTitle { get; set; } = string.Empty;
         /// <summary>
         /// Optional, for error/warning logs
         /// </summary>
         public int Href { get; set; }
-        public string RefScriptMsg { get; set; }
+        public string? RefScriptMsg { get; set; }
 
         // Used in _BuildLogView.sbnhtml
         public string FlagsStr

@@ -41,16 +41,15 @@ using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
-    // ReSharper disable once RedundantExtendsListEntry
     public partial class LogWindow : Window
     {
         #region Field and Constructor
-        public static int Count = 0;
+        private static int _refCount = 0;
         private readonly LogViewModel _m = new LogViewModel();
 
         public LogWindow(int selectedTabIndex = 0)
         {
-            Interlocked.Increment(ref LogWindow.Count);
+            Acquire();
 
             DataContext = _m;
             InitializeComponent();
@@ -72,6 +71,23 @@ namespace PEBakery.WPF
                 int idx = SystemLogListView.Items.Count - 1;
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[idx]);
             }
+        }
+        #endregion
+
+        #region Reference Count
+        public static int Acquire()
+        {
+            return Interlocked.Increment(ref _refCount);
+        }
+
+        public static int Release()
+        {
+            return Interlocked.Decrement(ref _refCount);
+        }
+
+        public static bool IsRunning()
+        {
+            return 0 < _refCount;
         }
         #endregion
 
@@ -124,13 +140,13 @@ namespace PEBakery.WPF
                     if (0 < BuildLogSimpleListView.Items.Count)
                     {
                         BuildLogSimpleListView.UpdateLayout();
-                        BuildLogSimpleListView.ScrollIntoView(BuildLogSimpleListView.Items[BuildLogSimpleListView.Items.Count - 1]);
+                        BuildLogSimpleListView.ScrollIntoView(BuildLogSimpleListView.Items[^1]);
                     }
 
                     if (0 < BuildLogDetailListView.Items.Count)
                     {
                         BuildLogDetailListView.UpdateLayout();
-                        BuildLogDetailListView.ScrollIntoView(BuildLogDetailListView.Items[BuildLogDetailListView.Items.Count - 1]);
+                        BuildLogDetailListView.ScrollIntoView(BuildLogDetailListView.Items[^1]);
                     }
                 });
             }
@@ -190,7 +206,7 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine == null)
                 Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
 
-            Interlocked.Decrement(ref LogWindow.Count);
+            Release();
             CommandManager.InvalidateRequerySuggested();
         }
         #endregion
@@ -358,8 +374,7 @@ namespace PEBakery.WPF
                     case 1: // Build Log
                         // Open Context Menu
                         // Will be redirected to ClearCurrentBuildCommand_Executed or ClearEntireCommand_Executed
-                        ContextMenu menu = FindResource("ClearBuildLogContextMenu") as ContextMenu;
-                        Debug.Assert(menu != null);
+                        ContextMenu menu = (ContextMenu)FindResource("ClearBuildLogContextMenu");
                         if (e.Source is Button button)
                         {
                             menu.PlacementTarget = button;
@@ -684,7 +699,7 @@ namespace PEBakery.WPF
         }
 
         private readonly object _systemLogsLock = new object();
-        private ObservableCollection<LogModel.SystemLog> _systemLogs;
+        private ObservableCollection<LogModel.SystemLog> _systemLogs = new ObservableCollection<LogModel.SystemLog>();
         public ObservableCollection<LogModel.SystemLog> SystemLogs
         {
             get => _systemLogs;
@@ -717,7 +732,7 @@ namespace PEBakery.WPF
 
         // Time, Build Name, Build Id 
         private readonly object _buildEntriesLock = new object();
-        private ObservableCollection<LogModel.BuildInfo> _buildEntries;
+        private ObservableCollection<LogModel.BuildInfo> _buildEntries = new ObservableCollection<LogModel.BuildInfo>();
         public ObservableCollection<LogModel.BuildInfo> BuildEntries
         {
             get => _buildEntries;
@@ -740,7 +755,7 @@ namespace PEBakery.WPF
 
         // Script Name, Script Id, Build Id
         private readonly object _scriptEntriesLock = new object();
-        private ObservableCollection<Tuple<string, int, int>> _scriptEntries;
+        private ObservableCollection<Tuple<string, int, int>> _scriptEntries = new ObservableCollection<Tuple<string, int, int>>();
         public ObservableCollection<Tuple<string, int, int>> ScriptEntries
         {
             get => _scriptEntries;
@@ -748,7 +763,7 @@ namespace PEBakery.WPF
         }
 
         private readonly object _logStatsLock = new object();
-        private ObservableCollection<Tuple<LogState, int>> _logStats;
+        private ObservableCollection<Tuple<LogState, int>> _logStats = new ObservableCollection<Tuple<LogState, int>>();
         public ObservableCollection<Tuple<LogState, int>> LogStats
         {
             get => _logStats;
@@ -757,14 +772,14 @@ namespace PEBakery.WPF
 
         private List<LogModel.BuildLog> _allBuildLogs = new List<LogModel.BuildLog>();
         private readonly object _buildLogsLock = new object();
-        private ObservableCollection<LogModel.BuildLog> _buildLogs;
+        private ObservableCollection<LogModel.BuildLog> _buildLogs = new ObservableCollection<LogModel.BuildLog>();
         public ObservableCollection<LogModel.BuildLog> BuildLogs
         {
             get => _buildLogs;
             set => SetCollectionProperty(ref _buildLogs, _buildLogsLock, value);
         }
 
-        private Dictionary<int, string> _scriptTitleDict;
+        private Dictionary<int, string> _scriptTitleDict = new Dictionary<int, string>();
         public Dictionary<int, string> ScriptTitleDict
         {
             get => _scriptTitleDict;
@@ -786,7 +801,7 @@ namespace PEBakery.WPF
         }
 
         private readonly object _variableLogsLock = new object();
-        private ObservableCollection<LogModel.Variable> _variableLogs;
+        private ObservableCollection<LogModel.Variable> _variableLogs = new ObservableCollection<LogModel.Variable>();
         public ObservableCollection<LogModel.Variable> VariableLogs
         {
             get => _variableLogs;
@@ -940,12 +955,14 @@ namespace PEBakery.WPF
         #endregion
 
         #region Utility
+        /*
         private void ResizeGridViewColumn(GridViewColumn column)
         {
             if (double.IsNaN(column.Width))
                 column.Width = column.ActualWidth;
             column.Width = double.NaN;
         }
+        */
         #endregion
     }
     #endregion

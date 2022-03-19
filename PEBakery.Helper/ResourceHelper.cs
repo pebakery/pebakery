@@ -49,29 +49,34 @@ namespace PEBakery.Helper
             return StringHelper.ReplaceEx(resourcePath, ResourceNameEscapeMap, StringComparison.Ordinal);
         }
 
-        private static string GetEmbeddedResourceName(Assembly assembly, string resourcePath)
+        private static string? GetEmbeddedResourceName(Assembly assembly, string resourcePath)
         {
-            string @namespace = assembly.GetName().Name;
-            return $"{@namespace}.{resourcePath}";
+            if (assembly.GetName().Name is string namespaceStr)
+                return $"{namespaceStr}.{resourcePath}";
+            return null;
         }
 
-        public static Stream GetEmbeddedResourceContent(string resourcePath, Assembly assembly)
+        public static Stream? GetEmbeddedResourceContent(string resourcePath, Assembly assembly)
         {
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            return assembly.GetManifestResourceStream(resourceName);
+            if (GetEmbeddedResourceName(assembly, resourcePath) is string resourceName)
+                return assembly.GetManifestResourceStream(resourceName);
+            return null;
         }
 
-        public static Stream GetEmbeddedResourceContent(string resourcePath)
+        public static Stream? GetEmbeddedResourceContent(string resourcePath)
         {
             Assembly assembly = Assembly.GetCallingAssembly();
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            return assembly.GetManifestResourceStream(resourceName);
+            if (GetEmbeddedResourceName(assembly, resourcePath) is string resourceName)
+                return assembly.GetManifestResourceStream(resourceName);
+            return null;
         }
 
-        public static string GetEmbeddedResourceString(string resourcePath, Assembly assembly)
+        public static string? GetEmbeddedResourceString(string resourcePath, Assembly assembly)
         {
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            using (Stream s = assembly.GetManifestResourceStream(resourceName))
+            if (GetEmbeddedResourceName(assembly, resourcePath) is not string resourceName)
+                return null;
+
+            using (Stream? s = assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                     return null;
@@ -83,11 +88,13 @@ namespace PEBakery.Helper
             }
         }
 
-        public static string GetEmbeddedResourceString(string resourcePath)
+        public static string? GetEmbeddedResourceString(string resourcePath)
         {
             Assembly assembly = Assembly.GetCallingAssembly();
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            using (Stream s = assembly.GetManifestResourceStream(resourceName))
+            if (GetEmbeddedResourceName(assembly, resourcePath) is not string resourceName)
+                return null;
+
+            using (Stream? s = assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                     return null;
@@ -99,10 +106,12 @@ namespace PEBakery.Helper
             }
         }
 
-        public static Task<string> GetEmbeddedResourceStringAsync(string resourcePath, Assembly assembly)
+        public static Task<string>? GetEmbeddedResourceStringAsync(string resourcePath, Assembly assembly)
         {
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            using (Stream s = assembly.GetManifestResourceStream(resourceName))
+            if (GetEmbeddedResourceName(assembly, resourcePath) is not string resourceName)
+                return null;
+
+            using (Stream? s = assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                     return null;
@@ -114,11 +123,13 @@ namespace PEBakery.Helper
             }
         }
 
-        public static Task<string> GetEmbeddedResourceStringAsync(string resourcePath)
+        public static Task<string>? GetEmbeddedResourceStringAsync(string resourcePath)
         {
             Assembly assembly = Assembly.GetCallingAssembly();
-            string resourceName = GetEmbeddedResourceName(assembly, resourcePath);
-            using (Stream s = assembly.GetManifestResourceStream(resourceName))
+            if (GetEmbeddedResourceName(assembly, resourcePath) is not string resourceName)
+                return null;
+
+            using (Stream? s = assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                     return null;

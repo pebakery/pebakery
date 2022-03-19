@@ -26,7 +26,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Tree
@@ -35,18 +34,15 @@ namespace PEBakery.Tree
     public class KwayTree<T> : IEnumerable<T>
     {
         #region Fields and Properties
-        private readonly List<int> _idList;
+        private readonly List<int> _idList = new List<int> { 0 };
 
-        public List<KwayTreeNode<T>> Root { get; }
-        public int Count { get; private set; }
+        public List<KwayTreeNode<T>> Root { get; } = new List<KwayTreeNode<T>>();
+        public int Count { get; private set; } = 0;
         #endregion
 
         #region Constructor
         public KwayTree()
         {
-            Root = new List<KwayTreeNode<T>>();
-            _idList = new List<int> { 0 };
-            Count = 0;
         }
         #endregion
 
@@ -54,48 +50,48 @@ namespace PEBakery.Tree
         /// <summary>
         /// Add node to tree. Returns node id. If fails, return -1.
         /// </summary>
-        /// <param name="parentId"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public int AddNode(int parentId, T data)
         {
+            int id = _idList.Max() + 1;
+            _idList.Add(id);
+
             if (parentId == 0)
             { // Root NodeList
-                int id = _idList.Max() + 1;
-                _idList.Add(id);
+
                 KwayTreeNode<T> node = new KwayTreeNode<T>(parentId, id, data, null);
                 Root.Add(node);
-                Count++;
-                return id;
             }
             else
             {
-                int id = _idList.Max() + 1;
-                _idList.Add(id);
-                KwayTreeNode<T> parent = SearchNode(parentId);
-                Debug.Assert(parent != null);
+                KwayTreeNode<T>? parent = SearchNode(parentId);
+                if (parent == null)
+                    return KwayTreeNode<T>.InvalidNodeId;
 
                 KwayTreeNode<T> node = new KwayTreeNode<T>(parentId, id, data, parent.Child);
                 parent.Child.Add(node);
-                Count++;
-                return id;
             }
+
+            Count++;
+            return id;
         }
 
         /// <summary>
         /// Delete node from tree. If success, return true.
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        /// <param name="id">Id of the node</param>
         public bool DeleteNode(int id)
         {
             // Root NodeList, cannot delete
-            if (id == 0)
+            if (id == KwayTreeNode<T>.RootNodeId)
+                return false;
+            else if (id == KwayTreeNode<T>.InvalidNodeId)
                 return false;
 
-            KwayTreeNode<T> node = SearchNode(id, out List<KwayTreeNode<T>> sibling);
-            Debug.Assert(node != null);
+            KwayTreeNode<T>? node = SearchNode(id, out List<KwayTreeNode<T>>? sibling);
+            if (node is null || sibling is null)
+                return false;
             Count -= CountLeaves(node);
+
             RecursiveDeleteNodeChild(node);
             sibling.Remove(node);
             Count--;
@@ -107,7 +103,7 @@ namespace PEBakery.Tree
             foreach (KwayTreeNode<T> next in node.Child)
             {
                 RecursiveDeleteNodeChild(next);
-                next.Child = null;
+                next.Child.Clear();
             }
         }
 
@@ -138,14 +134,14 @@ namespace PEBakery.Tree
         #endregion
 
         #region Search
-        public KwayTreeNode<T> SearchNode(int id)
+        public KwayTreeNode<T>? SearchNode(int id)
         {
             return id == 0 ? null : RecursiveSearchNode(id, Root, out _);
         }
 
-        public KwayTreeNode<T> SearchNode(int id, out List<KwayTreeNode<T>> sibling)
+        public KwayTreeNode<T>? SearchNode(int id, out List<KwayTreeNode<T>>? sibling)
         {
-            if (id == 0)
+            if (id == KwayTreeNode<T>.RootNodeId)
             {
                 sibling = null;
                 return null;
@@ -155,7 +151,7 @@ namespace PEBakery.Tree
             return RecursiveSearchNode(id, Root, out sibling);
         }
 
-        private static KwayTreeNode<T> RecursiveSearchNode(int id, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
+        private static KwayTreeNode<T>? RecursiveSearchNode(int id, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>>? sibling)
         {
             foreach (KwayTreeNode<T> node in list)
             {
@@ -167,7 +163,7 @@ namespace PEBakery.Tree
 
                 if (0 < node.Child.Count)
                 {
-                    KwayTreeNode<T> res = RecursiveSearchNode(id, node.Child, out sibling);
+                    KwayTreeNode<T>? res = RecursiveSearchNode(id, node.Child, out sibling);
                     if (res != null)
                         return res;
                 }
@@ -178,18 +174,24 @@ namespace PEBakery.Tree
             return null;
         }
 
-        public KwayTreeNode<T> SearchNode(T data)
+        public KwayTreeNode<T>? SearchNode(T data)
         {
             return RecursiveSearchNode(data, Root, out _);
         }
 
-        public KwayTreeNode<T> SearchNode(T data, out List<KwayTreeNode<T>> sibling)
+        public KwayTreeNode<T>? SearchNode(T data, out List<KwayTreeNode<T>>? sibling)
         {
             return RecursiveSearchNode(data, Root, out sibling);
         }
 
-        private static KwayTreeNode<T> RecursiveSearchNode(T data, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
+        private static KwayTreeNode<T>? RecursiveSearchNode(T data, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>>? sibling)
         {
+            if (data is null)
+            {
+                sibling = null;
+                return null;
+            }
+
             foreach (KwayTreeNode<T> node in list)
             {
                 if (data.Equals(node.Data))
@@ -200,7 +202,7 @@ namespace PEBakery.Tree
 
                 if (0 < node.Child.Count)
                 {
-                    KwayTreeNode<T> res = RecursiveSearchNode(data, node.Child, out sibling);
+                    KwayTreeNode<T>? res = RecursiveSearchNode(data, node.Child, out sibling);
                     if (res != null)
                         return res;
                 }
@@ -216,9 +218,12 @@ namespace PEBakery.Tree
             return SearchNode(id) != null;
         }
 
-        public KwayTreeNode<T> GetNext(int id)
+        public KwayTreeNode<T>? GetNext(int id)
         {
-            KwayTreeNode<T> node = SearchNode(id, out List<KwayTreeNode<T>> sibling);
+            KwayTreeNode<T>? node = SearchNode(id, out List<KwayTreeNode<T>>? sibling);
+            if (node is null || sibling is null)
+                return null;
+
             int idx = sibling.IndexOf(node);
             if (idx + 1 < sibling.Count)
                 return sibling[idx + 1];
@@ -300,13 +305,21 @@ namespace PEBakery.Tree
     #region class KwayTreeNode
     public class KwayTreeNode<T>
     {
-        public int Id;
-        public int ParentId; // 0 is root NodeList
-        public T Data;
-        public List<KwayTreeNode<T>> Parent;
-        public List<KwayTreeNode<T>> Child;
+        public const int RootNodeId = 0;
+        public const int InvalidNodeId = -1;
 
-        public KwayTreeNode(int parentId, int id, T data, List<KwayTreeNode<T>> parent)
+        public int Id;
+        public int ParentId { get; set; } // 0 is root NodeList
+        public T Data { get; set; }
+        /// <summary>
+        /// Null if Root
+        /// </summary>
+        public List<KwayTreeNode<T>>? Parent { get; set; }
+        public List<KwayTreeNode<T>> Child { get; set; }
+
+        public bool IsRoot => ParentId == RootNodeId;
+
+        public KwayTreeNode(int parentId, int id, T data, List<KwayTreeNode<T>>? parent)
         {
             ParentId = parentId;
             Id = id;

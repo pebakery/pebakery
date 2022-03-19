@@ -116,15 +116,15 @@ namespace PEBakery.Core
         #region Constructor
         public ProjectUpdateInfo()
         {
-            SelectedChannel = null;
-            BaseUrl = null;
+            SelectedChannel = string.Empty;
+            BaseUrl = string.Empty;
         }
 
         public ProjectUpdateInfo(string selectedChannel, string baseUrl)
         {
             // If baseUrl is not a proper uri, throw an exception
             if (StringHelper.GetUriProtocol(baseUrl) == null)
-                throw new ArgumentException(nameof(baseUrl));
+                throw new ArgumentException(null, nameof(baseUrl));
 
             SelectedChannel = selectedChannel ?? throw new ArgumentNullException(nameof(selectedChannel));
             BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -138,12 +138,12 @@ namespace PEBakery.Core
     {
         #region Fields and Properties
         private readonly Project _p;
-        private readonly MainViewModel _m;
+        private readonly MainViewModel? _m;
         private readonly HttpFileDownloader _downloader;
         #endregion
 
         #region Constructor
-        public FileUpdater(Project p, MainViewModel mainViewModel, string customUserAgent)
+        public FileUpdater(Project p, MainViewModel? mainViewModel, string? customUserAgent)
         {
             _p = p;
             _m = mainViewModel;
@@ -154,23 +154,20 @@ namespace PEBakery.Core
         #endregion
 
         #region Update one or more scripts
-        public Task<(Script, LogInfo)> UpdateScriptAsync(Script sc, bool preserveScriptState)
+        public Task<(Script?, LogInfo)> UpdateScriptAsync(Script sc, bool preserveScriptState)
         {
             return Task.Run(() => UpdateScript(sc, preserveScriptState));
         }
 
-        public (Script, LogInfo) UpdateScript(Script sc, bool preserveScriptState)
+        public (Script?, LogInfo) UpdateScript(Script sc, bool preserveScriptState)
         {
             if (!sc.IsUpdateable)
                 return (null, new LogInfo(LogState.Error, $"Script [{sc.Title} is not updateable"));
 
             // Backup interface state of original script
-            ScriptStateBackup stateBackup = null;
+            ScriptStateBackup? stateBackup = null;
             if (preserveScriptState)
-            {
                 stateBackup = BackupScriptState(sc);
-                Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
-            }
 
             ResultReport<Script> report;
             _m?.SetBuildCommandProgress("Download Progress", 1);
@@ -217,7 +214,7 @@ namespace PEBakery.Core
                 {
                     i++;
 
-                    ScriptStateBackup stateBackup = null;
+                    ScriptStateBackup? stateBackup = null;
                     if (preserveScriptState)
                     {
                         stateBackup = BackupScriptState(sc);
@@ -248,12 +245,12 @@ namespace PEBakery.Core
             return (newScripts.ToArray(), logs.ToArray());
         }
 
-        private ResultReport<Script> InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
+        private ResultReport<Script> InternalUpdateOneScript(Script sc, ScriptStateBackup? stateBackup)
         {
-            // Never should be triggered, because Script class constructor check it
-            Debug.Assert(sc.ParsedVersion != null, $"Local script [{sc.Title}] does not provide proper version information");
+            string? updateUrl = sc.UpdateUrl;
+            if (updateUrl == null)
+                return new ResultReport<Script>(false, null, $"{nameof(sc.UpdateUrl)} is null");
 
-            string updateUrl = sc.UpdateUrl;
             string metaJsonUrl = Path.ChangeExtension(updateUrl, ".meta.json");
             string metaJsonFile = FileHelper.GetTempFile(".meta.json");
             string tempScriptFile = FileHelper.GetTempFile(".script");
@@ -302,14 +299,20 @@ namespace PEBakery.Core
                 ResultReport<UpdateJson.Root> jsonReport = UpdateJson.ReadUpdateJson(metaJsonFile);
                 if (!jsonReport.Success)
                     return new ResultReport<Script>(false, null, jsonReport.Message);
+                if (jsonReport.Result is null)
+                    return new ResultReport<Script>(false, null, jsonReport.Message);
 
                 UpdateJson.Root metaJson = jsonReport.Result;
                 UpdateJson.FileIndex index = metaJson.Index;
                 if (index.Kind != UpdateJson.IndexEntryKind.Script)
                     return new ResultReport<Script>(false, null, "Update json is not of a script file");
+                if (index.ScriptInfo == null)
+                    return new ResultReport<Script>(false, null, $"Update json [{nameof(index.ScriptInfo)}] is corrupted");
                 UpdateJson.ScriptInfo scInfo = index.ScriptInfo;
                 if (scInfo.Format != UpdateJson.ScriptFormat.IniBased)
                     return new ResultReport<Script>(false, null, $"Format [{scInfo.Format}] of remote script [{sc.Title}] is not supported");
+                if (scInfo.IniBased == null)
+                    return new ResultReport<Script>(false, null, $"Update json [{nameof(scInfo.IniBased)}] is corrupted");
                 UpdateJson.IniBasedScript iniScInfo = scInfo.IniBased;
                 if (iniScInfo.Version <= sc.ParsedVersion)
                     return new ResultReport<Script>(false, null, $"You are using the lastest version of script [{sc.Title}]");
@@ -320,14 +323,18 @@ namespace PEBakery.Core
                     return new ResultReport<Script>(false, null, httpReport.ErrorMsg);
 
                 // Verify downloaded .script file with FileMetadata
+                if (index.FileMetadata == null)
+                    return new ResultReport<Script>(false, null, $"Remote script [{sc.Title}] is corrupted");
                 ResultReport verifyReport = index.FileMetadata.VerifyFile(tempScriptFile);
                 if (!verifyReport.Success)
                     return new ResultReport<Script>(false, null, $"Remote script [{sc.Title}] is corrupted");
 
                 // Check downloaded script's version and check
                 // Must have been checked with the UpdateJson
-                string remoteVerStr = IniReadWriter.ReadKey(tempScriptFile, "Main", "Version");
-                VersionEx remoteVer = VersionEx.Parse(remoteVerStr);
+                string? remoteVerStr = IniReadWriter.ReadKey(tempScriptFile, "Main", "Version");
+                if (remoteVerStr == null)
+                    return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
+                VersionEx? remoteVer = VersionEx.Parse(remoteVerStr);
                 if (remoteVer == null)
                     return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
                 if (!remoteVer.Equals(iniScInfo.Version))
@@ -336,7 +343,7 @@ namespace PEBakery.Core
                     return new ResultReport<Script>(false, null, $"Version of remote script [{sc.Title}] is corrupted");
 
                 // Check if remote script is valid
-                Script remoteScript = _p.LoadScriptRuntime(tempScriptFile, new LoadScriptRuntimeOptions
+                Script? remoteScript = _p.LoadScriptRuntime(tempScriptFile, new LoadScriptRuntimeOptions
                 {
                     IgnoreMain = false,
                     AddToProjectTree = false,
@@ -358,7 +365,9 @@ namespace PEBakery.Core
 
                 // Copy downloaded remote script into new script
                 File.Copy(tempScriptFile, sc.DirectRealPath, true);
-                Script newScript = _p.RefreshScript(sc);
+                Script? newScript = _p.RefreshScript(sc);
+                if (newScript == null)
+                    return new ResultReport<Script>(true, null, $"Script [{sc.Title}] refresh failure");
 
                 // Return updated script instance
                 return new ResultReport<Script>(true, newScript, $"Updated script [{sc.Title}] to [v{sc.RawVersion}] from [v{newScript.RawVersion}]");
@@ -378,6 +387,7 @@ namespace PEBakery.Core
         {
             // List<LogInfo> logs = new List<LogInfo>();
             // return logs;
+            throw new NotImplementedException("UpdateProject feature is being worked on");
         }
         #endregion
 
@@ -406,7 +416,7 @@ namespace PEBakery.Core
                 Debug.Assert(ifaceSectionName != null, $"Internal error at {nameof(BackupScriptState)}");
 
                 // Get uiCtrls of a script
-                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
                 if (uiCtrls == null) // Mostly [Interface] section does not exist -> return empty ifaceDict
                     return new ScriptStateBackup(sc.Selected, ifaceDict);
 
@@ -414,7 +424,7 @@ namespace PEBakery.Core
                 List<UIControl> valueCtrls = new List<UIControl>(uiCtrls.Count);
                 foreach (UIControl uiCtrl in uiCtrls)
                 {
-                    string value = uiCtrl.GetValue(false);
+                    string? value = uiCtrl.GetValue(false);
                     if (value != null)
                         valueCtrls.Add(uiCtrl);
                 }
@@ -448,17 +458,21 @@ namespace PEBakery.Core
                 if (!ifaceSectionNames.Contains(ifaceSectionName))
                     continue;
 
-                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                if (uiCtrls == null) // Mostly [Interface] section does not exist -> return empty ifaceDict
+                    throw new InvalidOperationException($"Failed to read interface controls");
+
                 foreach (UIControl uiCtrl in uiCtrls)
                 {
                     // Get old uiCtrl, equality identified by Type and Key.
-                    UIControl bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
+                    UIControl? bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
                     if (bakCtrl == null)
                         continue;
 
                     // Get old value
-                    string bakValue = bakCtrl.GetValue(false);
-                    Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+                    string? bakValue = bakCtrl.GetValue(false);
+                    if (bakValue == null)
+                        throw new InvalidOperationException($"Failed to read a value of interface control [{uiCtrl.Key}]");
 
                     // Add to newCtrls only if apply was successful
                     if (uiCtrl.SetValue(bakValue, false, out _))

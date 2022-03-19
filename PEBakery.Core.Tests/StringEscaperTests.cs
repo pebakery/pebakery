@@ -33,8 +33,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-
 namespace PEBakery.Core.Tests
 {
     [TestClass]
@@ -340,9 +338,9 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            const string comp = "Hello ";
+            const string expected = "Hello ";
 
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
         }
 
         public static void ExpandSectionParams_7()
@@ -353,8 +351,8 @@ namespace PEBakery.Core.Tests
 
             const string src = "##1 ##a ##r #r";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string comp = "##1 ##a ##r TEST";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            const string expected = "##1 ##a ##r TEST";
+            Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
         }
         #endregion
 
@@ -461,7 +459,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             try { StringEscaper.ExpandVariables(s, src); }
-            catch (VariableCircularReferenceException) { return; }
+            catch (InvalidOperationException) { return; }
 
             Assert.Fail();
         }
@@ -571,7 +569,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             try { StringEscaper.Preprocess(s, src); }
-            catch (VariableCircularReferenceException) { return; }
+            catch (InvalidOperationException) { return; }
 
             Assert.Fail();
         }
@@ -611,12 +609,12 @@ namespace PEBakery.Core.Tests
             Template("*\\program.exe", false);
 
             // %WinDir%
-            string winDir = Environment.GetEnvironmentVariable("WinDir");
+            string? winDir = Environment.GetEnvironmentVariable("WinDir");
             Assert.IsNotNull(winDir);
             Template(Path.Combine(winDir, "System32", "notepad.exe"), false);
 
             // %ProgramFiles%
-            string programFiles = Environment.GetEnvironmentVariable("ProgramFiles");
+            string? programFiles = Environment.GetEnvironmentVariable("ProgramFiles");
             Assert.IsNotNull(programFiles);
             Template(Path.Combine(programFiles, "PEBakery", "PEBakery.ini"), false);
 
@@ -626,7 +624,7 @@ namespace PEBakery.Core.Tests
                 case Architecture.Arm64:
                 case Architecture.X64:
                     // Only in 64bit process
-                    string programFiles86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                    string? programFiles86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
                     Assert.IsNotNull(programFiles86);
                     Template(Path.Combine(programFiles86, "PEBakery", "PEBakery.ini"), false);
                     break;
@@ -638,7 +636,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void IsPathValid()
         {
-            static void Template(string path, bool result, IEnumerable<char> more = null)
+            static void Template(string path, bool result, IEnumerable<char>? more = null)
             {
                 Assert.IsTrue(StringEscaper.IsPathValid(path, more) == result);
             }
@@ -665,7 +663,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void IsFileNameValid()
         {
-            static void Template(string path, bool result, IEnumerable<char> more = null)
+            static void Template(string path, bool result, IEnumerable<char>? more = null)
             {
                 Assert.IsTrue(StringEscaper.IsFileNameValid(path, more) == result);
             }
@@ -909,7 +907,7 @@ namespace PEBakery.Core.Tests
         #endregion
 
         #region Utility
-        private static string _sampleString = null;
+        private static string? _sampleString = null;
         public static string SampleString
         {
             get

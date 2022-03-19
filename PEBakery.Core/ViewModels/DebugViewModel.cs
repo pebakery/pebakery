@@ -5,7 +5,6 @@ namespace PEBakery.Core.ViewModels
 {
     public class DebugWindowOpenEventArgs : EventArgs
     {
-        //[SuppressMessage("Style", "IDE1006:Style")]
         public EngineState EngineState { get; set; }
 
         public DebugWindowOpenEventArgs(EngineState s)
@@ -20,7 +19,7 @@ namespace PEBakery.Core.ViewModels
     {
         // public event DebugWindowOpenEventHandler DebugWindowOpened;
 
-        public static AutoResetEvent AutoEvent = new AutoResetEvent(false);
+        public static AutoResetEvent AutoEvent { get; } = new AutoResetEvent(false);
 
         private bool _selectedTabIndex = false;
         public bool SelectedTabIndex

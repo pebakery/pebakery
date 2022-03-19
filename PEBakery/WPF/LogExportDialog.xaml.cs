@@ -32,7 +32,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -43,7 +42,6 @@ using System.Windows.Input;
 
 namespace PEBakery.WPF
 {
-    [SuppressMessage("ReSharper", "RedundantExtendsListEntry")]
     public partial class LogExportDialog : Window
     {
         #region Field and Constructor
@@ -358,7 +356,7 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(bool))
-                return null;
+                return Binding.DoNothing;
 
             return !(bool)value;
         }
@@ -366,7 +364,7 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(bool))
-                return null;
+                return Binding.DoNothing;
 
             return !(bool)value;
         }

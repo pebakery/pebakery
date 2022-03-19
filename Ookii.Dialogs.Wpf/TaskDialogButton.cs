@@ -16,7 +16,7 @@ namespace Ookii.Dialogs.Wpf
         private ButtonType _type;
         private bool _elevationRequired;
         private bool _default;
-        private string _commandLinkNote;
+        private string? _commandLinkNote;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TaskDialogButton"/> class.
@@ -185,7 +185,7 @@ namespace Ookii.Dialogs.Wpf
                 base.AutoAssignId();
         }
 
-        internal override void CheckDuplicate(TaskDialogItem itemToExclude)
+        internal override void CheckDuplicate(TaskDialogItem? itemToExclude)
         {
             CheckDuplicateButton(_type, itemToExclude);
             base.CheckDuplicate(itemToExclude);
@@ -228,11 +228,11 @@ namespace Ookii.Dialogs.Wpf
             {
                 if (Owner != null)
                     return Owner.Buttons;
-                return null;
+                return Array.Empty<TaskDialogButton>();
             }
         }
 
-        private void CheckDuplicateButton(ButtonType type, TaskDialogItem itemToExclude)
+        private void CheckDuplicateButton(ButtonType type, TaskDialogItem? itemToExclude)
         {
             if (type != ButtonType.Custom && Owner != null)
             {

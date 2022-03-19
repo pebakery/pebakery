@@ -3,6 +3,7 @@
       <TargetFramework>net6.0-windows</TargetFramework>
       <Configurations>Debug;Release</Configurations>
       <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+      <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.4" />

@@ -41,14 +41,14 @@ namespace PEBakery.Helper.Tests
         [TestCategory("HashHelper")]
         public void GetHash()
         {
-            void ArrayTemplate(HashHelper.HashType type, byte[] input, string expected)
+            void ArrayTemplate(HashType type, byte[] input, string expected)
             {
                 byte[] digest = HashHelper.GetHash(type, input);
                 string actual = StringHelper.ToHexStr(digest);
                 Assert.IsTrue(actual.Equals(expected, StringComparison.Ordinal));
             }
 
-            void StreamTemplate(HashHelper.HashType type, Stream stream, string expected)
+            void StreamTemplate(HashType type, Stream stream, string expected)
             {
                 stream.Position = 0;
                 byte[] digest = HashHelper.GetHash(type, stream);
@@ -63,19 +63,19 @@ namespace PEBakery.Helper.Tests
             const string sha512Digest = "8ae6ae71a75d3fb2e0225deeb004faf95d816a0a58093eb4cb5a3aa0f197050d7a4dc0a2d5c6fbae5fb5b0d536a0a9e6b686369fa57a027687c3630321547596";
 
             byte[] buffer = Encoding.UTF8.GetBytes("HelloWorld");
-            ArrayTemplate(HashHelper.HashType.MD5, buffer, md5Digest);
-            ArrayTemplate(HashHelper.HashType.SHA1, buffer, sha1Digest);
-            ArrayTemplate(HashHelper.HashType.SHA256, buffer, sha256Digest);
-            ArrayTemplate(HashHelper.HashType.SHA384, buffer, sha384Digest);
-            ArrayTemplate(HashHelper.HashType.SHA512, buffer, sha512Digest);
+            ArrayTemplate(HashType.MD5, buffer, md5Digest);
+            ArrayTemplate(HashType.SHA1, buffer, sha1Digest);
+            ArrayTemplate(HashType.SHA256, buffer, sha256Digest);
+            ArrayTemplate(HashType.SHA384, buffer, sha384Digest);
+            ArrayTemplate(HashType.SHA512, buffer, sha512Digest);
 
             using (MemoryStream ms = new MemoryStream(buffer))
             {
-                StreamTemplate(HashHelper.HashType.MD5, ms, md5Digest);
-                StreamTemplate(HashHelper.HashType.SHA1, ms, sha1Digest);
-                StreamTemplate(HashHelper.HashType.SHA256, ms, sha256Digest);
-                StreamTemplate(HashHelper.HashType.SHA384, ms, sha384Digest);
-                StreamTemplate(HashHelper.HashType.SHA512, ms, sha512Digest);
+                StreamTemplate(HashType.MD5, ms, md5Digest);
+                StreamTemplate(HashType.SHA1, ms, sha1Digest);
+                StreamTemplate(HashType.SHA256, ms, sha256Digest);
+                StreamTemplate(HashType.SHA384, ms, sha384Digest);
+                StreamTemplate(HashType.SHA512, ms, sha512Digest);
             }
         }
         #endregion

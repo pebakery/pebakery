@@ -62,16 +62,16 @@ namespace PEBakery.Helper
     public class ResultReport<T>
     {
         public bool Success { get; set; }
-        public T Result { get; set; }
+        public T? Result { get; set; }
         public string Message { get; set; } = string.Empty;
 
-        public ResultReport(bool success, T result)
+        public ResultReport(bool success, T? result)
         {
             Success = success;
             Result = result;
         }
 
-        public ResultReport(bool success, T result, string message)
+        public ResultReport(bool success, T? result, string? message)
         {
             if (message == null)
                 message = string.Empty;
@@ -81,7 +81,7 @@ namespace PEBakery.Helper
             Message = message;
         }
 
-        public ResultReport(Exception e, T result)
+        public ResultReport(Exception e, T? result)
         {
             Success = false;
             Result = result;

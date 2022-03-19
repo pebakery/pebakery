@@ -33,6 +33,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+#nullable enable
+
 namespace PEBakery.Core.Commands
 {
     public static class CommandFile
@@ -41,12 +43,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileCopy info = cmd.Info.Cast<CodeInfo_FileCopy>();
+            CodeInfo_FileCopy info = (CodeInfo_FileCopy)cmd.Info;
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
-            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
-            Debug.Assert(destPath != null, $"{nameof(destPath)} != null");
 
             // Path Security Check
             if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
@@ -137,8 +137,8 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten"));
                         }
 
-                        string destFullParent = Path.GetDirectoryName(destFullPath);
-                        if (destFullParent == null)
+                        string? destFullParent = Path.GetDirectoryName(destFullPath);
+                        if (destFullParent is null)
                             throw new InternalException("Internal Logic Error at FileCopy");
 
                         s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
@@ -166,10 +166,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileDelete info = cmd.Info.Cast<CodeInfo_FileDelete>();
+            CodeInfo_FileDelete info = (CodeInfo_FileDelete)cmd.Info;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             // Path Security Check
             if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
@@ -238,7 +237,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileRename info = cmd.Info.Cast<CodeInfo_FileRename>();
+            CodeInfo_FileRename info = (CodeInfo_FileRename)cmd.Info;
 
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -285,13 +284,19 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileCreateBlank info = cmd.Info.Cast<CodeInfo_FileCreateBlank>();
+            CodeInfo_FileCreateBlank info = (CodeInfo_FileCreateBlank)cmd.Info;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
             Encoding encoding = EncodingHelper.DefaultAnsi;
             if (info.Encoding != null)
-                encoding = info.Encoding;
+            {
+                string encodingStr = StringEscaper.Preprocess(s, info.Encoding);
+                if (StringEscaper.ParseEncoding(encodingStr) is Encoding enc)
+                    encoding = enc;
+                else
+                    return LogInfo.LogErrorMessage(logs, $"Encoding [{encodingStr}] is invalid");
+            }
 
             if (File.Exists(filePath))
             {
@@ -318,7 +323,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileSize info = cmd.Info.Cast<CodeInfo_FileSize>();
+            CodeInfo_FileSize info = (CodeInfo_FileSize)cmd.Info;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
@@ -339,7 +344,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_FileVersion info = cmd.Info.Cast<CodeInfo_FileVersion>();
+            CodeInfo_FileVersion info = (CodeInfo_FileVersion)cmd.Info;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
             FileVersionInfo v = FileVersionInfo.GetVersionInfo(filePath);
@@ -357,7 +362,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_DirCopy info = cmd.Info.Cast<CodeInfo_DirCopy>();
+            CodeInfo_DirCopy info = (CodeInfo_DirCopy)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
@@ -427,7 +432,7 @@ namespace PEBakery.Core.Commands
                 else
                     Directory.CreateDirectory(destDir);
 
-                string srcParentDir = Path.GetDirectoryName(srcDir);
+                string? srcParentDir = Path.GetDirectoryName(srcDir);
                 if (srcParentDir == null)
                     throw new InternalException("Internal Logic Error at DirCopy");
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
@@ -436,7 +441,7 @@ namespace PEBakery.Core.Commands
 
                 // Get total file count
                 int filesCount = 0;
-                FileInfo[] compatFiles = null;
+                FileInfo[]? compatFiles = null;
                 if (s.CompatDirCopyBug)
                 {
                     compatFiles = dirInfo.GetFiles(wildcard);
@@ -454,9 +459,8 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("DirCopy Progress", filesCount);
                 try
                 {
-                    if (s.CompatDirCopyBug)
+                    if (s.CompatDirCopyBug && compatFiles != null)
                     { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] FileCopy _bug_
-                        Debug.Assert(compatFiles != null, $"Wrong {nameof(compatFiles)}");
                         foreach (FileInfo f in compatFiles)
                         {
                             progress.Report(f.FullName);
@@ -491,7 +495,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_DirDelete info = cmd.Info.Cast<CodeInfo_DirDelete>();
+            CodeInfo_DirDelete info = (CodeInfo_DirDelete)cmd.Info;
 
             string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
@@ -511,7 +515,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_DirMove info = cmd.Info.Cast<CodeInfo_DirMove>();
+            CodeInfo_DirMove info = (CodeInfo_DirMove)cmd.Info;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -554,7 +558,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_DirMake info = cmd.Info.Cast<CodeInfo_DirMake>();
+            CodeInfo_DirMake info = (CodeInfo_DirMake)cmd.Info;
 
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
@@ -583,7 +587,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_DirSize info = cmd.Info.Cast<CodeInfo_DirSize>();
+            CodeInfo_DirSize info = (CodeInfo_DirSize)cmd.Info;
 
             string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
@@ -605,7 +609,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_PathMove info = cmd.Info.Cast<CodeInfo_PathMove>();
+            CodeInfo_PathMove info = (CodeInfo_PathMove)cmd.Info;
 
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);

@@ -77,7 +77,7 @@ namespace PEBakery.Helper
                 case MimeType.WebP:
                     return "image/webp";
                 default:
-                    throw new ArgumentException(nameof(mime));
+                    throw new ArgumentException(null, nameof(mime));
             }
         }
 

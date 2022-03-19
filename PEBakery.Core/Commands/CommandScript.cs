@@ -30,7 +30,6 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -64,7 +63,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ExtractFile info = cmd.Info.Cast<CodeInfo_ExtractFile>();
+            CodeInfo_ExtractFile info = (CodeInfo_ExtractFile)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -129,7 +128,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ExtractAndRun info = cmd.Info.Cast<CodeInfo_ExtractAndRun>();
+            CodeInfo_ExtractAndRun info = (CodeInfo_ExtractAndRun)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -174,7 +173,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.ResetBuildCommandProgress();
             }
 
-            string _params = null;
+            string? _params = null;
             using (Process proc = new Process())
             {
                 proc.EnableRaisingEvents = true;
@@ -190,7 +189,7 @@ namespace PEBakery.Core.Commands
                     proc.StartInfo.Arguments = _params;
                 }
 
-                proc.Exited += (object sender, EventArgs e) =>
+                proc.Exited += (object? sender, EventArgs e) =>
                 {
                     if (Directory.Exists(tempDir))
                         Directory.Delete(tempDir, true);
@@ -210,12 +209,11 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ExtractAllFiles info = cmd.Info.Cast<CodeInfo_ExtractAllFiles>();
+            CodeInfo_ExtractAllFiles info = (CodeInfo_ExtractAllFiles)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -284,7 +282,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Encode info = cmd.Info.Cast<CodeInfo_Encode>();
+            CodeInfo_Encode info = (CodeInfo_Encode)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);

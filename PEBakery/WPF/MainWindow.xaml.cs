@@ -34,7 +34,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -48,26 +47,25 @@ using System.Windows.Shell;
 namespace PEBakery.WPF
 {
     #region MainWindow
-    // ReSharper disable once RedundantExtendsListEntry
     public partial class MainWindow : Window
     {
         #region Fields and Properties
         // Shortcut to Global
-        public string BaseDir => Global.BaseDir;
-        public Logger Logger => Global.Logger;
+        public static string BaseDir => Global.BaseDir;
+        public static Logger Logger => Global.Logger;
         private static MainViewModel Model => Global.MainViewModel;
 
         // Window 
-        public LogWindow LogDialog = null;
-        public UtilityWindow UtilityDialog = null;
-        public ScriptEditWindow ScriptEditDialog = null;
+        public LogWindow? LogDialog = null;
+        public UtilityWindow? UtilityDialog = null;
+        public ScriptEditWindow? ScriptEditDialog = null;
         #endregion
 
         #region Constructor
         public MainWindow()
         {
             InitializeComponent();
-            Global.MainViewModel = DataContext as MainViewModel;
+            Global.MainViewModel = (MainViewModel)DataContext;
 
             // Init global properties
             Global.Init();
@@ -79,23 +77,26 @@ namespace PEBakery.WPF
         #endregion
 
         #region Main Buttons
-        private void ProjectBuildStartCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ProjectBuildStartCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress && !Engine.IsRunning &&
                            Global.Projects != null && Global.Projects.FullyLoaded;
         }
 
-        private async void ProjectBuildStartCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ProjectBuildStartCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ProjectBuildStartButton.Focus();
+
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
 
             if (!Engine.TryEnterLock())
                 return;
             try
             {
                 // Get current project
-                Project p = Model.CurMainTree.Script.Project;
+                Project p = curMainTree.Script.Project;
 
                 Model.BuildTreeItems.Clear();
                 ProjectTreeItemModel treeRoot = MainViewModel.PopulateOneTreeItem(p.MainScript, null, null);
@@ -146,13 +147,13 @@ namespace PEBakery.WPF
                 Model.DisplayScript(Model.CurMainTree.Script);
 
                 // Report elapsed time
-                string reason = s.RunResultReport();
+                string? reason = s.RunResultReport();
                 if (reason != null)
                     Model.StatusBarText = $"{p.ProjectName} build stopped by {reason}. ({s.Elapsed:h\\:mm\\:ss})";
                 else
                     Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
 
-                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                 { // Open BuildLogWindow
                     LogDialog = new LogWindow(1);
                     LogDialog.Show();
@@ -166,12 +167,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ProjectBuildStopCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ProjectBuildStopCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = Engine.WorkingEngine != null && Engine.IsRunning;
         }
 
-        private void ProjectBuildStopCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ProjectBuildStopCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ProjectBuildStopButton.Focus();
@@ -180,12 +181,12 @@ namespace PEBakery.WPF
             ForceStopBuild();
         }
 
-        private void ProjectLoading_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ProjectLoading_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false;
         }
 
-        private void ProjectRefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ProjectRefreshCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ProjectRefreshButton.Focus();
@@ -193,11 +194,13 @@ namespace PEBakery.WPF
             Model.StartLoadingProjects(true, false);
         }
 
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private void SettingWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void SettingWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             SettingWindowButton.Focus();
+
+            if (Global.Projects == null)
+                return;
 
             SettingViewModel svModel = new SettingViewModel(Global.Setting, Global.Projects);
             SettingWindow dialog = new SettingWindow(svModel) { Owner = this };
@@ -221,12 +224,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UtilityWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void UtilityWindowCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0 && UtilityWindow.Count == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false && UtilityWindow.IsRunning() == false;
         }
 
-        private void UtilityWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void UtilityWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             UtilityWindowButton.Focus();
@@ -235,12 +238,12 @@ namespace PEBakery.WPF
             UtilityDialog.Show();
         }
 
-        private void LogWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void LogWindowCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && Model.ProjectsLoading == 0 && LogWindow.Count == 0;
+            e.CanExecute = Model != null && Model.IsProjectsLoading() == false && LogWindow.IsRunning() == false;
         }
 
-        private void LogWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void LogWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             LogWindowButton.Focus();
@@ -257,7 +260,7 @@ namespace PEBakery.WPF
             LogDialog.Show();
         }
 
-        private void ProjectUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ProjectUpdateCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             if (Model != null && !Model.WorkInProgress &&
                 Global.Projects != null && Global.Projects.FullyLoaded &&
@@ -272,7 +275,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ProjectUpdateCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ProjectUpdateButton.Focus();
@@ -289,12 +292,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private void AboutWindowCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void AboutWindowCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Global.Setting != null;
+            // e.CanExecute = Global.Setting != null;
+            e.CanExecute = true;
         }
 
-        private void AboutWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void AboutWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             AboutWindow dialog = new AboutWindow(Global.Setting.Interface.MonospacedFont) { Owner = this };
             dialog.ShowDialog();
@@ -302,12 +306,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region Script Button and Context Menu
-        private void ScriptCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ScriptCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress;
         }
 
-        private void ScriptUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ScriptUpdateCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = false;
 
@@ -325,12 +329,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void ScriptRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ScriptRunCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ScriptRunButton.Focus();
 
-            Script sc = Model.CurMainTree.Script;
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
+
+            Script sc = curMainTree.Script;
             if (!sc.Sections.ContainsKey(ScriptSection.Names.Process))
             {
                 Model.StatusBarText = $"Section [Process] does not exist in {sc.Title}";
@@ -386,7 +393,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Clear();
                     Model.DisplayScript(Model.CurMainTree.Script);
 
-                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.IsRunning() == false)
                     { // Open BuildLogWindow
                         LogDialog = new LogWindow(1);
                         LogDialog.Show();
@@ -405,7 +412,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptRefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptRefreshCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ScriptRefreshButton.Focus();
@@ -413,7 +420,7 @@ namespace PEBakery.WPF
             Model.StartRefreshScript();
         }
 
-        private void ScriptEditCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptEditCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ScriptEditButton.Focus();
@@ -432,13 +439,16 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptInternalEditorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptInternalEditorCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ScriptEditButton.Focus();
 
-            Script sc = Model.CurMainTree.Script;
-            if (ScriptEditWindow.Count != 0)
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
+
+            Script sc = curMainTree.Script;
+            if (ScriptEditWindow.IsRunning())
                 return;
 
             ScriptEditDialog = new ScriptEditWindow(sc, Model) { Owner = this };
@@ -447,20 +457,22 @@ namespace PEBakery.WPF
             // If ScriptEditWindow returns true in DialogResult, refresh script
             if (ScriptEditDialog.ShowDialog() == true)
             {
-                sc = ScriptEditDialog.Tag as Script;
-                Debug.Assert(sc != null, $"{nameof(sc)} != null");
+                sc = (Script)ScriptEditDialog.Tag;
 
                 Model.DisplayScript(sc);
                 Model.CurMainTree.Script = sc;
             }
         }
 
-        private void ScriptExternalEditorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptExternalEditorCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
             ScriptEditButton.Focus();
 
-            Script sc = Model.CurMainTree.Script;
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+
+                return;
+            Script sc = curMainTree.Script;
             switch (sc.Type)
             {
                 case ScriptType.Script:
@@ -473,10 +485,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private async void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ScriptUpdateCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
             ScriptUpdateButton.Focus();
+
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
 
             // Must be filtered by ScriptCommand_CanExecute before
             if (Model.WorkInProgress)
@@ -486,8 +501,8 @@ namespace PEBakery.WPF
             }
 
             // Get instances of Script and Project
-            Script targetScript = Model.CurMainTree.Script;
-            Project p = Model.CurMainTree.Script.Project;
+            Script targetScript = curMainTree.Script;
+            Project p = curMainTree.Script.Project;
             // Do not apply updateMultipleScript to MainScript, because users should use project update for this job.
             bool updateMultipleScript = targetScript.Type == ScriptType.Directory;
             if (!updateMultipleScript && !targetScript.IsUpdateable)
@@ -497,13 +512,13 @@ namespace PEBakery.WPF
             }
 
             // Define local variables
-            Script[] targetScripts = null;
+            Script[]? targetScripts = null;
             // Update one script
-            Script newScript = null;
-            LogInfo updaterLog = null;
+            Script? newScript = null;
+            LogInfo? updaterLog = null;
             // Update scripts
-            Script[] newScripts = null;
-            LogInfo[] updaterLogs = null;
+            Script[]? newScripts = null;
+            LogInfo[]? updaterLogs = null;
 
             // Turn on progress ring
             Model.WorkInProgress = true;
@@ -543,9 +558,15 @@ namespace PEBakery.WPF
                 // Ask user for confirmation
                 string targetScriptCountStr;
                 if (updateMultipleScript)
-                    targetScriptCountStr = targetScripts.Length == 1 ? "1 script" : $"{targetScripts.Length} scripts";
+                {
+                    if (targetScripts == null)
+                        throw new InvalidOperationException($"{nameof(targetScripts)} is null");
+                    targetScriptCountStr = targetScripts.Length == 1 ? $"script [{targetScripts[0].Title}]" : $"{targetScripts.Length} scripts";
+                }
                 else
+                {
                     targetScriptCountStr = $"script [{targetScript.Title}]";
+                }
                 MessageBoxResult result = MessageBox.Show(this,
                     $"Are you sure you want to update {targetScriptCountStr}?",
                     "Continue?",
@@ -561,10 +582,12 @@ namespace PEBakery.WPF
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run Updater
-                string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
+                string? customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
                 FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
                 if (updateMultipleScript) // Update a list of scripts
                 {
+                    if (targetScripts == null)
+                        throw new InvalidOperationException($"{nameof(targetScripts)} is null");
                     (newScripts, updaterLogs) = await updater.UpdateScriptsAsync(targetScripts, true);
                     Logger.SystemWrite(updaterLogs);
                 }
@@ -592,6 +615,13 @@ namespace PEBakery.WPF
             // Report results
             if (updateMultipleScript)
             { // Updated multiple scripts
+                if (targetScripts == null)
+                    throw new InvalidOperationException($"{nameof(targetScripts)} is null");
+                if (updaterLogs == null)
+                    throw new InvalidOperationException($"{nameof(updaterLogs)} is null");
+                if (newScripts == null)
+                    throw new InvalidOperationException($"{nameof(newScripts)} is null");
+
                 PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                 StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
                 if (0 < newScripts.Length)
@@ -599,8 +629,9 @@ namespace PEBakery.WPF
 
                 foreach (Script newSc in newScripts)
                 {
-                    ProjectTreeItemModel node = Model.CurMainTree.FindScriptByRealPath(newSc.RealPath);
-                    Debug.Assert(node != null, "Internal error with MainTree management");
+                    ProjectTreeItemModel? node = Model.CurMainTree.FindScriptByRealPath(newSc.RealPath);
+                    if (node == null)
+                        throw new InvalidOperationException($"{nameof(node)} is null");
                     Model.PostRefreshScript(node, newSc);
 
                     b.AppendLine($"- {newSc.Title}");
@@ -626,8 +657,9 @@ namespace PEBakery.WPF
             { // Updated single script
                 if (newScript != null)
                 { // Success
-                    ProjectTreeItemModel node = Model.CurMainTree.FindScriptByRealPath(newScript.RealPath);
-                    Debug.Assert(node != null, "Internal error with MainTree management");
+                    ProjectTreeItemModel? node = Model.CurMainTree.FindScriptByRealPath(newScript.RealPath);
+                    if (node == null)
+                        throw new InvalidOperationException($"{nameof(node)} is null");
                     Model.PostRefreshScript(node, newScript);
 
                     MessageBox.Show(this, $"Successfully updated script {newScript.Title}",
@@ -637,6 +669,9 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Failure
+                    if (updaterLogs == null)
+                        throw new InvalidOperationException($"{nameof(updaterLogs)} is null");
+
                     StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
 
                     LogInfo[] errorLogs = updaterLogs.Where(x => x.State == LogState.Error).ToArray();
@@ -648,20 +683,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptSyntaxCheckCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptSyntaxCheckCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Do not use await, let it run in background
             Model.StartSyntaxCheck(false);
         }
 
-        private void ScriptOpenFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void ScriptOpenFolderCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
-            Script sc = Model.CurMainTree.Script;
-            string openPath = sc.Type == ScriptType.Directory ? sc.RealPath : Path.GetDirectoryName(sc.RealPath);
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
+
+            Script sc = curMainTree.Script;
+            string? openPath = sc.Type == ScriptType.Directory ? sc.RealPath : Path.GetDirectoryName(sc.RealPath);
+            if (openPath == null)
+                throw new InvalidOperationException($"Invalid path {sc.RealPath}");
             MainViewModel.OpenFolder(openPath);
         }
 
-        private void ScriptDirMainCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ScriptDirMainCommand_CanExecute(object? sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = false;
 
@@ -673,9 +713,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DirectoryExpandTreeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void DirectoryExpandTreeCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
-            ProjectTreeItemModel selectedItem = Model.CurMainTree;
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
+
+            ProjectTreeItemModel selectedItem = curMainTree;
             selectedItem.IsExpanded = true;
 
             Queue<ProjectTreeItemModel> q = new Queue<ProjectTreeItemModel>(selectedItem.Children.Where(x => x.Script.Type == ScriptType.Directory));
@@ -689,9 +732,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DirectoryCollapseTreeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void DirectoryCollapseTreeCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
-            ProjectTreeItemModel selectedItem = Model.CurMainTree;
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
+
+            ProjectTreeItemModel selectedItem = curMainTree;
             selectedItem.IsExpanded = false;
 
             Queue<ProjectTreeItemModel> q = new Queue<ProjectTreeItemModel>(selectedItem.Children.Where(x => x.Script.Type == ScriptType.Directory));
@@ -705,11 +751,13 @@ namespace PEBakery.WPF
             }
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
-        private async void CreateScriptMetaFilesCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void CreateScriptMetaFilesCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
             ScriptUpdateButton.Focus();
+
+            if (Model.CurMainTree is not ProjectTreeItemModel curMainTree)
+                return;
 
             // Must be filtered by ScriptCommand_CanExecute before
             if (Model.WorkInProgress)
@@ -719,8 +767,8 @@ namespace PEBakery.WPF
             }
 
             // Get instances of Script and Project
-            Script targetScript = Model.CurMainTree.Script;
-            Project p = Model.CurMainTree.Script.Project;
+            Script targetScript = curMainTree.Script;
+            Project p = curMainTree.Script.Project;
 
             // Define local variables
             Script[] targetScripts;
@@ -791,7 +839,7 @@ namespace PEBakery.WPF
                     Model.DisplayScriptTexts(sc, null);
                     Model.ScriptTitleText = Model.ScriptTitleText;
                     Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
-                    Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
+                    Application.Current?.Dispatcher?.BeginInvoke(() =>
                     {
                         Model.DisplayScriptLogo(sc);
 
@@ -804,7 +852,7 @@ namespace PEBakery.WPF
                         Model.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(Model.BuildTreeItems[0], sc.RealPath);
                         if (Model.CurBuildTree != null)
                             Model.CurBuildTree.Focus = true;
-                    }));
+                    });
 
                     // Do the real job
                     string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
@@ -837,7 +885,7 @@ namespace PEBakery.WPF
                 Model.BuildScriptProgressVisibility = Visibility.Visible;
                 Model.BuildEchoMessage = string.Empty;
                 Model.SwitchNormalBuildInterface = true;
-                Model.DisplayScript(Model.CurMainTree.Script);
+                Model.DisplayScript(curMainTree.Script);
             }
 
             PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
@@ -881,23 +929,30 @@ namespace PEBakery.WPF
         private void MainTreeView_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Space &&
-                Keyboard.FocusedElement is FrameworkElement focusedElement &&
-                focusedElement.DataContext is ProjectTreeItemModel node)
+                Keyboard.FocusedElement is TreeViewItem focusedItem &&
+                focusedItem.DataContext is ProjectTreeItemModel node)
             {
                 node.Checked = !node.Checked;
-                // node.Focus = true;
+
+                focusedItem.IsSelected = true;
+                MainTreeView.Focus();
+
                 e.Handled = true;
             }
         }
 
+        /// <summary>
+        /// A new script is selected in MainTreeView
+        /// </summary>
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (!(sender is TreeView tree) || !(tree.SelectedItem is ProjectTreeItemModel selectedModel))
+            if (sender is not TreeView tree || tree.SelectedItem is not ProjectTreeItemModel selectedModel)
                 return;
 
             Model.CurMainTree = selectedModel;
             Script sc = selectedModel.Script;
 
+            // Display new selected script
             Dispatcher?.BeginInvoke(new Action(() =>
             {
                 Stopwatch watch = Stopwatch.StartNew();
@@ -913,7 +968,9 @@ namespace PEBakery.WPF
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            TreeViewItem selectedItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(e.OriginalSource as DependencyObject);
+            if (e.OriginalSource is not DependencyObject depObj)
+                return;
+            TreeViewItem? selectedItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(depObj);
             if (selectedItem == null)
                 return;
 
@@ -936,30 +993,30 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine != null)
                 await Engine.WorkingEngine.ForceStopWait(false);
 
-            if (0 < LogWindow.Count)
+            if (LogDialog != null && LogWindow.IsRunning())
             {
                 LogDialog.Close();
                 LogDialog = null;
             }
 
-            if (0 < UtilityWindow.Count)
+            if (UtilityDialog != null && UtilityWindow.IsRunning())
             {
                 UtilityDialog.Close();
                 UtilityDialog = null;
             }
 
-            if (0 < ScriptEditWindow.Count)
+            if (ScriptEditDialog != null && ScriptEditWindow.IsRunning())
             {
                 ScriptEditDialog.Close();
                 ScriptEditDialog = null;
             }
 
             // TODO: No better way?
-            while (Model.ScriptRefreshing != 0)
+            while (Model.IsProjectsLoading())
                 await Task.Delay(500);
-            while (ScriptCache.DbLock != 0)
+            while (ScriptCache.IsRunning())
                 await Task.Delay(500);
-            if (Model.ProjectsLoading != 0)
+            if (Model.IsProjectsLoading())
                 await Task.Delay(500);
 
             Global.Cleanup();
@@ -967,7 +1024,7 @@ namespace PEBakery.WPF
 
         private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (!(sender is ListBox listBox))
+            if (sender is not ListBox listBox)
                 return;
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);
@@ -988,7 +1045,7 @@ namespace PEBakery.WPF
 
             // Stop and wait for the build to end, or forcefully stop it immediately.
             EngineState s = Engine.WorkingEngine.State;
-            if (s.HaltFlags.UserHalt && s.RunningSubProcess != null)
+            if (s.HaltReturnFlags.UserHalt && s.RunningSubProcess != null)
             { // Stop is already requested, but waiting for sub-process to end
                 MessageBoxResult result;
                 lock (s.RunningSubProcLock)

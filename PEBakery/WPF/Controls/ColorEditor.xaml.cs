@@ -50,9 +50,9 @@ namespace PEBakery.WPF.Controls
 
         private static void OnColorChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            if (!(obj is ColorEditor control))
+            if (obj is not ColorEditor control)
                 return;
-            if (!(args.NewValue is Color c))
+            if (args.NewValue is not Color c)
                 return;
 
             control.SampleColor.Background = new SolidColorBrush(c);

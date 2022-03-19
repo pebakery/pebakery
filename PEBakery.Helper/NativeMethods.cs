@@ -25,10 +25,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 
 // ReSharper disable IdentifierTypo
@@ -78,7 +75,7 @@ namespace PEBakery.Helper
             public LogFontQuality lfQuality;
             public LogFontPitchAndFamily lfPitchAndFamily;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-            public string lfFaceName;
+            public string? lfFaceName;
         }
 
         public enum LogFontWeight
@@ -102,7 +99,7 @@ namespace PEBakery.Helper
             SYMBOL_CHARSET = 2,
             SHIFTJIS_CHARSET = 128,
             HANGEUL_CHARSET = 129,
-            HANGUL_CHARSET = 129,
+            HANGUL_CHARSET = HANGEUL_CHARSET,
             GB2312_CHARSET = 134,
             CHINESEBIG5_CHARSET = 136,
             OEM_CHARSET = 255,
@@ -163,7 +160,7 @@ namespace PEBakery.Helper
             DEFAULT_PITCH = 0,
             FIXED_PITCH = 1,
             VARIABLE_PITCH = 2,
-            FF_DONTCARE = 0 << 4,
+            FF_DONTCARE = DEFAULT_PITCH,
             FF_ROMAN = 1 << 4,
             FF_SWISS = 2 << 4,
             FF_MODERN = 3 << 4,
@@ -254,7 +251,7 @@ namespace PEBakery.Helper
             uint dwFlags,
             [MarshalAs(UnmanagedType.LPWStr)] string lpWideCharStr,
             int cchWideChar,
-            [MarshalAs(UnmanagedType.LPArray)] byte[] lpMultiByteStr,
+            [MarshalAs(UnmanagedType.LPArray)] byte[]? lpMultiByteStr,
             int cbMultiByte,
             byte* lpDefaultChar,
             int* lpUsedDefaultChar);
@@ -270,7 +267,7 @@ namespace PEBakery.Helper
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+        public static extern bool LookupPrivilegeValue(string? lpSystemName, string lpName, out LUID lpLuid);
 
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
         public static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);

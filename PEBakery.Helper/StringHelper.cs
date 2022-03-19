@@ -150,7 +150,7 @@ namespace PEBakery.Helper
                 return new List<string>();
             if (seperator.Length == 0)
                 return new List<string> { str };
-            if (str.IndexOf(seperator, comp) == -1)
+            if (!str.Contains(seperator, comp))
                 return new List<string> { str };
 
             int idx = 0;
@@ -176,7 +176,7 @@ namespace PEBakery.Helper
         {
             if (oldValue.Length == 0)
                 return str;
-            if (str.IndexOf(oldValue, comp) == -1)
+            if (!str.Contains(oldValue, comp))
                 return str;
 
             int idx = 0;
@@ -252,7 +252,7 @@ namespace PEBakery.Helper
                 {
                     int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
                     int endOffset = matches[x].Index - startOffset;
-                    b.Append(str.Substring(startOffset, endOffset));
+                    b.Append(str.AsSpan(startOffset, endOffset));
                 }
 
                 b.Append(newValue);

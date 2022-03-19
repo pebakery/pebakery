@@ -47,7 +47,7 @@ namespace PEBakery.WPF
 
         public bool MultiSelect { get; private set; }
 
-        public string[] FilePaths { get; private set; }
+        public string[] FilePaths { get; private set; } = Array.Empty<string>();
 
         public string FileName
         {

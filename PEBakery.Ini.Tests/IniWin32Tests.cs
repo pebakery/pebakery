@@ -69,7 +69,7 @@ namespace PEBakery.Ini.Tests
         #endregion
 
         #region WriteTemplate
-        void WriteTemplate(string srcFileName, string expectFileName, Func<string, bool> testFunc)
+        static void WriteTemplate(string srcFileName, string expectFileName, Func<string, bool> testFunc)
         {
             string srcFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, srcFileName);
             string expectFilePath = Path.Combine(TestSetup.SampleDir, SampleDirName, expectFileName);
@@ -79,8 +79,8 @@ namespace PEBakery.Ini.Tests
                 File.Copy(srcFilePath, destFilePath, true);
                 Assert.IsTrue(testFunc.Invoke(destFilePath));
 
-                byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destFilePath);
-                byte[] expectDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, expectFilePath);
+                byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destFilePath);
+                byte[] expectDigest = HashHelper.GetHash(HashType.SHA256, expectFilePath);
                 Assert.IsTrue(HashHelper.IsHashBytesEqual(destDigest, expectDigest));
             }
             finally

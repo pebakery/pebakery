@@ -84,7 +84,7 @@ namespace PEBakery.Helper
         private readonly Uri _uri;
         private readonly Stream _destStream;
         private readonly int _bufferSize;
-        private readonly IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> _progress;
+        private readonly IProgress<(long Position, long ContentLength, TimeSpan Elapsed)>? _progress;
         private readonly TimeSpan _reportInterval;
         private readonly CancellationToken? _cancelToken;
 
@@ -108,7 +108,7 @@ namespace PEBakery.Helper
 
         public HttpClientDownloader(
             HttpClient httpClient, Uri uri, Stream destStream,
-            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress,
+            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)>? progress,
             TimeSpan reportInterval,
             CancellationToken? cancelToken = null)
         {
@@ -124,7 +124,7 @@ namespace PEBakery.Helper
         public HttpClientDownloader(
             HttpClient httpClient, Uri uri, Stream destStream,
             int bufferSize,
-            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress,
+            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)>? progress,
             TimeSpan reportInterval,
             CancellationToken? cancelToken = null)
         {
@@ -167,13 +167,13 @@ namespace PEBakery.Helper
                     do
                     {
                         if (_cancelToken is CancellationToken token)
-                            bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length, token);
+                            bytesRead = await srcStream.ReadAsync(buffer, token);
                         else
-                            bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length);
+                            bytesRead = await srcStream.ReadAsync(buffer);
 
                         if (0 < bytesRead)
                         {
-                            await _destStream.WriteAsync(buffer, 0, bytesRead);
+                            await _destStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                             position += bytesRead;
                         }
                         else

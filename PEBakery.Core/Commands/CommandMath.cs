@@ -38,7 +38,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Math info = cmd.Info.Cast<CodeInfo_Math>();
+            CodeInfo_Math info = (CodeInfo_Math)cmd.Info;
 
             MathType type = info.Type;
             switch (type)
@@ -48,7 +48,7 @@ namespace PEBakery.Core.Commands
                 case MathType.Mul:
                 case MathType.Div:
                     {
-                        MathInfo_Arithmetic subInfo = info.SubInfo.Cast<MathInfo_Arithmetic>();
+                        MathInfo_Arithmetic subInfo = (MathInfo_Arithmetic)info.SubInfo;
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -82,7 +82,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.IntDiv:
                     {
-                        MathInfo_IntDiv subInfo = info.SubInfo.Cast<MathInfo_IntDiv>();
+                        MathInfo_IntDiv subInfo = (MathInfo_IntDiv)info.SubInfo;
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -118,7 +118,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Neg:
                     {
-                        MathInfo_Neg subInfo = info.SubInfo.Cast<MathInfo_Neg>();
+                        MathInfo_Neg subInfo = (MathInfo_Neg)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
@@ -133,11 +133,11 @@ namespace PEBakery.Core.Commands
                     {
                         // Math,IntSign,<DestVar>,<Src>,<BitSize>
                         // Math,IntUnsign,<DestVar>,<Src>,<BitSize>
-                        MathInfo_IntegerSignedness subInfo = info.SubInfo.Cast<MathInfo_IntegerSignedness>();
+                        MathInfo_IntegerSignedness subInfo = (MathInfo_IntegerSignedness)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -230,7 +230,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BoolOr:
                 case MathType.BoolXor:
                     {
-                        MathInfo_BoolLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOperation>();
+                        MathInfo_BoolLogicOperation subInfo = (MathInfo_BoolLogicOperation)info.SubInfo;
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -276,7 +276,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BoolNot:
                     {
-                        MathInfo_BoolNot subInfo = info.SubInfo.Cast<MathInfo_BoolNot>();
+                        MathInfo_BoolNot subInfo = (MathInfo_BoolNot)info.SubInfo;
 
                         bool src;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
@@ -297,7 +297,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BitOr:
                 case MathType.BitXor:
                     {
-                        MathInfo_BitLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BitLogicOperation>();
+                        MathInfo_BitLogicOperation subInfo = (MathInfo_BitLogicOperation)info.SubInfo;
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -329,11 +329,11 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitNot:
                     {
-                        MathInfo_BitNot subInfo = info.SubInfo.Cast<MathInfo_BitNot>();
+                        MathInfo_BitNot subInfo = (MathInfo_BitNot)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -381,7 +381,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitShift:
                     {
-                        MathInfo_BitShift subInfo = info.SubInfo.Cast<MathInfo_BitShift>();
+                        MathInfo_BitShift subInfo = (MathInfo_BitShift)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
 
@@ -397,7 +397,7 @@ namespace PEBakery.Core.Commands
                             return LogInfo.LogErrorMessage(logs, $"[{directionStr}] must be one of [Left, Right]");
 
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -467,7 +467,7 @@ namespace PEBakery.Core.Commands
                 case MathType.Floor:
                 case MathType.Round:
                     {
-                        MathInfo_CeilFloorRound subInfo = info.SubInfo.Cast<MathInfo_CeilFloorRound>();
+                        MathInfo_CeilFloorRound subInfo = (MathInfo_CeilFloorRound)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseInt64(srcStr, out long srcInt))
@@ -506,7 +506,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Abs:
                     {
-                        MathInfo_Abs subInfo = info.SubInfo.Cast<MathInfo_Abs>();
+                        MathInfo_Abs subInfo = (MathInfo_Abs)info.SubInfo;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
@@ -518,7 +518,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Pow:
                     {
-                        MathInfo_Pow subInfo = info.SubInfo.Cast<MathInfo_Pow>();
+                        MathInfo_Pow subInfo = (MathInfo_Pow)info.SubInfo;
 
                         string baseStr = StringEscaper.Preprocess(s, subInfo.Base);
                         if (!NumberHelper.ParseDecimal(baseStr, out decimal _base))
@@ -535,11 +535,11 @@ namespace PEBakery.Core.Commands
                 case MathType.Hex:
                 case MathType.Dec:
                     {
-                        MathInfo_HexDec subInfo = info.SubInfo.Cast<MathInfo_HexDec>();
+                        MathInfo_HexDec subInfo = (MathInfo_HexDec)info.SubInfo;
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string bitSizeStr = StringEscaper.Preprocess(s, subInfo.BitSize);
-                        string errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
+                        string? errorMsg = ParseAndCheckBitSize(bitSizeStr, out int bitSize);
                         if (errorMsg != null)
                             return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -576,7 +576,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Rand:
                     {
-                        MathInfo_Rand subInfo = info.SubInfo.Cast<MathInfo_Rand>();
+                        MathInfo_Rand subInfo = (MathInfo_Rand)info.SubInfo;
 
                         int min = 0;
                         if (subInfo.Min != null)
@@ -619,7 +619,7 @@ namespace PEBakery.Core.Commands
         /// <param name="bitSizeStr">String to parse</param>
         /// <param name="bitSize">Parsed bitSize integer</param>
         /// <returns>Null if succeed, an error message string if failed</returns>
-        public static string ParseAndCheckBitSize(string bitSizeStr, out int bitSize)
+        public static string? ParseAndCheckBitSize(string bitSizeStr, out int bitSize)
         {
             if (!NumberHelper.ParseInt32(bitSizeStr, out bitSize))
                 return $"[{bitSizeStr}] is not a valid integer";

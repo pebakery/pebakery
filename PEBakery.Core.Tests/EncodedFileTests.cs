@@ -33,7 +33,6 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -55,7 +54,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void AttachFile()
         {
-            void Template(string fileName, EncodeMode encodeMode)
+            static void Template(string fileName, EncodeMode encodeMode)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
@@ -65,7 +64,8 @@ namespace PEBakery.Core.Tests
                 File.Copy(srcScript, destScript, true);
                 try
                 {
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
                     string originFile = Path.Combine(srcDir, fileName);
                     EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
@@ -97,13 +97,13 @@ namespace PEBakery.Core.Tests
                     {
                         EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                         ms.Position = 0;
-                        extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                        extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                     }
 
                     byte[] originDigest;
                     using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                        originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                     }
 
                     Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
@@ -128,13 +128,14 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsFile()
         {
-            void Template(string scriptPath, string folderName, string fileName, bool result)
+            static void Template(string scriptPath, string folderName, string fileName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", scriptPath);
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                Assert.IsNotNull(sc);
 
                 Assert.AreEqual(EncodedFile.ContainsFile(sc, folderName, fileName), result);
             }
@@ -150,13 +151,14 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsLogo()
         {
-            void Template(string fileName, bool result)
+            static void Template(string fileName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                Assert.IsNotNull(sc);
 
                 Assert.AreEqual(EncodedFile.ContainsLogo(sc), result);
             }
@@ -168,10 +170,9 @@ namespace PEBakery.Core.Tests
 
         #region AddFolder
         [TestMethod]
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<보류 중>")]
         public void AddFolder()
         {
-            void Template(string folderName, bool overwrite, bool result)
+            static void Template(string folderName, bool overwrite, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
@@ -184,7 +185,8 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScript, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
                     try
                     {
                         sc = EncodedFile.AddFolder(sc, folderName, overwrite);
@@ -239,7 +241,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ContainsFolder()
         {
-            void Template(string folderName, bool result)
+            static void Template(string folderName, bool result)
             {
                 EngineState s = EngineTests.CreateEngineState();
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
@@ -257,7 +259,8 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScript, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
                     Assert.AreEqual(EncodedFile.ContainsFolder(sc, folderName), result);
                 }
                 finally
@@ -278,19 +281,20 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ExtractFile()
         {
-            void Template(string fileName)
+            static void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
                 string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
                 srcScript = StringEscaper.Preprocess(s, srcScript);
-                Script sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
+                Script? sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
+                Assert.IsNotNull(sc);
 
                 byte[] extractDigest;
                 using (MemoryStream ms = new MemoryStream())
                 {
                     EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                     ms.Position = 0;
-                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -298,7 +302,7 @@ namespace PEBakery.Core.Tests
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -315,18 +319,19 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ExtractFileInMem()
         {
-            void Template(string fileName)
+            static void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
                 string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
                 srcScript = StringEscaper.Preprocess(s, srcScript);
-                Script sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
+                Script? sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
+                Assert.IsNotNull(sc);
 
                 byte[] extractDigest;
                 using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))
                 {
                     ms.Position = 0;
-                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -334,7 +339,7 @@ namespace PEBakery.Core.Tests
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -361,12 +366,13 @@ namespace PEBakery.Core.Tests
                 string destDir = FileHelper.GetTempDir();
                 try
                 {
-                    Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
                     EncodedFile.ExtractFolder(sc, folderName, destDir);
 
                     string[] comps = IniReadWriter.ParseIniLinesIniStyle(sc.Sections[folderName].Lines).Keys.ToArray();
-                    string[] dests = Directory.EnumerateFiles(destDir).Select(Path.GetFileName).ToArray();
+                    string?[] dests = Directory.EnumerateFiles(destDir).Select(Path.GetFileName).ToArray();
 
                     Assert.IsTrue(comps.SequenceEqual(dests, StringComparer.OrdinalIgnoreCase));
                 }
@@ -388,13 +394,14 @@ namespace PEBakery.Core.Tests
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             scPath = StringEscaper.Preprocess(s, scPath);
-            Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+            Script? sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(sc);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
             {
                 Assert.IsTrue(type == ImageHelper.ImageFormat.Jpg);
-                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "Logo.jpg");
@@ -402,7 +409,7 @@ namespace PEBakery.Core.Tests
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -417,12 +424,13 @@ namespace PEBakery.Core.Tests
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             scPath = StringEscaper.Preprocess(s, scPath);
-            Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+            Script? sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(sc);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterface(sc, "PEBakeryAlphaMemory.jpg"))
             {
-                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "PEBakeryAlphaMemory.jpg");
@@ -430,7 +438,7 @@ namespace PEBakery.Core.Tests
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -442,69 +450,57 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void ReadFileInfo()
         {
-            // ReSharper disable once InconsistentNaming
-            const string FolderExample = "FolderExample";
-            const string folderExample = "folderExample";
+            const string FolderExampleUpper = "FolderExample";
+            const string FolderExampleLower = "folderExample";
 
             EngineState s = EngineTests.CreateEngineState();
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
-            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(sc);
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, folderExample, fileName, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.ReadFileInfo(sc, FolderExampleLower, fileName, detail);
                 Assert.IsTrue(report.Success);
                 Assert.IsTrue(comp.Equals(report.Result));
             }
 
-            Template("Type1.jpg", true, new EncodedFileInfo
+            Template("Type1.jpg", true, new EncodedFileInfo(FolderExampleUpper, "Type1.jpg")
             {
-                FolderName = FolderExample,
-                FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
                 EncodeMode = EncodeMode.ZLib
             });
-            Template("type1.jpg", false, new EncodedFileInfo
+            Template("type1.jpg", false, new EncodedFileInfo(FolderExampleLower, "Type1.jpg")
             {
-                FolderName = folderExample,
-                FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
                 EncodeMode = null
             });
 
-            Template("Type2.7z", true, new EncodedFileInfo
+            Template("Type2.7z", true, new EncodedFileInfo(FolderExampleUpper, "Type2.7z")
             {
-                FolderName = FolderExample,
-                FileName = "Type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
                 EncodeMode = EncodeMode.Raw
             });
-            Template("Type2.7z", false, new EncodedFileInfo
+            Template("Type2.7z", false, new EncodedFileInfo(FolderExampleUpper, "type2.7z")
             {
-                FolderName = FolderExample,
-                FileName = "type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
                 EncodeMode = null
             });
 
-            Template("Type3.pdf", true, new EncodedFileInfo
+            Template("Type3.pdf", true, new EncodedFileInfo(FolderExampleUpper, "Type3.pdf")
             {
-                FolderName = FolderExample,
-                FileName = "Type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
                 EncodeMode = EncodeMode.XZ
             });
-            Template("Type3.pdf", false, new EncodedFileInfo
+            Template("Type3.pdf", false, new EncodedFileInfo(FolderExampleLower, "type3.pdf")
             {
-                FolderName = folderExample,
-                FileName = "type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
                 EncodeMode = null
@@ -518,13 +514,14 @@ namespace PEBakery.Core.Tests
             string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
 
             string logoScriptFile = Path.Combine(scriptDir, "Blank.script");
-            Script logoScript = s.Project.LoadScriptRuntime(logoScriptFile, new LoadScriptRuntimeOptions());
+            Script? logoScript = s.Project.LoadScriptRuntime(logoScriptFile, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(logoScript);
 
             string noLogoScriptFile = Path.Combine(scriptDir, "CompleteBlank.script");
-            Script noLogoScript = s.Project.LoadScriptRuntime(noLogoScriptFile, new LoadScriptRuntimeOptions());
+            Script? noLogoScript = s.Project.LoadScriptRuntime(noLogoScriptFile, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(noLogoScript);
 
-            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-            void Template(Script testScript, bool detail, EncodedFileInfo comp)
+            static void Template(Script testScript, bool detail, EncodedFileInfo? comp)
             {
                 ResultReport<EncodedFileInfo> report = EncodedFile.ReadLogoInfo(testScript, detail);
                 if (comp == null)
@@ -535,22 +532,19 @@ namespace PEBakery.Core.Tests
                 else
                 {
                     Assert.IsTrue(report.Success);
+                    Assert.IsNotNull(report.Result);
                     Assert.IsTrue(report.Result.Equals(comp));
                 }
             }
 
-            Template(logoScript, true, new EncodedFileInfo
+            Template(logoScript, true, new EncodedFileInfo("AuthorEncoded", "logo.jpg")
             {
-                FolderName = "AuthorEncoded",
-                FileName = "logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
                 EncodeMode = EncodeMode.ZLib
             });
-            Template(logoScript, false, new EncodedFileInfo
+            Template(logoScript, false, new EncodedFileInfo("authorEncoded", "Logo.jpg")
             {
-                FolderName = "authorEncoded",
-                FileName = "Logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
                 EncodeMode = null
@@ -570,13 +564,15 @@ namespace PEBakery.Core.Tests
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(sc);
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
                 ResultReport<EncodedFileInfo[]> report = EncodedFile.ReadFolderInfo(sc, FolderExample, detail);
                 Assert.IsTrue(report.Success);
+                Assert.IsNotNull(report.Result);
                 EncodedFileInfo[] infos = report.Result;
                 Assert.AreEqual(comps.Count, infos.Length);
                 for (int i = 0; i < comps.Count; i++)
@@ -585,26 +581,20 @@ namespace PEBakery.Core.Tests
 
             List<EncodedFileInfo> compDetailList = new List<EncodedFileInfo>
             {
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type1.jpg")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type1.jpg",
                     RawSize = 7683,
                     EncodedSize = 10244,
                     EncodeMode = EncodeMode.ZLib
                 },
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type2.7z")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type2.7z",
                     RawSize = 1631,
                     EncodedSize = 2175,
                     EncodeMode = EncodeMode.Raw
                 },
-                new EncodedFileInfo
+                new EncodedFileInfo(FolderExample, "Type3.pdf")
                 {
-                    FolderName = FolderExample,
-                    FileName = "Type3.pdf",
                     RawSize = 88692,
                     EncodedSize = 102908,
                     EncodeMode = EncodeMode.XZ
@@ -614,8 +604,8 @@ namespace PEBakery.Core.Tests
             List<EncodedFileInfo> compNoDetailList = new List<EncodedFileInfo>();
             foreach (EncodedFileInfo info in compDetailList)
             {
-                EncodedFileInfo clone = info.Clone() as EncodedFileInfo;
-                Assert.IsTrue(clone != null);
+                EncodedFileInfo? clone = info.Clone() as EncodedFileInfo;
+                Assert.IsNotNull(clone);
                 clone.EncodeMode = null;
                 compNoDetailList.Add(clone);
             }
@@ -634,7 +624,8 @@ namespace PEBakery.Core.Tests
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Script? sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
+            Assert.IsNotNull(sc);
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool inspectEncodedSize, Dictionary<string, List<EncodedFileInfo>> compDict)
@@ -645,6 +636,7 @@ namespace PEBakery.Core.Tests
                 };
                 ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.ReadAllFilesInfo(sc, opts);
                 Assert.IsTrue(report.Success);
+                Assert.IsNotNull(report.Result);
                 Dictionary<string, List<EncodedFileInfo>> infoDict = report.Result;
                 Assert.AreEqual(compDict.Count, infoDict.Count);
                 foreach (var kv in compDict)
@@ -660,26 +652,20 @@ namespace PEBakery.Core.Tests
             {
                 ["FolderExample"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type1.jpg")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type1.jpg",
                         RawSize = 7683,
                         EncodedSize = 10244,
                         EncodeMode = EncodeMode.ZLib
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type2.7z")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type2.7z",
                         RawSize = 1631,
                         EncodedSize = 2175,
                         EncodeMode = EncodeMode.Raw
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo(FolderExample, "Type3.pdf")
                     {
-                        FolderName = FolderExample,
-                        FileName = "Type3.pdf",
                         RawSize = 88692,
                         EncodedSize = 102908,
                         EncodeMode = EncodeMode.XZ
@@ -687,10 +673,8 @@ namespace PEBakery.Core.Tests
                 },
                 ["FolderRun"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo("FolderRun", "TestBatch.cmd")
                     {
-                        FolderName = "FolderRun",
-                        FileName = "TestBatch.cmd",
                         RawSize = 34,
                         EncodedSize = 144,
                         EncodeMode = EncodeMode.Raw
@@ -698,18 +682,14 @@ namespace PEBakery.Core.Tests
                 },
                 ["BannerImage"] = new List<EncodedFileInfo>
                 {
-                    new EncodedFileInfo
+                    new EncodedFileInfo("BannerImage", "Banner.bmp")
                     {
-                        FolderName = "BannerImage",
-                        FileName = "Banner.bmp",
                         RawSize = 17626,
                         EncodedSize = 23502,
                         EncodeMode = EncodeMode.ZLib
                     },
-                    new EncodedFileInfo
+                    new EncodedFileInfo("BannerImage", "Banner.svg")
                     {
-                        FolderName = "BannerImage",
-                        FileName = "Banner.svg",
                         RawSize = 4715,
                         EncodedSize = 6287,
                         EncodeMode = EncodeMode.ZLib
@@ -723,8 +703,8 @@ namespace PEBakery.Core.Tests
                 compNoDetailDict[kv.Key] = new List<EncodedFileInfo>();
                 foreach (EncodedFileInfo info in kv.Value)
                 {
-                    EncodedFileInfo clone = info.Clone() as EncodedFileInfo;
-                    Assert.IsTrue(clone != null);
+                    EncodedFileInfo? clone = info.Clone() as EncodedFileInfo;
+                    Assert.IsNotNull(clone);
 
                     clone.EncodeMode = null;
 
@@ -754,9 +734,10 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
-                    string errMsg;
+                    string? errMsg;
                     (sc, errMsg) = EncodedFile.RenameFile(sc, folderName, oldFileName, newFileName);
                     if (errMsg != null)
                     {
@@ -806,13 +787,14 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
-                    Dictionary<string, string> fileDict = null;
+                    Dictionary<string, string>? fileDict = null;
                     if (result)
                         fileDict = sc.Sections[oldFolderName].IniDict;
 
-                    string errMsg;
+                    string? errMsg;
                     (sc, errMsg) = EncodedFile.RenameFolder(sc, oldFolderName, newFolderName);
 
                     if (errMsg != null)
@@ -831,6 +813,7 @@ namespace PEBakery.Core.Tests
                     Assert.IsFalse(folders.Contains(oldFolderName, StringComparer.OrdinalIgnoreCase));
                     Assert.IsTrue(folders.Contains(newFolderName, StringComparer.OrdinalIgnoreCase));
 
+                    Assert.IsNotNull(fileDict);
                     foreach (string fileName in fileDict.Keys)
                     {
                         Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(oldFolderName, fileName)));
@@ -871,7 +854,8 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
                     ResultReport<Script> report = EncodedFile.DeleteFile(sc, folderName, fileName);
                     if (!report.Success)
@@ -882,6 +866,7 @@ namespace PEBakery.Core.Tests
                     Assert.IsTrue(result);
 
                     sc = report.Result;
+                    Assert.IsNotNull(sc);
                     Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
 
                     Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
@@ -920,9 +905,10 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
 
-                    Dictionary<string, string> fileDict = null;
+                    Dictionary<string, string>? fileDict = null;
                     if (result)
                         fileDict = sc.Sections[folderName].IniDict;
 
@@ -935,12 +921,14 @@ namespace PEBakery.Core.Tests
                     Assert.IsTrue(result);
 
                     sc = report.Result;
+                    Assert.IsNotNull(sc);
                     Assert.IsFalse(sc.Sections.ContainsKey(folderName));
                     Assert.IsFalse(IniReadWriter.ContainsSection(destScript, folderName));
 
                     string[] folders = sc.Sections[EncodedFolders].Lines;
                     Assert.IsFalse(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase));
 
+                    Assert.IsNotNull(fileDict);
                     foreach (string fileName in fileDict.Keys)
                     {
                         Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
@@ -978,7 +966,8 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(testScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Script? sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
                     ResultReport<Script> report = EncodedFile.DeleteLogo(sc);
 
                     if (!report.Success)
@@ -988,7 +977,9 @@ namespace PEBakery.Core.Tests
                     }
                     Assert.IsTrue(result);
 
-                    Assert.IsFalse(EncodedFile.ContainsLogo(report.Result));
+                    sc = report.Result;
+                    Assert.IsNotNull(sc);
+                    Assert.IsFalse(EncodedFile.ContainsLogo(sc));
                 }
                 finally
                 {
@@ -1020,7 +1011,7 @@ namespace PEBakery.Core.Tests
                 StringBuilder b = new StringBuilder();
                 using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
                 {
-                    string rawLine;
+                    string? rawLine;
                     while ((rawLine = r.ReadLine()) != null)
                     {
                         b.AppendLine(rawLine);
@@ -1059,7 +1050,7 @@ namespace PEBakery.Core.Tests
                 byte[] encDigest;
                 using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    binDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                    binDigest = HashHelper.GetHash(HashType.SHA256, fs);
                 }
 
                 if (inMem)
@@ -1067,7 +1058,7 @@ namespace PEBakery.Core.Tests
                     List<string> lines = new List<string>();
                     using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
                     {
-                        string rawLine;
+                        string? rawLine;
                         while ((rawLine = r.ReadLine()) != null)
                         {
                             string line = rawLine.Trim();
@@ -1083,7 +1074,7 @@ namespace PEBakery.Core.Tests
                         fs.Write(decoded, 0, decoded.Length);
                     }
 #endif
-                    encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, decoded);
+                    encDigest = HashHelper.GetHash(HashType.SHA256, decoded);
                 }
                 else
                 {
@@ -1103,7 +1094,7 @@ namespace PEBakery.Core.Tests
                         }
                         ms.Position = 0;
 #endif
-                        encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
+                        encDigest = HashHelper.GetHash(HashType.SHA256, ms);
                     }
                 }
 

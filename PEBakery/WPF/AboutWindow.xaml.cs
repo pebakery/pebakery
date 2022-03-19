@@ -28,8 +28,8 @@
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
-using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Text;
 using System.Windows;
 using System.Windows.Navigation;
 
@@ -66,28 +66,19 @@ namespace PEBakery.WPF
             MonospacedFont = monospacedFont;
 
             InfoPEBakeryVersion = Global.Const.ProgramVersionStrFull;
-            InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
+            InfoBuildDate = $"Build {Global.BuildDate:yyyyMMdd}";
 
-            string hostArch = "unknown";
-            switch (RuntimeInformation.ProcessArchitecture)
-            {
-                case Architecture.X86:
-                    hostArch = "x86";
-                    break;
-                case Architecture.X64:
-                    hostArch = "x64";
-                    break;
-                case Architecture.Arm64:
-                    hostArch = "ARM64";
-                    break;
-                // Technically speaking, Microsoft does not support WPF on ARMv7.
-                case Architecture.Arm:
-                    hostArch = "ARM";
-                    break;
-            }
-            InfoHostEnv = $"Host: {Environment.OSVersion.VersionString} {hostArch}";
+            EnvInfoBuilder envInfos = new EnvInfoBuilder();
+            EnvInfoSection msgSection = new EnvInfoSection(EnvInfoBuilder.FirstSectionOrder);
+            msgSection.KeyValues.Add(new KeyValuePair<string, string>(string.Empty, "Please provide this info when posting to issue tracker."));
+            envInfos.AddSection(msgSection);
+
+            StringBuilder b = new StringBuilder();
+            b.Append(envInfos.ToString());
+            EnvironmentText = b.ToString();
 
             LicenseText = Properties.Resources.LicenseSimple;
+
         }
         #endregion
 
@@ -99,18 +90,20 @@ namespace PEBakery.WPF
             set => SetProperty(ref _infoPEBakeryVersion, value);
         }
 
-        private string _infoHostEnv = "Host OS Environment";
-        public string InfoHostEnv
-        {
-            get => _infoHostEnv;
-            set => SetProperty(ref _infoHostEnv, value);
-        }
-
         private string _infoBuildDate = "BuildDate";
         public string InfoBuildDate
         {
             get => _infoBuildDate;
             set => SetProperty(ref _infoBuildDate, value);
+        }
+        #endregion
+
+        #region Environment
+        private string _environmentText = string.Empty;
+        public string EnvironmentText
+        {
+            get => _environmentText;
+            set => SetProperty(ref _environmentText, value);
         }
         #endregion
 

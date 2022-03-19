@@ -17,10 +17,7 @@ namespace Ookii.Dialogs.Wpf
         /// <exception cref="ArgumentNullException"><paramref name="resourceFile"/> is <see langword="null"/>.</exception>
         public AnimationResource(string resourceFile, int resourceId)
         {
-            if (resourceFile == null)
-                throw new ArgumentNullException("resourceFile");
-
-            ResourceFile = resourceFile;
+            ResourceFile = resourceFile ?? throw new ArgumentNullException(nameof(resourceFile));
             ResourceId = resourceId;
         }
 
@@ -49,8 +46,8 @@ namespace Ookii.Dialogs.Wpf
         /// <see cref="ShellAnimation"/> enumeration.</exception>
         public static AnimationResource GetShellAnimation(ShellAnimation animation)
         {
-            if (!Enum.IsDefined(typeof(ShellAnimation), animation))
-                throw new ArgumentOutOfRangeException("animation");
+            if (!Enum.IsDefined(animation))
+                throw new ArgumentOutOfRangeException(nameof(animation));
 
             return new AnimationResource("shell32.dll", (int)animation);
         }

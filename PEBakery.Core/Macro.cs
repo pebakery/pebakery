@@ -28,7 +28,6 @@
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
@@ -54,11 +53,11 @@ namespace PEBakery.Core
         /// <summary>
         /// %API% of sciprt.project
         /// </summary>
-        public Script MacroScript { get; }
+        public Script? MacroScript { get; }
         /// <summary>
         /// %APIVAR% of sciprt.project
         /// </summary>
-        public ScriptSection MacroSection { get; }
+        public ScriptSection? MacroSection { get; }
         /// <summary>
         /// [ApiVar] of macro script
         /// </summary>
@@ -195,7 +194,6 @@ namespace PEBakery.Core
             return LoadMacroDict(type, section, dict, append);
         }
 
-        [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
         private List<LogInfo> LoadMacroDict(MacroType type, ScriptSection section, Dictionary<string, string> newDict, bool append)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -306,7 +304,7 @@ namespace PEBakery.Core
         #endregion
 
         #region SetMacro
-        public LogInfo SetMacro(string macroName, string macroCommand, ScriptSection section, bool global, bool permanent)
+        public LogInfo SetMacro(string macroName, string? macroCommand, ScriptSection section, bool global, bool permanent)
         {
             // Macro Name Validation
             if (!Regex.Match(macroName, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
@@ -319,7 +317,7 @@ namespace PEBakery.Core
                 CodeCommand cmd = parser.ParseStatement(macroCommand);
                 if (cmd.Type == CodeType.Error)
                 {
-                    CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                    CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                     return new LogInfo(LogState.Error, info.ErrorMessage);
                 }
 
@@ -343,8 +341,7 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
             }
             else
-            {
-                // Delete
+            { // Delete
                 // Put into dictionary
                 if (permanent) // MacroDict
                 {

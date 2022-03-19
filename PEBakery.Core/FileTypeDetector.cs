@@ -38,7 +38,7 @@ namespace PEBakery.Core
     public class FileTypeDetector : IDisposable
     {
         #region Fields and Properties
-        private Magic _magic;
+        private readonly Magic _magic;
         private bool _magicFileLoaded;
         private readonly string _magicFile;
         private readonly object _lock = new object();
@@ -74,7 +74,6 @@ namespace PEBakery.Core
             lock (_lock)
             {
                 _magic?.Dispose();
-                _magic = null;
             }
         }
         #endregion

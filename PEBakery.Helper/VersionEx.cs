@@ -26,7 +26,6 @@
 using MessagePack;
 using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -104,11 +103,8 @@ namespace PEBakery.Helper
         #endregion
 
         #region Parse
-        public static VersionEx Parse(string str)
+        public static VersionEx? Parse(string str)
         {
-            if (str == null)
-                return null;
-
             int[] arr = { 0, 0, -1, -1 };
 
             string[] parts = str.Split('.');
@@ -127,7 +123,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region CompareTo
-        public int CompareTo(VersionEx other)
+        public int CompareTo(VersionEx? other)
         {
             if (other is null)
                 throw new ArgumentNullException(nameof(other));
@@ -146,14 +142,14 @@ namespace PEBakery.Helper
         #endregion
 
         #region Equals
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is VersionEx x)
                 return CompareTo(x) == 0;
             return false;
         }
 
-        public bool Equals(VersionEx x)
+        public bool Equals(VersionEx? x)
         {
             if (x is null)
                 return false;
@@ -162,7 +158,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region Operators
-        public static bool operator ==(VersionEx v1, VersionEx v2)
+        public static bool operator ==(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
             {
@@ -180,12 +176,12 @@ namespace PEBakery.Helper
             }
         }
 
-        public static bool operator !=(VersionEx v1, VersionEx v2)
+        public static bool operator !=(VersionEx? v1, VersionEx? v2)
         {
             return !(v1 == v2);
         }
 
-        public static bool operator <(VersionEx v1, VersionEx v2)
+        public static bool operator <(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
                 throw new ArgumentNullException(nameof(v1));
@@ -193,7 +189,7 @@ namespace PEBakery.Helper
             return v1.CompareTo(v2) < 0;
         }
 
-        public static bool operator <=(VersionEx v1, VersionEx v2)
+        public static bool operator <=(VersionEx? v1, VersionEx? v2)
         {
             if (v1 is null)
                 throw new ArgumentNullException(nameof(v1));
@@ -201,14 +197,34 @@ namespace PEBakery.Helper
             return v1.CompareTo(v2) <= 0;
         }
 
-        public static bool operator >(VersionEx v1, VersionEx v2)
+        public static bool operator >(VersionEx? v1, VersionEx? v2)
         {
             return v2 < v1;
         }
 
-        public static bool operator >=(VersionEx v1, VersionEx v2)
+        public static bool operator >=(VersionEx? v1, VersionEx? v2)
         {
             return v2 <= v1;
+        }
+        #endregion
+
+        #region ToVersion
+        public Version ToVersion()
+        {
+            Version ret;
+            if (Build <= 0)
+            {
+                ret = new Version(Major, Minor);
+            }
+            else if (Revision <= 0)
+            {
+                ret = new Version(Major, Minor, Build);
+            }
+            else
+            {
+                ret = new Version(Major, Minor, Build, Revision);
+            }
+            return ret;
         }
         #endregion
 
@@ -235,24 +251,6 @@ namespace PEBakery.Helper
         public override int GetHashCode()
         {
             return (ushort)Major * 0x1000000 + (ushort)Minor * 0x10000 + (ushort)Build * 0x100 + (ushort)Revision;
-        }
-        #endregion
-
-        #region Serailizable
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue(nameof(Major), Major, typeof(int));
-            info.AddValue(nameof(Minor), Minor, typeof(int));
-            info.AddValue(nameof(Build), Build, typeof(int));
-            info.AddValue(nameof(Revision), Revision, typeof(int));
-        }
-
-        protected VersionEx(SerializationInfo info, StreamingContext context)
-        {
-            Major = (int)info.GetValue(nameof(Major), typeof(int));
-            Minor = (int)info.GetValue(nameof(Minor), typeof(int));
-            Build = (int)info.GetValue(nameof(Build), typeof(int));
-            Revision = (int)info.GetValue(nameof(Revision), typeof(int));
         }
         #endregion
     }

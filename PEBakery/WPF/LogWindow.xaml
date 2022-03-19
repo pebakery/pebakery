@@ -24,7 +24,7 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.LogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -113,6 +113,10 @@
         <local:RefScriptIdToTitleConverter x:Key="RefScriptIdToTitleConverter"/>
         <local:GridViewColumnWidthConverter x:Key="GridViewColumnWidthConverter"/>
         <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
+        <local:LogStateToForegroundConverter x:Key="LogStateToForegroundConverter"/>
+        <local:LogStateToStatBackgroundConverter x:Key="LogStateToStatBackgroundConverter"/>
+        <local:LogStateToAlternateBackgroundConverter x:Key="LogStateToAlternateBackgroundConverter"/>
+        <local:VarsTypeToBackgroundConverter x:Key="VarsTypeToBackgroundConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -128,14 +132,13 @@
                               HorizontalContentAlignment="Stretch"
                               SelectedIndex="{Binding SystemLogSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
-                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
                                 <GridViewColumn Header="Time"
                                                 Width="Auto"
-                                                DisplayMemberBinding="{Binding TimeStr}" />
+                                                DisplayMemberBinding="{Binding TimeStr}"/>
                                 <GridViewColumn Header="State"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding StateStr}" />
@@ -153,6 +156,22 @@
                                 </cc:CorrectMenuItem>
                             </ContextMenu>
                         </ListView.ContextMenu>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}"
+                                   BasedOn="{StaticResource ListViewItemFocusColor}">
+                                <Setter Property="TextBlock.Foreground"
+                                        Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
+                                            <Binding Path="State"/>
+                                            <Binding Path="(ItemsControl.AlternationIndex)"
+                                                     RelativeSource="{RelativeSource Mode=Self}"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                     </ListView>
                 </Grid>
             </TabItem>
@@ -175,7 +194,7 @@
                         <ComboBox Name="SelectBuildComboBox"
                                   SelectedIndex="{Binding SelectedBuildIndex}"
                                   ItemsSource="{Binding BuildEntries}">
-                             <ComboBox.ItemTemplate>
+                            <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Text}"/>
                                 </DataTemplate>
@@ -191,7 +210,7 @@
                                    VerticalAlignment="Center"
                                    Text="Select Script">
                         </TextBlock>
-                         <ComboBox Name="SelectScriptComboBox"
+                        <ComboBox Name="SelectScriptComboBox"
                                    SelectedIndex="{Binding SelectedScriptIndex}"
                                    ItemsSource="{Binding ScriptEntries}">
                             <ComboBox.ItemTemplate>
@@ -207,12 +226,10 @@
                         <TabItem Header="Statistics" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
-                                      ItemsSource="{Binding LogStats}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                      AlternationCount="2">
+                                      ItemsSource="{Binding LogStats}">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Type"
+                                        <GridViewColumn Header="State"
                                                         Width="70"
                                                         DisplayMemberBinding="{Binding Item1}" />
                                         <GridViewColumn Header="Count"
@@ -220,6 +237,13 @@
                                                         DisplayMemberBinding="{Binding Item2}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background"
+                                                Value="{Binding Item1, Converter={StaticResource LogStateToStatBackgroundConverter}}"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Simple Logs" Width="90">
@@ -228,9 +252,8 @@
                                       HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
-                                 <ListBox.ItemTemplate>
+                                <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Text}"/>
                                     </DataTemplate>
@@ -244,6 +267,22 @@
                                         </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="TextBlock.Foreground"
+                                                Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
+                                                    <Binding Path="State"/>
+                                                    <Binding Path="(ItemsControl.AlternationIndex)"
+                                                             RelativeSource="{RelativeSource Mode=Self}"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Full Logs" Width="90">
@@ -258,14 +297,14 @@
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn x:Name="BuildFullLogTimeColumn"
-                                                        Header="Time" 
+                                                        Header="Time"
                                                         DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" 
+                                                <MultiBinding Mode="TwoWay"
                                                               Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogTimeVisible"/>
-                                                        <Binding Path="BuildFullLogTimeWidth"/>
+                                                        <Binding Path="BuildFullLogTimeVisible" />
+                                                        <Binding Path="BuildFullLogTimeWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>135</s:Int32>
@@ -276,14 +315,14 @@
                                                 </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn x:Name="BuildFullLogScriptOriginColumn" 
+                                        <GridViewColumn x:Name="BuildFullLogScriptOriginColumn"
                                                         Header="Script Origin">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" 
+                                                <MultiBinding Mode="TwoWay"
                                                               Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogScriptOriginVisible"/>
-                                                        <Binding Path="BuildFullLogScriptOriginWidth"/>
+                                                        <Binding Path="BuildFullLogScriptOriginVisible" />
+                                                        <Binding Path="BuildFullLogScriptOriginWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>135</s:Int32>
@@ -295,9 +334,13 @@
                                             </GridViewColumn.Width>
                                             <GridViewColumn.DisplayMemberBinding>
                                                 <MultiBinding Converter="{StaticResource RefScriptIdToTitleConverter}">
-                                                    <Binding Path="ScriptId" Mode="OneWay"/>
-                                                    <Binding Path="RefScriptId" Mode="OneWay"/>
-                                                    <Binding Path="DataContext.ScriptTitleDict" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}" Mode="OneWay"/>
+                                                    <Binding Path="ScriptId"
+                                                             Mode="OneWay" />
+                                                    <Binding Path="RefScriptId"
+                                                             Mode="OneWay" />
+                                                    <Binding Path="DataContext.ScriptTitleDict"
+                                                             RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"
+                                                             Mode="OneWay" />
                                                 </MultiBinding>
                                             </GridViewColumn.DisplayMemberBinding>
                                         </GridViewColumn>
@@ -305,10 +348,11 @@
                                                         Header="Depth"
                                                         DisplayMemberBinding="{Binding Depth, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogDepthVisible"/>
-                                                        <Binding Path="BuildFullLogDepthWidth"/>
+                                                        <Binding Path="BuildFullLogDepthVisible" />
+                                                        <Binding Path="BuildFullLogDepthWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>35</s:Int32>
@@ -323,10 +367,11 @@
                                                         Header="State"
                                                         DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogStateVisible"/>
-                                                        <Binding Path="BuildFullLogStateWidth"/>
+                                                        <Binding Path="BuildFullLogStateVisible" />
+                                                        <Binding Path="BuildFullLogStateWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>55</s:Int32>
@@ -341,10 +386,11 @@
                                                         Header="Flags"
                                                         DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogFlagsVisible"/>
-                                                        <Binding Path="BuildFullLogFlagsWidth"/>
+                                                        <Binding Path="BuildFullLogFlagsVisible" />
+                                                        <Binding Path="BuildFullLogFlagsWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>35</s:Int32>
@@ -359,10 +405,11 @@
                                                         Header="Message"
                                                         DisplayMemberBinding="{Binding Message, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogMessageVisible"/>
-                                                        <Binding Path="BuildFullLogMessageWidth"/>
+                                                        <Binding Path="BuildFullLogMessageVisible" />
+                                                        <Binding Path="BuildFullLogMessageWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>340</s:Int32>
@@ -377,10 +424,11 @@
                                                         Header="RawCode"
                                                         DisplayMemberBinding="{Binding RawCode, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogRawCodeVisible"/>
-                                                        <Binding Path="BuildFullLogRawCodeWidth"/>
+                                                        <Binding Path="BuildFullLogRawCodeVisible" />
+                                                        <Binding Path="BuildFullLogRawCodeWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>175</s:Int32>
@@ -395,10 +443,11 @@
                                                         Header="Line#"
                                                         DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                <MultiBinding Mode="TwoWay"
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
                                                     <MultiBinding.Bindings>
-                                                        <Binding Path="BuildFullLogLineNumberVisible"/>
-                                                        <Binding Path="BuildFullLogLineNumberWidth"/>
+                                                        <Binding Path="BuildFullLogLineNumberVisible" />
+                                                        <Binding Path="BuildFullLogLineNumberWidth" />
                                                     </MultiBinding.Bindings>
                                                     <MultiBinding.ConverterParameter>
                                                         <s:Int32>40</s:Int32>
@@ -412,13 +461,27 @@
                                     </GridView>
                                 </ListView.View>
                                 <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource AlternativeListViewColor}">
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                            BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="TextBlock.Foreground"
+                                                Value="{Binding State, Converter={StaticResource LogStateToForegroundConverter}}"/>
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource LogStateToAlternateBackgroundConverter}">
+                                                    <Binding Path="State"/>
+                                                    <Binding Path="(ItemsControl.AlternationIndex)"
+                                                    RelativeSource="{RelativeSource Mode=Self}"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                         <Setter Property="ContextMenu">
                                             <Setter.Value>
                                                 <ContextMenu>
-                                                    <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                                    <cc:CorrectMenuItem Header="Copy"
+                                                                        Grid.IsSharedSizeScope="True"
+                                                                        Click="FullLogViewCopy_Click">
                                                         <cc:CorrectMenuItem.Icon>
-                                                            <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                                            <iconPacks:PackIconMaterial Kind="ContentCopy" />
                                                         </cc:CorrectMenuItem.Icon>
                                                     </cc:CorrectMenuItem>
                                                 </ContextMenu>
@@ -432,9 +495,7 @@
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
                                       Style="{StaticResource ListItemFocusColorOverride}"
-                                      ItemsSource="{Binding VariableLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                      AlternationCount="2">
+                                      ItemsSource="{Binding VariableLogs}">
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn Header="Type"
@@ -448,6 +509,13 @@
                                                         DisplayMemberBinding="{Binding Value}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}"
+                                           BasedOn="{StaticResource ListViewItemFocusColor}">
+                                        <Setter Property="Background"
+                                                Value="{Binding Path=Type, Converter={StaticResource VarsTypeToBackgroundConverter}}"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
                                         <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">

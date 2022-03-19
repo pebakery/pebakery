@@ -33,7 +33,6 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -42,17 +41,17 @@ using System.Windows.Shell;
 
 namespace PEBakery.Core.Commands
 {
+    public class RunExecOptions
+    {
+        public bool PreserveCurrentParams { get; set; }
+        public bool IsMacro { get; set; }
+    }
+
     public static class CommandBranch
     {
-        public struct RunExecOptions
-        {
-            public bool PreserveCurrentParams { get; set; }
-            public bool IsMacro { get; set; }
-        }
-
         public static void RunExec(EngineState s, CodeCommand cmd, RunExecOptions opts)
         {
-            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+            CodeInfo_RunExec info = (CodeInfo_RunExec)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             Debug.Assert((cmd.Type == CodeType.Run || cmd.Type == CodeType.Exec) && info.OutParams == null ||
@@ -85,9 +84,9 @@ namespace PEBakery.Core.Commands
             s.Logger.LogStartOfSection(s, targetSection, s.PeekDepth, inCurrentScript, newInParams, info.OutParams, cmd);
 
             // Backup Variables and Macros for Exec
-            Dictionary<string, string> localVars = null;
-            Dictionary<string, string> fixedVars = null;
-            Dictionary<string, CodeCommand> localMacros = null;
+            Dictionary<string, string>? localVars = null;
+            Dictionary<string, string>? fixedVars = null;
+            Dictionary<string, CodeCommand>? localMacros = null;
             if (cmd.Type == CodeType.Exec)
             {
                 // Backup Variables and Macros
@@ -116,6 +115,13 @@ namespace PEBakery.Core.Commands
             // Restore Variables and Macros for Exec
             if (cmd.Type == CodeType.Exec)
             {
+                if (localVars == null)
+                    throw new CriticalErrorException($"{localVars} is null");
+                if (fixedVars == null)
+                    throw new CriticalErrorException($"{fixedVars} is null");
+                if (localMacros == null)
+                    throw new CriticalErrorException($"{localMacros} is null");
+
                 // Restore Variables
                 s.Variables.SetVarDict(VarsType.Local, localVars);
                 s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
@@ -129,7 +135,7 @@ namespace PEBakery.Core.Commands
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+            CodeInfo_Loop info = (CodeInfo_Loop)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (info.Break)
@@ -146,6 +152,17 @@ namespace PEBakery.Core.Commands
             }
             else
             {
+                if (info.StartIdx == null)
+                    throw new CriticalErrorException($"{info.StartIdx} is null");
+                if (info.EndIdx == null)
+                    throw new CriticalErrorException($"{info.EndIdx} is null");
+                if (info.ScriptFile == null)
+                    throw new CriticalErrorException($"{info.ScriptFile} is null");
+                if (info.SectionName == null)
+                    throw new CriticalErrorException($"{info.SectionName} is null");
+                if (info.InParams == null)
+                    throw new CriticalErrorException($"{info.InParams} is null");
+
                 string startStr = StringEscaper.Preprocess(s, info.StartIdx);
                 string endStr = StringEscaper.Preprocess(s, info.EndIdx);
 
@@ -320,7 +337,7 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+            CodeInfo_If info = (CodeInfo_If)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (EvalBranchCondition(s, info.Condition, out string msg))
@@ -343,7 +360,7 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+            CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
             EngineLocalState ls = s.PeekLocalState();
 
             if (s.ElseFlag)
@@ -373,7 +390,7 @@ namespace PEBakery.Core.Commands
                 CodeCommand subCmd = link[0];
                 if (subCmd.Type == CodeType.System)
                 {
-                    CodeInfo_System info = subCmd.Info.Cast<CodeInfo_System>();
+                    CodeInfo_System info = (CodeInfo_System)subCmd.Info;
 
                     if (info.Type == SystemType.ErrorOff)
                         s.ErrorOffDepthMinusOne = true;
@@ -384,7 +401,6 @@ namespace PEBakery.Core.Commands
         }
 
         #region EvalBranchCondition
-        [SuppressMessage("ReSharper", "RedundantAssignment")]
         public static bool EvalBranchCondition(EngineState s, BranchCondition c, out string logMessage)
         {
             bool match = false;
@@ -397,6 +413,11 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.BiggerEqual:
                 case BranchConditionType.EqualX:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+
                         string compArg1 = StringEscaper.Preprocess(s, c.Arg1);
                         string compArg2 = StringEscaper.Preprocess(s, c.Arg2);
 
@@ -456,8 +477,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistFile:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         string filePath = StringEscaper.Preprocess(s, c.Arg1);
-                        Debug.Assert(filePath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
                         // Check filePath contains wildcard
                         bool containsWildcard = Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) != -1;
@@ -498,6 +521,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistDir:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         string dirPath = StringEscaper.Preprocess(s, c.Arg1);
                         Debug.Assert(dirPath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
@@ -540,6 +566,11 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistSection:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+
                         string iniFile = StringEscaper.Preprocess(s, c.Arg1);
                         string section = StringEscaper.Preprocess(s, c.Arg2);
 
@@ -556,13 +587,18 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistRegSection:
                 case BranchConditionType.ExistRegSubKey:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+
                         string rootKey = StringEscaper.Preprocess(s, c.Arg1);
                         string subKey = StringEscaper.Preprocess(s, c.Arg2);
 
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        RegistryKey? regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
                             throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        using (RegistryKey? regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             match = regSubKey != null;
                             if (match)
@@ -578,15 +614,22 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistRegKey:
                 case BranchConditionType.ExistRegValue:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+                        if (c.Arg3 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
+
                         string rootKey = StringEscaper.Preprocess(s, c.Arg1);
                         string subKey = StringEscaper.Preprocess(s, c.Arg2);
                         string valueName = StringEscaper.Preprocess(s, c.Arg3);
 
                         match = true;
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        RegistryKey? regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
                             throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        using (RegistryKey? regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
                             {
@@ -594,7 +637,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                object value = regSubKey.GetValue(valueName);
+                                object? value = regSubKey.GetValue(valueName);
                                 if (value == null)
                                     match = false;
                             }
@@ -611,16 +654,25 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistRegMulti:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+                        if (c.Arg3 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
+                        if (c.Arg4 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg4)} is null");
+
                         string rootKey = StringEscaper.Preprocess(s, c.Arg1);
                         string subKey = StringEscaper.Preprocess(s, c.Arg2);
                         string valueName = StringEscaper.Preprocess(s, c.Arg3);
                         string searchStr = StringEscaper.Preprocess(s, c.Arg4);
 
                         match = false;
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        RegistryKey? regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
                             throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        using (RegistryKey? regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
                             {
@@ -628,7 +680,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                object valueData = regSubKey.GetValue(valueName, null);
+                                object? valueData = regSubKey.GetValue(valueName, null);
                                 if (valueData == null)
                                 {
                                     logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
@@ -663,14 +715,26 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistVar:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         Variables.VarKeyType type = Variables.DetectType(c.Arg1);
                         if (type == Variables.VarKeyType.Variable)
                         {
-                            match = s.Variables.ContainsKey(Variables.TrimPercentMark(c.Arg1));
-                            if (match)
-                                logMessage = $"Variable [{c.Arg1}] exists";
+                            string? varKey = Variables.TrimPercentMark(c.Arg1);
+                            if (varKey == null)
+                            {
+                                match = false;
+                                logMessage = $"Variable key [{c.Arg1}] is not a valid variable format";
+                            }
                             else
-                                logMessage = $"Variable [{c.Arg1}] does not exist";
+                            {
+                                match = s.Variables.ContainsKey(varKey);
+                                if (match)
+                                    logMessage = $"Variable [{c.Arg1}] exists";
+                                else
+                                    logMessage = $"Variable [{c.Arg1}] does not exist";
+                            }
                         }
                         else
                         {
@@ -684,6 +748,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistMacro:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         string macroName = StringEscaper.Preprocess(s, c.Arg1);
                         match = s.Macro.GlobalDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
 
@@ -698,6 +765,11 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.WimExistIndex:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
 
@@ -742,6 +814,13 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.WimExistFile:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+                        if (c.Arg3 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
                         string filePath = StringEscaper.Preprocess(s, c.Arg3);
@@ -815,6 +894,13 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.WimExistDir:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+                        if (c.Arg3 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
                         string dirPath = StringEscaper.Preprocess(s, c.Arg3);
@@ -888,6 +974,13 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.WimExistImageInfo:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+                        if (c.Arg2 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
+                        if (c.Arg3 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
+
                         string wimFile = StringEscaper.Preprocess(s, c.Arg1);
                         string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
                         string key = StringEscaper.Preprocess(s, c.Arg3).ToUpper();
@@ -933,6 +1026,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.Ping:
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         string host = StringEscaper.Preprocess(s, c.Arg1);
 
                         try
@@ -985,6 +1081,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.Question: // can have 1 or 3 argument
                     {
+                        if (c.Arg1 == null)
+                            throw new CriticalErrorException($"{nameof(c.Arg1)} is null");
+
                         string message = StringEscaper.Preprocess(s, c.Arg1);
 
                         bool autoTimeout = c.Arg2 != null && c.Arg3 != null;
@@ -993,12 +1092,16 @@ namespace PEBakery.Core.Commands
                         bool defaultChoice = false;
                         if (autoTimeout)
                         {
+                            if (c.Arg2 == null)
+                                throw new CriticalErrorException($"{nameof(c.Arg2)} is null");
                             string timeoutStr = StringEscaper.Preprocess(s, c.Arg2);
                             if (NumberHelper.ParseInt32(timeoutStr, out timeout) == false)
                                 autoTimeout = false;
                             if (timeout <= 0)
                                 autoTimeout = false;
 
+                            if (c.Arg3 == null)
+                                throw new CriticalErrorException($"{nameof(c.Arg3)} is null");
                             string defaultChoiceStr = StringEscaper.Preprocess(s, c.Arg3);
                             if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 defaultChoice = true;

@@ -6,10 +6,12 @@
 
 PEBakery is a script engine that specializes in customizing the Windows Preinstalled Environment (WinPE/WinRE).
 
-| Branch    | Build Status   |
-|-----------|----------------|
-| Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
-| Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
+| CI Server       | Branch  | Build Status   |
+|-----------------|---------|----------------|
+| AppVeyor        | Master  | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
+| AppVeyor        | Develop | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
+| Azure Pipelines | Master  | [![Azure Pipelines CI Master Branch Build Status](https://dev.azure.com/ied206/pebakery/_apis/build/status/pebakery.pebakery?branchName=master)](https://dev.azure.com/ied206/pebakery/_build/latest?definitionId=5&branchName=master) |
+| Azure Pipelines | Develop | [![Azure Pipelines CI Develop Branch Build Status](https://dev.azure.com/ied206/pebakery/_apis/build/status/pebakery.pebakery?branchName=develop)](https://dev.azure.com/ied206/pebakery/_build/latest?definitionId=5&branchName=develop) |
 
 PEBakery is backward compatible with WinBuilder 082 and makes significant improvements upon it.
 
@@ -27,16 +29,18 @@ A nightly build is provided for testing purposes.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/project/ied206/pebakery/build/artifacts?branch=develop)
-    - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop)
+    - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc_x64.7z?branch=develop)
       - No dependency
       - Sizes about 170MB
-      - Built for x64 architecture
-    - **[Runtime-dependent Nightly (x64, x86, ARM64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
+    - [Standalone Nightly (arm64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc_arm64.7z?branch=develop)
+      - No dependency
+      - Sizes about 180MB
+    - **[Runtime-dependent Nightly (x64, x86, arm64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
       - Requires [.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
-      - Sizes about 40MB
-      - Supports both x64, x86, ARM64 architecture
+      - Sizes about 28MB
+      - Supports both x64, x86, arm64 architecture
 
-**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from Winbuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
+**CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from WinBuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
 ## Prerequisites
 
@@ -51,7 +55,7 @@ If you are using Windows 10 v1803 or later, no action is necessary. If not, plea
 Starting from beta 7, PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
-- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARm64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARM64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 
@@ -79,7 +83,7 @@ See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 - [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) to build and test `PEBakery.exe`.
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
-    - Requires [Microsoft C++ Build Tools 2019](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
+    - Requires [Microsoft C++ Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
 If you are a contributor, we recommend using a full-featured Visual Studio Community for the best development experience.
 

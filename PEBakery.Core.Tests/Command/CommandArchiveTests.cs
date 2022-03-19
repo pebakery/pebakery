@@ -41,7 +41,7 @@ namespace PEBakery.Core.Tests.Command
         [TestCategory("CommandArchive")]
         public void Compress()
         {
-            void DirTemplate(string arcType, string srcDirName, ArchiveFile.CompressLevel? level)
+            void DirTemplate(string arcType, string srcDirName, CompressLevel? level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -58,16 +58,16 @@ namespace PEBakery.Core.Tests.Command
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcDirName}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveFile.CompressLevel.Best:
+                        case CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveFile.CompressLevel.Fastest:
+                        case CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveFile.CompressLevel.Normal:
+                        case CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveFile.CompressLevel.Store:
+                        case CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -83,8 +83,8 @@ namespace PEBakery.Core.Tests.Command
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
@@ -98,7 +98,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void FileTemplate(string arcType, string srcFilePath, ArchiveFile.CompressLevel level)
+            void FileTemplate(string arcType, string srcFilePath, CompressLevel level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -116,16 +116,16 @@ namespace PEBakery.Core.Tests.Command
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcFilePath}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveFile.CompressLevel.Best:
+                        case CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveFile.CompressLevel.Fastest:
+                        case CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveFile.CompressLevel.Normal:
+                        case CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveFile.CompressLevel.Store:
+                        case CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -135,8 +135,8 @@ namespace PEBakery.Core.Tests.Command
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -147,7 +147,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void AppendTemplate(string arcType, string srcFilePath, string appendFilePath, ArchiveFile.CompressLevel? level)
+            void AppendTemplate(string arcType, string srcFilePath, string appendFilePath, CompressLevel? level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -169,16 +169,16 @@ namespace PEBakery.Core.Tests.Command
                     rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{appendFilePath}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveFile.CompressLevel.Best:
+                        case CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveFile.CompressLevel.Fastest:
+                        case CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveFile.CompressLevel.Normal:
+                        case CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveFile.CompressLevel.Store:
+                        case CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -188,8 +188,8 @@ namespace PEBakery.Core.Tests.Command
                     using (FileStream srcStream = new FileStream(appendFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, appendFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -200,7 +200,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void WildcardTemplate(string arcType, string wildcard, ArchiveFile.CompressLevel level)
+            void WildcardTemplate(string arcType, string wildcard, CompressLevel level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile", "SrcDir"));
@@ -216,16 +216,16 @@ namespace PEBakery.Core.Tests.Command
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandFile\SrcDir\{wildcard}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveFile.CompressLevel.Best:
+                        case CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveFile.CompressLevel.Fastest:
+                        case CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveFile.CompressLevel.Normal:
+                        case CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveFile.CompressLevel.Store:
+                        case CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -242,8 +242,8 @@ namespace PEBakery.Core.Tests.Command
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
@@ -258,18 +258,18 @@ namespace PEBakery.Core.Tests.Command
             }
 
             // Create archives
-            DirTemplate("Zip", "France", ArchiveFile.CompressLevel.Store);
-            DirTemplate("7z", "Korea", ArchiveFile.CompressLevel.Normal);
-            DirTemplate("Zip", "Korea", ArchiveFile.CompressLevel.Best);
-            FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Normal);
-            FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Best);
+            DirTemplate("Zip", "France", CompressLevel.Store);
+            DirTemplate("7z", "Korea", CompressLevel.Normal);
+            DirTemplate("Zip", "Korea", CompressLevel.Best);
+            FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), CompressLevel.Normal);
+            FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), CompressLevel.Best);
 
             // Append to archives
-            AppendTemplate("Zip", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Best);
-            AppendTemplate("7z", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Store);
+            AppendTemplate("Zip", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), CompressLevel.Best);
+            AppendTemplate("7z", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), CompressLevel.Store);
 
             // Wildcard tests
-            WildcardTemplate("Zip", "*.txt", ArchiveFile.CompressLevel.Normal);
+            WildcardTemplate("Zip", "*.txt", CompressLevel.Normal);
         }
         #endregion
 
@@ -281,8 +281,8 @@ namespace PEBakery.Core.Tests.Command
             void DirTemplate(string archiveFile)
             {
                 Debug.Assert(archiveFile != null);
-                string archiveType = Path.GetExtension(archiveFile).Substring(1);
-                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
+                string archiveType = Path.GetExtension(archiveFile)[1..];
+                string archiveName = archiveFile[..^(archiveType.Length + 1)];
 
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -303,8 +303,8 @@ namespace PEBakery.Core.Tests.Command
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
@@ -316,7 +316,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void FileTemplate(string archiveFile, string originDir, string originFile, string password = null)
+            void FileTemplate(string archiveFile, string originDir, string originFile, string? password = null)
             {
                 Debug.Assert(archiveFile != null);
 
@@ -339,8 +339,8 @@ namespace PEBakery.Core.Tests.Command
                     using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -399,8 +399,8 @@ namespace PEBakery.Core.Tests.Command
                             using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                             using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                             {
-                                byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                                byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                                byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                                byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                                 Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                             }
                         }
@@ -437,8 +437,8 @@ namespace PEBakery.Core.Tests.Command
                                 using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                                 using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                                 {
-                                    byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                                    byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                                    byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                                    byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                                 }
                             }
@@ -496,7 +496,7 @@ namespace PEBakery.Core.Tests.Command
             CopyOrExpand_3(s);
         }
 
-        public void CopyOrExpand_1(EngineState s)
+        public static void CopyOrExpand_1(EngineState s)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
@@ -514,8 +514,8 @@ namespace PEBakery.Core.Tests.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -526,7 +526,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void CopyOrExpand_2(EngineState s)
+        public static void CopyOrExpand_2(EngineState s)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
@@ -544,8 +544,8 @@ namespace PEBakery.Core.Tests.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.GetHash(HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.GetHash(HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -556,7 +556,7 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void CopyOrExpand_3(EngineState s)
+        public static void CopyOrExpand_3(EngineState s)
         {
             string destDir = FileHelper.GetTempDir();
             try

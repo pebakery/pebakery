@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -44,26 +43,29 @@ namespace PEBakery.Core
         #endregion
 
         #region Options
-        public struct Options
+        public class Options
         {
             // Optimization
-            public bool OptimizeCode;
+            public bool OptimizeCode { get; set; } = true;
             // Compatibility
-            public bool AllowLegacyBranchCondition;
-            public bool AllowLegacyRegWrite;
-            public bool AllowLegacyInterfaceCommand;
-            public bool AllowLegacySectionParamCommand;
+            public bool AllowLegacyBranchCondition { get; set; } = true;
+            public bool AllowLegacyRegWrite { get; set; } = true;
+            public bool AllowLegacyInterfaceCommand { get; set; } = true;
+            public bool AllowLegacySectionParamCommand { get; set; } = true;
 
-            public static Options CreateOptions(Setting setting, CompatOption compat)
+            public static Options CreateOptions(Setting? setting, CompatOption compat)
             {
-                return new Options
+                Options opts = new Options
                 {
-                    OptimizeCode = setting.General.OptimizeCode,
                     AllowLegacyBranchCondition = compat.LegacyBranchCondition,
                     AllowLegacyRegWrite = compat.LegacyRegWrite,
                     AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
                     AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
                 };
+
+                if (setting != null)
+                    opts.OptimizeCode = setting.General.OptimizeCode;
+                return opts;
             }
         }
         #endregion
@@ -75,7 +77,7 @@ namespace PEBakery.Core
             _opts = options;
         }
 
-        public CodeParser(ScriptSection section, Setting setting, CompatOption compat)
+        public CodeParser(ScriptSection section, Setting? setting, CompatOption compat)
         {
             _section = section;
             _opts = Options.CreateOptions(setting, compat);
@@ -98,17 +100,21 @@ namespace PEBakery.Core
             }
         }
 
-        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync()
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements()
         {
-            return Task.Run(ParseStatements);
+            if (_section.Lines is string[] lines)
+            {
+                return ParseStatements(lines);
+            }
+            else
+            {
+                List<LogInfo> errLogs = new List<LogInfo>();
+                string errMsg = $"Cannot parse section [{_section.Name}], section is not a valid code";
+                CodeCommand error = new CodeCommand(string.Empty, _section, CodeType.Error, new CodeInfo_Error(errMsg), 0);
+                errLogs.Add(new LogInfo(LogState.Error, errMsg, 0));
+                return (new CodeCommand[] { error }, errLogs);
+            }
         }
-
-        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IReadOnlyList<string> lines)
-        {
-            return Task.Run(() => ParseStatements(lines));
-        }
-
-        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements() => ParseStatements(_section.Lines);
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IReadOnlyList<string> lines)
         {
@@ -135,7 +141,7 @@ namespace PEBakery.Core
 
             List<LogInfo> errLogs = cmds
                 .Where(x => x.Type == CodeType.Error)
-                .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
+                .Select(x => new LogInfo(LogState.Error, ((CodeInfo_Error)x.Info).ErrorMessage, x))
                 .ToList();
 
             List<CodeCommand> foldedList = cmds.Where(x => x.Type != CodeType.None).ToList();
@@ -158,11 +164,11 @@ namespace PEBakery.Core
         #endregion
 
         #region GetNextArgument
-        public static (string Next, string Remainder) GetNextArgument(string str)
+        public static (string Next, string? Remainder) GetNextArgument(string str)
         {
             str = str.Trim();
 
-            int dqIdx = str.IndexOf("\"", StringComparison.Ordinal);
+            int dqIdx = str.IndexOf('\"');
 
             if (dqIdx == 0) // With DoubleQuote, dqIdx should be 0
             { // Ex) "   Return SetError(@error,0,0)",Append
@@ -193,23 +199,23 @@ namespace PEBakery.Core
                 // There should be only whitespace in between ["] and [,]
                 if (pIdx == -1) // Last one
                 {
-                    string whitespace = str.Substring(nextIdx + 1).Trim();
+                    string whitespace = str[(nextIdx + 1)..].Trim();
                     if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
-                    string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
-                    string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
+                    string preNext = str[..(nextIdx + 1)].Trim();  // ["   Return SetError(@error,0,0)"]
+                    string next = preNext[1..^1]; // [   Return SetError(@error,0,0)]
                     return (next, null);
                 }
                 else // [   Return SetError(@error,0,0)], [Append]
                 {
-                    string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
+                    string whitespace = str[(nextIdx + 1)..pIdx].Trim();
                     if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
-                    string preNext = str.Substring(0, nextIdx + 1).Trim();
-                    string next = preNext.Substring(1, preNext.Length - 2);
-                    string remainder = str.Substring(pIdx + 1).Trim();
+                    string preNext = str[..(nextIdx + 1)].Trim();
+                    string next = preNext[1..^1];
+                    string remainder = str[(pIdx + 1)..].Trim();
                     return (next, remainder);
                 }
             }
@@ -222,8 +228,8 @@ namespace PEBakery.Core
                 }
                 else // [FileCreateBlank], [#3.au3]
                 {
-                    string next = str.Substring(0, pIdx).Trim();
-                    string remainder = str.Substring(pIdx + 1).Trim();
+                    string next = str[..pIdx].Trim();
+                    string remainder = str[(pIdx + 1)..].Trim();
                     return (next, remainder);
                 }
             }
@@ -241,17 +247,17 @@ namespace PEBakery.Core
 
             // Check if rawCode is empty
             if (rawCode.Length == 0)
-                return new CodeCommand(string.Empty, _section, CodeType.None, null, lineIdx);
+                return new CodeCommand(string.Empty, _section, CodeType.None, new CodeInfo(), lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
             if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
-                return new CodeCommand(rawCode, _section, CodeType.Comment, null, lineIdx);
+                return new CodeCommand(rawCode, _section, CodeType.Comment, new CodeInfo(), lineIdx);
 
             // Split with period
-            (string codeTypeStr, string remainder) = GetNextArgument(rawCode);
+            (string codeTypeStr, string? remainder) = GetNextArgument(rawCode);
 
             // Parse CodeType
-            CodeType type = ParseCodeType(codeTypeStr, out string macroType);
+            CodeType type = ParseCodeType(codeTypeStr, out string? macroType);
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
@@ -303,7 +309,9 @@ namespace PEBakery.Core
             }
 
             // Create instance of command
-            CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
+            CodeInfo? info = ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
+            if (info is null)
+                info = new CodeInfo();
             return new CodeCommand(rawCode, _section, type, info, lineIdx);
 
             // [Process] <- LineIdx
@@ -320,7 +328,7 @@ namespace PEBakery.Core
             CodeType type;
 
             // Parse type
-            string macroType;
+            string? macroType;
             try
             {
                 type = ParseCodeType(args[0], out macroType);
@@ -332,7 +340,9 @@ namespace PEBakery.Core
 
             try
             {
-                CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), lineIdx);
+                CodeInfo? info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), lineIdx);
+                if (info is null)
+                    info = new CodeInfo();
                 return new CodeCommand(rawCode, _section, type, info, lineIdx);
             }
             catch (InvalidCommandException e)
@@ -342,16 +352,16 @@ namespace PEBakery.Core
             }
         }
 
-        public CodeType ParseCodeType(string typeStr, out string macroType)
+        public CodeType ParseCodeType(string typeStr, out string? macroType)
         {
             macroType = null;
 
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
+                throw new InvalidCommandException($"Invalid CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
             bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
-                           !Enum.IsDefined(typeof(CodeType), type) ||
+                           !Enum.IsDefined(type) ||
                            type == CodeType.None ||
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
@@ -371,15 +381,16 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfo
-        public CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, int lineIdx)
+        public CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string? macroType, List<string> args, int lineIdx)
         {
             switch (type)
             {
                 #region 00 Misc
                 case CodeType.None:
                 case CodeType.Comment:
+                    return new CodeInfo();
                 case CodeType.Error:
-                    return null;
+                    return new CodeInfo_Error(string.Empty);
                 #endregion
                 #region 01 File
                 case CodeType.FileCopy:
@@ -466,7 +477,9 @@ namespace PEBakery.Core
                         return new CodeInfo_FileRename(args[0], args[1]);
                     }
                 case CodeType.FileCreateBlank:
-                    { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16LE | UTF16BE | ANSI]
+                    {
+                        // Legacy: FileCreateBlank,<FilePath>,[UTF8|UTF16|UTF16BE|ANSI],[PRESERVE],[NOWARN]
+                        // NEW   : FileCreateBlank,<FilePath>,[Encoding=<ENC>],[PRESERVE],[NOWARN]
                         const int minArgCount = 1;
                         const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -475,8 +488,10 @@ namespace PEBakery.Core
                         string filePath = args[0];
                         bool preserve = false;
                         bool noWarn = false;
-                        Encoding encoding = null;
+                        string? encodingValue = null;
 
+                        bool isDeprecated = false;
+                        const string encodingKey = "Encoding=";
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -492,41 +507,45 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
                             }
+                            else if (arg.StartsWith(encodingKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException($"Argument <{encodingKey}> cannot be duplicated", rawCode);
+                                encodingValue = arg[encodingKey.Length..];
+                            }
                             else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.UTF8;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF8";
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF16";
                             }
                             else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.BigEndianUnicode;
+                                if (encodingValue != null)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                isDeprecated = true;
+                                encodingValue = "UTF16BE";
                             }
                             else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.ASCII;
+                                isDeprecated = true;
+                                encodingValue = "ANSI";
                             }
                             else
+                            {
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
                         }
 
-                        return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
+                        return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encodingValue, isDeprecated);
                     }
                 case CodeType.FileSize:
                     { // FileSize,<FileName>,<DestVar>
@@ -626,7 +645,9 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         string destVar = args[3];
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
@@ -644,9 +665,9 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // Compatibility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         // It will be parsed in RegWriteLegacy
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
                         {
                             type = CodeType.RegWriteLegacy;
@@ -738,13 +759,13 @@ namespace PEBakery.Core
                             case RegistryValueKind.MultiString:
                                 if (4 == cnt)
                                 { // RegWrite,HKLM,0x7,"Tmp_Software\PEBakery","Download Directories" 
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, new string[0], noWarn);
+                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
                                 }
                                 else if (5 <= cnt)
                                 { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim"
                                     string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
                                     if (valueDataList.Length == 1 && valueDataList[0].Equals(string.Empty, StringComparison.Ordinal))
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, new string[0], noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
                                     else
                                         return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
@@ -793,11 +814,11 @@ namespace PEBakery.Core
                             cnt -= 1;
                         }
 
-                        string valueName = null;
+                        string? valueName = null;
                         if (4 <= cnt)
                             valueName = args[3];
 
-                        string[] valueDataList = null;
+                        string[]? valueDataList = null;
                         if (5 <= cnt)
                             valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
 
@@ -810,9 +831,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+
                         string keyPath = args[1];
-                        string valueName = null;
+                        string? valueName = null;
                         if (args.Count == maxArgCount)
                             valueName = args[2];
 
@@ -825,7 +849,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+
                         string keyPath = args[1];
                         string valueName = args[2];
 
@@ -835,7 +862,7 @@ namespace PEBakery.Core
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         string arg1 = args[4];
-                        string arg2 = null;
+                        string? arg2 = null;
                         if (args.Count == maxArgCount)
                             arg2 = args[5];
 
@@ -855,7 +882,9 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
@@ -866,8 +895,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        RegistryKey hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
+                        RegistryKey? hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        if (hSrcKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
+                        RegistryKey? hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
+                        if (hDestKey == null)
+                            throw new InvalidCommandException($"Invalid HKEY [{args[2]}]", rawCode);
 
                         bool wildcard = false;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -894,7 +927,6 @@ namespace PEBakery.Core
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
 
                         string fileName = args[0];
                         string line = args[1];
@@ -956,7 +988,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string defaultValue = null;
+                        string? defaultValue = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -966,7 +998,7 @@ namespace PEBakery.Core
                             {
                                 if (defaultValue != null)
                                     throw new InvalidCommandException("Argument <Default> cannot be duplicated", rawCode);
-                                defaultValue = arg.Substring(splitKey.Length);
+                                defaultValue = arg[splitKey.Length..];
                             }
                             else
                             {
@@ -1003,7 +1035,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1013,7 +1045,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -1129,7 +1161,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1143,7 +1175,7 @@ namespace PEBakery.Core
                             {
                                 if (split != null)
                                     throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
-                                split = arg.Substring(splitKey.Length);
+                                split = arg[splitKey.Length..];
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1176,7 +1208,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1190,7 +1222,7 @@ namespace PEBakery.Core
                             {
                                 if (split != null)
                                     throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
-                                split = arg.Substring(splitKey.Length);
+                                split = arg[splitKey.Length..];
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1225,7 +1257,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string split = null;
+                        string? split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1240,7 +1272,7 @@ namespace PEBakery.Core
                             {
                                 if (split != null)
                                     throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
-                                split = arg.Substring(splitKey.Length);
+                                split = arg[splitKey.Length..];
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1287,9 +1319,9 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string wimFlags = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? wimFlags = null;
                         bool boot = false;
                         bool check = false;
                         bool noAcl = false;
@@ -1305,19 +1337,19 @@ namespace PEBakery.Core
                             {
                                 if (imageName != null)
                                     throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
-                                imageName = arg.Substring(imageNameKey.Length);
+                                imageName = arg[imageNameKey.Length..];
                             }
                             else if (arg.StartsWith(imageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
                                     throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
-                                imageDesc = arg.Substring(imageDescKey.Length);
+                                imageDesc = arg[imageDescKey.Length..];
                             }
                             else if (arg.StartsWith(wimFlagsKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (wimFlags != null)
                                     throw new InvalidCommandException("Argument <Flags> cannot be duplicated", rawCode);
-                                wimFlags = arg.Substring(wimFlagsKey.Length);
+                                wimFlags = arg[wimFlagsKey.Length..];
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1350,10 +1382,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string wimFlags = null;
-                        string deltaFrom = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? wimFlags = null;
+                        string? deltaFrom = null;
                         bool boot = false;
                         bool check = false;
                         bool noAcl = false;
@@ -1370,25 +1402,25 @@ namespace PEBakery.Core
                             {
                                 if (imageName != null)
                                     throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
-                                imageName = arg.Substring(imageNameKey.Length);
+                                imageName = arg[imageNameKey.Length..];
                             }
                             else if (arg.StartsWith(imageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
                                     throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
-                                imageDesc = arg.Substring(imageDescKey.Length);
+                                imageDesc = arg[imageDescKey.Length..];
                             }
                             else if (arg.StartsWith(wimFlagsKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (wimFlags != null)
                                     throw new InvalidCommandException("Argument <Flags> cannot be duplicated", rawCode);
-                                wimFlags = arg.Substring(wimFlagsKey.Length);
+                                wimFlags = arg[wimFlagsKey.Length..];
                             }
                             else if (arg.StartsWith(deltaIndexKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (deltaFrom != null)
                                     throw new InvalidCommandException("Argument <DeltaFrom> cannot be duplicated", rawCode);
-                                deltaFrom = arg.Substring(deltaIndexKey.Length);
+                                deltaFrom = arg[deltaIndexKey.Length..];
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1561,7 +1593,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string recompress = null;
+                        string? recompress = null;
                         bool? check = null;
 
                         for (int i = minArgCount; i < args.Count; i++)
@@ -1573,7 +1605,7 @@ namespace PEBakery.Core
                             {
                                 if (recompress != null)
                                     throw new InvalidCommandException("Argument <Recomp> cannot be duplicated", rawCode);
-                                recompress = arg.Substring(recompKey.Length);
+                                recompress = arg[recompKey.Length..];
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1600,10 +1632,10 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string imageName = null;
-                        string imageDesc = null;
-                        string split = null;
-                        string recompress = null;
+                        string? imageName = null;
+                        string? imageDesc = null;
+                        string? split = null;
+                        string? recompress = null;
                         bool boot = false;
                         bool? check = null;
 
@@ -1619,25 +1651,25 @@ namespace PEBakery.Core
                             {
                                 if (imageName != null)
                                     throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
-                                imageName = arg.Substring(imageNameKey.Length);
+                                imageName = arg[imageNameKey.Length..];
                             }
                             else if (arg.StartsWith(imageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
                                     throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
-                                imageDesc = arg.Substring(imageDescKey.Length);
+                                imageDesc = arg[imageDescKey.Length..];
                             }
                             else if (arg.StartsWith(splitKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (split != null)
                                     throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
-                                split = arg.Substring(splitKey.Length);
+                                split = arg[splitKey.Length..];
                             }
                             else if (arg.StartsWith(recompKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (recompress != null)
                                     throw new InvalidCommandException("Argument <Recomp> cannot be duplicated", rawCode);
-                                recompress = arg.Substring(recompKey.Length);
+                                recompress = arg[recompKey.Length..];
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1672,16 +1704,16 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        ArchiveFile.ArchiveCompressFormat format;
+                        ArchiveCompressFormat format;
                         string formatStr = args[0];
                         if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveFile.ArchiveCompressFormat.Zip;
+                            format = ArchiveCompressFormat.Zip;
                         else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveFile.ArchiveCompressFormat.SevenZip;
+                            format = ArchiveCompressFormat.SevenZip;
                         else
                             throw new InvalidCommandException($"Cannot compress to [{formatStr}] file format", rawCode);
 
-                        ArchiveFile.CompressLevel? compLevel = null;
+                        CompressLevel? compLevel = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1689,25 +1721,25 @@ namespace PEBakery.Core
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Store;
+                                compLevel = CompressLevel.Store;
                             }
                             else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Fastest;
+                                compLevel = CompressLevel.Fastest;
                             }
                             else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Normal;
+                                compLevel = CompressLevel.Normal;
                             }
                             else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveFile.CompressLevel.Best;
+                                compLevel = CompressLevel.Best;
                             }
                             else
                             {
@@ -1724,7 +1756,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string password = null;
+                        string? password = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1734,7 +1766,7 @@ namespace PEBakery.Core
                             {
                                 if (password != null)
                                     throw new InvalidCommandException("Argument <Password> cannot be duplicated", rawCode);
-                                password = arg.Substring(passwordKey.Length);
+                                password = arg[passwordKey.Length..];
                             }
                             else
                             {
@@ -1753,7 +1785,7 @@ namespace PEBakery.Core
 
                         string srcCab = args[0];
                         string destDir = args[1];
-                        string singleFile = null;
+                        string? singleFile = null;
                         bool preserve = false;
                         bool noWarn = false;
 
@@ -1824,11 +1856,11 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        HashHelper.HashType hashType = HashHelper.HashType.None;
-                        string hashDigest = null;
-                        string timeOut = null;
-                        string referer = null;
-                        string userAgent = null;
+                        HashType hashType = HashType.None;
+                        string? hashDigest = null;
+                        string? timeOut = null;
+                        string? referer = null;
+                        string? userAgent = null;
                         bool noErr = false;
 
                         const string md5Key = "MD5=";
@@ -1844,56 +1876,56 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.StartsWith(md5Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <MD5> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.MD5;
-                                hashDigest = arg.Substring(md5Key.Length);
+                                hashType = HashType.MD5;
+                                hashDigest = arg[md5Key.Length..];
                             }
                             else if (arg.StartsWith(sha1Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA1> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA1;
-                                hashDigest = arg.Substring(sha1Key.Length);
+                                hashType = HashType.SHA1;
+                                hashDigest = arg[sha1Key.Length..];
                             }
                             else if (arg.StartsWith(sha256Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA256> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA256;
-                                hashDigest = arg.Substring(sha256Key.Length);
+                                hashType = HashType.SHA256;
+                                hashDigest = arg[sha256Key.Length..];
                             }
                             else if (arg.StartsWith(sha384Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA384> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA384;
-                                hashDigest = arg.Substring(sha384Key.Length);
+                                hashType = HashType.SHA384;
+                                hashDigest = arg[sha384Key.Length..];
                             }
                             else if (arg.StartsWith(sha512Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                if (hashType != HashType.None || hashDigest != null)
                                     throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA512;
-                                hashDigest = arg.Substring(sha512Key.Length);
+                                hashType = HashType.SHA512;
+                                hashDigest = arg[sha512Key.Length..];
                             }
                             else if (arg.StartsWith(timeOutKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (timeOut != null)
                                     throw new InvalidCommandException("Argument <TimeOut> cannot be duplicated", rawCode);
-                                timeOut = arg.Substring(timeOutKey.Length);
+                                timeOut = arg[timeOutKey.Length..];
                             }
                             else if (arg.StartsWith(refererKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (referer != null)
                                     throw new InvalidCommandException("Argument <Referer> cannot be duplicated", rawCode);
-                                referer = arg.Substring(refererKey.Length);
+                                referer = arg[refererKey.Length..];
                             }
                             else if (arg.StartsWith(userAgentKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (referer != null)
                                     throw new InvalidCommandException("Argument <UserAgent> cannot be duplicated", rawCode);
-                                userAgent = arg.Substring(userAgentKey.Length);
+                                userAgent = arg[userAgentKey.Length..];
                             }
                             else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1939,7 +1971,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string _params = null;
+                        string? _params = null;
                         if (4 <= args.Count)
                             _params = args[3];
 
@@ -1960,7 +1992,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string compression = null;
+                        string? compression = null;
                         if (3 < args.Count)
                             compression = args[3];
 
@@ -1976,7 +2008,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string interfaceKey = Variables.TrimPercentMark(args[0]);
+                        string? interfaceKey = Variables.TrimPercentMark(args[0]);
                         if (interfaceKey == null)
                             throw new InvalidCommandException($"Invalid InterfaceKey [{interfaceKey}]", rawCode);
 
@@ -2009,7 +2041,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2019,7 +2051,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -2041,7 +2073,7 @@ namespace PEBakery.Core
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2051,7 +2083,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -2073,7 +2105,7 @@ namespace PEBakery.Core
 
                         string message = args[0];
                         CodeMessageAction action = CodeMessageAction.None;
-                        string timeout = null;
+                        string? timeout = null;
 
                         if (2 <= args.Count)
                         {
@@ -2248,11 +2280,11 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                inParams.Add(arg.Substring(inKey.Length));
+                                inParams.Add(arg[inKey.Length..]);
                             }
                             else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                string varKey = arg.Substring(outKey.Length);
+                                string varKey = arg[outKey.Length..];
                                 if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
                                     throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
                                 outParams.Add(varKey);
@@ -2318,10 +2350,10 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
-                                inParams.Add(arg.Substring(inKey.Length));
+                                inParams.Add(arg[inKey.Length..]);
                             else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                string varKey = arg.Substring(outKey.Length);
+                                string varKey = arg[outKey.Length..];
                                 if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
                                     throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
                                 outParams.Add(varKey);
@@ -2524,7 +2556,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
                         }
 
-                        string varCount = null;
+                        string? varCount = null;
                         if (args.Count == 3)
                         {
                             varKeyType = Variables.DetectType(args[2]);
@@ -2541,6 +2573,19 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_PackParam(args[0], args[1], varCount);
+                    }
+                case CodeType.Return:
+                    { // Return,[ReturnValue]
+                        const int minArgCount = 0;
+                        const int maxArgCount = 1;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string? returnValue = null;
+                        if (0 < args.Count)
+                            returnValue = args[0];
+
+                        return new CodeInfo_Return(returnValue);
                     }
                 #endregion
                 #region 82 System
@@ -2561,9 +2606,9 @@ namespace PEBakery.Core
                         if (type == CodeType.ShellExecuteEx && args.Count == 5)
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string parameters = null;
-                        string workDir = null;
-                        string exitOutVar = null;
+                        string? parameters = null;
+                        string? workDir = null;
+                        string? exitOutVar = null;
                         switch (args.Count)
                         {
                             case 3:
@@ -2589,11 +2634,14 @@ namespace PEBakery.Core
                 #endregion
                 #region 99 External Macro
                 case CodeType.Macro:
-                    return new CodeInfo_Macro(macroType, args);
+                    if (macroType != null)
+                        return new CodeInfo_Macro(macroType, args);
+                    else
+                        goto default;
                 #endregion
                 #region Error
                 default: // Error
-                    throw new InternalParserException($"Wrong CodeType [{type}]");
+                    throw new InternalParserException($"Invalid CodeType [{type}]");
                     #endregion
             }
         }
@@ -2698,8 +2746,8 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
 
-                        string title = null;
-                        string filter = null;
+                        string? title = null;
+                        string? filter = null;
 
                         const string titleKey = "Title=";
                         const string filterKey = "Filter=";
@@ -2712,7 +2760,7 @@ namespace PEBakery.Core
                             {
                                 if (title != null)
                                     throw new InvalidCommandException("Argument <Title> cannot be duplicated", rawCode);
-                                title = arg.Substring(titleKey.Length);
+                                title = arg[titleKey.Length..];
                             }
                             else if (arg.StartsWith(filterKey, StringComparison.OrdinalIgnoreCase))
                             {
@@ -2720,7 +2768,7 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Argument <Filter> can only be used for file selection", rawCode);
                                 if (filter != null)
                                     throw new InvalidCommandException("Argument <Filter> cannot be duplicated", rawCode);
-                                filter = arg.Substring(filterKey.Length);
+                                filter = arg[filterKey.Length..];
                             }
                             else
                             {
@@ -2839,7 +2887,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         // Convert WB Date Format String to .Net Date Format String
-                        string formatStr = StrFormat_Date_FormatString(args[1]);
+                        string? formatStr = StrFormat_Date_FormatString(args[1]);
                         if (formatStr == null)
                             throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
@@ -3123,7 +3171,7 @@ namespace PEBakery.Core
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
         private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g' };
 
-        private static string StrFormat_Date_FormatString(string str)
+        private static string? StrFormat_Date_FormatString(string str)
         {
             // dd-mmm-yyyy-hh.nn
             // 02-11-2017-13.49
@@ -3458,8 +3506,8 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string min = null;
-                        string max = null;
+                        string? min = null;
+                        string? max = null;
                         if (3 == args.Count)
                         {
                             min = args[1];
@@ -3521,7 +3569,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3531,7 +3579,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3554,7 +3602,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3564,7 +3612,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3587,7 +3635,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3597,7 +3645,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3620,7 +3668,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3629,7 +3677,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3653,7 +3701,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3662,7 +3710,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3685,7 +3733,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3694,7 +3742,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3722,7 +3770,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3732,7 +3780,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3763,7 +3811,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3773,7 +3821,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -3799,7 +3847,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
-                        string delim = null;
+                        string? delim = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -3809,7 +3857,7 @@ namespace PEBakery.Core
                             {
                                 if (delim != null)
                                     throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
-                                delim = arg.Substring(delimKey.Length);
+                                delim = arg[delimKey.Length..];
                             }
                             else
                             {
@@ -4051,7 +4099,7 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string logFormat = null;
+                        string? logFormat = null;
                         if (minArgCount < args.Count)
                             logFormat = args[1];
 
@@ -4136,7 +4184,7 @@ namespace PEBakery.Core
             {
                 case DebugType.Breakpoint:
                     { // Debug,Breakpoint,[BranchCondition]
-                        BranchCondition cond = null;
+                        BranchCondition? cond = null;
 
                         // BranchCondition was written
                         if (0 < args.Count)
@@ -4198,7 +4246,7 @@ namespace PEBakery.Core
             {
                 int embIdx = -1;
                 string condStr = args[cIdx];
-                BranchCondition cond = null;
+                BranchCondition? cond = null;
                 if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
                 {
                     embIdx = cIdx + 2;
@@ -4421,7 +4469,7 @@ namespace PEBakery.Core
         {
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
             bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
-            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
             bool sectionInParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
             bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
@@ -4468,7 +4516,7 @@ namespace PEBakery.Core
                 CodeCommand cmd = codeList[i];
                 if (cmd.Type == CodeType.If)
                 { // Change it to IfCompact, and parse Begin - End
-                    if (!(cmd.Info is CodeInfo_If info))
+                    if (cmd.Info is not CodeInfo_If info)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (info.LinkParsed)
@@ -4483,7 +4531,7 @@ namespace PEBakery.Core
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
                 { // Compile to ElseCompact
-                    if (!(cmd.Info is CodeInfo_Else info))
+                    if (cmd.Info is not CodeInfo_Else info)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (elseFlag)
@@ -4538,7 +4586,7 @@ namespace PEBakery.Core
             // Run if condition is met : Echo,Success
             // Command compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
 
-            if (!(cmd.Info is CodeInfo_If info))
+            if (cmd.Info is not CodeInfo_If info)
                 throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
             newList.Add(cmd);
@@ -4552,9 +4600,9 @@ namespace PEBakery.Core
                     info.Link.Add(info.Embed);
                     info.LinkParsed = true;
 
-                    info = info.Embed.Info as CodeInfo_If;
-                    if (info == null)
+                    if (info.Embed.Info is not CodeInfo_If newInfo)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+                    info = newInfo;
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -4588,7 +4636,7 @@ namespace PEBakery.Core
         /// <returns>Return next command index</returns>
         private static int ParseNestedElse(CodeCommand cmd, List<CodeCommand> codeList, int codeListIdx, List<CodeCommand> newList, out bool elseFlag)
         {
-            if (!(cmd.Info is CodeInfo_Else info))
+            if (cmd.Info is not CodeInfo_Else info)
                 throw new InternalParserException("Invalid CodeInfo_Else while processing nested [Else]");
 
             newList.Add(cmd);
@@ -4599,7 +4647,7 @@ namespace PEBakery.Core
                 info.Link.Add(elseEmbCmd);
                 info.LinkParsed = true;
 
-                if (!(info.Embed.Info is CodeInfo_If ifInfo))
+                if (info.Embed.Info is not CodeInfo_If ifInfo)
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
                 while (true)
@@ -4609,11 +4657,9 @@ namespace PEBakery.Core
                         ifInfo.Link.Add(ifInfo.Embed);
                         ifInfo.LinkParsed = true;
 
-                        ifInfo = ifInfo.Embed.Info as CodeInfo_If;
-                        if (ifInfo == null)
+                        if (ifInfo.Embed.Info is not CodeInfo_If newIfInfo)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                        ifInfo.LinkParsed = true;
+                        ifInfo = newIfInfo;
                     }
                     else if (ifInfo.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {
@@ -4685,7 +4731,7 @@ namespace PEBakery.Core
                 {
                     while (true)
                     {
-                        if (!(cmd.Info is CodeInfo_If info))
+                        if (cmd.Info is not CodeInfo_If info)
                             throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                         if (info.Embed.Type == CodeType.If) // Nested If
@@ -4704,7 +4750,7 @@ namespace PEBakery.Core
                 }
                 else if (cmd.Type == CodeType.Else)
                 {
-                    if (!(cmd.Info is CodeInfo_Else info))
+                    if (cmd.Info is not CodeInfo_Else info)
                         throw new InternalParserException("Invalid CodeInfo_Else while matching [Begin] with [End]");
 
                     CodeCommand ifCmd = info.Embed;
@@ -4712,7 +4758,7 @@ namespace PEBakery.Core
                     {
                         while (true)
                         {
-                            if (!(ifCmd.Info is CodeInfo_If embedInfo))
+                            if (ifCmd.Info is not CodeInfo_If embedInfo)
                                 throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                             if (embedInfo.Embed.Type == CodeType.If) // Nested If

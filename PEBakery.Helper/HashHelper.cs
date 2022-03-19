@@ -32,11 +32,20 @@ using System.Security.Cryptography;
 
 namespace PEBakery.Helper
 {
+    public enum HashType
+    {
+        None,
+        MD5,
+        SHA1,
+        SHA256,
+        SHA384,
+        SHA512
+    }
+
     #region HashHelper
     public static class HashHelper
     {
         #region Fields
-        public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 }
         public static readonly ReadOnlyDictionary<HashType, int> HashLenDict = new ReadOnlyDictionary<HashType, int>
         (
             new Dictionary<HashType, int>
@@ -58,9 +67,9 @@ namespace PEBakery.Helper
             return GetHash(type, input, 0, null);
         }
 
-        public static byte[] GetHash(HashType type, byte[] input, int reportInterval, IProgress<long> progress)
+        public static byte[] GetHash(HashType type, byte[] input, int reportInterval, IProgress<long>? progress)
         {
-            HashAlgorithm hash = null;
+            HashAlgorithm? hash = null;
             try
             {
                 switch (type)
@@ -106,7 +115,7 @@ namespace PEBakery.Helper
 
                     progress.Report(offset);
                 }
-                return hash.Hash;
+                return hash.Hash ?? Array.Empty<byte>();
             }
             finally
             {
@@ -128,9 +137,9 @@ namespace PEBakery.Helper
             return GetHash(type, stream, 0, null);
         }
 
-        public static byte[] GetHash(HashType type, Stream stream, long reportInterval, IProgress<long> progress)
+        public static byte[] GetHash(HashType type, Stream stream, long reportInterval, IProgress<long>? progress)
         {
-            HashAlgorithm hash = null;
+            HashAlgorithm? hash = null;
             try
             {
                 switch (type)
@@ -177,7 +186,7 @@ namespace PEBakery.Helper
                 while (0 < bytesRead);
 
                 hash.TransformFinalBlock(buffer, 0, 0);
-                return hash.Hash;
+                return hash.Hash ?? Array.Empty<byte>();
             }
             finally
             {

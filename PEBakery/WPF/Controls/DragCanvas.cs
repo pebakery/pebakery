@@ -35,7 +35,6 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 
-// ReSharper disable InconsistentNaming
 namespace PEBakery.WPF.Controls
 {
     #region DragCanvas
@@ -49,6 +48,9 @@ namespace PEBakery.WPF.Controls
         // DragHandle
         private const int DragHandleLength = 6;
         private const int DragHandleShowThreshold = 20;
+
+        // DeltaThreshold
+        public const int DeltaRelevantThreshold = 5;
         #endregion
 
         #region Fields, Properties
@@ -59,7 +61,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Helper for single move/resize of SelectedElements
         /// </summary>
-        private SelectedElement Selected
+        private SelectedElement? Selected
         {
             get
             {
@@ -76,7 +78,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Display which area is being drag-to-select (lasso).
         /// </summary>
-        private Rectangle _dragAreaRectangle = new Rectangle
+        private readonly Rectangle _dragAreaRectangle = new Rectangle
         {
             Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
         };
@@ -89,9 +91,7 @@ namespace PEBakery.WPF.Controls
                 int max = GetZIndex(this);
                 foreach (UIElement element in Children)
                 {
-                    int z = GetZIndex(element);
-                    if (max < z)
-                        max = z;
+                    max = Math.Max(max, GetZIndex(element));
                 }
                 return max;
             }
@@ -107,10 +107,9 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region Events
-        public event UIControlSelectedEventHandler UIControlSelected;
-
-        public event UIControlDraggedEventHandler UIControlMoved;
-        public event UIControlDraggedEventHandler UIControlResized;
+        public event EventHandler<UIControlSelectedEventArgs>? UIControlSelected;
+        public event EventHandler<UIControlDraggedEventArgs>? UIControlMoved;
+        public event EventHandler<UIControlDraggedEventArgs>? UIControlResized;
         #endregion
 
         #region Mouse Event Handler
@@ -150,7 +149,7 @@ namespace PEBakery.WPF.Controls
             _dragStartCursorPos = e.GetPosition(this);
 
             // Which element was selected?
-            FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
+            FrameworkElement? focusedElement = FindRootFrameworkElement(e.Source);
 
             void SetDragToSelect()
             {
@@ -271,7 +270,7 @@ namespace PEBakery.WPF.Controls
             // Change cursor following underlying element
             if (_dragState != DragState.Dragging)
             {
-                FrameworkElement hoverElement = FindRootFrameworkElement(e.Source);
+                FrameworkElement? hoverElement = FindRootFrameworkElement(e.Source);
                 if (hoverElement == null) // Outside
                     ResetMouseCursor();
                 else if (hoverElement is Border border && border.Tag is DragHandleTag info)
@@ -298,20 +297,24 @@ namespace PEBakery.WPF.Controls
                 case DragMode.SingleMove:
                     {
                         Debug.Assert(Selected != null, "SelectedElement is null");
-                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
-                        Rect r = new Rect
-                        {
-                            X = newElementPos.X,
-                            Y = newElementPos.Y,
-                            Width = Selected.ElementInitialRect.Width,
-                            Height = Selected.ElementInitialRect.Height,
-                        };
-                        MoveSelectedElement(Selected, r);
+                        (Point newElementPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, Selected.ElementInitialRect);
 
-                        // Send UIControlDraggedEvent
-                        UIControl uiCtrl = Selected.UIControl;
-                        Vector delta = new Vector(newElementPos.X - uiCtrl.X, newElementPos.Y - uiCtrl.Y);
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
+                        // If delta is too small, do not update Canvas and fire an event to prevent unintended 1px shift.
+                        if (IsDeltaRelevant(delta))
+                        {
+                            Rect r = new Rect
+                            {
+                                X = newElementPos.X,
+                                Y = newElementPos.Y,
+                                Width = Selected.ElementInitialRect.Width,
+                                Height = Selected.ElementInitialRect.Height,
+                            };
+                            MoveSelectedElement(Selected, r);
+
+                            // Send UIControlDraggedEvent
+                            UIControl uiCtrl = Selected.UIControl;
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Dragging));
+                        }
                     }
                     break;
                 case DragMode.MultiMove:
@@ -320,24 +323,28 @@ namespace PEBakery.WPF.Controls
                         Rect[] elementRects = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
                         (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRects);
 
-                        for (int i = 0; i < _selectedElements.Count; i++)
+                        // If delta is too small, do not update Canvas and fire an event to prevent unintended 1px shift.
+                        if (IsDeltaRelevant(delta))
                         {
-                            SelectedElement selected = _selectedElements[i];
-                            Point newElementPos = newPosList[i];
-
-                            Rect r = new Rect
+                            for (int i = 0; i < _selectedElements.Count; i++)
                             {
-                                X = newElementPos.X,
-                                Y = newElementPos.Y,
-                                Width = selected.ElementInitialRect.Width,
-                                Height = selected.ElementInitialRect.Height,
-                            };
-                            MoveSelectedElement(selected, r);
-                        }
+                                SelectedElement selected = _selectedElements[i];
+                                Point newElementPos = newPosList[i];
 
-                        // Send UIControlDraggedEvent
-                        List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
+                                Rect r = new Rect
+                                {
+                                    X = newElementPos.X,
+                                    Y = newElementPos.Y,
+                                    Width = selected.ElementInitialRect.Width,
+                                    Height = selected.ElementInitialRect.Height,
+                                };
+                                MoveSelectedElement(selected, r);
+                            }
+
+                            // Send UIControlDraggedEvent
+                            List<UIControl> uiCtrls = _selectedElements.Select(x => x.UIControl).ToList();
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Dragging));
+                        }
                     }
                     break;
                 case DragMode.SingleResize:
@@ -412,14 +419,21 @@ namespace PEBakery.WPF.Controls
                         Debug.Assert(Selected != null, "SelectedElement was not set");
                         UIControl uiCtrl = Selected.UIControl;
 
-                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
-                        Vector delta = new Vector(newCtrlPos.X - uiCtrl.X, newCtrlPos.Y - uiCtrl.Y);
+                        (Point newCtrlPos, Vector delta) = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
 
-                        // UIControl should have position/size of int
-                        uiCtrl.X = (int)newCtrlPos.X;
-                        uiCtrl.Y = (int)newCtrlPos.Y;
+                        // If delta is too small, fire an event with no delta.
+                        if (IsDeltaRelevant(delta))
+                        {
+                            // UIControl should have position/size of int
+                            uiCtrl.X = (int)newCtrlPos.X;
+                            uiCtrl.Y = (int)newCtrlPos.Y;
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, DragState.Finished));
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, delta, false, DragState.Finished));
+                        }
+                        else
+                        { // Delta is too small. Use zero delta to prevent unintended 1px shift.
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, uiCtrl.Point, new Vector(0, 0), false, DragState.Finished));
+                        }
                     }
                     break;
                 case DragMode.MultiMove:
@@ -429,18 +443,26 @@ namespace PEBakery.WPF.Controls
                         Rect[] uiCtrlRectList = _selectedElements.Select(se => se.UIControl.Rect).ToArray();
                         (List<Point> newPosList, Vector delta) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, uiCtrlRectList);
 
-                        for (int i = 0; i < _selectedElements.Count; i++)
+                        // If delta is too small, fire an event with no delta.
+                        if (IsDeltaRelevant(delta))
                         {
-                            SelectedElement selected = _selectedElements[i];
-                            UIControl uiCtrl = selected.UIControl;
-                            Point newCtrlPos = newPosList[i];
+                            for (int i = 0; i < _selectedElements.Count; i++)
+                            {
+                                SelectedElement selected = _selectedElements[i];
+                                UIControl uiCtrl = selected.UIControl;
+                                Point newCtrlPos = newPosList[i];
 
-                            // UIControl should have position/size of int
-                            uiCtrl.X = (int)newCtrlPos.X;
-                            uiCtrl.Y = (int)newCtrlPos.Y;
+                                // UIControl should have position/size of int
+                                uiCtrl.X = (int)newCtrlPos.X;
+                                uiCtrl.Y = (int)newCtrlPos.Y;
+                            }
+
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                         }
-
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
+                        else
+                        { // Delta is too small. Use zero delta to prevent unintended 1px shift.
+                            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, new Vector(0, 0), false, DragState.Finished));
+                        }
                     }
                     break;
                 case DragMode.SingleResize:
@@ -456,8 +478,6 @@ namespace PEBakery.WPF.Controls
                         uiCtrl.Y = (int)newCtrlRect.Y;
                         uiCtrl.Width = (int)newCtrlRect.Width;
                         uiCtrl.Height = (int)newCtrlRect.Height;
-
-                        _dragMode = DragMode.None;
 
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrl, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
@@ -481,8 +501,6 @@ namespace PEBakery.WPF.Controls
                             uiCtrl.Width = (int)newCtrlRect.Width;
                             uiCtrl.Height = (int)newCtrlRect.Height;
                         }
-
-                        _dragMode = DragMode.None;
 
                         UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, _dragStartCursorPos, delta, false, DragState.Finished));
                     }
@@ -534,7 +552,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         public void DrawSelectedElements()
         {
-            ClearSelectedElements(false);
+            ClearSelectedElementsFromScreen();
 
             if (1 < _selectedElements.Count)
             {
@@ -561,7 +579,7 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         private void DrawSelectedElement(SelectedElement selected, bool multiSelect)
         {
-            UIControl uiCtrl = selected.Element.Tag as UIControl;
+            UIControl uiCtrl = selected.UIControl;
             Debug.Assert(uiCtrl != null, "Incorrect SelectedElement handling");
 
             int z = MaxZIndex;
@@ -628,7 +646,7 @@ namespace PEBakery.WPF.Controls
 
             foreach (FrameworkElement child in Children)
             {
-                if (!(child.Tag is UIControl ctrl))
+                if (child.Tag is not UIControl ctrl)
                     continue;
                 if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                     continue;
@@ -644,7 +662,7 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// Draw border and drag handles around selected element, from outside
         /// </summary>
-        public void DrawSelectedElements(List<UIControl> uiCtrls)
+        public void DrawSelectedElements(IEnumerable<UIControl> uiCtrls)
         {
             if (uiCtrls == null)
                 return;
@@ -654,7 +672,7 @@ namespace PEBakery.WPF.Controls
             {
                 foreach (FrameworkElement child in Children)
                 {
-                    if (!(child.Tag is UIControl ctrl))
+                    if (child.Tag is not UIControl ctrl)
                         continue;
                     if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                         continue;
@@ -681,7 +699,7 @@ namespace PEBakery.WPF.Controls
             // Move drag handles
             foreach (Border dragHandle in selected.DragHandles)
             {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleTag), "Incorrect SelectedElement handling");
+                Debug.Assert(dragHandle.Tag is DragHandleTag, "Incorrect SelectedElement handling");
                 DragHandleTag info = (DragHandleTag)dragHandle.Tag;
 
                 SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
@@ -703,7 +721,7 @@ namespace PEBakery.WPF.Controls
             // Resize drag handles
             foreach (Border dragHandle in selected.DragHandles)
             {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleTag));
+                Debug.Assert(dragHandle.Tag is DragHandleTag, "Incorrect SelectedElement handling");
                 DragHandleTag info = (DragHandleTag)dragHandle.Tag;
 
                 SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
@@ -716,7 +734,7 @@ namespace PEBakery.WPF.Controls
         #region (public) Mouse Cursor
         public static void SetMouseCursor(ResizeClickPosition clickPos = ResizeClickPosition.Inside)
         {
-            Cursor newCursor = null;
+            Cursor? newCursor = null;
             switch (clickPos)
             {
                 case ResizeClickPosition.Left:
@@ -795,7 +813,7 @@ namespace PEBakery.WPF.Controls
                     y += elementRect.Height;
                     break;
                 default:
-                    throw new ArgumentException(nameof(clickPos));
+                    throw new ArgumentException($"Invalid ResizeClickPosition [{clickPos}]", nameof(clickPos));
             }
 
             return new Point(x, y);
@@ -824,7 +842,7 @@ namespace PEBakery.WPF.Controls
                     visible = true;
                     break;
                 default:
-                    throw new ArgumentException(nameof(clickPos));
+                    throw new ArgumentException($"Invalid ResizeClickPosition [{clickPos}]", nameof(clickPos));
             }
 
             if (visible)
@@ -842,24 +860,56 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region (private) Move Utility
-        private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
+        #region (private) Move/Resize Utility
+        public static bool IsDeltaRelevant(Vector delta)
         {
-            double x = elementStart.X + cursorNow.X - cursorStart.X;
-            double y = elementStart.Y + cursorNow.Y - cursorStart.Y;
+            return DeltaRelevantThreshold < Math.Abs(delta.X) || DeltaRelevantThreshold < Math.Abs(delta.Y);
+        }
 
-            // Do not use Width and Height here, or canvas cannot be expanded
-            // Guard new X and Y in 0 ~ 600
-            if (x < 0)
-                x = 0;
-            else if (CanvasLengthLimit < x + elementStart.Width)
-                x = CanvasLengthLimit - elementStart.Width;
-            if (y < 0)
-                y = 0;
-            else if (CanvasLengthLimit < y + elementStart.Height)
-                y = CanvasLengthLimit - elementStart.Height;
+        private static (Point NewPos, Vector Delta) CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
+        {
+            double deltaX = cursorNow.X - cursorStart.X;
+            double deltaY = cursorNow.Y - cursorStart.Y;
+            double caliDeltaX = deltaX;
+            double caliDeltaY = deltaY;
 
-            return new Point(x, y);
+            // Calibrate delta
+            {
+                double x = elementStart.X + deltaX;
+                double y = elementStart.Y + deltaY;
+
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                    caliDeltaX = Math.Max(caliDeltaX, deltaX - x);
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    caliDeltaX = Math.Min(caliDeltaX, deltaX + CanvasLengthLimit - (x + elementStart.Width));
+                if (y < 0)
+                    caliDeltaY = Math.Max(caliDeltaY, deltaY - y);
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - (y + elementStart.Height));
+            }
+
+            // Calculate new position
+            Point newElementPos;
+            {
+                double x = elementStart.X + caliDeltaX;
+                double y = elementStart.Y + caliDeltaY;
+
+                // Do not use Width and Height here, or canvas cannot be expanded
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                    x = 0;
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    x = CanvasLengthLimit - elementStart.Width;
+                if (y < 0)
+                    y = 0;
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    y = CanvasLengthLimit - elementStart.Height;
+
+                newElementPos = new Point(x, y);
+            }
+
+            return (newElementPos, new Vector(caliDeltaX, caliDeltaY));
         }
 
         private static (List<Point> NewPosList, Vector CaliDelta) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementStartList)
@@ -917,9 +967,7 @@ namespace PEBakery.WPF.Controls
             SetLeft(element, p.X);
             SetTop(element, p.Y);
         }
-        #endregion
 
-        #region (private) Resize Utility
         private static (Rect NewRect, double CaliDeltaX, double CaliDeltaY) InternalCalcNewSize(double deltaX, double deltaY, Rect elementRect, ResizeClickPosition clickPos)
         {
             // Do not touch Width and Height if border was not clicked
@@ -1199,7 +1247,7 @@ namespace PEBakery.WPF.Controls
             uiCtrl.Y = y;
         }
 
-        public static void ApplyUIControlPositions(List<UIControl> uiCtrls, int deltaX, int deltaY)
+        public static void ApplyUIControlPositions(IEnumerable<UIControl> uiCtrls, int deltaX, int deltaY)
         {
             int caliDeltaX = deltaX;
             int caliDeltaY = deltaY;
@@ -1277,7 +1325,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) FrameworkElement Utility
-        public FrameworkElement FindRootFrameworkElement(object obj)
+        public FrameworkElement? FindRootFrameworkElement(object obj)
         {
             if (obj is DependencyObject dObj)
                 return FindRootFrameworkElement(dObj);
@@ -1285,7 +1333,7 @@ namespace PEBakery.WPF.Controls
                 return null;
         }
 
-        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
+        public FrameworkElement? FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
@@ -1361,46 +1409,49 @@ namespace PEBakery.WPF.Controls
         /// <summary>
         /// (Single select) Selected an UIControl
         /// </summary>
-        public UIControl UIControl { get; set; }
+        public UIControl UIControl => UIControls[0];
         /// <summary>
         /// (Multi select) Selected multiple UIControls
         /// </summary>
-        public List<UIControl> UIControls { get; set; }
+        public UIControl[] UIControls { get; private set; } = Array.Empty<UIControl>();
         /// <summary>
         /// Selected multiple UIControls
         /// </summary>
-        public bool MultiSelect => UIControls != null;
+        public bool MultiSelect { get; private set; }
+        public bool IsReset { get; private set; }
 
         public UIControlSelectedEventArgs()
         {
+            MultiSelect = false;
+            IsReset = true;
         }
 
         public UIControlSelectedEventArgs(UIControl uiCtrl)
         {
-            UIControl = uiCtrl;
+            MultiSelect = false;
+            UIControls = new UIControl[1] { uiCtrl };
         }
 
-        public UIControlSelectedEventArgs(List<UIControl> uiCtrls)
+        public UIControlSelectedEventArgs(IEnumerable<UIControl> uiCtrls)
         {
-            UIControls = uiCtrls;
+            MultiSelect = true;
+            UIControls = uiCtrls.ToArray();
         }
     }
-    public delegate void UIControlSelectedEventHandler(object sender, UIControlSelectedEventArgs e);
 
     public class UIControlDraggedEventArgs : EventArgs
     {
         /// <summary>
         /// (Single select) Selected an UIControl
         /// </summary>
-        public UIControl UIControl { get; set; }
+        public UIControl UIControl => UIControls[0];
         /// <summary>
         /// (Multi select) Selected multiple UIControls
         /// </summary>
-        public List<UIControl> UIControls { get; set; }
-        /// <summary>
+        public UIControl[] UIControls { get; private set; } = Array.Empty<UIControl>();
         /// Selected multiple UIControls
         /// </summary>
-        public bool MultiSelect => UIControls != null;
+        public bool MultiSelect { get; private set; }
         /// <summary>
         /// Original coord/width 
         /// </summary>
@@ -1420,25 +1471,24 @@ namespace PEBakery.WPF.Controls
 
         public UIControlDraggedEventArgs(UIControl uiCtrl, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
-            UIControl = uiCtrl;
-            UIControls = null;
+            MultiSelect = false;
+            UIControls = new UIControl[1] { uiCtrl };
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
             DragState = dragState;
         }
 
-        public UIControlDraggedEventArgs(List<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, DragState dragState)
+        public UIControlDraggedEventArgs(IEnumerable<UIControl> uiCtrls, Point origin, Vector delta, bool forceUpdate, DragState dragState)
         {
-            UIControl = null;
-            UIControls = uiCtrls;
+            MultiSelect = true;
+            UIControls = uiCtrls.ToArray();
             Origin = origin;
             Delta = delta;
             ForceUpdate = forceUpdate;
             DragState = dragState;
         }
     }
-    public delegate void UIControlDraggedEventHandler(object sender, UIControlDraggedEventArgs e);
     #endregion
 
     #region class DragHandleTag
@@ -1460,23 +1510,26 @@ namespace PEBakery.WPF.Controls
     #region class SelectedElement
     public class SelectedElement
     {
-        public FrameworkElement Element;
-        public UIControl UIControl => Element.Tag as UIControl;
-        public Rect ElementInitialRect;
-        public Border Border;
-        public readonly List<Border> DragHandles = new List<Border>();
+        public FrameworkElement Element { get; private set; }
+        public UIControl UIControl { get; private set; }
+        public Rect ElementInitialRect { get; private set; }
+        public Border? Border { get; set; }
+        public List<Border> DragHandles { get; private set; } = new List<Border>();
 
         public SelectedElement(FrameworkElement element)
         {
-            Debug.Assert(element.Tag.GetType() == typeof(UIControl), "Incorrect Element.Tag");
+            if (element.Tag is not UIControl uiCtrl)
+                throw new InvalidOperationException("Invalid Element.Tag: tag must be UIControl.");
+
             Element = element;
+            UIControl = uiCtrl;
             ElementInitialRect = DragCanvas.GetElementRect(element);
         }
 
         public override string ToString()
         {
             if (UIControl == null)
-                return base.ToString();
+                return $"SelectedElemtn [INVALID]";
             return $"SelectedElement [{UIControl}]";
         }
     }

@@ -28,14 +28,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
 namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class CommandHashTests
     {
         #region Hash

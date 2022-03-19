@@ -87,14 +87,10 @@
                                Margin="0, 0, 0, 5"
                                FontSize="18"
                                Text="The Builder for Windows Preinstalled Environment"/>
-                    <TextBlock HorizontalAlignment="Center" 
+                    <TextBlock HorizontalAlignment="Center"
                                Margin="0, 0, 0, 20"
                                FontSize="15"
-                               Text="{Binding InfoBuildDate}"/>
-                    <TextBlock HorizontalAlignment="Center" 
-                               Margin="0, 0, 0, 20"
-                               FontSize="13"
-                               Text="{Binding InfoHostEnv}"/>
+                               Text="{Binding InfoBuildDate}" />
                     <Grid Margin="0, 0, 0, 0"
                           HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -139,6 +135,22 @@
                     </StackPanel>
                     
                 </StackPanel>
+            </TabItem>
+            <TabItem Header="Environment"
+                     Width="100">
+                <Grid Margin="10, 10, 10, 10">
+                    <TextBox FontFamily="{Binding MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                             FontWeight="{Binding MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                             FontSize="{Binding MonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.CanContentScroll="True"
+                             IsReadOnly="True"
+                             Text="{Binding EnvironmentText}" />
+                </Grid>
             </TabItem>
             <TabItem Header="License" Width="100">
                 <Grid Margin="10, 10, 10, 10">

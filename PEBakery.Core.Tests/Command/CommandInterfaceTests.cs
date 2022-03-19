@@ -34,7 +34,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -54,7 +53,6 @@ namespace PEBakery.Core.Tests.Command
             string srcFile = Path.Combine(EngineTests.Project.ProjectDir, TestSuiteInterface, "ReadInterface.script");
             string scriptFile = Path.GetTempFileName();
 
-
             try
             {
                 void SingleTemplate(string rawCode, string key, string compStr, ErrorCheck check = ErrorCheck.Success)
@@ -62,8 +60,8 @@ namespace PEBakery.Core.Tests.Command
                     File.Copy(srcFile, scriptFile, true);
 
                     EngineState s = EngineTests.CreateEngineState();
-                    Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    // ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    Script? sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
                     ScriptSection section = sc.Sections["Process"];
 
                     // Enable Visible command
@@ -74,9 +72,10 @@ namespace PEBakery.Core.Tests.Command
                     try
                     {
                         EngineTests.Eval(s, parser, rawCode, CodeType.Visible, check);
-                        if (check == ErrorCheck.Success)
+                        if (check == ErrorCheck.Success && check == ErrorCheck.Warning)
                         {
-                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                            string? dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                            Assert.IsNotNull(dest);
                             Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                         }
                     }
@@ -91,8 +90,8 @@ namespace PEBakery.Core.Tests.Command
                     File.Copy(srcFile, scriptFile, true);
 
                     EngineState s = EngineTests.CreateEngineState();
-                    Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    // ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    Script? sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
+                    Assert.IsNotNull(sc);
                     ScriptSection section = sc.Sections["Process"];
 
                     // Enable Visible command
@@ -102,13 +101,14 @@ namespace PEBakery.Core.Tests.Command
 
                     try
                     {
-                        CodeType? opType = optSuccess ? (CodeType?)CodeType.VisibleOp : null;
+                        CodeType? opType = optSuccess ? CodeType.VisibleOp : null;
                         EngineTests.EvalOptLines(s, parser, section, opType, rawCodes, check);
-                        if (check == ErrorCheck.Success)
+                        if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                         {
                             foreach ((string key, string value) in compTuples)
                             {
-                                string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                                string? dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                                Assert.IsNotNull(dest);
                                 Assert.IsTrue(dest.Equals(value, StringComparison.Ordinal));
                             }
                         }
@@ -151,24 +151,24 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string scriptFile = Path.Combine("%ProjectDir%", TestSuiteInterface, "ReadInterface.script");
 
-            void SingleTemplate(string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+            void SingleTemplate(string rawCode, string? expected, ErrorCheck check = ErrorCheck.Success)
             {
                 EngineTests.Eval(s, rawCode, CodeType.ReadInterface, check);
                 if (check == ErrorCheck.Success)
                 {
                     string dest = s.Variables["Dest"];
-                    Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+                    Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
                 }
             }
-            void OptTemplate(List<string> rawCodes, string[] compStrs, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
+            void OptTemplate(List<string> rawCodes, string[] expectStrs, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
             {
-                CodeType? opType = optSuccess ? (CodeType?)CodeType.ReadInterfaceOp : null;
+                CodeType? opType = optSuccess ? CodeType.ReadInterfaceOp : null;
                 EngineTests.EvalOptLines(s, opType, rawCodes, check);
                 if (check == ErrorCheck.Success)
                 {
-                    for (int i = 0; i < compStrs.Length; i++)
+                    for (int i = 0; i < expectStrs.Length; i++)
                     {
-                        string comp = compStrs[i];
+                        string comp = expectStrs[i];
                         string dest = s.Variables[$"Dest{i}"];
                         Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
                     }
@@ -338,6 +338,29 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pRadioGroup1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,%Dest%", "None");
 
+            // 20 - PathBox
+            SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pPathBox1,%Dest%", @"C:\Windows\notepad.exe");
+            SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pPathBox1,%Dest%", @"True");
+            SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pPathBox1,%Dest%", @"240");
+            SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pPathBox1,%Dest%", @"290");
+            SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pPathBox1,%Dest%", @"200");
+            SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pPathBox1,%Dest%", @"20");
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pPathBox1,%Dest%", @"C:\Windows\notepad.exe");
+            SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pPathBox1,%Dest%", string.Empty);
+            SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pPathBox1,%Dest%", "Hello");
+            SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pPathBox1,%Dest%", "True");
+
+            SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pPathBox2,%Dest%", @"E:\WinPE\");
+            SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pPathBox2,%Dest%", @"True");
+            SingleTemplate($@"ReadInterface,PosX,{scriptFile},Interface,pPathBox2,%Dest%", @"240");
+            SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pPathBox2,%Dest%", @"320");
+            SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pPathBox2,%Dest%", @"200");
+            SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pPathBox2,%Dest%", @"20");
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pPathBox2,%Dest%", @"E:\WinPE\");
+            SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pPathBox2,%Dest%", @"EXPECTED");
+            SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pPathBox2,%Dest%", string.Empty);
+            SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pPathBox2,%Dest%", "None");
+
             // Visible - False
             SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pTextLabel2,%Dest%", @"False");
 
@@ -369,7 +392,7 @@ namespace PEBakery.Core.Tests.Command
             string srcFile = StringEscaper.Preprocess(s, Path.Combine("%ProjectDir%", TestSuiteInterface, "ReadInterface.script"));
             string scriptFile = FileHelper.GetTempFile();
 
-            void SingleTemplate(string rawCode, string key, string varResult, string lineResult, ErrorCheck check = ErrorCheck.Success)
+            void SingleTemplate(string rawCode, string key, string? varResult, string? lineResult, ErrorCheck check = ErrorCheck.Success)
             {
                 File.Copy(srcFile, scriptFile, true);
                 try
@@ -383,7 +406,8 @@ namespace PEBakery.Core.Tests.Command
                             Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
                         }
 
-                        string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                        string? dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                        Assert.IsNotNull(dest);
                         Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                     }
                 }
@@ -393,19 +417,19 @@ namespace PEBakery.Core.Tests.Command
                         File.Delete(scriptFile);
                 }
             }
-            void OptTemplate(List<string> rawCodes, (string key, string varResult, string lineResult)[] resultTuples, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
+            void OptTemplate(List<string> rawCodes, (string key, string? varResult, string lineResult)[] resultTuples, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
             {
                 File.Copy(srcFile, scriptFile, true);
                 try
                 {
-                    CodeType? opType = optSuccess ? (CodeType?)CodeType.WriteInterfaceOp : null;
+                    CodeType? opType = optSuccess ? CodeType.WriteInterfaceOp : null;
                     EngineTests.EvalOptLines(s, opType, rawCodes, check);
                     if (check == ErrorCheck.Success)
                     {
                         for (int i = 0; i < resultTuples.Length; i++)
                         {
                             string key = resultTuples[i].key;
-                            string varResult = resultTuples[i].varResult;
+                            string? varResult = resultTuples[i].varResult;
                             string lineResult = resultTuples[i].lineResult;
 
                             if (varResult != null)
@@ -414,7 +438,8 @@ namespace PEBakery.Core.Tests.Command
                                 Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
                             }
 
-                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                            string? dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
+                            Assert.IsNotNull(dest);
                             Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                         }
                     }
@@ -584,13 +609,25 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,True", @"pRadioGroup1",
                 null, null, ErrorCheck.RuntimeError);
 
+            // 20 - PathBox
+            SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,True");
+            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pPathBox1,D:\PEBakery\Launcher.exe", @"pPathBox1",
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,True");
+            SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pPathBox1,World", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_World_,True");
+            SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,None", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe""");
+            SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pPathBox1,False", @"pPathBox1",
+                null, @"C:\Windows\notepad.exe,1,20,240,290,200,20,file,""Filter=Executable Files|*.exe"",_Hello_,False");
+
             // Optimization
             OptTemplate(new List<string>
             {
                 $@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2",
                 $@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z",
                 $@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery",
-            }, new (string, string, string)[]
+            }, new (string, string?, string)[]
             {
                 ("pRadioGroup1", "2", @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2"),
                 (@"pComboBox1", "X", @"X,1,4,20,130,150,21,X,Y,Z"),

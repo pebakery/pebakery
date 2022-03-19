@@ -4,11 +4,14 @@
 # Joveler-specific Resoures
 Publish/
 !Publish/_tools/
+!.github/
 res/
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
 PEBakery/Properties/launchSettings.json
 .editorconfig
+PEBakery.Core.Tests/Samples/Database
+PEBakery.Core.Tests/Samples/PEBakery.ini
 
 # BenchmarkDotNet
 BenchmarkDotNet.Artifacts

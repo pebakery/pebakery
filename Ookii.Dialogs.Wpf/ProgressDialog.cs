@@ -26,19 +26,19 @@ namespace Ookii.Dialogs.Wpf
     {
         private class ProgressChangedData
         {
-            public string Text { get; set; }
-            public string Description { get; set; }
-            public object UserState { get; set; }
+            public string? Text { get; set; }
+            public string? Description { get; set; }
+            public object? UserState { get; set; }
         }
 
-        private string _windowTitle;
-        private string _text;
-        private string _description;
-        private Interop.IProgressDialog _dialog;
-        private string _cancellationText;
+        private string? _windowTitle;
+        private string? _text;
+        private string? _description;
+        private Interop.IProgressDialog? _dialog;
+        private string? _cancellationText;
         private bool _useCompactPathsForText;
         private bool _useCompactPathsForDescription;
-        private SafeModuleHandle _currentAnimationModuleHandle;
+        private SafeModuleHandle? _currentAnimationModuleHandle;
         private bool _cancellationPending;
 
         /// <summary>
@@ -48,17 +48,17 @@ namespace Ookii.Dialogs.Wpf
         /// Use this event to perform the operation that the dialog is showing the progress for.
         /// This event will be raised on a different thread than the UI thread.
         /// </remarks>
-        public event DoWorkEventHandler DoWork;
+        public event DoWorkEventHandler? DoWork;
 
         /// <summary>
         /// Event raised when the operation completes.
         /// </summary>
-        public event RunWorkerCompletedEventHandler RunWorkerCompleted;
+        public event RunWorkerCompletedEventHandler? RunWorkerCompleted;
 
         /// <summary>
         /// Event raised when <see cref="ReportProgress(int,string,string,object)"/> is called.
         /// </summary>
-        public event ProgressChangedEventHandler ProgressChanged;
+        public event ProgressChangedEventHandler? ProgressChanged;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressDialog"/> class.
@@ -72,7 +72,7 @@ namespace Ookii.Dialogs.Wpf
         /// Initializes a new instance of the <see cref="ProgressDialog"/> class, adding it to the specified container.
         /// </summary>
         /// <param name="container">The <see cref="IContainer"/> to which the component should be added.</param>
-        public ProgressDialog(IContainer container)
+        public ProgressDialog(IContainer? container)
         {
             if (container != null)
                 container.Add(this);
@@ -338,7 +338,7 @@ namespace Ookii.Dialogs.Wpf
         /// </para>
         /// </remarks>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public AnimationResource Animation { get; set; }
+        public AnimationResource? Animation { get; set; }
 
         /// <summary>
         /// Gets or sets a value that indicates whether a regular or marquee style progress bar should be used.
@@ -418,7 +418,7 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="InvalidOperationException">The animation specified in the <see cref="Animation"/> property
         /// could not be loaded.</exception>
-        public void Show(object argument)
+        public void Show(object? argument)
         {
             RunProgressDialog(IntPtr.Zero, argument);
         }
@@ -511,7 +511,7 @@ namespace Ookii.Dialogs.Wpf
         /// </remarks>
         /// <exception cref="InvalidOperationException">The animation specified in the <see cref="Animation"/> property
         /// could not be loaded, or the operation is already running.</exception>
-        public void ShowDialog(Window owner, object argument)
+        public void ShowDialog(Window? owner, object? argument)
         {
             RunProgressDialog(owner == null ? NativeMethods.GetActiveWindow() : new WindowInteropHelper(owner).Handle, argument);
         }
@@ -560,10 +560,10 @@ namespace Ookii.Dialogs.Wpf
         /// <remarks>Call this method from the <see cref="DoWork"/> event handler if you want to report progress.</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="percentProgress"/> is out of range.</exception>
         /// <exception cref="InvalidOperationException">The progress dialog is not currently being displayed.</exception>
-        public void ReportProgress(int percentProgress, string text, string description, object userState)
+        public void ReportProgress(int percentProgress, string? text, string? description, object? userState)
         {
             if (percentProgress < 0 || percentProgress > 100)
-                throw new ArgumentOutOfRangeException("percentProgress");
+                throw new ArgumentOutOfRangeException(nameof(percentProgress));
             if (_dialog == null)
                 throw new InvalidOperationException(Properties.Resources.ProgressDialogNotRunningError);
             _backgroundWorker.ReportProgress(percentProgress, new ProgressChangedData() { Text = text, Description = description, UserState = userState });
@@ -575,9 +575,7 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">The <see cref="DoWorkEventArgs"/> containing data for the event.</param>
         protected virtual void OnDoWork(DoWorkEventArgs e)
         {
-            DoWorkEventHandler handler = DoWork;
-            if (handler != null)
-                handler(this, e);
+            DoWork?.Invoke(this, e);
         }
 
         /// <summary>
@@ -586,9 +584,7 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">The <see cref="EventArgs"/> containing data for the event.</param>
         protected virtual void OnRunWorkerCompleted(RunWorkerCompletedEventArgs e)
         {
-            RunWorkerCompletedEventHandler handler = RunWorkerCompleted;
-            if (handler != null)
-                handler(this, e);
+            RunWorkerCompleted?.Invoke(this, e);
         }
 
         /// <summary>
@@ -597,12 +593,10 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">The <see cref="ProgressChangedEventArgs"/> containing data for the event.</param>
         protected virtual void OnProgressChanged(ProgressChangedEventArgs e)
         {
-            ProgressChangedEventHandler handler = ProgressChanged;
-            if (handler != null)
-                handler(this, e);
+            ProgressChanged?.Invoke(this, e);
         }
 
-        private void RunProgressDialog(IntPtr owner, object argument)
+        private void RunProgressDialog(IntPtr owner, object? argument)
         {
             if (_backgroundWorker.IsBusy)
                 throw new InvalidOperationException(Properties.Resources.ProgressDialogRunning);
@@ -624,7 +618,7 @@ namespace Ookii.Dialogs.Wpf
             }
 
             _cancellationPending = false;
-            _dialog = new Interop.ProgressDialog();
+            _dialog = new Interop.IInteropProgressDialog();
             _dialog.SetTitle(WindowTitle);
             if (Animation != null)
                 _dialog.SetAnimation(_currentAnimationModuleHandle, (ushort)Animation.ResourceId);
@@ -660,13 +654,16 @@ namespace Ookii.Dialogs.Wpf
             _backgroundWorker.RunWorkerAsync(argument);
         }
 
-        private void _backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             OnDoWork(e);
         }
 
-        private void _backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            if (_dialog == null)
+                return;
+
             _dialog.StopProgressDialog();
             Marshal.ReleaseComObject(_dialog);
             _dialog = null;
@@ -679,16 +676,18 @@ namespace Ookii.Dialogs.Wpf
             OnRunWorkerCompleted(new RunWorkerCompletedEventArgs((!e.Cancelled && e.Error == null) ? e.Result : null, e.Error, e.Cancelled));
         }
 
-        private void _backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
+            if (_dialog == null)
+                return;
+
             _cancellationPending = _dialog.HasUserCancelled();
             // ReportProgress doesn't allow values outside this range. However, CancellationPending will call
             // BackgroundWorker.ReportProgress directly with a value that is outside this range to update the value of the property.
             if (e.ProgressPercentage >= 0 && e.ProgressPercentage <= 100)
             {
                 _dialog.SetProgress((uint)e.ProgressPercentage, 100);
-                ProgressChangedData data = e.UserState as ProgressChangedData;
-                if (data != null)
+                if (e.UserState is ProgressChangedData data)
                 {
                     if (data.Text != null)
                         Text = data.Text;

@@ -149,13 +149,15 @@ namespace Ookii.Dialogs.Wpf
             {
                 if (CheckFileExists && !File.Exists(FileName))
                 {
-                    PromptUser(ComDlgResources.FormatString(ComDlgResources.ComDlgResourceId.FileNotFound, Path.GetFileName(FileName)), MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK);
+                    string? text = ComDlgResources.FormatString(ComDlgResources.ComDlgResourceId.FileNotFound, Path.GetFileName(FileName)) ?? string.Empty;
+                    PromptUser(text, MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.OK);
                     e.Cancel = true;
                     return;
                 }
                 if (CreatePrompt && !File.Exists(FileName))
                 {
-                    if (!PromptUser(ComDlgResources.FormatString(ComDlgResources.ComDlgResourceId.CreatePrompt, Path.GetFileName(FileName)), MessageBoxButton.YesNo, MessageBoxImage.Exclamation, MessageBoxResult.No))
+                    string? text = ComDlgResources.FormatString(ComDlgResources.ComDlgResourceId.CreatePrompt, Path.GetFileName(FileName)) ?? string.Empty;
+                    if (!PromptUser(text, MessageBoxButton.YesNo, MessageBoxImage.Exclamation, MessageBoxResult.No))
                     {
                         e.Cancel = true;
                         return;

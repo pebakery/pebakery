@@ -134,7 +134,7 @@ namespace PEBakery.Core
                 string interfaceList = _sc.MainInfo[Script.Const.InterfaceList];
                 try
                 {
-                    string remainder = interfaceList;
+                    string? remainder = interfaceList;
                     while (remainder != null)
                     {
                         string next;
@@ -171,7 +171,7 @@ namespace PEBakery.Core
         #endregion
 
         #region CheckCodeSection
-        private List<LogInfo> CheckCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
+        private List<LogInfo> CheckCodeSection(ScriptSection section, string? rawLine = null, int lineIdx = 0)
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
@@ -198,8 +198,8 @@ namespace PEBakery.Core
 
         private void RecursiveFindCodeSection(IReadOnlyList<CodeCommand> codes, List<LogInfo> logs)
         {
-            string targetCodeSection = null;
-            string targetInterfaceSection = null;
+            string? targetCodeSection = null;
+            string? targetInterfaceSection = null;
             foreach (CodeCommand cmd in codes)
             {
                 switch (cmd.Type)
@@ -207,19 +207,25 @@ namespace PEBakery.Core
                     #region Check CodeSections
                     case CodeType.If:
                         {
-                            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                            CodeInfo_If info = (CodeInfo_If)cmd.Info;
 
                             if (info.Condition.Type == BranchConditionType.ExistSection)
                             {
+                                // Break is false -> Other properties must not be null
+                                if (info.Condition.Arg1 is not string arg1)
+                                    throw new InternalException($"{nameof(info.Condition.Arg1)} is null");
+                                if (info.Condition.Arg2 is not string arg2)
+                                    throw new InternalException($"{nameof(info.Condition.Arg2)} is null");
+
                                 // For recursive section call
                                 // Ex) If,ExistSection,%ScriptFile%,DoWork,Run,%ScriptFile%,DoWork
-                                if (info.Condition.Arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                if (arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.RunEx || info.Embed.Type == CodeType.Exec)
                                 {
-                                    CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
+                                    CodeInfo_RunExec subInfo = (CodeInfo_RunExec)info.Embed.Info;
                                     if (subInfo.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
+                                        if (arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
                                             continue;
                                     }
                                 }
@@ -230,7 +236,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Else:
                         {
-                            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                            CodeInfo_Else info = (CodeInfo_Else)cmd.Info;
 
                             RecursiveFindCodeSection(info.Link, logs);
                         }
@@ -239,9 +245,9 @@ namespace PEBakery.Core
                     case CodeType.Exec:
                     case CodeType.RunEx:
                         {
-                            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+                            CodeInfo_RunExec info = (CodeInfo_RunExec)cmd.Info;
 
-                            // CodeValidator does not have Variable information, so just check with predefined literal
+                            // SyntaxChecker does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
@@ -252,12 +258,19 @@ namespace PEBakery.Core
                     case CodeType.LoopEx:
                     case CodeType.LoopLetterEx:
                         {
-                            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+                            CodeInfo_Loop info = (CodeInfo_Loop)cmd.Info;
 
+                            // info.Break -> CodeInfo_Loop is empty
                             if (info.Break)
                                 continue;
 
-                            // CodeValidator does not have Variable information, so just check with predefined literal
+                            // Break is false -> Other properties must not be null
+                            if (info.ScriptFile is not string scriptFile)
+                                throw new InternalException($"{nameof(info.ScriptFile)} is null");
+                            if (info.SectionName is not string sectionName)
+                                throw new InternalException($"{nameof(info.SectionName)} is null");
+
+                            // SyntaxChecker does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
@@ -265,7 +278,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.UserInput:
                         {
-                            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
+                            CodeInfo_UserInput info = (CodeInfo_UserInput)cmd.Info;
 
                             UserInputType type = info.Type;
                             switch (type)
@@ -274,7 +287,7 @@ namespace PEBakery.Core
                                 case UserInputType.FilePath:
                                     {
 
-                                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
+                                        UserInputInfo_DirFile subInfo = (UserInputInfo_DirFile)info.SubInfo;
 
                                         if (info.Type == UserInputType.FilePath)
                                         { // Select File
@@ -299,7 +312,7 @@ namespace PEBakery.Core
                     #region Check InterfaceSections
                     case CodeType.AddInterface:
                         {
-                            CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
+                            CodeInfo_AddInterface info = (CodeInfo_AddInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -309,7 +322,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.ReadInterface:
                         {
-                            CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
+                            CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -319,7 +332,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.WriteInterface:
                         {
-                            CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
+                            CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -331,7 +344,7 @@ namespace PEBakery.Core
                         {
                             // To detect multi-interface without `InterfaceList=`,
                             // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
-                            CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+                            CodeInfo_IniWrite info = (CodeInfo_IniWrite)cmd.Info;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.FileName.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
@@ -364,7 +377,7 @@ namespace PEBakery.Core
         #endregion
 
         #region CheckInterfaceSection
-        private List<LogInfo> CheckInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
+        private List<LogInfo> CheckInterfaceSection(ScriptSection section, string? rawLine = null, int lineIdx = 0)
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
@@ -391,7 +404,7 @@ namespace PEBakery.Core
                 {
                     case UIControlType.CheckBox:
                         {
-                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -404,7 +417,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.ComboBox:
                         {
-                            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
 
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Index < 0 || info.Items.Count <= info.Index)
@@ -419,7 +432,7 @@ namespace PEBakery.Core
                                 !EncodedFile.ContainsInterface(_sc, imageSection))
                                 logs.Add(new LogInfo(LogState.Warning, $"Image resource [{imageSection}] does not exist", uiCtrl));
 
-                            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+                            UIInfo_Image info = (UIInfo_Image)uiCtrl.Info;
 
                             // Check if image control have empty or invalid url.
                             // Ex) Colors_Image=ThemeColors.jpg,1,5,11,228,260,80,
@@ -446,9 +459,9 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.Button:
                         {
-                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                            UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
 
-                            string pictureSection = info.Picture;
+                            string? pictureSection = info.Picture;
                             if (pictureSection != null &&
                                 !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                                 !EncodedFile.ContainsInterface(_sc, pictureSection))
@@ -470,7 +483,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.WebLabel:
                         {
-                            UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                            UIInfo_WebLabel info = (UIInfo_WebLabel)uiCtrl.Info;
 
                             // Sometime developers forget to put proper scheme in WebLabel's url.
                             // Ex) PStart_WebLabel="PStart Homepage",1,10,668,122,98,18,www.pegtop.de/start/
@@ -486,7 +499,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioButton:
                         {
-                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -499,7 +512,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.FileBox:
                         {
-                            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+                            UIInfo_FileBox info = (UIInfo_FileBox)uiCtrl.Info;
 
                             if (info.IsFile)
                             { // Select File
@@ -519,7 +532,7 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioGroup:
                         {
-                            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
                             if (info.SectionName != null)
                             {
@@ -532,6 +545,26 @@ namespace PEBakery.Core
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Selected < 0 || info.Items.Count <= info.Selected)
                                 logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected index [{info.Selected}]", uiCtrl));
+                        }
+                        break;
+                    case UIControlType.PathBox:
+                        {
+                            UIInfo_PathBox info = (UIInfo_PathBox)uiCtrl.Info;
+
+                            if (info.IsFile)
+                            { // Select File
+                                if (info.Filter != null)
+                                {
+                                    string filter = StringEscaper.Unescape(info.Filter);
+                                    if (StringEscaper.IsFileFilterValid(filter) == false)
+                                        logs.Add(new LogInfo(LogState.Warning, $"File filter pattern [{filter}] is invalid", uiCtrl));
+                                }
+                            }
+                            else
+                            { // Select Folder
+                                if (info.Filter != null)
+                                    logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", uiCtrl));
+                            }
                         }
                         break;
                 }

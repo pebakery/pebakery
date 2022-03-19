@@ -35,9 +35,9 @@ namespace PEBakery.WPF.Controls
     {
         public CorrectMenuItem()
         {
-            if (!(Icon is FrameworkElement iconElement))
+            if (Icon is not FrameworkElement iconElement)
                 return;
-            if (!(VisualTreeHelper.GetParent(iconElement) is ContentPresenter presenter))
+            if (VisualTreeHelper.GetParent(iconElement) is not ContentPresenter presenter)
                 return;
 
             const int presenterMargin = 2;

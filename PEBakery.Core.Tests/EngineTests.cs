@@ -46,26 +46,47 @@ namespace PEBakery.Core.Tests
 
     public static class EngineTests
     {
-        #region Static Fields
-        public static Project Project;
-        public static Logger Logger;
-        public static string BaseDir;
-        public static string TestBench;
-        public static string MagicFile;
-        public static bool IsOnline;
+        #region Static Fields and Properties
+        private static Project? _project;
+        public static Project Project
+        {
+            get
+            {
+                if (_project == null)
+                    throw new InvalidOperationException($"{nameof(_project)} is null");
+                return _project;
+            }
+            set => _project = value;
+        }
+        private static Logger? _logger;
+        public static Logger Logger
+        {
+            get
+            {
+                if (_logger == null)
+                    throw new InvalidOperationException($"{nameof(_logger)} is null");
+                return _logger;
+            }
+            set => _logger = value;
+        }
+        public static string BaseDir { get; set; } = string.Empty;
+        public static string TestBench { get; set; } = string.Empty;
+        public static string MagicFile { get; set; } = string.Empty;
+        public static bool IsOnline { get; set; }
         #endregion
 
         #region CreateEngineState, DummySection
-        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = ScriptSection.Names.Process)
+        public static EngineState CreateEngineState(bool doCopy = true, Script? sc = null, string entrySection = ScriptSection.Names.Process)
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             EngineState s;
             if (doCopy)
             {
                 Project project = Project.PartialDeepCopy();
-                MainViewModel model = null;
-                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                MainViewModel? model = null;
+                // TODO: .NET Core Band-aid. Without this line, entire WPF Control access would crash the test.
                 RunSTAThread(() => model = new MainViewModel());
+                Assert.IsNotNull(model);
 
                 if (sc == null)
                     s = new EngineState(project, Logger, model, EngineMode.RunAll);
@@ -75,9 +96,11 @@ namespace PEBakery.Core.Tests
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
-                MainViewModel model = null;
-                // TODO: .Net Core Band-aid. Without this line, entire WPF Control access would crash the test.
+                MainViewModel? model = null;
+                // TODO: .NET Core Band-aid. Without this line, entire WPF Control access would crash the test.
                 RunSTAThread(() => model = new MainViewModel());
+                Assert.IsNotNull(model);
+
                 if (sc == null)
                     s = new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
@@ -105,52 +128,56 @@ namespace PEBakery.Core.Tests
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
-            return Eval(s, parser, rawCode, type, check, out _);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
+            return Eval(s, section, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
-            return Eval(s, parser, rawCode, type, check, out cmd);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
+            return Eval(s, section, parser, rawCode, type, check, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption compat)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, compat);
-            return Eval(s, parser, rawCode, type, check, compat, out _);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, compat);
+            return Eval(s, section, parser, rawCode, type, check, compat, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption compat, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, compat);
-            return Eval(s, parser, rawCode, type, check, compat, out cmd);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, compat);
+            return Eval(s, section, parser, rawCode, type, check, compat, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
             CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
-            return Eval(s, parser, rawCode, type, check, out _);
+            return Eval(s, section, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
             CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
-            return Eval(s, parser, rawCode, type, check, out cmd);
+            return Eval(s, section, parser, rawCode, type, check, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, parser, rawCode, type, check, out _);
+            return Eval(s, DummySection(), parser, rawCode, type, check, out _);
         }
 
-        public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        public static List<LogInfo> Eval(EngineState s, ScriptSection section, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
             // Create CodeCommand
             cmd = parser.ParseStatement(rawCode);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                 Console.WriteLine(info.ErrorMessage);
 
                 Assert.AreEqual(ErrorCheck.ParserError, check);
@@ -159,6 +186,7 @@ namespace PEBakery.Core.Tests
             Assert.AreEqual(type, cmd.Type);
 
             // Run CodeCommand
+            s.CurrentSection = section;
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
 
             // Assert
@@ -168,13 +196,13 @@ namespace PEBakery.Core.Tests
             return logs;
         }
 
-        public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, CompatOption compat, out CodeCommand cmd)
+        public static List<LogInfo> Eval(EngineState s, ScriptSection section, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, CompatOption compat, out CodeCommand cmd)
         {
             // Create CodeCommand
             cmd = parser.ParseStatement(rawCode);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
+                CodeInfo_Error info = (CodeInfo_Error)cmd.Info;
                 Console.WriteLine(info.ErrorMessage);
 
                 Assert.AreEqual(ErrorCheck.ParserError, check);
@@ -184,6 +212,7 @@ namespace PEBakery.Core.Tests
 
             // Run CodeCommand
             s.SetCompat(compat);
+            s.CurrentSection = section;
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
             s.SetCompat(Project.Compat); // Reset to default
 
@@ -218,7 +247,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
+            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false) ?? new List<LogInfo>();
         }
         #endregion
 
@@ -337,7 +366,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
+            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false) ?? new List<LogInfo>();
         }
         #endregion
 
@@ -347,9 +376,9 @@ namespace PEBakery.Core.Tests
             return EvalScript(treePath, check, null, entrySection);
         }
 
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> setState, string entrySection = ScriptSection.Names.Process)
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState>? setState, string entrySection = ScriptSection.Names.Process)
         {
-            Script sc = Project.GetScriptByTreePath(treePath);
+            Script? sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
 
             EngineState s = CreateEngineState(true, sc, entrySection);
@@ -454,7 +483,7 @@ namespace PEBakery.Core.Tests
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                 return new TestResult[] { testMethod.Invoke(null) };
 
-            TestResult[] result = null;
+            TestResult[] result = Array.Empty<TestResult>();
             Thread thread = new Thread(() =>
             {
                 result = new TestResult[] { testMethod.Invoke(null) };

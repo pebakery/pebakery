@@ -26,6 +26,7 @@
 */
 
 using Ookii.Dialogs.Wpf;
+using PEBakery.Core.ViewModels;
 using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using System;
@@ -45,10 +46,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            CodeInfo_Visible info = cmd.Info.Cast<CodeInfo_Visible>();
+            CodeInfo_Visible info = (CodeInfo_Visible)cmd.Info;
 
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-            Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
 
             bool visibility;
             if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -61,14 +61,18 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
             // Refresh is required to simulate WinBuilder 082 behavior
-            Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
+            Script? sc = s.Project.RefreshScript(cmd.Section.Script, s);
+            if (sc == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script}] cannot be refreshed");
 
             // Get UIControls
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            (string? ifaceSectionName, List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls();
+            if (ifaceSectionName == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ScriptSection.Names.Interface}]");
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ifaceSectionName}]");
 
-            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.UIControlKey, StringComparison.OrdinalIgnoreCase));
+            UIControl? uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.UIControlKey, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.UIControlKey}] in section [{ifaceSectionName}]");
 
@@ -102,23 +106,26 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
+            CodeInfo_VisibleOp infoOp = (CodeInfo_VisibleOp)cmd.Info;
 
             // Refresh is required to simulate WinBuilder 082 behavior
-            Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
+            Script? sc = s.Project.RefreshScript(cmd.Section.Script, s);
+            if (sc == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script}] cannot be refreshed");
 
             // Get UIControls
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            (string? ifaceSectionName, List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls();
+            if (ifaceSectionName == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ScriptSection.Names.Interface}]");
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ifaceSectionName}]");
 
             List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_Visible info = subCmd.Info.Cast<CodeInfo_Visible>();
+                CodeInfo_Visible info = (CodeInfo_Visible)subCmd.Info;
 
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-                Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
 
                 bool visibility;
                 if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -136,7 +143,7 @@ namespace PEBakery.Core.Commands
             List<UIControl> uiCmds = new List<UIControl>();
             foreach ((string key, bool visibility, CodeCommand _) in prepArgs)
             {
-                UIControl uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+                UIControl? uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                     return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSectionName}]");
 
@@ -159,10 +166,11 @@ namespace PEBakery.Core.Commands
             }
 
             // Render script
-            if (s.MainViewModel.CurMainTree != null && s.MainViewModel.CurMainTree.Script.Equals(sc))
+            ProjectTreeItemModel? curMainTree = s.MainViewModel.CurMainTree;
+            if (curMainTree != null && curMainTree.Script != null && curMainTree.Script.Equals(sc))
             {
-                s.MainViewModel.CurMainTree.Script = sc;
-                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
+                curMainTree.Script = sc;
+                s.MainViewModel.DisplayScript(curMainTree.Script);
             }
 
             return logs;
@@ -193,9 +201,9 @@ namespace PEBakery.Core.Commands
                     destStr = uiCtrl.Height.ToString();
                     break;
                 case InterfaceElement.Value:
-                    destStr = uiCtrl.GetValue(true);
-                    if (destStr == null)
+                    if (uiCtrl.GetValue(true) is not string val)
                         return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
+                    destStr = val;
                     break;
                 case InterfaceElement.ToolTip:
                     destStr = uiCtrl.Info.ToolTip == null ? string.Empty : StringEscaper.Unescape(uiCtrl.Info.ToolTip);
@@ -208,16 +216,19 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     destStr = subInfo.FontSize.ToString();
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
-                                    destStr = subInfo.FontSize.ToString();
+                                    if (subInfo.FontSize is int intVal)
+                                        destStr = intVal.ToString();
+                                    else
+                                        destStr = "0";
                                 }
                                 break;
                             default:
@@ -231,16 +242,19 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     destStr = subInfo.FontWeight.ToString();
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
-                                    destStr = subInfo.FontWeight == null ? "None" : subInfo.FontWeight.ToString();
+                                    if (subInfo.FontWeight is UIFontWeight fontWeight)
+                                        destStr = fontWeight.ToString();
+                                    else
+                                        destStr = "None";
                                 }
                                 break;
                             default:
@@ -254,16 +268,22 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
-                                    destStr = subInfo.FontStyle == null ? "None" : subInfo.FontStyle.ToString();
+                                    if (subInfo.FontStyle is UIFontStyle fontStyle)
+                                        destStr = fontStyle.ToString();
+                                    else
+                                        destStr = "None";
                                     break;
                                 }
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
-                                    destStr = subInfo.FontStyle == null ? "None" : subInfo.FontStyle.ToString();
+                                    if (subInfo.FontStyle is UIFontStyle fontStyle)
+                                        destStr = fontStyle.ToString();
+                                    else
+                                        destStr = "None";
                                     break;
                                 }
                             default:
@@ -278,7 +298,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Min.ToString();
                     }
@@ -288,7 +308,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Max.ToString();
                     }
@@ -298,7 +318,7 @@ namespace PEBakery.Core.Commands
                         if (uiCtrl.Type != UIControlType.NumberBox)
                             return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         destStr = subInfo.Tick.ToString();
                     }
@@ -311,14 +331,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.Image:
                                 {
-                                    UIInfo_Image subInfo = uiCtrl.Info.Cast<UIInfo_Image>();
+                                    UIInfo_Image subInfo = (UIInfo_Image)uiCtrl.Info;
 
                                     destStr = subInfo.Url ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.WebLabel:
                                 {
-                                    UIInfo_WebLabel subInfo = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                                    UIInfo_WebLabel subInfo = (UIInfo_WebLabel)uiCtrl.Info;
 
                                     destStr = subInfo.Url;
                                 }
@@ -335,7 +355,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Button:
                             {
-                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                 if (subInfo.Picture == null)
                                     destStr = string.Empty;
@@ -365,14 +385,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
 
                                     destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
@@ -390,35 +410,42 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName ?? string.Empty;
                                 }
@@ -434,41 +461,42 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
                                 }
@@ -492,7 +520,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
+            CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -501,20 +529,16 @@ namespace PEBakery.Core.Commands
             if (info.Delim != null)
                 delim = StringEscaper.Preprocess(s, info.Delim);
 
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
-            Debug.Assert(key != null, $"{nameof(key)} != null");
-
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             // Get UIControls
-            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(section);
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            UIControl? uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist in section [{section}] of [{scriptFile}]");
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
@@ -522,7 +546,9 @@ namespace PEBakery.Core.Commands
             // Read value from uiCtrl
             (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element, delim);
             if (!success) // Operation failed, destStr contains error message
+            {
                 return LogInfo.LogErrorMessage(logs, destStr);
+            }
 
             // Do not expand read values
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, destStr, false, false, false);
@@ -535,32 +561,29 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ReadInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_ReadInterfaceOp>();
+            CodeInfo_ReadInterfaceOp infoOp = (CodeInfo_ReadInterfaceOp)cmd.Info;
 
             CodeInfo_ReadInterface firstInfo = infoOp.Infos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             // Get UIControls
-            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(section);
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             var targets = new List<(UIControl, CodeInfo_ReadInterface, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_ReadInterface info = subCmd.Info.Cast<CodeInfo_ReadInterface>();
+                CodeInfo_ReadInterface info = (CodeInfo_ReadInterface)subCmd.Info;
 
                 string key = StringEscaper.Preprocess(s, info.Key);
 
-                UIControl uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+                UIControl? uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCtrl == null)
                 {
                     logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist", subCmd));
@@ -608,6 +631,7 @@ namespace PEBakery.Core.Commands
             [UIControlType.RadioButton] = new InterfaceElement[] { InterfaceElement.Value },
             [UIControlType.FileBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
             [UIControlType.RadioGroup] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.Items },
+            [UIControlType.PathBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
         };
 
         // ReSharper disable once UnusedMethodReturnValue.Local
@@ -702,14 +726,14 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.TextLabel:
                                 {
-                                    UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                    UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                     subInfo.FontSize = fontSize;
                                 }
                                 break;
                             case UIControlType.Bevel:
                                 {
-                                    UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                    UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                     subInfo.FontSize = fontSize;
                                 }
@@ -724,7 +748,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.TextLabel:
                             {
-                                UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                 UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
                                 if (weight == null)
@@ -734,7 +758,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.Bevel:
                             {
-                                UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                 UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
                                 subInfo.FontWeight = weight ?? throw new InvalidCommandException($"Invalid FontWeight [{finalValue}]");
@@ -749,7 +773,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.TextLabel:
                             {
-                                UIInfo_TextLabel subInfo = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+                                UIInfo_TextLabel subInfo = (UIInfo_TextLabel)uiCtrl.Info;
 
                                 UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
                                 subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
@@ -757,7 +781,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.Bevel:
                             {
-                                UIInfo_Bevel subInfo = uiCtrl.Info.Cast<UIInfo_Bevel>();
+                                UIInfo_Bevel subInfo = (UIInfo_Bevel)uiCtrl.Info;
 
                                 UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
                                 subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
@@ -777,7 +801,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int min) || min < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Min = min;
                         if (subInfo.Value < min)
@@ -792,7 +816,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int max) || max < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Max = max;
                         if (max < subInfo.Value)
@@ -807,7 +831,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int tick) || tick < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        UIInfo_NumberBox subInfo = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+                        UIInfo_NumberBox subInfo = (UIInfo_NumberBox)uiCtrl.Info;
 
                         subInfo.Tick = tick;
                     }
@@ -819,7 +843,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Image:
                             {
-                                UIInfo_Image subInfo = uiCtrl.Info.Cast<UIInfo_Image>();
+                                UIInfo_Image subInfo = (UIInfo_Image)uiCtrl.Info;
 
                                 if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                                     subInfo.Url = null;
@@ -829,7 +853,7 @@ namespace PEBakery.Core.Commands
                             break;
                         case UIControlType.WebLabel:
                             {
-                                UIInfo_WebLabel subInfo = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+                                UIInfo_WebLabel subInfo = (UIInfo_WebLabel)uiCtrl.Info;
 
                                 subInfo.Url = finalValue;
                             }
@@ -845,7 +869,7 @@ namespace PEBakery.Core.Commands
                     {
                         case UIControlType.Button:
                             {
-                                UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                 if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                                     subInfo.Picture = null;
@@ -883,7 +907,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0)
@@ -894,7 +918,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
 
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0 || newItems.Length <= subInfo.Selected)
@@ -909,10 +933,10 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 #endregion
-                #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
+                #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup, PathBox
                 case InterfaceElement.SectionName:
                     {
-                        string sectionName;
+                        string? sectionName;
                         if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                             sectionName = null;
                         else
@@ -922,21 +946,21 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     if (sectionName == null)
                                         return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
@@ -946,14 +970,21 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     subInfo.SectionName = sectionName;
                                 }
@@ -981,7 +1012,7 @@ namespace PEBakery.Core.Commands
                         {
                             case UIControlType.CheckBox:
                                 {
-                                    UIInfo_CheckBox subInfo = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                                    UIInfo_CheckBox subInfo = (UIInfo_CheckBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -993,7 +1024,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.ComboBox:
                                 {
-                                    UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+                                    UIInfo_ComboBox subInfo = (UIInfo_ComboBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1005,7 +1036,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.Button:
                                 {
-                                    UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
+                                    UIInfo_Button subInfo = (UIInfo_Button)uiCtrl.Info;
 
                                     if (newValue == null)
                                         return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
@@ -1015,7 +1046,7 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioButton:
                                 {
-                                    UIInfo_RadioButton subInfo = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                                    UIInfo_RadioButton subInfo = (UIInfo_RadioButton)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1027,7 +1058,19 @@ namespace PEBakery.Core.Commands
                                 break;
                             case UIControlType.RadioGroup:
                                 {
-                                    UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                                    UIInfo_RadioGroup subInfo = (UIInfo_RadioGroup)uiCtrl.Info;
+
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if (subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return ReturnErrorLog("Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            case UIControlType.PathBox:
+                                {
+                                    UIInfo_PathBox subInfo = (UIInfo_PathBox)uiCtrl.Info;
 
                                     if (newValue == null)
                                         subInfo.SectionName = null;
@@ -1057,7 +1100,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
+            CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -1067,22 +1110,17 @@ namespace PEBakery.Core.Commands
             if (info.Delim != null)
                 delim = StringEscaper.Preprocess(s, info.Delim);
 
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
-            Debug.Assert(key != null, $"{nameof(key)} != null");
-            Debug.Assert(finalValue != null, $"{nameof(finalValue)} != null");
-
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             // Get UIControls
-            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(section);
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            UIControl? uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist in section [{section}] of [{scriptFile}]");
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
@@ -1099,15 +1137,16 @@ namespace PEBakery.Core.Commands
                 // Also update local variables
                 if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(info.Element))
                 {
-                    string readValue = uiCtrl.GetValue(false);
+                    string? readValue = uiCtrl.GetValue(false);
                     if (readValue != null)
                         logs.AddRange(Variables.SetVariable(s, $"%{uiCtrl.Key}%", readValue, false, false));
                 }
 
                 // Re-render script
-                if (s.MainViewModel.CurMainTree != null)
+                ProjectTreeItemModel? curMainTree = s.MainViewModel.CurMainTree;
+                if (curMainTree != null)
                 {
-                    if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+                    if (curMainTree.Script.Equals(cmd.Section.Script))
                         s.MainViewModel.DisplayScript(cmd.Section.Script);
                 }
             }
@@ -1119,28 +1158,25 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WriteInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_WriteInterfaceOp>();
+            CodeInfo_WriteInterfaceOp infoOp = (CodeInfo_WriteInterfaceOp)cmd.Info;
 
             CodeInfo_WriteInterface firstInfo = infoOp.Infos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
-
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             // Get UIControls
-            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(section);
             if (uiCtrls == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             var targets = new List<(UIControl, InterfaceElement, string Delim, string Value, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
-                CodeInfo_WriteInterface info = subCmd.Info.Cast<CodeInfo_WriteInterface>();
+                CodeInfo_WriteInterface info = (CodeInfo_WriteInterface)subCmd.Info;
 
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string finalValue = StringEscaper.Preprocess(s, info.Value);
@@ -1148,7 +1184,7 @@ namespace PEBakery.Core.Commands
                 if (info.Delim != null)
                     delim = StringEscaper.Preprocess(s, info.Delim);
 
-                UIControl uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+                UIControl? uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCtrl == null)
                 {
                     logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
@@ -1179,7 +1215,7 @@ namespace PEBakery.Core.Commands
                 {
                     if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(element))
                     {
-                        string readValue = uiCtrl.GetValue(false);
+                        string? readValue = uiCtrl.GetValue(false);
                         if (readValue != null)
                             logs.AddRange(Variables.SetVariable(s, $"%{uiCtrl.Key}%", readValue, false, false));
                     }
@@ -1201,11 +1237,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_Message info = cmd.Info.Cast<CodeInfo_Message>();
+            CodeInfo_Message info = (CodeInfo_Message)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
-
-            Debug.Assert(message != null, $"{nameof(message)} != null");
 
             MessageBoxImage image;
             switch (info.Action)
@@ -1290,10 +1324,9 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Echo(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
+            CodeInfo_Echo info = (CodeInfo_Echo)cmd.Info;
 
             string message = StringEscaper.Preprocess(s, info.Message);
-            Debug.Assert(message != null, $"{nameof(message)} != null");
 
             s.MainViewModel.BuildEchoMessage = message;
 
@@ -1304,10 +1337,9 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> EchoFile(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            CodeInfo_EchoFile info = cmd.Info.Cast<CodeInfo_EchoFile>();
+            CodeInfo_EchoFile info = (CodeInfo_EchoFile)cmd.Info;
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
-            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
 
             if (!File.Exists(srcFile))
             {
@@ -1333,7 +1365,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
+            CodeInfo_UserInput info = (CodeInfo_UserInput)cmd.Info;
 
             UserInputType type = info.Type;
             switch (type)
@@ -1341,7 +1373,7 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
+                        UserInputInfo_DirFile subInfo = (UserInputInfo_DirFile)info.SubInfo;
 
                         TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
                         s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
@@ -1387,7 +1419,7 @@ namespace PEBakery.Core.Commands
                                     { // If wildcard exists, apply to filter.
                                         string ext = Path.GetExtension(initFile);
                                         if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
-                                            ext = ext.Substring(1);
+                                            ext = ext[1..];
                                         filter = $"{ext} Files|{initFile}";
                                     }
                                 }
@@ -1422,8 +1454,7 @@ namespace PEBakery.Core.Commands
                                 }
 
                                 bool? result = dialog.ShowDialog();
-
-                                if (result == true)
+                                if (result is true)
                                 {
                                     selectedPath = dialog.FileName;
                                     logs.Add(new LogInfo(LogState.Success, $"File path [{selectedPath}] was chosen by user"));
@@ -1489,21 +1520,17 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
             EngineLocalState ls = s.PeekLocalState();
 
-            CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
+            CodeInfo_AddInterface info = (CodeInfo_AddInterface)cmd.Info;
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Section);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
-            Debug.Assert(interfaceSection != null, $"{nameof(interfaceSection)} != null");
-            Debug.Assert(prefix != null, $"{nameof(prefix)} != null");
-
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
                 // Get UIControls
-                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(interfaceSection);
+                (List<UIControl>? uiCtrls, _) = sc.GetInterfaceControls(interfaceSection);
                 if (uiCtrls == null) // No [Interface] section, or unable to get List<UIControl>
                     return logs;
 

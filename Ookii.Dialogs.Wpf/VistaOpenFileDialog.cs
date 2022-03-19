@@ -214,7 +214,9 @@ namespace Ookii.Dialogs.Wpf
 
             }
             else
+            {
                 FileNamesInternal = null;
+            }
 
             if (ShowReadOnly)
             {
