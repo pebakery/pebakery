@@ -29,7 +29,7 @@ jobs:
       run: dotnet test --no-build --configuration Release --logger="console;verbosity=detailed" --collect:"XPlat Code Coverage" --settings:"mstest.runsettings"
     # [3] Build nightly artifacts
     - name: '[3] Build Arfifacts'
-      run: 'pwsh .\BinaryPublish.ps1 -nightly -noclean'
+      run: '.\BinaryPublish.ps1 -nightly -noclean'
     # [4] Publish nightly artifacts
     - name: '[4-1] Upload nightly artifact (runtime-dependent)'
       uses: actions/upload-artifact@v2
