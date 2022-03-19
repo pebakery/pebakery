@@ -126,7 +126,7 @@ foreach ($runMode in $runModes)
     $PublishArch = $runMode[1]
 
     Write-Output ""
-    Write-Host "[*] Publish ${PublishMode} ${BinaryName} PEBakery" -ForegroundColor Yellow
+    Write-Host "[*] Publish PEBakery (${BinaryName}, ${PublishMode}, ${PublishArch})" -ForegroundColor Yellow
 
     # -------------------------------------------------------------------------
     # Set up publish variables

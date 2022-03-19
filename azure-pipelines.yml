@@ -19,18 +19,13 @@ steps:
   inputs:
     packageType: 'sdk'
     version: '6.0.x'
-- task: DotNetCoreCLI@2
-  displayName: 'Restore Nuget Pacakges'
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-    feedsToUse: 'select'
-- task: PowerShell@2
-  displayName: 'Build Projects & Nightly Artifact'
-  inputs:
-    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
-    arguments: '-nightly -noclean'
-    pwsh: true
+# Run tests first
+#- task: DotNetCoreCLI@2
+#  displayName: 'Restore Nuget Pacakges'
+#  inputs:
+#    command: 'restore'
+#    projects: '**/*.csproj'
+#    feedsToUse: 'select'
 - task: DotNetCoreCLI@2
   displayName: 'Run Tests'
   inputs:
@@ -51,6 +46,14 @@ steps:
   inputs:
     codeCoverageTool: 'Cobertura'
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverlet/Cobertura.xml'
+
+# Publish nightly artifacts
+- task: PowerShell@2
+  displayName: 'Build Projects & Artifacts'
+  inputs:
+    filePath: '$(Build.SourcesDirectory)/BinaryPublish.ps1'
+    arguments: '-nightly -noclean'
+    pwsh: true
 - task: PublishBuildArtifacts@1
   displayName: 'Upload nightly artifact (runtime-dependent)'
   inputs:
