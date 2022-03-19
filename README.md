@@ -29,13 +29,15 @@ A nightly build is provided for testing purposes.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/project/ied206/pebakery/build/artifacts?branch=develop)
-    - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc.7z?branch=develop)
+    - [Standalone Nightly (x64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc_x64.7z?branch=develop)
       - No dependency
       - Sizes about 170MB
-      - Built for x64 architecture
+    - [Standalone Nightly (arm64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-sc_arm64.7z?branch=develop)
+      - No dependency
+      - Sizes about 180MB
     - **[Runtime-dependent Nightly (x64, x86, ARM64)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/Publish/PEBakery-nightly-rt.7z?branch=develop)**
       - Requires [.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)
-      - Sizes about 40MB
+      - Sizes about 28MB
       - Supports both x64, x86, ARM64 architecture
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from WinBuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
