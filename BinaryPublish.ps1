@@ -102,6 +102,7 @@ $SevenZipExe = "${ToolDir}\7za_x64.exe"
 # UPX minimizes release size, but many antiviruses definitely hate it.
 # $UpxExe = "${ToolDir}\upx_x64.exe"
 $Cores = ${Env:NUMBER_OF_PROCESSORS}
+Write-Output "Cores = ${Cores}"
 
 # -----------------------------------------------------------------------------
 # Clean the solution and restore NuGet packages (if -noclean is not set)
