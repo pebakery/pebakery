@@ -227,7 +227,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.FullBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportType.Text, false, true));
+            Clipboard.SetText(log.Export(LogExportFormat.Text, false, true));
         }
 
         private void SimpleLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -236,7 +236,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.SimpleBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportType.Text, false, true));
+            Clipboard.SetText(log.Export(LogExportFormat.Text, false, true));
         }
 
         private void VariableLogViewCopy_Click(object sender, RoutedEventArgs e)

@@ -788,4 +788,25 @@ namespace PEBakery.WPF
         }
     }
     #endregion
+
+    #region Enum
+    public class CompareParamConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value?.Equals(parameter) ?? false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not bool val)
+                return Binding.DoNothing;
+
+            if (val)
+                return parameter;
+            else
+                return Binding.DoNothing;
+        }
+    }
+    #endregion
 }

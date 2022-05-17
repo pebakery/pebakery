@@ -42,6 +42,8 @@ A nightly build is provided for testing purposes.
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from WinBuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
+Nightly binaires are served by AppVeyor artifacts. 
+
 ## Prerequisites
 
 ### Beta 6 Release
@@ -55,7 +57,7 @@ If you are using Windows 10 v1803 or later, no action is necessary. If not, plea
 Starting from beta 7, PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
-- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **ARM64** Windows, but requires **[.NET Core 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **arm64** Windows, but requires **[.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 
@@ -91,10 +93,10 @@ If you are a contributor, we recommend using a full-featured Visual Studio Commu
 
 ### Compiling
 
-Nightly binaries can be compiled by running `BinaryPublish.ps1 -nightly` on PowerShell.
+Nightly binaries can be compiled by running `.\BinaryPublish.ps1 -nightly` on PowerShell.
 
 - `Publish\PEBakery-nightly-rt` : Runtime-dependent binary
-- `Publish\PEBakery-nightly-sc` : Standalone binary
+- `Publish\PEBakery-nightly-sc_{arch}` : Standalone binary for a specific architecture
 
 ### Testing
 
@@ -104,7 +106,7 @@ To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XP
 
 1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` inside `<ProjectPath>`, and run `PEBakeryLauncher.exe`.
 2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `--baseDir` parameter.
-    ```powershell
+    ```cmd
     $ .\PEBakeryLauncher.exe --baseDir <ProjectPath>
     # or
     $ .\Binary\PEBakery.exe --baseDir <ProjectPath>

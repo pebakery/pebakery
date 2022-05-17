@@ -404,14 +404,14 @@ namespace PEBakery.Core.Commands
 
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
 
-                        LogExportType logFormat;
+                        LogExportFormat logFormat;
                         if (subInfo.LogFormat == null)
                         {
                             string ext = Path.GetExtension(destPath);
                             if (ext.Equals(".htm", StringComparison.OrdinalIgnoreCase) || ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                                logFormat = LogExportType.Html;
+                                logFormat = LogExportFormat.Html;
                             else
-                                logFormat = LogExportType.Text;
+                                logFormat = LogExportFormat.Text;
                         }
                         else
                         {

@@ -125,7 +125,7 @@ namespace PEBakery.WPF
                     int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
 #if DEBUG
-                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
+                    Logger.ExportBuildLog(LogExportFormat.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
                     {
                         IncludeComments = true,
                         IncludeMacros = true,
@@ -370,7 +370,7 @@ namespace PEBakery.WPF
                         int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
-                        Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
+                        Logger.ExportBuildLog(LogExportFormat.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new BuildLogOptions
                         {
                             IncludeComments = true,
                             IncludeMacros = true,
