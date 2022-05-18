@@ -1,9 +1,9 @@
 Unless specified, PEBakery is licensed under GPLv3 or any
 later version with additional permission.
 
-Some parts of PEBakery is licensed under various license,
-specified on a per-file basis or LICENSE file placed in
-a subdirectory.
+Some parts of PEBakery are licensed under various licenses,
+which are compatible with GPLv3. It is specified on a
+per-file basis or LICENSE file placed in a subdirectory.
 -----------------------------------------------------------
 Copyright (C) 2016-2022 Hajin Jang
 
@@ -27,12 +27,12 @@ Additional permission under GNU GPL version 3 section 7
 
 If you modify this program, or any covered work, by linking
 or combining it with external libraries, containing parts
-covered by the terms of various license, the licensors of
-this program grant you additional permission to convey the
-resulting work. An external library is a library which is
+covered by the terms of the various license, the licensors of
+this program grants you additional permission to convey the
+resulting work. An external library is a library that is
 not derived from or based on this program. 
 -----------------------------------------------------------
-These parts of PEBakery is licensed under various license.
+These parts of PEBakery is licensed under the various license.
 
 PEBakery.Ini
 PEBakery.Ini.Tests
@@ -107,7 +107,7 @@ LauncherSharp/Donut.ico
 
 -----------------------------------------------------------
 PEBakery uses Open Source Software (OSS).
-This is the list of open source projects and licenses.
+This is the list of open-source projects and licenses.
 
 CommandLineParser
     MIT License
@@ -115,13 +115,6 @@ CommandLineParser
     
     Copyright (c) Giacomo Stelluti Scala & Contributors
     https://github.com/commandlineparser/commandline
-
-ControlzEx
-    MIT License
-    https://opensource.org/licenses/MIT
-    
-    Copyright (c) Jan Karger, Bastian Schmidt
-    https://github.com/ControlzEx/ControlzEx
 
 Joveler.Compression.XZ
     MIT License
@@ -146,19 +139,20 @@ Joveler.FileMagician
     Copyright (C) Hajin Jang
     https://github.com/ied206/Joveler.FileMagician
 
-MahApps.Metro.IconPacks
+MahApps.Metro.IconPacks.Core
+MahApps.Metro.IconPacks.Material
     MIT License
     https://opensource.org/licenses/MIT
 
-    Copyright (c) MahApps
+    Copyright (c) MahApps, Jan Karger
     https://github.com/MahApps/MahApps.Metro.IconPacks
 
 ManagedWimgApi
     MIT License
     https://opensource.org/licenses/MIT
 
-    Copyright (c) josemesona
-    https://github.com/josemesona/ManagedWimgApi
+    Copyright (c) jeffkl
+    https://github.com/jeffkl/ManagedWimgApi
 
 ManagedWimLib
 ManagedWimLib.Tests
@@ -228,7 +222,7 @@ SevenZipSharp
 
     https://github.com/squid-box/SevenZipSharp
 
-SharpVectors
+SharpVectors.Reloaded
     The BSD 3-Clause License
     https://opensource.org/licenses/BSD-3-Clause
 
@@ -241,6 +235,13 @@ sqlite-net-pcl
 
     Copyright (c) Krueger Systems, Inc.
     https://github.com/praeclarum/sqlite-net
+
+System.Text.Encoding.CodePages 
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) .NET Foundation and Contributors
+    https://github.com/dotnet/runtime
 
 Timestamp
     MIT License
@@ -257,8 +258,8 @@ UACHelper
     https://github.com/falahati/UACHelper
 
 -----------------------------------------------------------
-PEBakery's log html templates use Open Source Software (OSS).
-This is the list of open source projects and their licenses.
+PEBakery's log HTML templates use Open Source Software (OSS).
+This is the list of open-source projects and their licenses.
 
 Bootstrap
     MIT License
