@@ -18,7 +18,7 @@ PEBakery is backward compatible with WinBuilder 082 and makes significant improv
 ## Disclaimer
 
 - All implementation is only backed by documentation and black box testing, without violating WinBuilder 082's EULA.
-- The developers do not provide any warranty, use at your own risk. Backup is highly recommended.
+- The developers do not provide any warranty, use it at your own risk. Backup is highly recommended.
 - Windows Preinstalled Environment is a registered trademark of Microsoft.
 
 ## Download
@@ -42,21 +42,13 @@ A nightly build is provided for testing purposes.
 
 **CAUTION**: Do not forget to set the proper compatibility options for your projects. We have prepared a special [Migrating from WinBuilder](https://github.com/pebakery/pebakery-docs/blob/master/CodingGuide/Migrating.md) guide, so you know what script breaking changes to expect and when compatibility options need to be enabled.
 
-Nightly binaires are served by AppVeyor artifacts. 
+Nightly binaries are served by AppVeyor artifacts. 
 
 ## Prerequisites
 
-### Beta 6 Release
+PEBakery runs on .NET 6. 
 
-PEBakery beta 6 runs on .NET Framework 4.7.2.
-
-If you are using Windows 10 v1803 or later, no action is necessary. If not, please install **[.NET Framework 4.7.2](http://go.microsoft.com/fwlink/?LinkId=863262)**.
-
-### Nightly Builds
-
-Starting from beta 7, PEBakery runs on .NET 6. 
-
-- *Standalone Nightly* do not require any runtime installed, but runs only on **x64** Windows.
+- *Standalone Nightly* does not require any runtime installed, but runs only on one architecture (e.g. **x64**).
 - *Runtime Dependent Nightly* runs on both **x64**, **x86** and **arm64** Windows, but requires **[.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
@@ -100,9 +92,22 @@ Nightly binaries can be compiled by running `.\BinaryPublish.ps1 -nightly` on Po
 
 ### Testing
 
-To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XPE), [ChrisPE](https://github.com/pebakery/chrispe), etc.), follow one of the given instructions.
+To test PEBakery, download one of the PE projects and install the PEBakery binary.
 
-**NOTE**: `<ProjectPath>` is the directory that contains `Projects` directory from the PE building project.
+#### Known PE Projects 
+
+These PE projects officially support PEBakery.
+
+- [PheonixPE](https://github.com/PhoenixPE/PhoenixPE)
+- [ChrisPE](https://github.com/pebakery/chrispe)
+
+These PE projects are tested with PEBakery.
+
+- [Win10XPE](https://github.com/ChrisRfr/Win10XPE)
+
+#### Installation
+
+**NOTE**: `<ProjectPath>` is the directory that contains the `Projects` directory from the PE building project.
 
 1. (Simple) Copy `PEBakeryLauncher.exe` and `Binary` inside `<ProjectPath>`, and run `PEBakeryLauncher.exe`.
 2. (Advanced) Launch `PEBakeryLauncher.exe` or `PEBakery.exe` with `--baseDir` parameter.
@@ -114,8 +119,8 @@ To run a PEBakery with a project ([Win10XPE](https://github.com/ChrisRfr/Win10XP
 
 ## Screenshots
 
-### PEBakery Beta 6
+### PEBakery v1.0.0
 
-![Win10XPE with PEBakery Beta 6](./Image/PEBakery-Win10XPE.png)
+![PheonixPE with PEBakery v1.0.0](./Image/PEBakery-PheonixPE.png)
 
-![ChrisPE with PEBakery Beta 6](./Image/PEBakery-ChrisPE.png)
+![Win10XPE with PEBakery v1.0.0](./Image/PEBakery-Win10XPE.png)
