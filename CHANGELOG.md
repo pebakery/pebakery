@@ -4,7 +4,7 @@
 
 ### v1.0.0
 
-Released on 2022-05-20
+Released on 2022-05-19
 
 First stable PEBakery release.
 

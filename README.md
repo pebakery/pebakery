@@ -17,7 +17,7 @@ PEBakery is backward compatible with WinBuilder 082 and makes significant improv
 
 ## Disclaimer
 
-- All implementation is only backed by documentation and black box testing, without violating WinBuilder 082's EULA.
+- All implementation is only backed by documentation and black box testing, without violating EULA of WinBuilder 082.
 - The developers do not provide any warranty, use it at your own risk. Backup is highly recommended.
 - Windows Preinstalled Environment is a registered trademark of Microsoft.
 
