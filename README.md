@@ -59,15 +59,15 @@ Some parts of PEBakery are licensed under the MIT License and other licenses.
 
 Please read [LICENSE](./LICENSE) for details.
 
+## ChangeLog
+
+Please read [ChangeLog](./CHANGELOG.md).
+
 ## Documentation
 
 Please read the [Official PEBakery Manual](https://github.com/pebakery/pebakery-docs).
 
 Testers using nightly builds should refer to the developer branch [Official PEBakery Manual (develop)](https://github.com/pebakery/pebakery-docs/tree/develop).
-
-## Progress and TODO
-
-See our [Roadmap](https://github.com/pebakery/pebakery/projects/2).
 
 ## Build Instructions
 
