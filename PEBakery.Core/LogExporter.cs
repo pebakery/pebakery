@@ -42,10 +42,10 @@ namespace PEBakery.Core
     {
         #region Fields and Constructors
         private readonly LogDatabase _db;
-        private readonly LogExportType _exportType;
+        private readonly LogExportFormat _exportType;
         private readonly TextWriter _w;
 
-        public LogExporter(LogDatabase db, LogExportType type, TextWriter writer)
+        public LogExporter(LogDatabase db, LogExportFormat type, TextWriter writer)
         {
             // The responsibility of closing _db and _w goes to the caller of LogExporter
             _db = db ?? throw new ArgumentNullException(nameof(db));
@@ -59,7 +59,7 @@ namespace PEBakery.Core
         {
             switch (_exportType)
             {
-                case LogExportType.Text:
+                case LogExportFormat.Text:
                     {
                         _w.WriteLine("- PEBakery System Log -");
                         _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
@@ -75,7 +75,7 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case LogExportType.Html:
+                case LogExportFormat.Html:
                     {
                         Assembly assembly = Assembly.GetExecutingAssembly();
                         SystemLogModel m = new SystemLogModel
@@ -114,7 +114,7 @@ namespace PEBakery.Core
             switch (_exportType)
             {
                 #region Text
-                case LogExportType.Text:
+                case LogExportFormat.Text:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
@@ -173,7 +173,7 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.BuildLog eLog in eLogs)
                                 {
-                                    _w.WriteLine(eLog.Export(LogExportType.Text, false, false));
+                                    _w.WriteLine(eLog.Export(LogExportFormat.Text, false, false));
 
                                     string? refScriptText = ExportRefScriptText(eLog, scOriginLogs);
                                     if (refScriptText != null)
@@ -216,7 +216,7 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.BuildLog wLog in wLogs)
                                 {
-                                    _w.WriteLine(wLog.Export(LogExportType.Text, false, false));
+                                    _w.WriteLine(wLog.Export(LogExportFormat.Text, false, false));
 
                                     string? refScriptText = ExportRefScriptText(wLog, scOriginLogs);
                                     if (refScriptText != null)
@@ -342,7 +342,7 @@ namespace PEBakery.Core
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
                                 cLogs = cLogs.OrderBy(x => x.Id);
                                 foreach (LogModel.BuildLog log in cLogs)
-                                    _w.WriteLine(log.Export(LogExportType.Text, true, opts.ShowLogFlags));
+                                    _w.WriteLine(log.Export(LogExportFormat.Text, true, opts.ShowLogFlags));
 
                                 // Log local variables
                                 var vLogs = _db.Table<LogModel.Variable>()
@@ -363,7 +363,7 @@ namespace PEBakery.Core
                     break;
                 #endregion
                 #region HTML
-                case LogExportType.Html:
+                case LogExportFormat.Html:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.FinishTime == DateTime.MinValue)
@@ -440,7 +440,7 @@ namespace PEBakery.Core
                                         CodeLogItem logItem = new CodeLogItem()
                                         {
                                             State = targetLog.State,
-                                            Message = targetLog.Export(LogExportType.Html, false, false),
+                                            Message = targetLog.Export(LogExportFormat.Html, false, false),
                                             Href = targetIdx++,
                                             RefScriptMsg = ExportRefScriptText(targetLog, scOriginLogs)
                                         };
@@ -578,7 +578,7 @@ namespace PEBakery.Core
                                     {
                                         State = log.State,
                                         // HTML log export handles flags itself
-                                        Message = log.Export(LogExportType.Html, true, false),
+                                        Message = log.Export(LogExportFormat.Html, true, false),
                                         Flags = log.Flags,
                                     };
 

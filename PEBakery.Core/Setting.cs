@@ -64,7 +64,7 @@ namespace PEBakery.Core
             public const string SectionName = "General";
 
             /// <summary>
-            /// Default custom User-Agent is set to wget (1.20.3 is version of Ubuntu 20.04 wget package) 
+            /// Default custom User-Agent is set to wget (1.20.3 is version of Ubuntu 20.04 wget package)
             /// </summary>
             public const string DefaultCustomUserAgent = @"Wget/1.20.3";
 
@@ -478,6 +478,11 @@ namespace PEBakery.Core
             public int BuildFullLogRawCodeWidth { get; set; }
             public bool BuildFullLogLineNumberVisible { get; set; }
             public int BuildFullLogLineNumberWidth { get; set; }
+            // LogExportWindow
+            public LogExportFormat LogExportFileFormat { get; set; }
+            public bool LogExportBuildIncludeComments { get; set; }
+            public bool LogExportBuildIncludeMacros { get; set; }
+            public bool LogExportBuildShowLogFlags { get; set; }
 
             public const int MinColumnWidth = 35;
 
@@ -506,6 +511,10 @@ namespace PEBakery.Core
                 BuildFullLogRawCodeWidth = 175;
                 BuildFullLogLineNumberVisible = true;
                 BuildFullLogLineNumberWidth = 40;
+                LogExportFileFormat = LogExportFormat.Text;
+                LogExportBuildIncludeComments = true;
+                LogExportBuildIncludeMacros = true;
+                LogExportBuildShowLogFlags = true;
             }
         }
         #endregion
@@ -658,7 +667,12 @@ namespace PEBakery.Core
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth)), // Integer
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible)), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportFileFormat)), // Enum
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeComments)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeMacros)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildShowLogFlags)), // Boolean
             };
+
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
 
             Dictionary<string, Dictionary<string, string?>> keyDict = new Dictionary<string, Dictionary<string, string?>>(StringComparer.OrdinalIgnoreCase);
@@ -785,6 +799,10 @@ namespace PEBakery.Core
                 LogViewer.BuildFullLogRawCodeWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth, LogViewerSetting.MinColumnWidth, null);
                 LogViewer.BuildFullLogLineNumberVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible);
                 LogViewer.BuildFullLogLineNumberWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.LogExportFileFormat = SettingDictParser.ParseStrEnum(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogExportFileFormat), LogExportFormat.Text);
+                LogViewer.LogExportBuildIncludeComments = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeComments), LogViewer.LogExportBuildIncludeComments);
+                LogViewer.LogExportBuildIncludeMacros = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeMacros), LogViewer.LogExportBuildIncludeMacros);
+                LogViewer.LogExportBuildShowLogFlags = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildShowLogFlags), LogViewer.LogExportBuildShowLogFlags);
             }
         }
 
@@ -853,6 +871,10 @@ namespace PEBakery.Core
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth.ToString()), // Integer
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible.ToString()), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportFileFormat), LogViewer.LogExportFileFormat.ToString()), // Enum
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeComments), LogViewer.LogExportBuildIncludeComments.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeMacros), LogViewer.LogExportBuildIncludeMacros.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildShowLogFlags), LogViewer.LogExportBuildShowLogFlags.ToString()), // Boolean
             };
             IniReadWriter.WriteKeys(_settingFile, keys);
         }

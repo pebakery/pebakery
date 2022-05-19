@@ -24,7 +24,7 @@ if ($nightly) {
 }
 
 # Banner
-Write-Host "[*] Publishing PEBakery ${BinaryName} binaries..." -ForegroundColor Yellow
+Write-Host "[*] Publishing PEBakery ${BinaryName} binaries..." -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
 # Publish mode/arch (Available & Activated)
@@ -127,7 +127,7 @@ foreach ($runMode in $runModes)
     $PublishArch = $runMode[1]
 
     Write-Output ""
-    Write-Host "[*] Publish PEBakery (${BinaryName}, ${PublishMode}, ${PublishArch})" -ForegroundColor Yellow
+    Write-Host "[*] Publish PEBakery (${BinaryName}, ${PublishMode}, ${PublishArch})" -ForegroundColor Cyan
 
     # -------------------------------------------------------------------------
     # Set up publish variables

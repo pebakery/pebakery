@@ -61,11 +61,11 @@ namespace PEBakery.WPF
             {
                 e.CanExecute = false;
             }
-            else if (_m.ExportSystemLog)
+            else if (_m.LogExportKind == LogExportKind.System)
             {
                 e.CanExecute = true;
             }
-            else if (_m.ExportBuildLog)
+            else if (_m.LogExportKind == LogExportKind.Build)
             {
                 if (0 < _m.BuildEntries.Count)
                     e.CanExecute = true;
@@ -83,12 +83,12 @@ namespace PEBakery.WPF
                 Title = "Save Log As",
             };
 
-            switch (_m.FileFormat)
+            switch (_m.ExportFileFormat)
             {
-                case LogExportType.Text:
+                case LogExportFormat.Text:
                     dialog.Filter = "Text Format (*.txt)|*.txt";
                     break;
-                case LogExportType.Html:
+                case LogExportFormat.Html:
                     dialog.Filter = "HTML Format (*.html)|*.html";
                     break;
                 default:
@@ -96,13 +96,13 @@ namespace PEBakery.WPF
                     break;
             }
 
-            if (_m.ExportSystemLog)
+            if (_m.LogExportKind == LogExportKind.System)
             {
                 // Local time should be ok because the filename is likely only useful to the person exporting the log
                 DateTime localTime = DateTime.Now;
                 dialog.FileName = $"SystemLog_{localTime.ToString("yyyy_MM_dd_HHmmss", CultureInfo.InvariantCulture)}";
             }
-            else if (_m.ExportBuildLog)
+            else if (_m.LogExportKind == LogExportKind.Build)
             {
                 Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                 LogModel.BuildInfo bi = _m.BuildEntries[_m.SelectedBuildEntryIndex];
@@ -140,15 +140,15 @@ namespace PEBakery.WPF
             {
                 await Task.Run(() =>
                 {
-                    if (_m.ExportSystemLog)
+                    if (_m.LogExportKind == LogExportKind.System)
                     {
-                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
+                        _m.Logger.ExportSystemLog(_m.ExportFileFormat, destFile);
                     }
-                    else if (_m.ExportBuildLog)
+                    else if (_m.LogExportKind == LogExportKind.Build)
                     {
                         Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                         int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Id;
-                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new BuildLogOptions
+                        _m.Logger.ExportBuildLog(_m.ExportFileFormat, destFile, buildId, new BuildLogOptions
                         {
                             IncludeComments = _m.BuildLogIncludeComments,
                             IncludeMacros = _m.BuildLogIncludeMacros,
@@ -165,7 +165,7 @@ namespace PEBakery.WPF
             // Open log file
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (_m.FileFormat == LogExportType.Html)
+                if (_m.ExportFileFormat == LogExportFormat.Html)
                 {
                     // Call FileHelper.OpenUri (instead of OpenPath) to open .html files with the default browser.
                     ResultReport result = FileHelper.OpenUri(destFile);
@@ -181,6 +181,13 @@ namespace PEBakery.WPF
                 }
             });
 
+            // Write user preferences to settings
+            Global.Setting.LogViewer.LogExportFileFormat = _m.ExportFileFormat;
+            Global.Setting.LogViewer.LogExportBuildIncludeComments = _m.BuildLogIncludeComments;
+            Global.Setting.LogViewer.LogExportBuildIncludeMacros = _m.BuildLogIncludeMacros;
+            Global.Setting.LogViewer.LogExportBuildShowLogFlags = _m.BuildLogShowLogFlags;
+            Global.Setting.WriteToFile();
+
             // Close LogExportWindow
             Close();
         }
@@ -195,12 +202,16 @@ namespace PEBakery.WPF
         {
             Logger = logger;
             BuildEntries = new ObservableCollection<LogModel.BuildInfo>(buildEntries);
+
+            ExportFileFormat = Global.Setting.LogViewer.LogExportFileFormat;
+            BuildLogIncludeComments = Global.Setting.LogViewer.LogExportBuildIncludeComments;
+            BuildLogIncludeMacros = Global.Setting.LogViewer.LogExportBuildIncludeMacros;
+            BuildLogShowLogFlags = Global.Setting.LogViewer.LogExportBuildShowLogFlags;
         }
 
         public void SetSystemLog()
         {
-            ExportSystemLog = true;
-            ExportBuildLog = false;
+            LogExportKind = LogExportKind.System;
         }
 
         public void SetBuildLog(int favoredBuildEntryIndex, bool includeComments, bool includeMacros)
@@ -211,8 +222,7 @@ namespace PEBakery.WPF
                 return;
             }
 
-            ExportSystemLog = false;
-            ExportBuildLog = true;
+            LogExportKind = LogExportKind.Build;
 
             if (0 <= favoredBuildEntryIndex && favoredBuildEntryIndex < BuildEntries.Count)
                 SelectedBuildEntryIndex = favoredBuildEntryIndex;
@@ -227,58 +237,31 @@ namespace PEBakery.WPF
         #endregion
 
         #region Log Type
-        private bool _exportSystemLog;
-        public bool ExportSystemLog
+        private LogExportKind _logExportKind;
+        public LogExportKind LogExportKind
         {
-            get => _exportSystemLog;
+            get => _logExportKind;
             set
             {
-                _exportSystemLog = value;
-                OnPropertyUpdate(nameof(ExportSystemLog));
-                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
-            }
-        }
-
-        private bool _exportBuildLog;
-        public bool ExportBuildLog
-        {
-            get => _exportBuildLog;
-            set
-            {
-                _exportBuildLog = value;
-                OnPropertyUpdate(nameof(ExportBuildLog));
+                SetProperty(ref _logExportKind, value);
                 OnPropertyUpdate(nameof(BuildLogOptionEnabled));
             }
         }
         #endregion
 
         #region File Format
-        public LogExportType FileFormat = LogExportType.Text;
 
-        public bool FileFormatText
+        private LogExportFormat _logFileFormat = LogExportFormat.Text;
+        public LogExportFormat ExportFileFormat
         {
-            get => FileFormat == LogExportType.Text;
-            set
-            {
-                FileFormat = value ? LogExportType.Text : LogExportType.Html;
-                OnPropertyUpdate(nameof(FileFormatText));
-            }
-        }
-
-        public bool FileFormatHtml
-        {
-            get => FileFormat == LogExportType.Html;
-            set
-            {
-                FileFormat = value ? LogExportType.Html : LogExportType.Text;
-                OnPropertyUpdate(nameof(FileFormatHtml));
-            }
+            get => _logFileFormat;
+            set => SetProperty(ref _logFileFormat, value);
         }
         #endregion
 
         #region IsEnabled
         public bool BuildLogRadioEnabled => 0 < BuildEntries.Count;
-        public bool BuildLogOptionEnabled => ExportBuildLog && !ExportSystemLog && 0 < BuildEntries.Count;
+        public bool BuildLogOptionEnabled => LogExportKind == LogExportKind.Build && 0 < BuildEntries.Count;
         #endregion
 
         #region Build Log Export

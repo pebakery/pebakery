@@ -4,10 +4,8 @@
       <Configurations>Debug;Release</Configurations>
       <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
       <Nullable>enable</Nullable>
+      <Version>1.0.0.0</Version>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.5.4" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj" />
   </ItemGroup>

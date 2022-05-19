@@ -101,9 +101,16 @@ namespace PEBakery.Core
     #endregion
 
     #region LogEnum
-    public enum LogExportType
+    public enum LogExportKind
     {
-        Text, Html
+        System,
+        Build
+    }
+    
+    public enum LogExportFormat
+    {
+        Text,
+        Html
     }
 
     /// <summary>
@@ -945,19 +952,19 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportSystemLog, ExportBuildLog, ParseLogExportType
-        public static LogExportType ParseLogExportType(string str)
+        public static LogExportFormat ParseLogExportType(string str)
         {
-            LogExportType logFormat = LogExportType.Html;
+            LogExportFormat logFormat = LogExportFormat.Html;
             if (str.Equals("HTML", StringComparison.OrdinalIgnoreCase))
-                logFormat = LogExportType.Html;
+                logFormat = LogExportFormat.Html;
             else if (str.Equals("Text", StringComparison.OrdinalIgnoreCase))
-                logFormat = LogExportType.Text;
+                logFormat = LogExportFormat.Text;
             return logFormat;
         }
 
-        public void ExportSystemLog(LogExportType type, string exportFile)
+        public void ExportSystemLog(LogExportFormat type, string exportFile)
         {
-            if (type == LogExportType.Html && MinifyHtmlExport)
+            if (type == LogExportFormat.Html && MinifyHtmlExport)
             {
                 string rawHtml;
                 using (StringWriter sw = new StringWriter())
@@ -1001,9 +1008,9 @@ namespace PEBakery.Core
             }
         }
 
-        public void ExportBuildLog(LogExportType type, string exportFile, int buildId, BuildLogOptions opts)
+        public void ExportBuildLog(LogExportFormat type, string exportFile, int buildId, BuildLogOptions opts)
         {
-            if (type == LogExportType.Html && MinifyHtmlExport)
+            if (type == LogExportFormat.Html && MinifyHtmlExport)
             {
                 string rawHtml;
                 using (StringWriter w = new StringWriter())
@@ -1342,14 +1349,14 @@ namespace PEBakery.Core
             public BuildLogFlag Flags { get; set; }
 
             [Ignore]
-            public string Text => Export(LogExportType.Text, true, false);
-            public string Export(LogExportType type, bool logDepth, bool logFlags)
+            public string Text => Export(LogExportFormat.Text, true, false);
+            public string Export(LogExportFormat type, bool logDepth, bool logFlags)
             {
                 string str = string.Empty;
                 switch (type)
                 {
                     #region Text
-                    case LogExportType.Text:
+                    case LogExportFormat.Text:
                         {
                             StringBuilder b = new StringBuilder();
 
@@ -1403,7 +1410,7 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region HTML
-                    case LogExportType.Html:
+                    case LogExportFormat.Html:
                         {
                             StringBuilder b = new StringBuilder();
 

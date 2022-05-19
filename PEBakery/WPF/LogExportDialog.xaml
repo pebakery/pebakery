@@ -31,6 +31,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:core="clr-namespace:PEBakery.Core;assembly=PEBakery.Core"
         mc:Ignorable="d"
         FontSize="13"
         Width="500" Height="320"
@@ -48,6 +49,7 @@
     </Window.CommandBindings>
     <Window.Resources>
         <local:InvertBoolConverter x:Key="InvertBoolConverter"/>
+        <local:CompareParamConverter x:Key="CompareParamConverter"/>
     </Window.Resources>
 
     <Grid>
@@ -78,14 +80,14 @@
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
                                      GroupName="LogType"
-                                     IsChecked="{Binding ExportSystemLog}"
+                                     IsChecked="{Binding LogExportKind, Converter={StaticResource CompareParamConverter}, ConverterParameter={x:Static core:LogExportKind.System}}"
                                      Content="System Log"/>
                         <RadioButton Height="20"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
                                      GroupName="LogType"
                                      IsEnabled="{Binding BuildLogRadioEnabled}"
-                                     IsChecked="{Binding ExportBuildLog}"
+                                     IsChecked="{Binding LogExportKind, Converter={StaticResource CompareParamConverter}, ConverterParameter={x:Static core:LogExportKind.Build}}"
                                      Content="Build Log"/>
                     </StackPanel>
                 </GroupBox>
@@ -102,13 +104,13 @@
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
                                      GroupName="FileFormat"
-                                     IsChecked="{Binding FileFormatText}"
+                                     IsChecked="{Binding ExportFileFormat, Converter={StaticResource CompareParamConverter}, ConverterParameter={x:Static core:LogExportFormat.Text}}"
                                      Content="Text (.txt)"/>
                         <RadioButton Height="20"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
                                      GroupName="FileFormat"
-                                     IsChecked="{Binding FileFormatHtml}"
+                                     IsChecked="{Binding ExportFileFormat, Converter={StaticResource CompareParamConverter}, ConverterParameter={x:Static core:LogExportFormat.Html}}"
                                      Content="HTML (.html)"/>
                     </StackPanel>
                 </GroupBox>
