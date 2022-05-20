@@ -42,13 +42,9 @@ namespace PEBakery.Core.Tests
     [TestCategory(nameof(FileUpdater))]
     public class FileUpdaterTests
     {
-        #region Fields and Properties
-        #endregion
-
         #region Class Init/Cleanup
-#pragma warning disable IDE0060
         [ClassInitialize]
-        public static void ServerInit(TestContext testContext)
+        public static void ServerInit(TestContext _)
         {
             TestSetup.StartWebFileServer();
         }
@@ -57,7 +53,6 @@ namespace PEBakery.Core.Tests
         public static void ServerCleanup()
         {
         }
-#pragma warning restore IDE0060
         #endregion
 
         #region ServerStatus - Is kestrel server successfully running?

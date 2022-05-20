@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.ViewModels;
@@ -154,41 +155,61 @@ namespace PEBakery.Core.Tests
             {
                 if (_fileServerTask != null)
                     return;
+                _fileServerCancel = new CancellationTokenSource();
 
                 WebRoot = Path.Combine(EngineTests.BaseDir, "WebServer");
-                ServerPort = GetAvailableTcpPort();
 
-                IWebHost host = new WebHostBuilder()
-                    .UseKestrel()
-                    .UseWebRoot(WebRoot)
-                    .Configure(conf =>
-                    {
-                        // Set up custom content types - associating file extension to MIME type
-                        FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
+                IWebHost host;
+                int loopCount = 10;
+                bool boundSuccess = true;
+                do
+                {
+                    ServerPort = GetAvailableTcpPort();
+
+                    host = new WebHostBuilder()
+                        .UseKestrel()
+                        .UseWebRoot(WebRoot)
+                        .Configure(conf =>
                         {
-                            Mappings =
+                            // Set up custom content types - associating file extension to MIME type
+                            FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
                             {
-                                [".script"] = "text/plain",
-                                [".deleted"] = "text/plain",
-                            }
-                        };
+                                Mappings =
+                                {
+                                    [".script"] = "text/plain",
+                                    [".deleted"] = "text/plain",
+                                }
+                            };
 
-                        conf.UseStaticFiles(new StaticFileOptions
-                        {
-                            // ServeUnknownFileTypes = true,
-                            // DefaultContentType = "text/plain",
-                            ContentTypeProvider = provider,
-                        });
-                        conf.UseDefaultFiles();
-                        conf.UseDirectoryBrowser();
-                    })
-                    .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
-                    .Build();
+                            conf.UseStaticFiles(new StaticFileOptions
+                            {
+                                // ServeUnknownFileTypes = true,
+                                // DefaultContentType = "text/plain",
+                                ContentTypeProvider = provider,
+                            });
+                            conf.UseDefaultFiles();
+                            conf.UseDirectoryBrowser();
+                        })
+                        .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
+                        .Build();
+
+                    // Check if the server was successfully bound to a port                    
+                    _fileServerTask = host.RunAsync(_fileServerCancel.Token);
+                    if (_fileServerTask.Exception is Exception e)
+                    {
+                        Console.WriteLine($"Binding to TCP {ServerPort} failed, trying again: {e.Message}");
+
+                        loopCount -= 1;
+                        boundSuccess = false;
+                    }
+                    else
+                    {
+                        boundSuccess = true;
+                    }
+                }
+                while (boundSuccess == false && 0 < loopCount);
 
                 UrlRoot = $"http://localhost:{ServerPort}";
-                _fileServerCancel = new CancellationTokenSource();
-                _fileServerTask = host.RunAsync(_fileServerCancel.Token);
-
                 Console.WriteLine($"Launched web server at TCP {ServerPort}");
             }
         }
