@@ -368,6 +368,10 @@ namespace PEBakery.Core
                 Script? newScript = _p.RefreshScript(sc);
                 if (newScript == null)
                     return new ResultReport<Script>(true, null, $"Script [{sc.Title}] refresh failure");
+                Console.WriteLine($"TEMP ScriptFile: {tempScriptFile}, {sc.DirectRealPath}");
+                Console.WriteLine($"TEMP Title: {remoteScript.Title}, {newScript.Title}");
+                Console.WriteLine($"TEMP RawVersion: {remoteScript.RawVersion}, {newScript.RawVersion}");
+                Console.WriteLine($"TEMP Version: {remoteScript.ParsedVersion}, {newScript.ParsedVersion}");
 
                 // Return updated script instance
                 return new ResultReport<Script>(true, newScript, $"Updated script [{sc.Title}] to [v{sc.RawVersion}] from [v{newScript.RawVersion}]");
