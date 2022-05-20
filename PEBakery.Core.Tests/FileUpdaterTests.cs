@@ -113,7 +113,7 @@ namespace PEBakery.Core.Tests
                 (Script? newScript, LogInfo log) = updater.UpdateScript(sc, true);
 
                 // Validate updated script
-                Console.WriteLine(log);
+                Console.WriteLine(log.ToString());
                 Assert.IsNotNull(newScript);
                 Assert.IsTrue(newScript.TidyVersion.Equals("1.2", StringComparison.Ordinal));
                 Assert.AreEqual(SelectedState.True, newScript.Selected);
