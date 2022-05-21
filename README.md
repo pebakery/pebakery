@@ -17,7 +17,7 @@ PEBakery is backward compatible with WinBuilder 082 and makes significant improv
 
 ## Disclaimer
 
-- All implementation is only backed by documentation and black box testing, without violating EULA of WinBuilder 082.
+- All implementation is backed by documentation and black box testing, without violating the EULA of WinBuilder 082.
 - The developers do not provide any warranty, use it at your own risk. Backup is highly recommended.
 - Windows Preinstalled Environment is a registered trademark of Microsoft.
 
@@ -98,10 +98,10 @@ To test PEBakery, download one of the PE projects and install the PEBakery binar
 
 These PE projects officially support PEBakery.
 
-- [PheonixPE](https://github.com/PhoenixPE/PhoenixPE)
+- [PhoenixPE](https://github.com/PhoenixPE/PhoenixPE)
 - [ChrisPE](https://github.com/pebakery/chrispe)
 
-These PE projects are tested with PEBakery.
+These PE projects have been tested with PEBakery.
 
 - [Win10XPE](https://github.com/ChrisRfr/Win10XPE)
 
@@ -121,6 +121,6 @@ These PE projects are tested with PEBakery.
 
 ### PEBakery v1.0.0
 
-![PheonixPE with PEBakery v1.0.0](./Image/PEBakery-PheonixPE.png)
+![PhoenixPE with PEBakery v1.0.0](./Image/PEBakery-PheonixPE.png)
 
 ![Win10XPE with PEBakery v1.0.0](./Image/PEBakery-Win10XPE.png)
