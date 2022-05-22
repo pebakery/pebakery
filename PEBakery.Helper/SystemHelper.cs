@@ -168,5 +168,9 @@ namespace PEBakery.Helper
             return 1;
         }
         #endregion
+
+        #region WOW64 Redirection
+        
+        #endregion
     }
 }

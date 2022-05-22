@@ -349,6 +349,9 @@ namespace PEBakery.Helper
                 dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
             }
         }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern int Wow64DisableWow64FsRedirection(IntPtr oldValue);
         #endregion
     }
 

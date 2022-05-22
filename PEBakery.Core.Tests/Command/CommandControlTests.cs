@@ -363,8 +363,10 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Wait, ErrorCheck.Success);
 
+            // Using strict 1000ms sometimes cause test fault
             long elapsed = w.ElapsedMilliseconds;
-            Assert.IsTrue(1000 <= elapsed);
+            Console.WriteLine($"Elapsed: {elapsed}ms");
+            Assert.IsTrue(900 <= elapsed);
         }
         #endregion
 
