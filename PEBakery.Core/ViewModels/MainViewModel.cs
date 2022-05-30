@@ -1185,13 +1185,13 @@ namespace PEBakery.Core.ViewModels
                                 b.AppendLine("No syntax issue detected.");
                                 b.AppendLine();
                                 b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-                                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                SystemHelper.MessageBoxDispatcherShow(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
                                 break;
                             case SyntaxChecker.Result.Warning:
                             case SyntaxChecker.Result.Error:
                                 string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
                                 MessageBoxImage dialogIcon = result == SyntaxChecker.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
-                                MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
+                                MessageBoxResult dialogResult = SystemHelper.MessageBoxDispatcherShow(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
                                 if (dialogResult == MessageBoxResult.OK)
                                 {
                                     b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
@@ -1681,7 +1681,7 @@ namespace PEBakery.Core.ViewModels
             if (treeModel == null)
                 return;
 
-            MessageBoxResult result = MessageBox.Show($"Script [{treeModel.Script.Title}] has been modified in background.\r\nDo you want to reload it?",
+            MessageBoxResult result = SystemHelper.MessageBoxDispatcherShow($"Script [{treeModel.Script.Title}] has been modified in background.\r\nDo you want to reload it?",
                 "Script Reload",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -1702,7 +1702,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (!File.Exists(filePath))
             {
-                MessageBox.Show($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -1713,13 +1713,13 @@ namespace PEBakery.Core.ViewModels
                 string ext = Path.GetExtension(customEditor);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SystemHelper.MessageBoxDispatcherShow($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 if (!File.Exists(customEditor))
                 {
-                    MessageBox.Show($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SystemHelper.MessageBoxDispatcherShow($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -1732,7 +1732,7 @@ namespace PEBakery.Core.ViewModels
 
             if (!result.Success)
             {
-                MessageBox.Show($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
+                SystemHelper.MessageBoxDispatcherShow($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
                     "Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1745,7 +1745,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (!Directory.Exists(filePath))
             {
-                MessageBox.Show($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

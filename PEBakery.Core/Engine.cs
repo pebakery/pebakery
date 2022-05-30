@@ -1192,9 +1192,17 @@ namespace PEBakery.Core
         public Logger Logger { get; private set; }
         public EngineMode RunMode { get; private set; }
         public readonly string? RunOneEntrySection;
-        public LogMode LogMode { get; set; } = LogMode.NoDefer; // Deferred logging is used for performance
+        /// <summary>
+        /// Deferred logging is used for performance
+        /// </summary>
+        public LogMode LogMode { get; set; } = LogMode.NoDefer;
         public MainViewModel MainViewModel { get; private set; }
         public Random Random { get; private set; }
+        /// <summary>
+        /// OwnerWindow to be passed into MessageBox.Show().
+        /// In a background thread, must be used with Application.Current?.Dispatcher?.Invoke().
+        /// </summary>
+        public Window? OwnerWindow { get; private set; }
         #endregion
 
         #region Derived Properties
@@ -1359,7 +1367,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public EngineState(Project project, Logger logger, MainViewModel mainViewModel,
+        public EngineState(Project project, Logger logger, MainViewModel mainViewModel, Window? ownerWindow,
             EngineMode mode = EngineMode.RunAll, Script? runSingle = null, string entrySection = ScriptSection.Names.Process)
         {
             Project = project;
@@ -1430,7 +1438,8 @@ namespace PEBakery.Core
             }
             Random = new Random(seed);
 
-            // MainViewModel
+            // MainViewModel and OwnerWindow
+            OwnerWindow = ownerWindow;
             MainViewModel = mainViewModel;
             SetFullProgressMax();
         }

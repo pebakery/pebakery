@@ -1114,11 +1114,7 @@ namespace PEBakery.Core.Commands
 
                         if (autoTimeout)
                         {
-                            MessageBoxResult result = MessageBoxResult.None;
-                            Application.Current?.Dispatcher?.Invoke(() =>
-                            {
-                                result = CustomMessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
-                            });
+                            MessageBoxResult result = CustomMessageBox.DispatcherShow(s.OwnerWindow, message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
 
                             switch (result)
                             {
@@ -1143,7 +1139,8 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            MessageBoxResult result = MessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            MessageBoxResult result = SystemHelper.MessageBoxDispatcherShow(s.OwnerWindow, message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                
                             switch (result)
                             {
                                 case MessageBoxResult.Yes:
@@ -1151,11 +1148,10 @@ namespace PEBakery.Core.Commands
                                     logMessage = "[Yes] was chosen";
                                     break;
                                 case MessageBoxResult.No:
+                                default:
                                     match = false;
                                     logMessage = "[No] was chosen";
                                     break;
-                                default:
-                                    throw new InternalException("Internal Logic Error at Check() of If,Question");
                             }
                         }
 

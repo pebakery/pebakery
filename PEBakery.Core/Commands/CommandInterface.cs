@@ -1266,22 +1266,7 @@ namespace PEBakery.Core.Commands
 
             if (info.Timeout == null)
             {
-                if (Application.Current?.Dispatcher != null)
-                {
-                    Application.Current?.Dispatcher?.Invoke(() =>
-                    {
-                        // Get MainWindow to set MessageBox's owner
-                        Window parentWindow = Application.Current.MainWindow;
-                        if (parentWindow != null)
-                            MessageBox.Show(parentWindow, message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
-                        else
-                            MessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
-                    });
-                }
-                else
-                {
-                    MessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
-                }
+                SystemHelper.MessageBoxDispatcherShow(s.OwnerWindow, message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
             }
             else
             {
@@ -1292,22 +1277,7 @@ namespace PEBakery.Core.Commands
                 if (timeout <= 0)
                     return LogInfo.LogErrorMessage(logs, $"Timeout must be a positive integer [{timeoutStr}]");
 
-                if (Application.Current?.Dispatcher != null)
-                {
-                    Application.Current?.Dispatcher?.Invoke(() =>
-                    {
-                        // Get MainWindow to set MessageBox's owner
-                        Window parentWindow = Application.Current.MainWindow;
-                        if (parentWindow != null)
-                            CustomMessageBox.Show(parentWindow, message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
-                        else
-                            CustomMessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
-                    });
-                }
-                else
-                {
-                    CustomMessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
-                }
+                CustomMessageBox.DispatcherShow(s.OwnerWindow, message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
             }
 
             s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;

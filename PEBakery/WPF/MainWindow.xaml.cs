@@ -104,7 +104,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Add(treeRoot);
                 Model.CurBuildTree = null;
 
-                EngineState s = new EngineState(p, Logger, Model);
+                EngineState s = new EngineState(p, Logger, Model, this);
                 s.SetOptions(Global.Setting);
                 s.SetCompat(p.Compat);
 
@@ -353,7 +353,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Add(rootItem);
                     Model.CurBuildTree = null;
 
-                    EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
+                    EngineState s = new EngineState(sc.Project, Logger, Model, this, EngineMode.RunMainAndOne, sc);
                     s.SetOptions(Global.Setting);
                     s.SetCompat(sc.Project.Compat);
 

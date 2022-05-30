@@ -28,6 +28,7 @@
 using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
+using PEBakery.Helper;
 using SQLite;
 using System;
 using System.Collections;
@@ -177,7 +178,7 @@ namespace PEBakery.Core
             catch (SQLiteException e)
             { // Update failure
                 string msg = $"SQLite Error : {e.Message}\r\nCache database is corrupted. Please delete PEBakeryCache.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
 

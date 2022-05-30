@@ -51,8 +51,8 @@ namespace PEBakery.Core
         {
             public const string ScriptCacheRevision = "r21";
             public const int EngineVersion = 100;
-            public const string ProgramVersionStr = "1.0.0";
-            public const string ProgramVersionStrFull = "1.0.0";
+            public const string ProgramVersionStr = "1.0.1";
+            public const string ProgramVersionStrFull = "1.0.1";
 
             private static readonly VersionEx? _programVersionInst = VersionEx.Parse(ProgramVersionStr);
             public static VersionEx ProgramVersionInst

@@ -554,7 +554,7 @@ namespace PEBakery.Core
 
             UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
             if (info.SectionName != null)
-                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -627,7 +627,7 @@ namespace PEBakery.Core
 
             UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
             if (info.SectionName != null)
-                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -790,7 +790,6 @@ namespace PEBakery.Core
                 return;
 
             string url = StringEscaper.Unescape(info.Url);
-            // Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
 
             ResultReport result = FileHelper.OpenUri(url);
             if (!result.Success)
@@ -1071,7 +1070,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.Button, $"Wrong UIControlType in [{nameof(Button_Click)}]");
 
             UIInfo_Button info = (UIInfo_Button)uiCtrl.Info;
-            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+            RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -1214,7 +1213,7 @@ namespace PEBakery.Core
 
             UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
             if (info.SectionName != null)
-                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -1549,7 +1548,7 @@ namespace PEBakery.Core
 
             UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
             if (info.SectionName != null)
-                RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
 
@@ -1702,7 +1701,7 @@ namespace PEBakery.Core
 
                     // Run a section if [RunOptional] is active.
                     if (info.SectionName != null)
-                        RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                        RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
                 }
             }
             else
@@ -1744,7 +1743,7 @@ namespace PEBakery.Core
 
                     // Run a section if [RunOptional] is active.
                     if (info.SectionName != null)
-                        RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+                        RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
                 }
             }
         }
@@ -1853,12 +1852,12 @@ namespace PEBakery.Core
         #endregion
 
         #region RunOneSection
-        private void RunOneSection(UIControlType ctrlType, string ctrlKey, string sectionName, bool hideProgress)
+        private void RunOneSection(Window? ownerWindow, UIControlType ctrlType, string ctrlKey, string sectionName, bool hideProgress)
         {
             if (_sc.Sections.ContainsKey(sectionName)) // Only if section exists
             {
                 ScriptSection targetSection = _sc.Sections[sectionName];
-                InternalRunOneSection(targetSection, $"{_sc.Title} - {ctrlType} [{ctrlKey}]", hideProgress);
+                InternalRunOneSection(ownerWindow, targetSection, $"{_sc.Title} - {ctrlType} [{ctrlKey}]", hideProgress);
             }
             else
             {
@@ -1866,7 +1865,7 @@ namespace PEBakery.Core
             }
         }
 
-        private static async void InternalRunOneSection(ScriptSection section, string logMsg, bool hideProgress)
+        private static async void InternalRunOneSection(Window? ownerWindow, ScriptSection section, string logMsg, bool hideProgress)
         {
             if (Global.MainViewModel is not MainViewModel mainViewModel)
                 return;
@@ -1888,8 +1887,7 @@ namespace PEBakery.Core
 
                 mainViewModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(section.Project, logger, mainViewModel, EngineMode.RunMainAndOne,
-                    section.Script, section.Name);
+                EngineState s = new EngineState(section.Project, logger, mainViewModel, ownerWindow, EngineMode.RunMainAndOne, section.Script, section.Name);
                 s.SetOptions(Global.Setting);
                 s.SetCompat(section.Project.Compat);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
