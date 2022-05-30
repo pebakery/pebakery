@@ -422,6 +422,14 @@ namespace PEBakery.Core
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Index < 0 || info.Items.Count <= info.Index)
                                 logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
+
+                            if (info.SectionName != null)
+                            {
+                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
+                            }
                         }
                         break;
                     case UIControlType.Image:
@@ -564,6 +572,14 @@ namespace PEBakery.Core
                             { // Select Folder
                                 if (info.Filter != null)
                                     logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", uiCtrl));
+                            }
+
+                            if (info.SectionName != null)
+                            {
+                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
                         }
                         break;

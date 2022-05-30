@@ -145,7 +145,7 @@ namespace PEBakery.Core
     For CheckBox, ComboBox, RadioButton, RadioGroup, PathBox
     <SectionName>,<HideProgress>
     
-    SectionToRun : (String) SectionName with _ at start and end
+    SectionName : (String) SectionName with _ at start and end
     HideProgress : (Bool)   
 
     [ToolTip]
