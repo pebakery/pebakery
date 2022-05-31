@@ -345,11 +345,30 @@ namespace PEBakery.Core.Tests.Command
         [TestMethod]
         public void Halt()
         {
-            const string rawCode = "Halt,UnitTest";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
+            // Eval test
+            {
+                const string rawCode = "Halt,UnitTest";
+                EngineState s = EngineTests.CreateEngineState();
+                EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.HaltReturnFlags.CmdHalt);
+                Assert.IsTrue(s.HaltReturnFlags.CmdHalt);
+            }
+
+            // Script test
+            {
+                string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
+
+                static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Warning)
+                {
+                    (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                    string destStr = s.ReturnValue;
+                    Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+                }
+
+                ScriptTemplate(scPath, "Process-Halt-Simple", "T");
+                ScriptTemplate(scPath, "Process-Halt-InIf", "T");
+                ScriptTemplate(scPath, "Process-Halt-InWhile", "AA");
+            }
         }
         #endregion
 
