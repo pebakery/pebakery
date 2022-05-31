@@ -383,6 +383,76 @@ namespace PEBakery.Core.Commands
             }
         }
 
+        /*
+        public static void For(EngineState s, CodeCommand cmd)
+        {
+            CodeInfo_For info = (CodeInfo_For)cmd.Info;
+            EngineLocalState ls = s.PeekLocalState();
+
+            if (info.StartIdx == null)
+                throw new CriticalErrorException($"{info.StartIdx} is null");
+            if (info.EndIdx == null)
+                throw new CriticalErrorException($"{info.EndIdx} is null");
+
+            string startStr = StringEscaper.Preprocess(s, info.StartIdx);
+            string endStr = StringEscaper.Preprocess(s, info.EndIdx);
+
+            if (!NumberHelper.ParseInt64(startStr, out long startIdx))
+                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+            if (!NumberHelper.ParseInt64(endStr, out long endIdx))
+                throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
+
+            // Run info.Link until condition fails to match
+            for (long i = startIdx; i < endIdx; i++)
+            {
+                
+                if (EvalBranchCondition(s, info.Condition, out string msg))
+                { // Condition matched, run it
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
+
+                    RunBranchLink(s, cmd.Section, info.Link);
+
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
+
+                    if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                        break;
+                }
+                else
+                { // Do not run
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, ls.Depth));
+                    break;
+                }
+            }
+        }
+        */
+
+        public static void While(EngineState s, CodeCommand cmd)
+        {
+            CodeInfo_While info = (CodeInfo_While)cmd.Info;
+            EngineLocalState ls = s.PeekLocalState();
+
+            // Run info.Link until condition fails to match
+            while (true)
+            {
+                if (EvalBranchCondition(s, info.Condition, out string msg))
+                { // Condition matched, run it
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
+
+                    RunBranchLink(s, cmd.Section, info.Link);
+
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
+
+                    if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                        break;
+                }
+                else
+                { // Do not run
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, ls.Depth));
+                    break;
+                }
+            }
+        }
+
         private static void RunBranchLink(EngineState s, ScriptSection section, List<CodeCommand> link)
         {
             if (link.Count == 1)

@@ -79,6 +79,7 @@ namespace PEBakery.Core
         List = 2200,
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
+        For, While, Break, Continue,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam, Return,
         PackParam = 8199, // Will be deprecated
@@ -151,6 +152,30 @@ namespace PEBakery.Core
         public virtual bool IsInfoDeprecated => false;
         public virtual string DeprecateMessage() => string.Empty;
         #endregion
+    }
+
+    /// <summary>
+    /// CodeInfo which has 
+    /// </summary>
+    public class CodeEmbedInfo : CodeInfo
+    {
+        /// <summary>
+        /// Direct parse of embedded command
+        /// </summary>
+        public CodeCommand Embed { get; private set; }
+
+        /// <summary>
+        /// Folded embedded commands
+        /// </summary>
+        public List<CodeCommand> Link { get; set; } = new List<CodeCommand>();
+        public bool LinkParsed { get; set; } = false;
+
+        public CodeEmbedInfo(CodeCommand embed)
+        {
+            Embed = embed;
+        }
+
+
     }
     #endregion
 
@@ -4406,23 +4431,15 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_If : CodeInfo
+    public class CodeInfo_If : CodeEmbedInfo
     {
         public BranchCondition Condition { get; private set; }
-        public CodeCommand Embed { get; private set; }
-
-        public bool LinkParsed { get; set; }
-        public List<CodeCommand> Link { get; set; }
 
         public CodeInfo_If(BranchCondition cond, CodeCommand embed)
+            : base(embed)
         {
             Condition = cond;
-            Embed = embed;
-
-            LinkParsed = false;
-            Link = new List<CodeCommand>();
         }
-
 
         public override string ToString()
         {
@@ -4434,25 +4451,60 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_Else : CodeInfo
+    public class CodeInfo_Else : CodeEmbedInfo
     {
-        public CodeCommand Embed { get; private set; }
-
-        public bool LinkParsed { get; set; }
-        public List<CodeCommand> Link { get; set; }
-
         public CodeInfo_Else(CodeCommand embed)
+            : base(embed)
         {
-            Embed = embed;
-
-            LinkParsed = false;
-            Link = new List<CodeCommand>();
         }
-
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
+            b.Append(Embed);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_For : CodeEmbedInfo
+    { // For,<StartIndex>,<EndIndex>,<EmbedCommmand>
+        public string StartIdx { get; private set; }
+        public string EndIdx { get; private set; }
+
+        public CodeInfo_For(string startIdx, string endIdx, CodeCommand embed)
+            : base(embed)
+        {
+            StartIdx = startIdx;
+            EndIdx = endIdx;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StartIdx);
+            b.Append(',');
+            b.Append(EndIdx);
+            b.Append(',');
+            b.Append(Embed);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_While : CodeEmbedInfo
+    { // While,<BranchCondition>,<EmbedCommand>
+        public BranchCondition Condition { get; private set; }
+
+        public CodeInfo_While(BranchCondition cond, CodeCommand embed)
+            : base(embed)
+        {
+            Condition = cond;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Condition);
+            b.Append(',');
             b.Append(Embed);
             return b.ToString();
         }

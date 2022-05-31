@@ -969,6 +969,25 @@ namespace PEBakery.Core.Tests.Command
         }
         #endregion
 
+        #region While
+        [TestMethod]
+        public void While()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-While-Simple", "AAA");
+            ScriptTemplate(scPath, "Process-While-If", "AAA");
+            ScriptTemplate(scPath, "Process-While-Nested", "AAAAAA");
+        }
+        #endregion
+
         #region Utility
         public static void SingleTemplate(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else

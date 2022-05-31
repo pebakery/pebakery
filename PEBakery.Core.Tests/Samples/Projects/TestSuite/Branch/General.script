@@ -1,6 +1,6 @@
 [Main]
 Title=BranchGeneral
-Author=ied206
+Author=joveler
 Description=UnitTest
 Version=001
 Level=5
@@ -189,4 +189,32 @@ If,#r,Equal,True,Begin
     Set,%Dest%,T
 End
 
+[Process-While-Simple]
+Set,%i%,0
+Set,#r,""
+While,%i%,Smaller,3,Begin
+  Math,Add,%i%,%i%,1
+  Set,#r,"#rA"
+ End
 
+[Process-While-If]
+Set,%A%,True
+Set,%i%,0
+Set,#r,""
+If,%A%,Equal,True,While,%i%,Smaller,3,Begin
+  Math,Add,%i%,%i%,1
+  Set,#r,"#rA"
+ End
+ 
+ [Process-While-Nested]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,If,%A%,Equal,True,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+ End

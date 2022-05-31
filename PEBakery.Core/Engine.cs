@@ -439,7 +439,6 @@ namespace PEBakery.Core
                 List<LogInfo> logs = ExecuteCommand(s, cmd);
                 if (s.TestMode && allLogs != null)
                 {
-                    // ReSharper disable once PossibleNullReferenceException
                     allLogs.AddRange(logs);
                 }
 
@@ -811,6 +810,18 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Else:
                         CommandBranch.Else(s, cmd);
+                        break;
+                    case CodeType.For:
+                        // CommandBranch.For(s, cmd);
+                        break;
+                    case CodeType.While:
+                        CommandBranch.While(s, cmd);
+                        break;
+                    case CodeType.Break:
+                        // CommandBranch.Break(s, cmd);
+                        break;
+                    case CodeType.Continue:
+                        // CommandBranch.Continue(s, cmd);
                         break;
                     case CodeType.Begin:
                         throw new InternalParserException("CodeParser Error");
@@ -1201,6 +1212,7 @@ namespace PEBakery.Core
         /// <summary>
         /// OwnerWindow to be passed into MessageBox.Show().
         /// In a background thread, must be used with Application.Current?.Dispatcher?.Invoke().
+        /// Use SystemHelper.MessageBoxDispatcherShow() or CustomMessageBox.DispatcherShow().
         /// </summary>
         public Window? OwnerWindow { get; private set; }
         #endregion
@@ -1584,10 +1596,12 @@ namespace PEBakery.Core
         /// <param name="section">Current ScriptSection being run</param>
         public void PreciseUpdateScriptProgress(ScriptSection section)
         {
+            // TODO: ScriptProgress calculation must be changed to line-basis from section-basis
+            // -> Introduction of While, For make it impossible to accurately track script progress.
             if (CurrentScript == null)
                 return;
 
-            // Increase only if cmd came from CurrentScript
+            // Increase only if cmd is one of CurrentScript
             // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on `IncrementalUpdateSriptProgress()`?
             // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
             //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
