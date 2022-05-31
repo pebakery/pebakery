@@ -445,7 +445,11 @@ namespace PEBakery.Core
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(section);
 
+                // Check if a script should be stopped / section should return.
                 if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                    break;
+                // Check if a loop was breaked or continued.
+                if (s.HaltReturnFlags.CheckLoopStop())
                     break;
             }
 
@@ -818,10 +822,10 @@ namespace PEBakery.Core
                         CommandBranch.While(s, cmd);
                         break;
                     case CodeType.Break:
-                        // CommandBranch.Break(s, cmd);
+                        logs = CommandBranch.Break(s, cmd);
                         break;
                     case CodeType.Continue:
-                        // CommandBranch.Continue(s, cmd);
+                        logs = CommandBranch.Continue(s, cmd);
                         break;
                     case CodeType.Begin:
                         throw new InternalParserException("CodeParser Error");
@@ -1284,9 +1288,16 @@ namespace PEBakery.Core
 
         #region Loop State Stack Properties
         /// <summary>
-        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
+        /// Legacy Loop, LoopLetter command management stack
         /// </summary>
-        public Stack<EngineLoopState> LoopStateStack { get; set; } = new Stack<EngineLoopState>(4);
+        /// <remarks>
+        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
+        /// </remarks>
+        public Stack<EngineLoopCmdState> LoopCmdStateStack { get; set; } = new Stack<EngineLoopCmdState>();
+        public Stack<EngineLoopSyntaxState> LoopSyntaxStateStack { get; set; } = new Stack<EngineLoopSyntaxState>();
+        #endregion
+
+        #region SetLocal Stack Properties
         /// <summary>
         /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
         /// </summary>
@@ -1488,7 +1499,7 @@ namespace PEBakery.Core
             ReturnValue = string.Empty;
             InitLocalStateStack();
             ElseFlag = false;
-            LoopStateStack.Clear();
+            LoopCmdStateStack.Clear();
 
             // Command State
             OnBuildExit = null;
@@ -1690,29 +1701,26 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region EngineLoopState
-    public class EngineLoopState
+    #region class EngineLoopCmdState
+    /// <summary>
+    /// Legacy Loop, LoopLetter command management 
+    /// </summary>
+    public class EngineLoopCmdState
     {
-        public enum LoopState
-        {
-            OnIndex,
-            OnDriveLetter,
-        }
-
-        public LoopState State { get; set; }
+        public LoopCmdState State { get; set; }
         public long CounterIndex;
         public char CounterLetter;
 
-        public EngineLoopState(long ctrIdx)
+        public EngineLoopCmdState(long ctrIdx)
         {
-            State = LoopState.OnIndex;
+            State = LoopCmdState.OnIndex;
             CounterIndex = ctrIdx;
             CounterLetter = '\0';
         }
 
-        public EngineLoopState(char ctrLetter)
+        public EngineLoopCmdState(char ctrLetter)
         {
-            State = LoopState.OnDriveLetter;
+            State = LoopCmdState.OnDriveLetter;
             CounterIndex = 0;
             if ('A' <= ctrLetter && ctrLetter <= 'Z' || ctrLetter == '\0')
                 CounterLetter = ctrLetter;
@@ -1722,9 +1730,137 @@ namespace PEBakery.Core
                 throw new CriticalErrorException("Invalid LoopLetter Handling");
         }
     }
+
+    public enum LoopCmdState
+    {
+        OnIndex,
+        OnDriveLetter,
+    }
     #endregion
 
-    #region EngineLocalState
+    #region class EngineLoopSyntaxState
+    /// <summary>
+    /// Modern looping syntax management 
+    /// </summary>
+    public abstract class EngineLoopSyntaxState
+    {
+        public CodeType CodeType { get; }
+        
+
+        public EngineLoopSyntaxState(CodeType codeType)
+        {
+            CodeType = codeType;
+        }
+    }
+
+    /// <summary>
+    /// Modern While loop management 
+    /// </summary>
+    public class EngineWhileSyntaxState : EngineLoopSyntaxState
+    {
+        public EngineWhileSyntaxState()
+            : base(CodeType.While)
+        {
+
+        }
+    }
+
+    /// <summary>
+    /// Modern For, ForEach loop management 
+    /// </summary>
+    public abstract class EngineForBaseSyntaxState : EngineLoopSyntaxState
+    {
+        public string CounterVarName { get; set; }
+
+        public EngineForBaseSyntaxState(CodeType codeType, string ctrVarName)
+            : base(codeType)
+        {
+            CounterVarName = ctrVarName;
+        }
+
+        /// <summary>
+        /// Get next counter. Must be called starting from the first iteration.
+        /// </summary>
+        /// <returns>Returns false if current counter was the last one.</returns>
+        public abstract bool NextCounter(out string nextVal);
+    }
+
+    /// <summary>
+    /// Modern For loop management 
+    /// </summary>
+    public class EngineForSyntaxState : EngineForBaseSyntaxState
+    {
+        public long CounterStart { get; }
+        public long CounterEnd { get; }
+        public long CounterStep { get; }
+        private long _ctrIdx;
+
+        public EngineForSyntaxState(string ctrVarName, long ctrStart, long ctrEnd, long ctrStep)
+            : base(CodeType.For, ctrVarName)
+        {
+            CounterStart = ctrStart;
+            CounterEnd = ctrEnd;
+            CounterStep = ctrStep;
+            _ctrIdx = CounterStart - CounterStep;
+        }
+
+        public override bool NextCounter(out string nextVal)
+        {
+            if (_ctrIdx + CounterStep < CounterEnd)
+            {
+                _ctrIdx += CounterStep;
+                nextVal = _ctrIdx.ToString();
+                return true; 
+            }
+            else
+            {
+                nextVal = string.Empty;
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Modern ForEach loop management 
+    /// </summary>
+    public class EngineForEachSyntaxState : EngineForBaseSyntaxState
+    {  
+        /// <summary>
+        /// List of items to loop.
+        /// </summary>
+        /// <remarks>
+        /// 0 or more items are allowed.
+        /// </remarks>
+        public List<string> CounterList { get; }
+        /// <summary>
+        /// Current index of counter list.
+        /// </summary>
+        public int CounterIdx { get; private set; } = -1;
+
+        public EngineForEachSyntaxState(string ctrVarName, List<string> ctrList)
+            : base(CodeType.ForEach, ctrVarName)
+        {
+            CounterList = ctrList;
+        }
+
+        public override bool NextCounter(out string nextVal)
+        {
+            if (CounterIdx + 1 < CounterList.Count)
+            {
+                CounterIdx += 1;
+                nextVal = CounterList[CounterIdx];
+                return true;
+            }
+            else
+            {
+                nextVal = string.Empty;
+                return false;
+            }
+        }
+    }
+    #endregion
+
+    #region class EngineLocalState
     public class EngineLocalState : IEquatable<EngineLocalState>
     {
         #region Fields and Properties
@@ -1800,7 +1936,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region LocalVarsState
+    #region class LocalVarsState
     public class LocalVarsState
     {
         public EngineLocalState LocalState { get; private set; }
@@ -1814,7 +1950,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region ErrorOffState
+    #region class ErrorOffState
     public class ErrorOffState
     {
         public const int ForceDisable = -1;
@@ -1832,7 +1968,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region EngineHaltReturnFlags
+    #region class EngineHaltReturnFlags
     /// <summary>
     /// Class to manage build halt/section return flags.
     /// </summary>
@@ -1876,10 +2012,22 @@ namespace PEBakery.Core
         public bool SectionReturn { get; set; } = false;
         #endregion
 
+        #region Loop Syntax Properties
+        /// <summary>
+        /// Break command was executed to break the loop.
+        /// </summary>
+        public bool LoopBreak { get; set; } = false;
+        /// <summary>
+        /// Continue command was executed to immediately run the next iteration.
+        /// </summary>
+        public bool LoopContinue { get; set; } = false;
+        #endregion
+
         #region Check Halt
         public bool CheckScriptHalt() => UserHalt || ErrorHalt || CmdHalt || ScriptHalt;
         public bool CheckBuildHalt() => UserHalt || ErrorHalt || CmdHalt;
         public bool CheckSectionReturn() => SectionReturn;
+        public bool CheckLoopStop() => LoopBreak || LoopContinue;
         #endregion
 
         #region Reset
@@ -1894,6 +2042,12 @@ namespace PEBakery.Core
         public void ResetReturnFlags()
         {
             SectionReturn = false;
+        }
+
+        public void ResetLoopFlags()
+        {
+            LoopBreak = false;
+            LoopContinue = false;
         }
         #endregion
 

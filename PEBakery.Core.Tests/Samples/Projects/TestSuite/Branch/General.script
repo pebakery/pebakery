@@ -217,4 +217,60 @@ While,%xIdx%,Smaller,2,Begin
     Set,#r,"#rA"
   End
   Math,Add,%xIdx%,%xIdx%,1
- End
+End
+
+[Process-While-Break01]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+	If,%yIdx%,Equal,2,Break
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+End
+
+[Process-While-Break02]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+  If,%xIdx%,Equal,1,Break
+End
+
+[Process-While-Continue01]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+	If,%yIdx%,Bigger,2,Continue
+	Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+End
+
+[Process-While-Continue02]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Math,Add,%xIdx%,%xIdx%,1
+  If,%xIdx%,BiggerEqual,2,Continue
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+End

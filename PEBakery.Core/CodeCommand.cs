@@ -79,7 +79,7 @@ namespace PEBakery.Core
         List = 2200,
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
-        For, While, Break, Continue,
+        While, For, ForEach, Break, Continue,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam, Return,
         PackParam = 8199, // Will be deprecated

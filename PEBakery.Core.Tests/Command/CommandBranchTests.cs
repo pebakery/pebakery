@@ -985,6 +985,10 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-While-Simple", "AAA");
             ScriptTemplate(scPath, "Process-While-If", "AAA");
             ScriptTemplate(scPath, "Process-While-Nested", "AAAAAA");
+            ScriptTemplate(scPath, "Process-While-Break01", "AAAA");
+            ScriptTemplate(scPath, "Process-While-Break02", "AAA");
+            ScriptTemplate(scPath, "Process-While-Continue01", "AAAA");
+            ScriptTemplate(scPath, "Process-While-Continue02", "AAA");
         }
         #endregion
 

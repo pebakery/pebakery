@@ -561,15 +561,15 @@ namespace PEBakery.Core
             }
 
             // Escape #c (Loop Counter)
-            if (0 < s.LoopStateStack.Count)
+            if (0 < s.LoopCmdStateStack.Count)
             {
-                EngineLoopState loop = s.LoopStateStack.Peek();
+                EngineLoopCmdState loop = s.LoopCmdStateStack.Peek();
                 switch (loop.State)
                 {
-                    case EngineLoopState.LoopState.OnIndex:
+                    case LoopCmdState.OnIndex:
                         str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterIndex.ToString());
                         break;
-                    case EngineLoopState.LoopState.OnDriveLetter:
+                    case LoopCmdState.OnDriveLetter:
                         str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterLetter.ToString());
                         break;
                 }

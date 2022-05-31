@@ -140,14 +140,14 @@ namespace PEBakery.Core.Commands
 
             if (info.Break)
             {
-                if (s.LoopStateStack.Count == 0)
+                if (s.LoopCmdStateStack.Count == 0)
                 {
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Loop is not running", cmd, ls.Depth));
                 }
                 else
                 {
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking loop", cmd, ls.Depth));
-                    s.LoopStateStack.Pop();
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking a loop", cmd, ls.Depth));
+                    s.LoopCmdStateStack.Pop();
                 }
             }
             else
@@ -257,9 +257,9 @@ namespace PEBakery.Core.Commands
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
                             // Push EngineLoopState
-                            EngineLoopState loop = new EngineLoopState(i);
-                            s.LoopStateStack.Push(loop);
-                            int stackCount = s.LoopStateStack.Count;
+                            EngineLoopCmdState loop = new EngineLoopCmdState(i);
+                            s.LoopCmdStateStack.Push(loop);
+                            int stackCount = s.LoopCmdStateStack.Count;
 
                             // Run Loop Section
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
@@ -270,11 +270,11 @@ namespace PEBakery.Core.Commands
 
                             // Loop,Break can pop loop state stack.
                             // Check stackCount to know if Loop,Break was called.
-                            if (stackCount != s.LoopStateStack.Count)
+                            if (stackCount != s.LoopCmdStateStack.Count)
                                 break;
 
                             // Pop EngineLoopState
-                            EngineLoopState popLoop = s.LoopStateStack.Pop();
+                            EngineLoopCmdState popLoop = s.LoopCmdStateStack.Pop();
 
                             // Log message
                             string msg = $"End of Loop with [{i}] ({loopIdx}/{loopCount})";
@@ -297,9 +297,9 @@ namespace PEBakery.Core.Commands
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
                             // Push EngineLoopState
-                            EngineLoopState loop = new EngineLoopState(ch);
-                            s.LoopStateStack.Push(loop);
-                            int stackCount = s.LoopStateStack.Count;
+                            EngineLoopCmdState loop = new EngineLoopCmdState(ch);
+                            s.LoopCmdStateStack.Push(loop);
+                            int stackCount = s.LoopCmdStateStack.Count;
 
                             // Run Loop Section
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
@@ -310,11 +310,11 @@ namespace PEBakery.Core.Commands
 
                             // Loop,Break can pop loop state stack.
                             // Check stackCount to know if Loop,Break was called.
-                            if (stackCount != s.LoopStateStack.Count)
+                            if (stackCount != s.LoopCmdStateStack.Count)
                                 break;
 
                             // Pop EngineLoopState
-                            EngineLoopState popLoop = s.LoopStateStack.Pop();
+                            EngineLoopCmdState popLoop = s.LoopCmdStateStack.Pop();
 
                             // Log message
                             string msg = $"End of Loop with [{ch}] ({loopIdx}/{loopCount})";
@@ -438,10 +438,26 @@ namespace PEBakery.Core.Commands
                 { // Condition matched, run it
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
 
+                    // Push LoopSyntaxState
+                    EngineLoopSyntaxState whileState = new EngineWhileSyntaxState();
+                    s.LoopSyntaxStateStack.Push(whileState);
+
+                    // Run info.Link commands
                     RunBranchLink(s, cmd.Section, info.Link);
+
+                    // Pop LoopSyntaxState
+                    s.LoopSyntaxStateStack.Pop();
 
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
 
+                    // Break the loop if `Break` command was executed.
+                    // Do nothing on a `Continue` command.
+                    bool breakFlag = s.HaltReturnFlags.LoopBreak;
+                    s.HaltReturnFlags.ResetLoopFlags();
+                    if (breakFlag)
+                        break;
+
+                    // Check halt/return flags
                     if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
                         break;
                 }
@@ -451,6 +467,44 @@ namespace PEBakery.Core.Commands
                     break;
                 }
             }
+        }
+
+        public static List<LogInfo> Break(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            if (s.LoopSyntaxStateStack.Count == 0)
+            {
+                logs.Add(new LogInfo(LogState.Error, "Loop is not running"));
+            }
+            else
+            {
+                EngineLoopSyntaxState loopState = s.LoopSyntaxStateStack.Peek();
+                logs.Add(new LogInfo(LogState.Info, $"Breaking a [{loopState.CodeType}] loop"));
+
+                s.HaltReturnFlags.LoopBreak = true;
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> Continue(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            if (s.LoopSyntaxStateStack.Count == 0)
+            {
+                logs.Add(new LogInfo(LogState.Error, "Loop is not running"));
+            }
+            else
+            {
+                EngineLoopSyntaxState loopState = s.LoopSyntaxStateStack.Peek();
+                logs.Add(new LogInfo(LogState.Info, $"Running the next iteration of [{loopState.CodeType}] loop"));
+
+                s.HaltReturnFlags.LoopContinue = true;
+            }
+
+            return logs;
         }
 
         private static void RunBranchLink(EngineState s, ScriptSection section, List<CodeCommand> link)
