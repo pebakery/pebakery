@@ -79,7 +79,7 @@ namespace PEBakery.Core
         List = 2200,
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
-        While, For, ForEach, Break, Continue,
+        While, ForRange, ForEach, Break, Continue,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam, Return,
         PackParam = 8199, // Will be deprecated
@@ -2904,6 +2904,7 @@ namespace PEBakery.Core
         Replace = 140, ReplaceX,
         Split = 150,
         PadLeft = 160, PadRight,
+        ToAscii = 170, FromAscii, // Added in PEBakery
         ShortPath = 800, LongPath, // Will be deprecated
     }
 
@@ -3792,6 +3793,7 @@ namespace PEBakery.Core
         Count = 40,
         Pos = 50, PosX, LastPos, LastPosX,
         Sort = 60, SortX, SortN, SortNX,
+        Range = 70,
     }
 
     public class ListInfo : CodeInfo
@@ -4062,6 +4064,41 @@ namespace PEBakery.Core
             b.Append(ListVar);
             b.Append(',');
             b.Append(Order);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    public class ListInfo_Range : ListInfo
+    { // List,Range,<%ListVar%>,<Start>,<End>,<Step>,[Delim=<Str>]
+        public string Start { get; private set; }
+        public string End { get; private set; }
+        public string Step { get; private set; }
+        public string? Delim { get; private set; }
+
+        public ListInfo_Range(string listVar, string start, string end, string step, string? delim)
+            : base(listVar)
+        {
+            Start = start;
+            End = end;
+            Step = step;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Start);
+            b.Append(',');
+            b.Append(End);
+            b.Append(',');
+            b.Append(Step);
             if (Delim != null)
             {
                 b.Append(",Delim=");
@@ -4466,30 +4503,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_For : CodeEmbedInfo
-    { // For,<StartIndex>,<EndIndex>,<EmbedCommmand>
-        public string StartIdx { get; private set; }
-        public string EndIdx { get; private set; }
-
-        public CodeInfo_For(string startIdx, string endIdx, CodeCommand embed)
-            : base(embed)
-        {
-            StartIdx = startIdx;
-            EndIdx = endIdx;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StartIdx);
-            b.Append(',');
-            b.Append(EndIdx);
-            b.Append(',');
-            b.Append(Embed);
-            return b.ToString();
-        }
-    }
-
     public class CodeInfo_While : CodeEmbedInfo
     { // While,<BranchCondition>,<EmbedCommand>
         public BranchCondition Condition { get; private set; }
@@ -4504,6 +4517,60 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(Condition);
+            b.Append(',');
+            b.Append(Embed);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_ForRange : CodeEmbedInfo
+    { // ForRange,<%LoopVar%>,<Start>,<End>,<Step>,<EmbedCommmand>
+        public string LoopVar { get; private set; }
+        public string Start { get; private set; }
+        public string End { get; private set; }
+        public string Step { get; private set; }
+
+        public CodeInfo_ForRange(string loopVar, string start, string end, string step, CodeCommand embed)
+            : base(embed)
+        {
+            LoopVar = loopVar;
+            Start = start;
+            End = end;
+            Step = step;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(LoopVar);
+            b.Append(',');
+            b.Append(Start);
+            b.Append(',');
+            b.Append(End);
+            b.Append(',');
+            b.Append(Embed);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_ForEach : CodeEmbedInfo
+    { // ForEach,<%LoopVar%>,<IterateList>,<EmbedCommmand>
+        public string LoopVar { get; private set; }
+        public string IterateList { get; private set; }
+
+        public CodeInfo_ForEach(string loopVar, string iterateList, CodeCommand embed)
+            : base(embed)
+        {
+            LoopVar = loopVar;
+            IterateList = iterateList;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(LoopVar);
+            b.Append(',');
+            b.Append(IterateList);
             b.Append(',');
             b.Append(Embed);
             return b.ToString();

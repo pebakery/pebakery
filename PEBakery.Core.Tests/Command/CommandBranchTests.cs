@@ -116,6 +116,9 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-IfElseChain01");
             ScriptTemplate(scPath, "Process-IfElseChain02");
             ScriptTemplate(scPath, "Process-IfElseChain03");
+
+            // It shoudl be a ParserError, but EvalScript treats it as RuntimeError.
+            ScriptTemplate(scPath, "Process-NestedElseFlag-Error", ErrorCheck.RuntimeError);
         }
         #endregion
 

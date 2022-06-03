@@ -303,8 +303,63 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case ListType.Range:
+                    {
+                        ListInfo_Range subInfo = (ListInfo_Range)info.SubInfo;
+
+                        string startStr = StringEscaper.Preprocess(s, subInfo.Start);
+                        string endStr = StringEscaper.Preprocess(s, subInfo.End);
+
+                        // TODO: A-Z, a-z 시나리오도 준비
+                        if (!NumberHelper.ParseInt64(startStr, out long startVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{startVal}] is not a valid integer");
+                        if (!NumberHelper.ParseInt64(endStr, out long endVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{endVal}] is not a valid integer");
+
+                        long stepVal = startVal <= endVal ? 1 : -1;
+                        if (subInfo.Step != null)
+                        {
+                            string stepStr = StringEscaper.Preprocess(s, subInfo.Step);
+                            if (!NumberHelper.ParseInt64(stepStr, out stepVal))
+                                return LogInfo.LogErrorMessage(logs, $"[{stepVal}] is not a valid integer");
+                        }
+
+                        if (subInfo.Delim != null)
+                            delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
+
+                        List<string> list;
+                        if (startVal < endVal)
+                        { 
+                            if (stepVal <= 0)
+                                return LogInfo.LogErrorMessage(logs, $"[{startVal}] is larger than [{endVal}], step [{stepVal}] must be positive integer");
+
+                            list = new List<string>();
+                            for (long i = startVal; i < endVal; i += stepVal)
+                                list.Add(i.ToString());
+                        }
+                        else if (endVal < startVal)
+                        {
+                            if (0 <= stepVal)
+                                return LogInfo.LogErrorMessage(logs, $"[{startVal}] is smaller than [{endVal}], step [{stepVal}] must be negative integer");
+
+                            list = new List<string>();
+                            for (long i = startVal; endVal < i; i += stepVal)
+                                list.Add(i.ToString());
+                        }
+                        else
+                        {
+                            return LogInfo.LogErrorMessage(logs, $"Step [{stepVal}] canmnot be 0");
+                        }
+                        
+
+                        listStr = StringEscaper.PackListStr(list, delimiter);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.ListVar, listStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 default: // Error
-                    throw new InternalException("Internal Logic Error at CommandList");
+                    logs.Add(new LogInfo(LogState.CriticalError, $"[List,{info.Type}] is not yet implemented."));
+                    break;
             }
 
             return logs;

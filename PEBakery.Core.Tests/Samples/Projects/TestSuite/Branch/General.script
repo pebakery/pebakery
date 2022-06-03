@@ -182,6 +182,16 @@ Else,If,#r,Equal,3,Begin
   Set,%Dest%,T
 End
 
+[Process-NestedElseFlag-Error]
+Set,%Dest%,T
+Set,#r,2
+If,#r,Equal,1,Begin
+  Set,%Dest%,T
+End
+Else,Else,If,#r,Equal,2,Begin
+  Set,%Dest%,F
+End
+
 [Process-IfBeginEnd]
 Set,%Dest%,F
 Set,#r,True
@@ -274,3 +284,7 @@ While,%xIdx%,Smaller,2,Begin
     Set,#r,"#rA"
   End
 End
+
+[Process-ForEach-Simple]
+
+

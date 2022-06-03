@@ -815,11 +815,14 @@ namespace PEBakery.Core
                     case CodeType.Else:
                         CommandBranch.Else(s, cmd);
                         break;
-                    case CodeType.For:
-                        // CommandBranch.For(s, cmd);
-                        break;
                     case CodeType.While:
                         CommandBranch.While(s, cmd);
+                        break;
+                    case CodeType.ForRange:
+                        // CommandBranch.For(s, cmd);
+                        break;
+                    case CodeType.ForEach:
+                        // CommandBranch.For(s, cmd);
                         break;
                     case CodeType.Break:
                         logs = CommandBranch.Break(s, cmd);
@@ -1796,7 +1799,7 @@ namespace PEBakery.Core
         private long _ctrIdx;
 
         public EngineForSyntaxState(string ctrVarName, long ctrStart, long ctrEnd, long ctrStep)
-            : base(CodeType.For, ctrVarName)
+            : base(CodeType.ForRange, ctrVarName)
         {
             CounterStart = ctrStart;
             CounterEnd = ctrEnd;

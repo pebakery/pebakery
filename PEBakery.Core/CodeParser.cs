@@ -2367,7 +2367,7 @@ namespace PEBakery.Core
                 case CodeType.If:
                     {
                         if (args.Count < 2)
-                            throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
+                            throw new InvalidCommandException("[If] must have a form of [If],<Condition>,<Command>", rawCode);
 
                         (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
                         CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
@@ -2378,22 +2378,35 @@ namespace PEBakery.Core
                         CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args, lineIdx); // Skip Else
                         return new CodeInfo_Else(embCmd);
                     }
-                case CodeType.For:
-                    {
-                        if (args.Count < 3)
-                            throw new InvalidCommandException("[For] must have form of [For],<StartIdx>,<EndIdx>,<Command>", rawCode);
-
-                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(2).ToList(), lineIdx);
-                        return new CodeInfo_For(args[0], args[1], embCmd);
-                    }
                 case CodeType.While:
                     {
                         if (args.Count < 2)
-                            throw new InvalidCommandException("[While] must have form of [While],<Condition>,<Command>", rawCode);
+                            throw new InvalidCommandException("[While] must have a form of [While],<Condition>,<Command>", rawCode);
 
                         (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
                         CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
                         return new CodeInfo_While(cond, embCmd);
+                    }
+                case CodeType.ForRange:
+                    {
+                        if (args.Count < 5)
+                            throw new InvalidCommandException("[ForRange] must have a form of [ForRange],<%LoopVar%>,<Start>,<End>,<Step>,<Command>", rawCode);
+
+                        // Check LoopVar
+                        string loopVar = args[0];
+                        if (Variables.DetectType(loopVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{loopVar}] is not a valid variable name", rawCode);
+
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(4).ToList(), lineIdx);
+                        return new CodeInfo_ForRange(loopVar, args[1], args[2], args[3], embCmd);
+                    }
+                case CodeType.ForEach:
+                    {
+                        if (args.Count < 3)
+                            throw new InvalidCommandException("[ForEach] must have a form of ForEach,<%LoopVar%>,<IterateList>,<Command>", rawCode);
+
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(2).ToList(), lineIdx);
+                        return new CodeInfo_ForEach(args[0], args[1], embCmd);
                     }
                 case CodeType.Break:
                 case CodeType.Continue:
@@ -3897,6 +3910,39 @@ namespace PEBakery.Core
                         info = new ListInfo_Sort(listVar, args[1], delim);
                     }
                     break;
+                case ListType.Range:
+                    {
+                        const int minArgCount = 4;
+                        const int maxArgCount = 5;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string? delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg[delimKey.Length..];
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Range(listVar, args[1], args[2], args[3], delim);
+                    }
+                    break;
                 default: // Error
                     throw new InternalParserException($"Wrong ListType [{type}]");
             }
@@ -4610,7 +4656,7 @@ namespace PEBakery.Core
                     case CodeType.End:
                     case CodeType.Comment:
                         { // These commands cannot be embedded!
-                            throw new InvalidCodeCommandException($"{eInfo.Embed.Type} cannot be used with [If]", cmd);
+                            throw new InvalidCodeCommandException($"{cmd.Type} cannot be used with [{eInfo.Embed.Type}]", cmd);
                         }
                     default:
                         { // Single-line embed
