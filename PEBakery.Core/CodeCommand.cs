@@ -4554,15 +4554,17 @@ namespace PEBakery.Core
     }
 
     public class CodeInfo_ForEach : CodeEmbedInfo
-    { // ForEach,<%LoopVar%>,<IterateList>,<EmbedCommmand>
+    { // ForEach,<%LoopVar%>,<IterateList>,[Delim=<String>],<EmbedCommmand>
         public string LoopVar { get; private set; }
         public string IterateList { get; private set; }
+        public string? Delim { get; private set; }
 
-        public CodeInfo_ForEach(string loopVar, string iterateList, CodeCommand embed)
+        public CodeInfo_ForEach(string loopVar, string iterateList, string? delim, CodeCommand embed)
             : base(embed)
         {
             LoopVar = loopVar;
             IterateList = iterateList;
+            Delim = delim;
         }
 
         public override string ToString()
@@ -4572,6 +4574,12 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(IterateList);
             b.Append(',');
+            if (Delim != null)
+            {
+                b.Append("Delim=");
+                b.Append(Delim);
+                b.Append(',');
+            }
             b.Append(Embed);
             return b.ToString();
         }

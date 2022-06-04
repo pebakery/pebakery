@@ -2403,10 +2403,22 @@ namespace PEBakery.Core
                 case CodeType.ForEach:
                     {
                         if (args.Count < 3)
-                            throw new InvalidCommandException("[ForEach] must have a form of ForEach,<%LoopVar%>,<IterateList>,<Command>", rawCode);
+                            throw new InvalidCommandException("[ForEach] must have a form of ForEach,<%LoopVar%>,<IterateList>,[Delim=<String>],<Command>", rawCode);
 
-                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(2).ToList(), lineIdx);
-                        return new CodeInfo_ForEach(args[0], args[1], embCmd);
+                        int argsSkip = 2;
+                        const string delimKey = "Delim=";
+                        string? delim = null;
+                        if (args[2].StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            delim = args[2].Substring(delimKey.Length);
+                            argsSkip += 1;
+                        }
+
+                        if (args.Count <= argsSkip)
+                            throw new InvalidCommandException("Embedded command is empty", rawCode);
+
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(argsSkip).ToList(), lineIdx);
+                        return new CodeInfo_ForEach(args[0], args[1], delim, embCmd);
                     }
                 case CodeType.Break:
                 case CodeType.Continue:

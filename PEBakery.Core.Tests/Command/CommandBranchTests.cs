@@ -32,7 +32,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -992,6 +991,45 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-While-Break02", "AAA");
             ScriptTemplate(scPath, "Process-While-Continue01", "AAAA");
             ScriptTemplate(scPath, "Process-While-Continue02", "AAA");
+        }
+        #endregion
+
+        #region ForEach
+        [TestMethod]
+        public void ForEach()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-ForEach-IntList", "17");
+            ScriptTemplate(scPath, "Process-ForEach-StrList", "TomatoAppleOrange");
+            ScriptTemplate(scPath, "Process-ForEach-IdxList", "ACB");
+        }
+        #endregion
+
+        #region ForRange
+        [TestMethod]
+        public void ForRange()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-ForRange-Increment01", "01234");
+            ScriptTemplate(scPath, "Process-ForRange-Increment02", "0246");
+            ScriptTemplate(scPath, "Process-ForRange-Decrement01", "54321");
+            ScriptTemplate(scPath, "Process-ForRange-Decrement02", "7531");
         }
         #endregion
 

@@ -819,10 +819,10 @@ namespace PEBakery.Core
                         CommandBranch.While(s, cmd);
                         break;
                     case CodeType.ForRange:
-                        // CommandBranch.For(s, cmd);
+                        CommandBranch.ForRange(s, cmd);
                         break;
                     case CodeType.ForEach:
-                        // CommandBranch.For(s, cmd);
+                        CommandBranch.ForEach(s, cmd);
                         break;
                     case CodeType.Break:
                         logs = CommandBranch.Break(s, cmd);
@@ -1745,7 +1745,7 @@ namespace PEBakery.Core
     /// <summary>
     /// Modern looping syntax management 
     /// </summary>
-    public abstract class EngineLoopSyntaxState
+    public class EngineLoopSyntaxState
     {
         public CodeType CodeType { get; }
         
@@ -1753,112 +1753,6 @@ namespace PEBakery.Core
         public EngineLoopSyntaxState(CodeType codeType)
         {
             CodeType = codeType;
-        }
-    }
-
-    /// <summary>
-    /// Modern While loop management 
-    /// </summary>
-    public class EngineWhileSyntaxState : EngineLoopSyntaxState
-    {
-        public EngineWhileSyntaxState()
-            : base(CodeType.While)
-        {
-
-        }
-    }
-
-    /// <summary>
-    /// Modern For, ForEach loop management 
-    /// </summary>
-    public abstract class EngineForBaseSyntaxState : EngineLoopSyntaxState
-    {
-        public string CounterVarName { get; set; }
-
-        public EngineForBaseSyntaxState(CodeType codeType, string ctrVarName)
-            : base(codeType)
-        {
-            CounterVarName = ctrVarName;
-        }
-
-        /// <summary>
-        /// Get next counter. Must be called starting from the first iteration.
-        /// </summary>
-        /// <returns>Returns false if current counter was the last one.</returns>
-        public abstract bool NextCounter(out string nextVal);
-    }
-
-    /// <summary>
-    /// Modern For loop management 
-    /// </summary>
-    public class EngineForSyntaxState : EngineForBaseSyntaxState
-    {
-        public long CounterStart { get; }
-        public long CounterEnd { get; }
-        public long CounterStep { get; }
-        private long _ctrIdx;
-
-        public EngineForSyntaxState(string ctrVarName, long ctrStart, long ctrEnd, long ctrStep)
-            : base(CodeType.ForRange, ctrVarName)
-        {
-            CounterStart = ctrStart;
-            CounterEnd = ctrEnd;
-            CounterStep = ctrStep;
-            _ctrIdx = CounterStart - CounterStep;
-        }
-
-        public override bool NextCounter(out string nextVal)
-        {
-            if (_ctrIdx + CounterStep < CounterEnd)
-            {
-                _ctrIdx += CounterStep;
-                nextVal = _ctrIdx.ToString();
-                return true; 
-            }
-            else
-            {
-                nextVal = string.Empty;
-                return false;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Modern ForEach loop management 
-    /// </summary>
-    public class EngineForEachSyntaxState : EngineForBaseSyntaxState
-    {  
-        /// <summary>
-        /// List of items to loop.
-        /// </summary>
-        /// <remarks>
-        /// 0 or more items are allowed.
-        /// </remarks>
-        public List<string> CounterList { get; }
-        /// <summary>
-        /// Current index of counter list.
-        /// </summary>
-        public int CounterIdx { get; private set; } = -1;
-
-        public EngineForEachSyntaxState(string ctrVarName, List<string> ctrList)
-            : base(CodeType.ForEach, ctrVarName)
-        {
-            CounterList = ctrList;
-        }
-
-        public override bool NextCounter(out string nextVal)
-        {
-            if (CounterIdx + 1 < CounterList.Count)
-            {
-                CounterIdx += 1;
-                nextVal = CounterList[CounterIdx];
-                return true;
-            }
-            else
-            {
-                nextVal = string.Empty;
-                return false;
-            }
         }
     }
     #endregion

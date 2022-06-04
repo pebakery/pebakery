@@ -40,7 +40,7 @@ namespace PEBakery.Core.Commands
         /// </summary>
         /// <param name="s"></param>
         /// <param name="cmd"></param>
-        /// <returns></returns>
+        /// <returns>List of logs</returns>
         public static List<LogInfo> List(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -52,7 +52,7 @@ namespace PEBakery.Core.Commands
                 listStr = StringEscaper.Preprocess(s, listVar);
 
             ListType type = info.Type;
-            string delimiter = "|";
+            string delimiter = StringEscaper.DefaultListStrDelim;
             switch (type)
             {
                 case ListType.Get:
@@ -309,48 +309,34 @@ namespace PEBakery.Core.Commands
 
                         string startStr = StringEscaper.Preprocess(s, subInfo.Start);
                         string endStr = StringEscaper.Preprocess(s, subInfo.End);
-
-                        // TODO: A-Z, a-z 시나리오도 준비
+                        string stepStr = StringEscaper.Preprocess(s, subInfo.Step);
                         if (!NumberHelper.ParseInt64(startStr, out long startVal))
                             return LogInfo.LogErrorMessage(logs, $"[{startVal}] is not a valid integer");
                         if (!NumberHelper.ParseInt64(endStr, out long endVal))
                             return LogInfo.LogErrorMessage(logs, $"[{endVal}] is not a valid integer");
-
-                        long stepVal = startVal <= endVal ? 1 : -1;
-                        if (subInfo.Step != null)
-                        {
-                            string stepStr = StringEscaper.Preprocess(s, subInfo.Step);
-                            if (!NumberHelper.ParseInt64(stepStr, out stepVal))
-                                return LogInfo.LogErrorMessage(logs, $"[{stepVal}] is not a valid integer");
-                        }
+                        if (!NumberHelper.ParseInt64(stepStr, out long stepVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{stepVal}] is not a valid integer");
 
                         if (subInfo.Delim != null)
                             delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
 
-                        List<string> list;
+                        if (!StringEscaper.IsRangeValid(startVal, endVal, stepVal))
+                            return LogInfo.LogErrorMessage(logs, $"Step [{stepVal}] for [{startVal}] ~ [{endVal}] is invalid, it will cause an infinite loop.");
+
+                        // start <  end : for (long i = s; i < e; i++)
+                        // start >  end : for (long i = s; e < i; i--)
+                        // start == end : empty list
+                        List<string> list = new List<string>();
                         if (startVal < endVal)
                         { 
-                            if (stepVal <= 0)
-                                return LogInfo.LogErrorMessage(logs, $"[{startVal}] is larger than [{endVal}], step [{stepVal}] must be positive integer");
-
-                            list = new List<string>();
                             for (long i = startVal; i < endVal; i += stepVal)
                                 list.Add(i.ToString());
                         }
                         else if (endVal < startVal)
                         {
-                            if (0 <= stepVal)
-                                return LogInfo.LogErrorMessage(logs, $"[{startVal}] is smaller than [{endVal}], step [{stepVal}] must be negative integer");
-
-                            list = new List<string>();
                             for (long i = startVal; endVal < i; i += stepVal)
                                 list.Add(i.ToString());
-                        }
-                        else
-                        {
-                            return LogInfo.LogErrorMessage(logs, $"Step [{stepVal}] canmnot be 0");
-                        }
-                        
+                        }                        
 
                         listStr = StringEscaper.PackListStr(list, delimiter);
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.ListVar, listStr);

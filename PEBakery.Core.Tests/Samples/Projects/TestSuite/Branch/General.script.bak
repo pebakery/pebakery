@@ -309,25 +309,25 @@ ForEach,%idx%,%idxList%,"Delim=?",Begin
 End
 
 [Process-ForRange-Increment01]
-Set,#r,""
+Set,#r,0
 ForRange,%i%,0,5,1,Begin
   Set,#r,"#r%i%"
 End
 
 [Process-ForRange-Increment02]
-Set,#r,""
+Set,#r,0
 ForRange,%i%,0,7,2,Begin
   Set,#r,"#r%i%"
 End
 
 [Process-ForRange-Decrement01]
-Set,#r,""
+Set,#r,0
 ForRange,%i%,5,0,-1,Begin
   Set,#r,"#r%i%"
 End
 
 [Process-ForRange-Decrement02]
-Set,#r,""
+Set,#r,0
 ForRange,%i%,7,0,-2,Begin
   Set,#r,"#r%i%"
 End

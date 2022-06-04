@@ -158,7 +158,6 @@ namespace PEBakery.Core
             {
                 foreach (char ch in path)
                 {
-                    // ReSharper disable once PossibleMultipleEnumeration
                     if (more.Contains(ch))
                         return false;
                 }
@@ -192,6 +191,26 @@ namespace PEBakery.Core
             //                           Txt Files     | *.txt;*.log   | All Files   | *.*
             const string filterRegex = @"^([^\|\r\n]+)\|([^\|\r\n]+)+(\|([^\|\r\n]+)\|([^\|\r\n]+))*$";
             return Regex.IsMatch(filter, filterRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
+
+        /// <summary>
+        /// Prevent infinite loop in ForRange and List,Range.
+        /// </summary>
+        /// <remarks>
+        /// Use Python3 range() function as a reference.
+        /// </remarks>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="step">Must not be a zero.<m/param>
+        /// <returns></returns>
+        public static bool IsRangeValid(long start, long end, long step)
+        {
+            if (start < end) // for i in range(0, 7, 2)
+                return 0 < step;
+            else if (end < start)
+                return step < 0;
+            else // start == end -> Must iterate 0 times.
+                return step != 0;
         }
         #endregion
 
@@ -792,14 +811,16 @@ namespace PEBakery.Core
         #endregion
 
         #region List as Concatinated String
+        public const string DefaultListStrDelim = "|";
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static List<string> UnpackListStr(string listStr, string separator)
+        public static List<string> UnpackListStr(string listStr, string separator = DefaultListStrDelim)
         {
             return StringHelper.SplitEx(listStr, separator, StringComparison.OrdinalIgnoreCase);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string PackListStr(IList<string> list, string separator)
+        public static string PackListStr(IList<string> list, string separator = DefaultListStrDelim)
         {
             return string.Join(separator, list);
         }

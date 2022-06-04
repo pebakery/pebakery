@@ -383,48 +383,7 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        /*
-        public static void For(EngineState s, CodeCommand cmd)
-        {
-            CodeInfo_For info = (CodeInfo_For)cmd.Info;
-            EngineLocalState ls = s.PeekLocalState();
-
-            if (info.StartIdx == null)
-                throw new CriticalErrorException($"{info.StartIdx} is null");
-            if (info.EndIdx == null)
-                throw new CriticalErrorException($"{info.EndIdx} is null");
-
-            string startStr = StringEscaper.Preprocess(s, info.StartIdx);
-            string endStr = StringEscaper.Preprocess(s, info.EndIdx);
-
-            if (!NumberHelper.ParseInt64(startStr, out long startIdx))
-                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
-            if (!NumberHelper.ParseInt64(endStr, out long endIdx))
-                throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
-
-            // Run info.Link until condition fails to match
-            for (long i = startIdx; i < endIdx; i++)
-            {
-                
-                if (EvalBranchCondition(s, info.Condition, out string msg))
-                { // Condition matched, run it
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
-
-                    RunBranchLink(s, cmd.Section, info.Link);
-
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
-
-                    if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
-                        break;
-                }
-                else
-                { // Do not run
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, ls.Depth));
-                    break;
-                }
-            }
-        }
-        */
+        
 
         public static void While(EngineState s, CodeCommand cmd)
         {
@@ -432,15 +391,18 @@ namespace PEBakery.Core.Commands
             EngineLocalState ls = s.PeekLocalState();
 
             // Run info.Link until condition fails to match
+            int loopIdx = 0;
             while (true)
             {
+                loopIdx += 1;
+
                 if (EvalBranchCondition(s, info.Condition, out string msg))
                 { // Condition matched, run it
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Iterating [{NumberHelper.ToEnglishOridnal(loopIdx)}] loop: {msg}", cmd, ls.Depth));
 
                     // Push LoopSyntaxState
-                    EngineLoopSyntaxState whileState = new EngineWhileSyntaxState();
-                    s.LoopSyntaxStateStack.Push(whileState);
+                    EngineLoopSyntaxState loopState = new EngineLoopSyntaxState(cmd.Type);
+                    s.LoopSyntaxStateStack.Push(loopState);
 
                     // Run info.Link commands
                     RunBranchLink(s, cmd.Section, info.Link);
@@ -448,17 +410,9 @@ namespace PEBakery.Core.Commands
                     // Pop LoopSyntaxState
                     s.LoopSyntaxStateStack.Pop();
 
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iterated [{NumberHelper.ToEnglishOridnal(loopIdx)}] loop", cmd, ls.Depth));
 
-                    // Break the loop if `Break` command was executed.
-                    // Do nothing on a `Continue` command.
-                    bool breakFlag = s.HaltReturnFlags.LoopBreak;
-                    s.HaltReturnFlags.ResetLoopFlags();
-                    if (breakFlag)
-                        break;
-
-                    // Check halt/return flags
-                    if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                    if (CheckLoopSyntaxBreak(s))
                         break;
                 }
                 else
@@ -469,7 +423,114 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        public static List<LogInfo> Break(EngineState s, CodeCommand cmd)
+        public static void ForRange(EngineState s, CodeCommand cmd)
+        {
+            CodeInfo_ForRange info = (CodeInfo_ForRange)cmd.Info;
+            EngineLocalState ls = s.PeekLocalState();
+
+            string startStr = StringEscaper.Preprocess(s, info.Start);
+            string endStr = StringEscaper.Preprocess(s, info.End);
+            string stepStr = StringEscaper.Preprocess(s, info.Step);
+            if (!NumberHelper.ParseInt64(startStr, out long startVal))
+                throw new ExecuteException($"[{startVal}] is not a valid integer");
+            if (!NumberHelper.ParseInt64(endStr, out long endVal))
+                throw new ExecuteException($"[{endVal}] is not a valid integer");
+            if (!NumberHelper.ParseInt64(stepStr, out long stepVal))
+                throw new ExecuteException($"[{stepVal}] is not a valid integer");
+
+            if (!StringEscaper.IsRangeValid(startVal, endVal, stepVal))
+                throw new ExecuteException($"Step [{stepVal}] for [{startVal}] ~ [{endVal}] is invalid, it will cause an infinite loop.");
+
+            // start <  end : for (long i = s; i < e; i++)
+            // start >  end : for (long i = s; e < i; i--)
+            // start == end : empty list
+            bool ForRangeCond(long i)
+            {
+                if (startVal < endVal)
+                    return i < endVal;
+                else if (endVal < startVal)
+                    return endVal < i;
+                else
+                    return false;
+            }
+
+            if (ForRangeCond(startVal) == false)
+            {
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iteration condition not met ({startVal}-{endVal}/{stepVal})", cmd, ls.Depth));
+                return;
+            }
+
+            for (long i = startVal; ForRangeCond(i); i += stepVal)
+            {
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iterating loop with [{i}] ({startVal}-{endVal}/{stepVal})", cmd, ls.Depth));
+
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.LoopVar, i.ToString());
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, ls.Depth + 1));
+
+                // Push LoopSyntaxState
+                EngineLoopSyntaxState loopState = new EngineLoopSyntaxState(cmd.Type);
+                s.LoopSyntaxStateStack.Push(loopState);
+
+                // Run info.Link commands
+                RunBranchLink(s, cmd.Section, info.Link);
+
+                // Pop LoopSyntaxState
+                s.LoopSyntaxStateStack.Pop();
+
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iterated loop with [{i}] ({startVal}-{endVal}/{stepVal})", cmd, ls.Depth));
+
+                if (CheckLoopSyntaxBreak(s))
+                    break;
+            }
+        }
+
+        public static void ForEach(EngineState s, CodeCommand cmd)
+        {
+            CodeInfo_ForEach info = (CodeInfo_ForEach)cmd.Info;
+            EngineLocalState ls = s.PeekLocalState();
+
+            string iterateListStr = StringEscaper.Preprocess(s, info.IterateList);
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"List [{iterateListStr}] would be iterated", cmd, ls.Depth));
+
+            // Run info.Link for each list element
+            string delimiter = StringEscaper.DefaultListStrDelim;
+            if (info.Delim != null)
+                delimiter = StringEscaper.Preprocess(s, info.Delim);
+
+            List<string> iterateList = StringEscaper.UnpackListStr(iterateListStr, delimiter);
+
+            // Run info.Link for each list element
+            int elementIdx = 0;
+            foreach (string element in iterateList)
+            {
+                elementIdx += 1;
+
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iterating loop with [{element}] ({elementIdx}/{iterateList.Count})", cmd, ls.Depth));
+
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.LoopVar, element);
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, ls.Depth + 1));
+
+                // Push LoopSyntaxState
+                EngineLoopSyntaxState loopState = new EngineLoopSyntaxState(cmd.Type);
+                s.LoopSyntaxStateStack.Push(loopState);
+
+                // Run info.Link commands
+                RunBranchLink(s, cmd.Section, info.Link);
+
+                // Pop LoopSyntaxState
+                s.LoopSyntaxStateStack.Pop();
+
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Iterated loop with [{element}] ({elementIdx}/{iterateList.Count})", cmd, ls.Depth));
+
+                if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                    break;
+
+                if (CheckLoopSyntaxBreak(s))
+                    break;
+            }
+        }
+
+        public static List<LogInfo> Break(EngineState s, CodeCommand _)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -488,7 +549,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> Continue(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> Continue(EngineState s, CodeCommand _)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -522,6 +583,25 @@ namespace PEBakery.Core.Commands
             }
 
             Engine.RunCommands(s, section, link, s.CurSectionInParams, s.CurSectionOutParams, true);
+        }
+
+        /// <summary>
+        /// Return true if a loop syntax needs to be breaked.
+        /// </summary>
+        private static bool CheckLoopSyntaxBreak(EngineState s)
+        {
+            // Break the loop if `Break` command was executed.
+            // Do nothing on a `Continue` command.
+            bool breakFlag = s.HaltReturnFlags.LoopBreak;
+            s.HaltReturnFlags.ResetLoopFlags();
+            if (breakFlag)
+                return true;
+
+            // Check halt/return flags
+            if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                return true;
+
+            return false;
         }
 
         #region EvalBranchCondition
