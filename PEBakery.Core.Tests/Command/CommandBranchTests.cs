@@ -1019,6 +1019,41 @@ namespace PEBakery.Core.Tests.Command
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
 
+            static void ScriptTemplate(string treePath, string entrySection, string start, string end, string step, string? expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                void SetEngineStateOptions(EngineState s)
+                {
+                    s.Variables.SetValue(VarsType.Global, "Start", start);
+                    s.Variables.SetValue(VarsType.Global, "End", end);
+                    s.Variables.SetValue(VarsType.Global, "Step", step);
+                }
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetEngineStateOptions, entrySection);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destStr = s.ReturnValue;
+                    Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+                }
+            }
+
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "5", "1", "01234");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "7", "2", "0246");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "5", "0");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "0", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "-1", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "5", "0", "-1", "54321");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "7", "0", "-2", "7531");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "-5", "3");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "0", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "1", null, ErrorCheck.RuntimeError);
+        }
+        #endregion
+
+        #region ForRangeEach
+        [TestMethod]
+        public void ForRangeEach()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
             static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
@@ -1026,10 +1061,7 @@ namespace PEBakery.Core.Tests.Command
                 Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
             }
 
-            ScriptTemplate(scPath, "Process-ForRange-Increment01", "01234");
-            ScriptTemplate(scPath, "Process-ForRange-Increment02", "0246");
-            ScriptTemplate(scPath, "Process-ForRange-Decrement01", "54321");
-            ScriptTemplate(scPath, "Process-ForRange-Decrement02", "7531");
+            ScriptTemplate(scPath, "Process-ForRangeEach-Nested", "0X0Z0Y1X1Z1Y2X2Z2YY2");
         }
         #endregion
 

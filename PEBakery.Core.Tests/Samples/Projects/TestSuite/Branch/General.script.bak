@@ -308,26 +308,16 @@ ForEach,%idx%,%idxList%,"Delim=?",Begin
   Set,#r,"#r%Element%"
 End
 
-[Process-ForRange-Increment01]
-Set,#r,0
-ForRange,%i%,0,5,1,Begin
+[Process-ForRange-Param]
+Set,#r,""
+ForRange,%i%,%Start%,%End%,%Step%,Begin
   Set,#r,"#r%i%"
 End
 
-[Process-ForRange-Increment02]
-Set,#r,0
-ForRange,%i%,0,7,2,Begin
-  Set,#r,"#r%i%"
+[Process-ForRangeEach-Nested]
+Set,#r,""
+Set,%SrcList%,"X|Z|Y"
+ForRange,%x%,0,3,1,Begin
+  ForEach,%y%,%SrcList%,Set,#r,#r%x%%y%
 End
-
-[Process-ForRange-Decrement01]
-Set,#r,0
-ForRange,%i%,5,0,-1,Begin
-  Set,#r,"#r%i%"
-End
-
-[Process-ForRange-Decrement02]
-Set,#r,0
-ForRange,%i%,7,0,-2,Begin
-  Set,#r,"#r%i%"
-End
+Set,#r,#r%x%%y%
