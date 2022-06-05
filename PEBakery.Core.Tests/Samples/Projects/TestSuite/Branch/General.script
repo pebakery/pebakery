@@ -1,6 +1,6 @@
 [Main]
 Title=BranchGeneral
-Author=ied206
+Author=joveler
 Description=UnitTest
 Version=001
 Level=5
@@ -182,6 +182,16 @@ Else,If,#r,Equal,3,Begin
   Set,%Dest%,T
 End
 
+[Process-NestedElseFlag-Error]
+Set,%Dest%,T
+Set,#r,2
+If,#r,Equal,1,Begin
+  Set,%Dest%,T
+End
+Else,Else,If,#r,Equal,2,Begin
+  Set,%Dest%,F
+End
+
 [Process-IfBeginEnd]
 Set,%Dest%,F
 Set,#r,True
@@ -189,4 +199,129 @@ If,#r,Equal,True,Begin
     Set,%Dest%,T
 End
 
+[Process-While-Simple]
+Set,%i%,0
+Set,#r,""
+While,%i%,Smaller,3,Begin
+  Math,Add,%i%,%i%,1
+  Set,#r,"#rA"
+ End
 
+[Process-While-If]
+Set,%A%,True
+Set,%i%,0
+Set,#r,""
+If,%A%,Equal,True,While,%i%,Smaller,3,Begin
+  Math,Add,%i%,%i%,1
+  Set,#r,"#rA"
+ End
+ 
+ [Process-While-Nested]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,If,%A%,Equal,True,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+End
+
+[Process-While-Break01]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+	If,%yIdx%,Equal,2,Break
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+End
+
+[Process-While-Break02]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+  If,%xIdx%,Equal,1,Break
+End
+
+[Process-While-Continue01]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+	If,%yIdx%,Bigger,2,Continue
+	Set,#r,"#rA"
+  End
+  Math,Add,%xIdx%,%xIdx%,1
+End
+
+[Process-While-Continue02]
+Set,#r,""
+Set,%A%,True
+Set,%xIdx%,0
+While,%xIdx%,Smaller,2,Begin
+  Math,Add,%xIdx%,%xIdx%,1
+  If,%xIdx%,BiggerEqual,2,Continue
+  Set,%yIdx%,0
+  While,%yIdx%,Smaller,3,Begin
+    Math,Add,%yIdx%,%yIdx%,1
+    Set,#r,"#rA"
+  End
+End
+
+[Process-ForEach-IntList]
+Set,#r,0
+Set,%IterateList%,"1|2|4|3|7"
+ForEach,%Element%,%IterateList%,Begin
+  Math,Add,#r,#r,%Element%
+End
+
+[Process-ForEach-StrList]
+Set,#r,""
+Set,%A%,Apple
+ForEach,%Element%,"Tomato|%A%|Orange",Begin
+  Set,#r,"#r%Element%"
+End
+
+[Process-ForEach-IdxList]
+Set,#r,""
+Set,%SrcList%,"A|B|C"
+Set,%idxList%,"1?3?2"
+ForEach,%idx%,%idxList%,"Delim=?",Begin
+  List,Get,%SrcList%,%idx%,%Element%
+  Set,#r,"#r%Element%"
+End
+
+[Process-ForRange-Param]
+Set,#r,""
+ForRange,%i%,%Start%,%End%,%Step%,Begin
+  Set,#r,"#r%i%"
+End
+
+[Process-ForRangeEach-Nested]
+Set,#r,""
+Set,%SrcList%,"X|Z|Y"
+ForRange,%x%,0,4,1,Begin
+  ForEach,%y%,%SrcList%,Begin
+    If,%y%,Equal,Z,Continue
+	If,%x%,Equal,2,Break
+    Set,#r,#r%x%%y%
+  End
+End
+Set,#r,#r%y%%x%

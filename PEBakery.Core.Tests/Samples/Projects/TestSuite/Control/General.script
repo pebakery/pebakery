@@ -109,3 +109,24 @@ Set,%Dest%,T
 Set,#r,SUB
 Return,#1
 Set,%Dest%,F
+
+[Process-Halt-Simple]
+Set,#r,T
+Halt
+Set,#r,F
+
+[Process-Halt-InIf]
+Set,%i%,True
+If,%i%,Equal,True,Begin
+  Set,#r,T
+  Halt
+  Set,#r,F
+End
+
+[Process-Halt-InWhile]
+Set,%i%,0
+While,%i%,Smaller,4,Begin
+  If,%i%,Equal,2,Halt
+  Math,Add,%i%,%i%,1
+  Set,#r,"#rA"
+ End

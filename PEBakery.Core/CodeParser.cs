@@ -2365,9 +2365,63 @@ namespace PEBakery.Core
                         return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
                     }
                 case CodeType.If:
-                    return ParseCodeInfoIf(rawCode, args, lineIdx);
+                    {
+                        if (args.Count < 2)
+                            throw new InvalidCommandException("[If] must have a form of [If],<Condition>,<Command>", rawCode);
+
+                        (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
+                        return new CodeInfo_If(cond, embCmd);
+                    }
                 case CodeType.Else:
-                    return ParseCodeInfoElse(rawCode, args, lineIdx);
+                    {
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args, lineIdx); // Skip Else
+                        return new CodeInfo_Else(embCmd);
+                    }
+                case CodeType.While:
+                    {
+                        if (args.Count < 2)
+                            throw new InvalidCommandException("[While] must have a form of [While],<Condition>,<Command>", rawCode);
+
+                        (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
+                        return new CodeInfo_While(cond, embCmd);
+                    }
+                case CodeType.ForRange:
+                    {
+                        if (args.Count < 5)
+                            throw new InvalidCommandException("[ForRange] must have a form of [ForRange],<%LoopVar%>,<Start>,<End>,<Step>,<Command>", rawCode);
+
+                        // Check LoopVar
+                        string loopVar = args[0];
+                        if (Variables.DetectType(loopVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{loopVar}] is not a valid variable name", rawCode);
+
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(4).ToList(), lineIdx);
+                        return new CodeInfo_ForRange(loopVar, args[1], args[2], args[3], embCmd);
+                    }
+                case CodeType.ForEach:
+                    {
+                        if (args.Count < 3)
+                            throw new InvalidCommandException("[ForEach] must have a form of ForEach,<%LoopVar%>,<IterateList>,[Delim=<String>],<Command>", rawCode);
+
+                        int argsSkip = 2;
+                        const string delimKey = "Delim=";
+                        string? delim = null;
+                        if (args[2].StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            delim = args[2].Substring(delimKey.Length);
+                            argsSkip += 1;
+                        }
+
+                        if (args.Count <= argsSkip)
+                            throw new InvalidCommandException("Embedded command is empty", rawCode);
+
+                        CodeCommand embCmd = ForgeControlEmbedCommand(rawCode, args.Skip(argsSkip).ToList(), lineIdx);
+                        return new CodeInfo_ForEach(args[0], args[1], delim, embCmd);
+                    }
+                case CodeType.Break:
+                case CodeType.Continue:
                 case CodeType.Begin:
                 case CodeType.End:
                     return new CodeInfo();
@@ -3868,6 +3922,39 @@ namespace PEBakery.Core
                         info = new ListInfo_Sort(listVar, args[1], delim);
                     }
                     break;
+                case ListType.Range:
+                    {
+                        const int minArgCount = 4;
+                        const int maxArgCount = 5;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string? delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg[delimKey.Length..];
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Range(listVar, args[1], args[2], args[3], delim);
+                    }
+                    break;
                 default: // Error
                     throw new InternalParserException($"Wrong ListType [{type}]");
             }
@@ -4266,7 +4353,7 @@ namespace PEBakery.Core
                     cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("ExistRegSection", StringComparison.OrdinalIgnoreCase))
-                { // Will-be-deprecated
+                { // Equal to ExistRegSubKey
                     embIdx = cIdx + 3;
                     CheckArgumentCount(BranchConditionType.ExistRegSection, embIdx);
                     cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
@@ -4278,7 +4365,7 @@ namespace PEBakery.Core
                     cond = new BranchCondition(BranchConditionType.ExistRegSubKey, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("ExistRegKey", StringComparison.OrdinalIgnoreCase))
-                { // Will-be-deprecated
+                {
                     embIdx = cIdx + 4;
                     CheckArgumentCount(BranchConditionType.ExistRegKey, embIdx);
                     cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
@@ -4482,311 +4569,177 @@ namespace PEBakery.Core
                    sectionReturnValueMatch;
         }
 
-        public CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, int lineIdx)
-        {
-            if (args.Count < 2)
-                throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
-
-            (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
-            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
-            return new CodeInfo_If(cond, embCmd);
-        }
-
-        public CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, int lineIdx)
-        {
-            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, lineIdx); // Skip Else
-            return new CodeInfo_Else(embCmd);
-        }
-
-        public CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, int lineIdx)
+        public CodeCommand ForgeControlEmbedCommand(string rawCode, List<string> args, int lineIdx)
         {
             CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
             return embed;
         }
         #endregion
 
-        #region FoldBranchCodeBlock
+        #region FoldBranchCodeBlock, ParseNestedIf, ParsedNestedElse, MatchBeginWithEnd
         public static void FoldBranchCodeBlock(List<CodeCommand> codeList, out List<CodeCommand> foldedList)
         {
-            bool elseFlag = false;
+            bool elseFlag = false; // Else command must come right after If command
             foldedList = new List<CodeCommand>();
 
             for (int i = 0; i < codeList.Count; i++)
             {
                 CodeCommand cmd = codeList[i];
-                if (cmd.Type == CodeType.If)
-                { // Change it to IfCompact, and parse Begin - End
-                    if (cmd.Info is not CodeInfo_If info)
-                        throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
-                    if (info.LinkParsed)
-                        foldedList.Add(cmd);
-                    else
-                        i = ParseNestedIf(cmd, codeList, i, foldedList);
-
-                    elseFlag = true;
-
-                    FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
-                    info.Link = newLinkList;
-                }
-                else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
-                { // Compile to ElseCompact
-                    if (cmd.Info is not CodeInfo_Else info)
-                        throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
-
-                    if (elseFlag)
-                    {
-                        if (info.LinkParsed)
-                            foldedList.Add(cmd);
-                        else
-                            i = ParseNestedElse(cmd, codeList, i, foldedList, out elseFlag);
-
-                        FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
-                        info.Link = newLinkList;
-                    }
-                    else
-                    {
-                        throw new InvalidCodeCommandException("[Else] must be used after [If]", cmd);
-                    }
-                }
-                else if (cmd.Type == CodeType.Begin || cmd.Type == CodeType.End)
+                // Setup elseFlag
+                switch (cmd.Type)
                 {
-                    // Begin and End command must not affect or reset elseFlag
-                    // And it must not be added to foldedList
+                    case CodeType.If:
+                        elseFlag = true;
+                        break;
+                    case CodeType.Else:
+                        if (elseFlag == false)
+                            throw new InvalidCodeCommandException($"[{nameof(CodeType.Else)}] must be used after [{nameof(CodeType.If)}]", cmd);
+                        // Do not reset elseFlag here.
+                        // Else,If command -> elseFlag should be active.
+                        break;
+                    case CodeType.Begin:
+                    case CodeType.End:
+                        // Begin and End command must not affect or reset elseFlag
+                        // And it must not be added to foldedList
+                        break;
+                    case CodeType.Comment:
+                        // Comment command must not reset elseFlag
+                        // But it must be added to foldedList
+                        break;
+                    default:
+                        // The other operands, reset elseFlag and just add them to foldedList.
+                        elseFlag = false;
+                        break;
                 }
-                else if (cmd.Type == CodeType.Comment)
+
+                // Fold eInfo.Embed into eInfo.Link
+                if (cmd.Info is CodeEmbedInfo eInfo)
                 {
-                    // Comment command must not reset elseFlag
-                    // But it must be added to foldedList
-                    foldedList.Add(cmd);
+                    i = ParseAndFoldEmbedCommand(cmd, eInfo, codeList, i, foldedList);
+
+                    FoldBranchCodeBlock(eInfo.Link, out List<CodeCommand> newLinkList);
+                    eInfo.Link = newLinkList;
                 }
-                else
+                else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End)
                 {
-                    // The other operands, reset elseFlag and just add them to foldedList.
-                    elseFlag = false;
                     foldedList.Add(cmd);
                 }
             }
         }
-        #endregion
 
-        #region ParseNestedIf, ParsedNestedElse, MatchBeginWithEnd
         /// <summary>
-        /// 
+        /// Parse info.Embed into info.Link, and fold Begin ~ End multiline embed into info.Link command list.
         /// </summary>
         /// <param name="cmd"></param>
+        /// <param name="eInfo"></param>
         /// <param name="codeList"></param>
         /// <param name="codeListIdx"></param>
-        /// <param name="newList"></param>
-        /// <returns>Next codeListIdx</returns>
-        private static int ParseNestedIf(CodeCommand cmd, List<CodeCommand> codeList, int codeListIdx, List<CodeCommand> newList)
+        /// <param name="foldList"></param>
+        /// <returns>Return adjusted command index. This value is calculated as `codeListIdx + {folded_skip}`.</returns>
+        private static int ParseAndFoldEmbedCommand(CodeCommand cmd, CodeEmbedInfo eInfo, List<CodeCommand> codeList, int codeListIdx, List<CodeCommand> foldList)
         {
             // RawCode : If,%A%,Equal,B,Echo,Success
             // Condition : Equal,%A%,B,Echo,Success
             // Run if condition is met : Echo,Success
-            // Command compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
 
-            if (cmd.Info is not CodeInfo_If info)
-                throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+            foldList.Add(cmd);
 
-            newList.Add(cmd);
+            if (eInfo.LinkParsed)
+                return codeListIdx;
 
-            // <Raw>
-            // If,%A%,Equal,B,Echo,Success
             while (true)
             {
-                if (info.Embed.Type == CodeType.If) // Nested If
+                switch (eInfo.Embed.Type)
                 {
-                    info.Link.Add(info.Embed);
-                    info.LinkParsed = true;
+                    case CodeType.Begin:
+                        { // Multi-line embed (Begin-End)
+                          // Fold Begin-End into eInfo.Link
+                            int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
+                            if (endIdx == -1)
+                                throw new InvalidCodeCommandException("[Begin] must be matched with [End]", cmd);
 
-                    if (info.Embed.Info is not CodeInfo_If newInfo)
-                        throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-                    info = newInfo;
-                }
-                else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
-                {
-                    // Find proper End
-                    int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
-                    if (endIdx == -1)
-                        throw new InvalidCodeCommandException("[Begin] must be matched with [End]", cmd);
+                            eInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                            eInfo.LinkParsed = true;
 
-                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
-                    info.LinkParsed = true;
+                            return endIdx;
+                        }
+                    case CodeType.Else:
+                    case CodeType.End:
+                    case CodeType.Comment:
+                        { // These commands cannot be embedded!
+                            throw new InvalidCodeCommandException($"{cmd.Type} cannot be used with [{eInfo.Embed.Type}]", cmd);
+                        }
+                    default:
+                        { // Single-line embed
+                            eInfo.Link.Add(eInfo.Embed);
+                            eInfo.LinkParsed = true;
 
-                    return endIdx;
-                }
-                else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End || info.Embed.Type == CodeType.Comment) // Cannot come here!
-                {
-                    throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
-                }
-                else // Single-line If
-                {
-                    info.Link.Add(info.Embed);
-                    info.LinkParsed = true;
-
-                    return codeListIdx;
+                            // Is embedded command is an also embedable command?
+                            if (eInfo.Embed.Info is CodeEmbedInfo eSubInfo)
+                            { // If yes, fold it once more.
+                                eInfo = eSubInfo;
+                            }
+                            else
+                            {
+                                return codeListIdx;
+                            }
+                        }
+                        break;
                 }
             }
         }
 
         /// <summary>
-        /// Parsed nested Else
+        /// Find matching End command location of given embedded Begin command.
         /// </summary>
-        /// <returns>Return next command index</returns>
-        private static int ParseNestedElse(CodeCommand cmd, List<CodeCommand> codeList, int codeListIdx, List<CodeCommand> newList, out bool elseFlag)
-        {
-            if (cmd.Info is not CodeInfo_Else info)
-                throw new InternalParserException("Invalid CodeInfo_Else while processing nested [Else]");
-
-            newList.Add(cmd);
-
-            CodeCommand elseEmbCmd = info.Embed;
-            if (elseEmbCmd.Type == CodeType.If) // Nested If
-            {
-                info.Link.Add(elseEmbCmd);
-                info.LinkParsed = true;
-
-                if (info.Embed.Info is not CodeInfo_If ifInfo)
-                    throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                while (true)
-                {
-                    if (ifInfo.Embed.Type == CodeType.If) // Nested If
-                    {
-                        ifInfo.Link.Add(ifInfo.Embed);
-                        ifInfo.LinkParsed = true;
-
-                        if (ifInfo.Embed.Info is not CodeInfo_If newIfInfo)
-                            throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-                        ifInfo = newIfInfo;
-                    }
-                    else if (ifInfo.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
-                    {
-                        // Find proper End
-                        int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
-                        if (endIdx == -1)
-                            throw new InvalidCodeCommandException("[Begin] must be matched with [End]", ifInfo.Embed);
-
-                        ifInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
-                        ifInfo.LinkParsed = true;
-
-                        elseFlag = true;
-                        return endIdx;
-                    }
-                    else if (ifInfo.Embed.Type == CodeType.Else || ifInfo.Embed.Type == CodeType.End) // Cannot come here!
-                    {
-                        ifInfo.Link.Add(ifInfo.Embed);
-                        throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
-                    }
-                    else // Single-line If
-                    {
-                        ifInfo.Link.Add(ifInfo.Embed);
-                        ifInfo.LinkParsed = true;
-
-                        elseFlag = true;
-                        return codeListIdx;
-                    }
-                }
-            }
-            else if (elseEmbCmd.Type == CodeType.Begin)
-            {
-                // Find proper End
-                int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
-                if (endIdx == -1)
-                    throw new InvalidCodeCommandException("[Begin] must be matched with [End]", cmd);
-
-                info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1)); // Remove Begin and End
-                info.LinkParsed = true;
-
-                elseFlag = true;
-                return endIdx;
-            }
-            else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End || elseEmbCmd.Type == CodeType.Comment)
-            {
-                info.Link.Add(info.Embed);
-                throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with [Else]", cmd);
-            }
-            else // Normal codes
-            {
-                info.Link.Add(info.Embed);
-                info.LinkParsed = true;
-
-                elseFlag = false;
-                return codeListIdx;
-            }
-        }
-
-        // Process nested Begin ~ End block
+        /// <param name="codeList">Commands to find correct End</param>
+        /// <param name="codeListIdx">Command Index to start checking. Must have Begin embedded.</param>
+        /// <returns>Index of correct End.</returns>
         private static int MatchBeginWithEnd(List<CodeCommand> codeList, int codeListIdx)
         {
-            int nestedBeginEnd = 1;
-            // bool beginExist = false;
+            /*
+            [NestDepth Match Example]
+            ...
+            While,%xIdx%,Smaller,2,Begin                  -> nestDepth == 1 (START)
+              While,%yIdx%,Smaller,3,If,#r,Equals,T,Begin -> nestDepth == 2
+                Math,Add,%yIdx%,%yIdx%,1                  -> nestDepth == 2
+                If,#r,Equals,False,Echo,NOT_CALLED        -> nestDepth == 2
+                Set,#r,"#rA"                              -> nestDepth == 2
+              End                                         -> nestDepth == 1
+              Math,Add,%xIdx%,%xIdx%,1                    -> nestDepth == 1
+            End                                           -> nestDepth == 0 => PROPER END FOUND! (END)
+            ...
+            */
+
+            int nestDepth = 1;
             bool finalizedWithEnd = false;
 
             for (; codeListIdx < codeList.Count; codeListIdx++)
             {
                 CodeCommand cmd = codeList[codeListIdx];
-                if (cmd.Type == CodeType.If) // To check If,<Condition>,Begin
-                {
+                if (cmd.Info is CodeEmbedInfo eInfo)
+                { // If a command can have a Begin ~ End block
                     while (true)
                     {
-                        if (cmd.Info is not CodeInfo_If info)
-                            throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
-
-                        if (info.Embed.Type == CodeType.If) // Nested If
+                        if (eInfo.Embed.Info is CodeEmbedInfo eSubInfo)
                         {
-                            cmd = info.Embed;
+                            eInfo = eSubInfo;
+                            continue;
                         }
-                        else if (info.Embed.Type == CodeType.Begin)
+                        else if (eInfo.Embed.Type == CodeType.Begin)
                         {
-                            // beginExist = true;
-                            nestedBeginEnd++;
+                            nestDepth++;
                             break;
                         }
-                        else
-                            break;
-                    }
-                }
-                else if (cmd.Type == CodeType.Else)
-                {
-                    if (cmd.Info is not CodeInfo_Else info)
-                        throw new InternalParserException("Invalid CodeInfo_Else while matching [Begin] with [End]");
-
-                    CodeCommand ifCmd = info.Embed;
-                    if (ifCmd.Type == CodeType.If) // Nested If
-                    {
-                        while (true)
-                        {
-                            if (ifCmd.Info is not CodeInfo_If embedInfo)
-                                throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
-
-                            if (embedInfo.Embed.Type == CodeType.If) // Nested If
-                            {
-                                // ifCmd = embedInfo.Embed;
-                            }
-                            else if (embedInfo.Embed.Type == CodeType.Begin)
-                            {
-                                // beginExist = true;
-                                nestedBeginEnd++;
-                                break;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    else if (ifCmd.Type == CodeType.Begin)
-                    {
-                        // beginExist = true;
-                        nestedBeginEnd++;
+                        
+                        break;
                     }
                 }
                 else if (cmd.Type == CodeType.End)
                 {
-                    nestedBeginEnd--;
-                    if (nestedBeginEnd == 0)
+                    nestDepth--;
+                    if (nestDepth == 0)
                     {
                         finalizedWithEnd = true;
                         break;
@@ -4795,7 +4748,7 @@ namespace PEBakery.Core
             }
 
             // Met Begin, End and returned, success
-            if (finalizedWithEnd && nestedBeginEnd == 0)
+            if (finalizedWithEnd && nestDepth == 0)
                 return codeListIdx;
             return -1;
         }

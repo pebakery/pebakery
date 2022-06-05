@@ -439,14 +439,17 @@ namespace PEBakery.Core
                 List<LogInfo> logs = ExecuteCommand(s, cmd);
                 if (s.TestMode && allLogs != null)
                 {
-                    // ReSharper disable once PossibleNullReferenceException
                     allLogs.AddRange(logs);
                 }
 
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(section);
 
+                // Check if a script should be stopped / section should return.
                 if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
+                    break;
+                // Check if a loop was breaked or continued.
+                if (s.HaltReturnFlags.CheckLoopStop())
                     break;
             }
 
@@ -811,6 +814,21 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Else:
                         CommandBranch.Else(s, cmd);
+                        break;
+                    case CodeType.While:
+                        CommandBranch.While(s, cmd);
+                        break;
+                    case CodeType.ForRange:
+                        CommandBranch.ForRange(s, cmd);
+                        break;
+                    case CodeType.ForEach:
+                        CommandBranch.ForEach(s, cmd);
+                        break;
+                    case CodeType.Break:
+                        logs = CommandBranch.Break(s, cmd);
+                        break;
+                    case CodeType.Continue:
+                        logs = CommandBranch.Continue(s, cmd);
                         break;
                     case CodeType.Begin:
                         throw new InternalParserException("CodeParser Error");
@@ -1201,6 +1219,7 @@ namespace PEBakery.Core
         /// <summary>
         /// OwnerWindow to be passed into MessageBox.Show().
         /// In a background thread, must be used with Application.Current?.Dispatcher?.Invoke().
+        /// Use SystemHelper.MessageBoxDispatcherShow() or CustomMessageBox.DispatcherShow().
         /// </summary>
         public Window? OwnerWindow { get; private set; }
         #endregion
@@ -1272,9 +1291,16 @@ namespace PEBakery.Core
 
         #region Loop State Stack Properties
         /// <summary>
-        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
+        /// Legacy Loop, LoopLetter command management stack
         /// </summary>
-        public Stack<EngineLoopState> LoopStateStack { get; set; } = new Stack<EngineLoopState>(4);
+        /// <remarks>
+        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
+        /// </remarks>
+        public Stack<EngineLoopCmdState> LoopCmdStateStack { get; set; } = new Stack<EngineLoopCmdState>();
+        public Stack<EngineLoopSyntaxState> LoopSyntaxStateStack { get; set; } = new Stack<EngineLoopSyntaxState>();
+        #endregion
+
+        #region SetLocal Stack Properties
         /// <summary>
         /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
         /// </summary>
@@ -1476,7 +1502,7 @@ namespace PEBakery.Core
             ReturnValue = string.Empty;
             InitLocalStateStack();
             ElseFlag = false;
-            LoopStateStack.Clear();
+            LoopCmdStateStack.Clear();
 
             // Command State
             OnBuildExit = null;
@@ -1584,10 +1610,12 @@ namespace PEBakery.Core
         /// <param name="section">Current ScriptSection being run</param>
         public void PreciseUpdateScriptProgress(ScriptSection section)
         {
+            // TODO: ScriptProgress calculation must be changed to line-basis from section-basis
+            // -> Introduction of While, For make it impossible to accurately track script progress.
             if (CurrentScript == null)
                 return;
 
-            // Increase only if cmd came from CurrentScript
+            // Increase only if cmd is one of CurrentScript
             // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on `IncrementalUpdateSriptProgress()`?
             // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
             //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
@@ -1676,29 +1704,26 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region EngineLoopState
-    public class EngineLoopState
+    #region class EngineLoopCmdState
+    /// <summary>
+    /// Legacy Loop, LoopLetter command management 
+    /// </summary>
+    public class EngineLoopCmdState
     {
-        public enum LoopState
-        {
-            OnIndex,
-            OnDriveLetter,
-        }
-
-        public LoopState State { get; set; }
+        public LoopCmdState State { get; set; }
         public long CounterIndex;
         public char CounterLetter;
 
-        public EngineLoopState(long ctrIdx)
+        public EngineLoopCmdState(long ctrIdx)
         {
-            State = LoopState.OnIndex;
+            State = LoopCmdState.OnIndex;
             CounterIndex = ctrIdx;
             CounterLetter = '\0';
         }
 
-        public EngineLoopState(char ctrLetter)
+        public EngineLoopCmdState(char ctrLetter)
         {
-            State = LoopState.OnDriveLetter;
+            State = LoopCmdState.OnDriveLetter;
             CounterIndex = 0;
             if ('A' <= ctrLetter && ctrLetter <= 'Z' || ctrLetter == '\0')
                 CounterLetter = ctrLetter;
@@ -1708,9 +1733,31 @@ namespace PEBakery.Core
                 throw new CriticalErrorException("Invalid LoopLetter Handling");
         }
     }
+
+    public enum LoopCmdState
+    {
+        OnIndex,
+        OnDriveLetter,
+    }
     #endregion
 
-    #region EngineLocalState
+    #region class EngineLoopSyntaxState
+    /// <summary>
+    /// Modern looping syntax management 
+    /// </summary>
+    public class EngineLoopSyntaxState
+    {
+        public CodeType CodeType { get; }
+        
+
+        public EngineLoopSyntaxState(CodeType codeType)
+        {
+            CodeType = codeType;
+        }
+    }
+    #endregion
+
+    #region class EngineLocalState
     public class EngineLocalState : IEquatable<EngineLocalState>
     {
         #region Fields and Properties
@@ -1786,7 +1833,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region LocalVarsState
+    #region class LocalVarsState
     public class LocalVarsState
     {
         public EngineLocalState LocalState { get; private set; }
@@ -1800,7 +1847,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region ErrorOffState
+    #region class ErrorOffState
     public class ErrorOffState
     {
         public const int ForceDisable = -1;
@@ -1818,7 +1865,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region EngineHaltReturnFlags
+    #region class EngineHaltReturnFlags
     /// <summary>
     /// Class to manage build halt/section return flags.
     /// </summary>
@@ -1862,10 +1909,22 @@ namespace PEBakery.Core
         public bool SectionReturn { get; set; } = false;
         #endregion
 
+        #region Loop Syntax Properties
+        /// <summary>
+        /// Break command was executed to break the loop.
+        /// </summary>
+        public bool LoopBreak { get; set; } = false;
+        /// <summary>
+        /// Continue command was executed to immediately run the next iteration.
+        /// </summary>
+        public bool LoopContinue { get; set; } = false;
+        #endregion
+
         #region Check Halt
         public bool CheckScriptHalt() => UserHalt || ErrorHalt || CmdHalt || ScriptHalt;
         public bool CheckBuildHalt() => UserHalt || ErrorHalt || CmdHalt;
         public bool CheckSectionReturn() => SectionReturn;
+        public bool CheckLoopStop() => LoopBreak || LoopContinue;
         #endregion
 
         #region Reset
@@ -1880,6 +1939,12 @@ namespace PEBakery.Core
         public void ResetReturnFlags()
         {
             SectionReturn = false;
+        }
+
+        public void ResetLoopFlags()
+        {
+            LoopBreak = false;
+            LoopContinue = false;
         }
         #endregion
 
