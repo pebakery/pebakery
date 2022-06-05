@@ -1061,7 +1061,7 @@ namespace PEBakery.Core.Tests.Command
                 Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
             }
 
-            ScriptTemplate(scPath, "Process-ForRangeEach-Nested", "0X0Z0Y1X1Z1Y2X2Z2YY2");
+            ScriptTemplate(scPath, "Process-ForRangeEach-Nested", "0X0Y1X1Y3X3YY3");
         }
         #endregion
 

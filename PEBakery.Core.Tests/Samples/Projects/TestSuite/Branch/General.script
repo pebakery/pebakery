@@ -317,7 +317,11 @@ End
 [Process-ForRangeEach-Nested]
 Set,#r,""
 Set,%SrcList%,"X|Z|Y"
-ForRange,%x%,0,3,1,Begin
-  ForEach,%y%,%SrcList%,Set,#r,#r%x%%y%
+ForRange,%x%,0,4,1,Begin
+  ForEach,%y%,%SrcList%,Begin
+    If,%y%,Equal,Z,Continue
+	If,%x%,Equal,2,Break
+    Set,#r,#r%x%%y%
+  End
 End
 Set,#r,#r%y%%x%
