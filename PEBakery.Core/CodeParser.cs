@@ -3571,6 +3571,28 @@ namespace PEBakery.Core
                         info = new MathInfo_Rand(destVar, min, max);
                     }
                     break;
+                case MathType.ToChar:
+                    { // Math,ToChar,<%DestVar%>,<UnicodeCodePoint>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
+                        info = new MathInfo_ToChar(args[0], args[1]);
+                    }
+                    break;
+                case MathType.FromChar:
+                    { // Math,FromChar,<%DestVar%>,<Character>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
+                        info = new MathInfo_FromChar(args[0], args[1]);
+                    }
+                    break;
                 // Error
                 default:
                     throw new InternalParserException($"Wrong MathType [{type}]");

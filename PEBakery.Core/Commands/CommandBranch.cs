@@ -432,11 +432,11 @@ namespace PEBakery.Core.Commands
             string endStr = StringEscaper.Preprocess(s, info.End);
             string stepStr = StringEscaper.Preprocess(s, info.Step);
             if (!NumberHelper.ParseInt64(startStr, out long startVal))
-                throw new ExecuteException($"[{startVal}] is not a valid integer");
+                throw new ExecuteException($"[{startStr}] is not a valid integer");
             if (!NumberHelper.ParseInt64(endStr, out long endVal))
-                throw new ExecuteException($"[{endVal}] is not a valid integer");
+                throw new ExecuteException($"[{endStr}] is not a valid integer");
             if (!NumberHelper.ParseInt64(stepStr, out long stepVal))
-                throw new ExecuteException($"[{stepVal}] is not a valid integer");
+                throw new ExecuteException($"[{stepStr}] is not a valid integer");
 
             if (!StringEscaper.IsRangeValid(startVal, endVal, stepVal))
                 throw new ExecuteException($"Step [{stepVal}] for [{startVal}] ~ [{endVal}] is invalid, it will cause an infinite loop.");

@@ -852,7 +852,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region IsWildcard
+        #region ContainsWildcard
         public static bool ContainsWildcard(string path)
         {
             return path.IndexOfAny(WildcardCharacters) != -1;

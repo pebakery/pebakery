@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -57,26 +58,14 @@ namespace PEBakery.Core.Commands
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseDecimal(srcStr2, out decimal src2))
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
-
-                        decimal destInt;
-                        switch (type)
+                        decimal destInt = type switch
                         {
-                            case MathType.Add:
-                                destInt = src1 + src2;
-                                break;
-                            case MathType.Sub:
-                                destInt = src1 - src2;
-                                break;
-                            case MathType.Mul:
-                                destInt = src1 * src2;
-                                break;
-                            case MathType.Div:
-                                destInt = src1 / src2;
-                                break;
-                            default:
-                                throw new InternalException("Internal Logic Error at Math,Arithmetic");
-                        }
-
+                            MathType.Add => src1 + src2,
+                            MathType.Sub => src1 - src2,
+                            MathType.Mul => src1 * src2,
+                            MathType.Div => src1 / src2,
+                            _ => throw new InternalException("Internal Logic Error at Math,Arithmetic"),
+                        };
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString(CultureInfo.InvariantCulture)));
                     }
                     break;
@@ -254,23 +243,13 @@ namespace PEBakery.Core.Commands
                             src2 = false;
                         else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not valid boolean value");
-
-                        bool dest;
-                        switch (type)
+                        bool dest = type switch
                         {
-                            case MathType.BoolAnd:
-                                dest = src1 && src2;
-                                break;
-                            case MathType.BoolOr:
-                                dest = src1 || src2;
-                                break;
-                            case MathType.BoolXor:
-                                dest = src1 ^ src2;
-                                break;
-                            default:
-                                throw new InternalException("Internal Logic Error at Math,BoolLogicOper");
-                        }
-
+                            MathType.BoolAnd => src1 && src2,
+                            MathType.BoolOr => src1 || src2,
+                            MathType.BoolXor => src1 ^ src2,
+                            _ => throw new InternalException("Internal Logic Error at Math,BoolLogicOper"),
+                        };
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
                     }
                     break;
@@ -306,23 +285,13 @@ namespace PEBakery.Core.Commands
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseUInt64(srcStr2, out ulong src2))
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
-
-                        ulong dest;
-                        switch (type)
+                        ulong dest = type switch
                         {
-                            case MathType.BitAnd:
-                                dest = src1 & src2;
-                                break;
-                            case MathType.BitOr:
-                                dest = src1 | src2;
-                                break;
-                            case MathType.BitXor:
-                                dest = src1 ^ src2;
-                                break;
-                            default:
-                                throw new InternalException("Internal Logic Error at Math,BitLogicOper");
-                        }
-
+                            MathType.BitAnd => src1 & src2,
+                            MathType.BitOr => src1 | src2,
+                            MathType.BitXor => src1 ^ src2,
+                            _ => throw new InternalException("Internal Logic Error at Math,BitLogicOper"),
+                        };
                         string destStr = dest.ToString();
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
                     }
@@ -604,6 +573,52 @@ namespace PEBakery.Core.Commands
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destInt.ToString());
                         logs.AddRange(varLogs);
+                    }
+                    break;
+                case MathType.ToChar:
+                    {
+                        MathInfo_ToChar subInfo = (MathInfo_ToChar)info.SubInfo;
+
+                        string uniCodePointStr = StringEscaper.Preprocess(s, subInfo.UnicodeCodePoint);
+                        if (!NumberHelper.ParseUInt16(uniCodePointStr, out ushort uniCodePointInt))
+                            return LogInfo.LogErrorMessage(logs, $"[{uniCodePointStr}] is not a valid UCS-2 code point");
+                        char uniCodePoint = (char)uniCodePointInt;
+
+                        string dest;
+                        if (char.IsControl(uniCodePoint))
+                        {
+                            if (MathInfo_ToChar.AllowedControlCharConvertDict.ContainsKey(uniCodePoint))
+                                dest = StringEscaper.Escape(MathInfo_ToChar.AllowedControlCharConvertDict[uniCodePoint]);
+                            else
+                                return LogInfo.LogErrorMessage(logs, $"[{uniCodePointStr}] is a non-convertable control character");
+                        }
+                        else
+                        {
+                            dest = StringEscaper.Escape(new string(uniCodePoint, 1));
+                        }
+
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest));
+                    }
+                    break;
+                case MathType.FromChar:
+                    {
+                        MathInfo_FromChar subInfo = (MathInfo_FromChar)info.SubInfo;
+
+                        string charStr = StringEscaper.Preprocess(s, subInfo.Character);
+                        if (charStr.Length != 1)
+                            return LogInfo.LogErrorMessage(logs, $"[{charStr}] must be a single UCS-2 character");
+
+                        char ch = charStr[0];
+                        string dest;
+                        if (char.IsAscii(ch))
+                            dest = $"0x{((ushort)ch):X2}";
+                        else
+                            dest = $"0x{((ushort)ch):X4}";
+
+                        if (char.IsControl(ch) && MathInfo_FromChar.AllowedControlChars.All(x => x != ch))
+                            return LogInfo.LogErrorMessage(logs, $"[{dest}] is a non-convertable control character");
+                        
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest));
                     }
                     break;
                 default: // Error

@@ -3443,6 +3443,7 @@ namespace PEBakery.Core
         Pow = 90,
         Hex = 100, Dec,
         Rand = 110,
+        ToChar = 120, FromChar,
     }
 
     public class MathInfo : CodeInfo { }
@@ -3754,6 +3755,65 @@ namespace PEBakery.Core
                 }
             }
             return b.ToString();
+        }
+    }
+
+    public class MathInfo_ToChar : MathInfo
+    { // Math,ToChar,<%DestVar%>,<UnicodeCodePoint>
+        public string DestVar { get; private set; }
+        /// <summary>
+        /// 1B means ASCII, 2B means UCS-2.
+        /// Does not support UCS-4 unicode code point (Ex emoji) and control characters except \r, \n, \t.
+        /// </summary>
+        public string UnicodeCodePoint { get; private set; }
+
+        /// <summary>
+        /// Dictionary of allowed control characters.
+        /// </summary>
+        public static readonly Dictionary<char, string> AllowedControlCharConvertDict = new Dictionary<char, string>()
+        {
+            ['\t'] = "\t",
+            ['\r'] = "\r\n",
+            ['\n'] = "\r\n",
+        };
+
+        public MathInfo_ToChar(string destVar, string unicodeCodePoint)
+        {
+            DestVar = destVar;
+            UnicodeCodePoint = unicodeCodePoint;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{UnicodeCodePoint}";
+        }
+    }
+
+    public class MathInfo_FromChar : MathInfo
+    { // Math,FromChar,<%DestVar%>,<Character>
+        public string DestVar { get; private set; }
+        /// <summary>
+        /// A single unicode character
+        /// </summary>
+        public string Character { get; private set; }
+
+        /// <summary>
+        /// List of allowed control characters.
+        /// </summary>
+        public static readonly char[] AllowedControlChars = new char[]
+        {
+            '\r', '\n', '\t',
+        };
+
+        public MathInfo_FromChar(string destVar, string character)
+        {
+            DestVar = destVar;
+            Character = character;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Character}";
         }
     }
     #endregion

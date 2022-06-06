@@ -311,11 +311,11 @@ namespace PEBakery.Core.Commands
                         string endStr = StringEscaper.Preprocess(s, subInfo.End);
                         string stepStr = StringEscaper.Preprocess(s, subInfo.Step);
                         if (!NumberHelper.ParseInt64(startStr, out long startVal))
-                            return LogInfo.LogErrorMessage(logs, $"[{startVal}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{startStr}] is not a valid integer");
                         if (!NumberHelper.ParseInt64(endStr, out long endVal))
-                            return LogInfo.LogErrorMessage(logs, $"[{endVal}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{endStr}] is not a valid integer");
                         if (!NumberHelper.ParseInt64(stepStr, out long stepVal))
-                            return LogInfo.LogErrorMessage(logs, $"[{stepVal}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{stepStr}] is not a valid integer");
 
                         if (subInfo.Delim != null)
                             delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
