@@ -1115,86 +1115,88 @@ namespace PEBakery.Core.ViewModels
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
                     (List<LogInfo> logs, SyntaxChecker.Result result) = v.CheckScript();
-                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
-                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
-
-                    int errorWarns = errorLogs.Length + warnLogs.Length;
-                    StringBuilder b = new StringBuilder();
-                    if (0 < errorLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < errorLogs.Length; i++)
-                            {
-                                LogInfo log = errorLogs[i];
-                                b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
-                    if (0 < warnLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{warnLogs.Length} syntax warning detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < warnLogs.Length; i++)
-                            {
-                                LogInfo log = warnLogs[i];
-                                b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
                     ScriptCheckResult = result;
+
                     if (!quiet)
                     {
+                        string coverageMsg = $"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})";
                         switch (result)
                         {
                             case SyntaxChecker.Result.Clean:
-                                b.AppendLine("No syntax issue detected.");
-                                b.AppendLine();
-                                b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-                                SystemHelper.MessageBoxDispatcherShow(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                {
+                                    StringBuilder b = new StringBuilder();
+                                    b.AppendLine("No syntax issue detected.");
+                                    b.AppendLine();
+                                    b.AppendLine(coverageMsg);
+                                    SystemHelper.MessageBoxDispatcherShow(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
                                 break;
                             case SyntaxChecker.Result.Warning:
                             case SyntaxChecker.Result.Error:
-                                string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
-                                MessageBoxImage dialogIcon = result == SyntaxChecker.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
-                                MessageBoxResult dialogResult = SystemHelper.MessageBoxDispatcherShow(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
-                                if (dialogResult == MessageBoxResult.OK)
                                 {
-                                    b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+                                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+                                    int errorWarns = errorLogs.Length + warnLogs.Length;
+
+                                    StringBuilder b = new StringBuilder();
+                                    b.AppendLine("[Summary]");
+                                    b.AppendLine($"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected at [{sc.TreePath}].");
+                                    b.AppendLine();
+                                    b.AppendLine("[Coverage]");
+                                    b.AppendLine(coverageMsg);
+                                    b.AppendLine();
+
+                                    if (0 < errorLogs.Length)
+                                    {
+                                        b.AppendLine($"[Error{(errorLogs.Length == 1 ? string.Empty : "s")}]");
+                                        b.AppendLine($"{errorLogs.Length} syntax error{(errorLogs.Length == 1 ? string.Empty : "s")} detected.");
+                                        b.AppendLine();
+                                        for (int i = 0; i < errorLogs.Length; i++)
+                                        {
+                                            LogInfo log = errorLogs[i];
+                                            b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                                            if (log.Command != null)
+                                            {
+                                                b.Append($" ({log.Command})");
+                                                if (0 < log.Command.LineIdx)
+                                                    b.Append($" (Line {log.Command.LineIdx})");
+                                            }
+                                            else if (log.UIControl != null)
+                                            {
+                                                b.Append($" ({log.UIControl})");
+                                                if (0 < log.UIControl.LineIdx)
+                                                    b.Append($" (Line {log.UIControl.LineIdx})");
+                                            }
+                                            b.AppendLine();
+                                        }
+                                        b.AppendLine();
+                                    }
+
+                                    if (0 < warnLogs.Length)
+                                    {
+                                        b.AppendLine($"[Warning{(warnLogs.Length == 1 ? string.Empty : "s")}]");
+                                        b.AppendLine($"{warnLogs.Length} syntax warning{(warnLogs.Length == 1 ? string.Empty : "s")} detected.");
+                                        b.AppendLine();
+                                        for (int i = 0; i < warnLogs.Length; i++)
+                                        {
+                                            LogInfo log = warnLogs[i];
+                                            b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
+                                            if (log.Command != null)
+                                            {
+                                                b.Append($" ({log.Command})");
+                                                if (0 < log.Command.LineIdx)
+                                                    b.Append($" (Line {log.Command.LineIdx})");
+                                            }
+                                            else if (log.UIControl != null)
+                                            {
+                                                b.Append($" ({log.UIControl})");
+                                                if (0 < log.UIControl.LineIdx)
+                                                    b.Append($" (Line {log.UIControl.LineIdx})");
+                                            }
+                                            b.AppendLine();
+                                        }
+                                        b.AppendLine();
+                                    }
 
                                     // Do not clear tempDir right after calling OpenTextFile(). Doing this will trick the text editor.
                                     // Instead, leave it to Global.Cleanup() when program is exited.
