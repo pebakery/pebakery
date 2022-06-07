@@ -131,7 +131,6 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetFreeDrive subInfo = (SystemInfo_GetFreeDrive)info.SubInfo;
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
-                        // ReSharper disable once StringLiteralTypo
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
 

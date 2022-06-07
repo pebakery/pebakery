@@ -27,6 +27,7 @@
 
 using MahApps.Metro.IconPacks;
 using PEBakery.Helper;
+using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1139,8 +1140,9 @@ namespace PEBakery.Core.ViewModels
                                     int errorWarns = errorLogs.Length + warnLogs.Length;
 
                                     StringBuilder b = new StringBuilder();
+                                    string mainMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected at [{sc.TreePath}].";
                                     b.AppendLine("[Summary]");
-                                    b.AppendLine($"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected at [{sc.TreePath}].");
+                                    b.AppendLine(mainMsg);
                                     b.AppendLine();
                                     b.AppendLine("[Coverage]");
                                     b.AppendLine(coverageMsg);
@@ -1198,13 +1200,14 @@ namespace PEBakery.Core.ViewModels
                                         b.AppendLine();
                                     }
 
+                                    // TextViewDialog.DispatcherShow(null, "Syntax Check Report", mainMsg, b.ToString(), PackIconMaterialKind.Exclamation);
+
                                     // Do not clear tempDir right after calling OpenTextFile(). Doing this will trick the text editor.
                                     // Instead, leave it to Global.Cleanup() when program is exited.
                                     string tempDir = FileHelper.GetTempDir();
                                     string reportFile = Path.Combine(tempDir, Path.ChangeExtension(Path.GetFileName(sc.RealPath), null) + "_Report.txt");
                                     using (StreamWriter w = new StreamWriter(reportFile, false, Encoding.UTF8))
                                         w.Write(b.ToString());
-
                                     OpenTextFile(reportFile);
                                 }
                                 break;
