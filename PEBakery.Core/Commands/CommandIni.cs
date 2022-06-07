@@ -586,7 +586,7 @@ namespace PEBakery.Core.Commands
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{section}] deleted from [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{section}] from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Warning, $"Could not delete section [{section}] from [{fileName}]", cmd));
             return logs;
         }
 
