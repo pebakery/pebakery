@@ -239,8 +239,8 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.CheckBox:
                         {
-                            if (ci.Element is CheckBox checkBox && ci.Tag is string sectionName)
-                                ManageCheckBoxEvent(checkBox, false, sectionName);
+                            if (ci.Element is CheckBox checkBox)
+                                ManageCheckBoxEvent(checkBox, false);
                         }
                         break;
                     case UIControlType.ComboBox:
@@ -269,8 +269,8 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioButton:
                         {
-                            if (ci.Element is RadioButton radioButton && ci.Tag is string sectionName)
-                                ManageRadioButtonEvent(radioButton, false, sectionName);
+                            if (ci.Element is RadioButton radioButton)
+                                ManageRadioButtonEvent(radioButton, false);
                         }
                         break;
                     case UIControlType.FileBox:
@@ -281,8 +281,8 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.RadioGroup:
                         {
-                            if (ci.Element is RadioButton[] radioButtons && ci.Tag is string sectionName)
-                                ManageRadioGroupEvent(radioButtons, false, sectionName);
+                            if (ci.Element is RadioButton[] radioButtons)
+                                ManageRadioGroupEvent(radioButtons, false);
                         }
                         break;
                     case UIControlType.PathBox:
@@ -488,7 +488,7 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
-                ManageCheckBoxEvent(box, true, info.SectionName);
+                ManageCheckBoxEvent(box, true);
 
             SetToolTip(box, info.ToolTip);
             SetEditModeProperties(box, uiCtrl);
@@ -497,21 +497,17 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        public void ManageCheckBoxEvent(CheckBox box, bool addMode, string? sectionName)
+        public void ManageCheckBoxEvent(CheckBox box, bool addMode)
         {
             if (addMode)
             {
                 box.Checked += CheckBox_Checked;
                 box.Unchecked += CheckBox_Unchecked;
-                if (sectionName != null)
-                    box.Click += CheckBox_Click;
             }
             else
             {
                 box.Checked -= CheckBox_Checked;
                 box.Unchecked -= CheckBox_Unchecked;
-                if (sectionName != null)
-                    box.Click -= CheckBox_Click;
             }
         }
 
@@ -522,11 +518,7 @@ namespace PEBakery.Core
             if (box.Tag is not UIControl uiCtrl)
                 return;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Checked)}]");
-            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
-
-            info.Value = true;
-            uiCtrl.Update();
+            CheckBox_ValueChanged(uiCtrl, true);
         }
 
         public void CheckBox_Unchecked(object sender, RoutedEventArgs e)
@@ -536,23 +528,22 @@ namespace PEBakery.Core
             if (box.Tag is not UIControl uiCtrl)
                 return;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
-            UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
-
-            info.Value = false;
-            uiCtrl.Update();
+            CheckBox_ValueChanged(uiCtrl, false);
         }
 
-        public void CheckBox_Click(object sender, RoutedEventArgs e)
+        private void CheckBox_ValueChanged(UIControl uiCtrl, bool newVal)
         {
-            if (sender is not CheckBox box)
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
+            if (uiCtrl.Type != UIControlType.CheckBox)
                 return;
-            if (box.Tag is not UIControl uiCtrl)
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Click)}]");
-
+            
             UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
+
+            // Update value of a CheckBox control.
+            info.Value = newVal;
+            uiCtrl.Update();
+
+            // Run [SectionToRun] if provided.
             if (info.SectionName != null)
                 RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -585,13 +576,9 @@ namespace PEBakery.Core
         public void ManageComboBoxEvent(ComboBox box, bool addMode)
         {
             if (addMode)
-            {
                 box.SelectionChanged += ComboBox_SelectionChanged;
-            }
             else
-            {
                 box.SelectionChanged -= ComboBox_SelectionChanged;
-            }
         }
 
         public void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1140,7 +1127,7 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
-                ManageRadioButtonEvent(radio, true, info.SectionName);
+                ManageRadioButtonEvent(radio, true);
 
             SetToolTip(radio, info.ToolTip);
             SetEditModeProperties(radio, uiCtrl);
@@ -1149,20 +1136,12 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, radio, info.SectionName);
         }
 
-        public void ManageRadioButtonEvent(RadioButton radio, bool addMode, string? sectionName)
+        public void ManageRadioButtonEvent(RadioButton radio, bool addMode)
         {
             if (addMode)
-            {
                 radio.Checked += RadioButton_Checked;
-                if (sectionName != null)
-                    radio.Click += RadioButton_Click;
-            }
             else
-            {
                 radio.Checked -= RadioButton_Checked;
-                if (sectionName != null)
-                    radio.Click -= RadioButton_Click;
-            }
         }
 
         public void RadioButton_Checked(object sender, RoutedEventArgs e)
@@ -1175,9 +1154,10 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Checked)}]");
             UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
 
+            // Set selected RadioButton control.
             info.Selected = true;
 
-            // Uncheck the other RadioButtons
+            // Uncheck the other RadioButton controls.
             List<UIControl> updateList = RadioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (UIControl uncheck in updateList)
             {
@@ -1185,20 +1165,11 @@ namespace PEBakery.Core
                 unInfo.Selected = false;
             }
 
+            // Save the new values into a script file.
             updateList.Add(uiCtrl);
             UIControl.Update(updateList);
-        }
 
-        public void RadioButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not RadioButton radio)
-                return;
-            if (radio.Tag is not UIControl uiCtrl)
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Click)}]");
-
-            UIInfo_RadioButton info = (UIInfo_RadioButton)uiCtrl.Info;
+            // Run [SectionToRun] if provided.
             if (info.SectionName != null)
                 RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -1408,8 +1379,7 @@ namespace PEBakery.Core
             }
             else
             { // Directory
-                // .NET Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog.
-                // But it requires HWND to be displayed properly, which UIRenderer does not have, and brings WinForms dependency.
+                // .NET Core's System.Windows.Forms.FolderBrowserDialog (WinForms) does support Vista-style dialog, but it brings WinForms dependency.
                 // Use Ookii's VistaFolderBrowserDialog instead.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
@@ -1479,7 +1449,7 @@ namespace PEBakery.Core
             }
 
             if (_viewMode)
-                ManageRadioGroupEvent(radios, true, info.SectionName);
+                ManageRadioGroupEvent(radios, true);
 
             Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, uiCtrl.Width, uiCtrl.Height);
             DrawToCanvas(box, uiCtrl, rect);
@@ -1487,22 +1457,14 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, radios.Select(x => (object)x).ToArray());
         }
 
-        public void ManageRadioGroupEvent(RadioButton[] buttons, bool addMode, string? sectionName)
+        public void ManageRadioGroupEvent(RadioButton[] buttons, bool addMode)
         {
             foreach (RadioButton button in buttons)
             {
                 if (addMode)
-                {
                     button.Checked += RadioGroup_Checked;
-                    if (sectionName != null)
-                        button.Click += RadioGroup_Click;
-                }
                 else
-                {
                     button.Checked -= RadioGroup_Checked;
-                    if (sectionName != null)
-                        button.Click -= RadioGroup_Click;
-                }
             }
         }
 
@@ -1519,21 +1481,11 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
             UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
 
+            // Save the new values into a script file.
             info.Selected = idx;
             uiCtrl.Update();
-        }
 
-        public void RadioGroup_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not RadioButton button)
-                return;
-            if (button.Tag is not Tuple<UIControl, int> tup)
-                return;
-
-            UIControl uiCtrl = tup.Item1;
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
-
-            UIInfo_RadioGroup info = (UIInfo_RadioGroup)uiCtrl.Info;
+            // Run [SectionToRun] if provided.
             if (info.SectionName != null)
                 RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
