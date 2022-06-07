@@ -25,6 +25,7 @@
 using PEBakery.Helper;
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,6 +33,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace PEBakery.Ini
 {
@@ -3171,7 +3173,7 @@ namespace PEBakery.Ini
         }
         #endregion
 
-        #region (Internal) SmarterAnsiDetect
+        #region (Internal) SmarterDetectEncoding
         private static Encoding SmarterDetectEncoding(string filePath, IReadOnlyList<IniKey> iniKeys)
         {
             // Test if content to write is ANSI-compatible.
@@ -3204,26 +3206,98 @@ namespace PEBakery.Ini
             return EncodingHelper.SmartDetectEncoding(filePath, content);
         }
         #endregion
+
+#if false
+        #region (Utility) FileAccessLock
+        private static readonly ConcurrentDictionary<string, ReaderWriterLockSlim> FileLockDict = new ConcurrentDictionary<string, ReaderWriterLockSlim>(StringComparer.OrdinalIgnoreCase);
+
+        private static ReaderWriterLockSlim GetFileLock(string fullPath)
+        {
+            ReaderWriterLockSlim fileLock;
+            if (FileLockDict.ContainsKey(fullPath))
+            {
+                fileLock = FileLockDict[fullPath];
+            }
+            else
+            {
+                fileLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+                FileLockDict[fullPath] = fileLock;
+            }
+            return fileLock;
+        }
+
+        private static ReaderWriterLockSlim DeleteFileLock(string fullPath)
+        {
+            ReaderWriterLockSlim fileLock;
+            if (FileLockDict.ContainsKey(fullPath))
+            {
+                FileLockDict.Remove(fullPath, out _);
+            }
+            else
+            {
+                fileLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+                FileLockDict[fullPath] = fileLock;
+            }
+            return fileLock;
+        }
+
+        private static void EnterFileReadLock(string filePath)
+        {
+            string fullPath = Path.GetFullPath(filePath);
+
+            ReaderWriterLockSlim fileLock;
+            if (FileLockDict.ContainsKey(filePath))
+            {
+                fileLock = FileLockDict[fullPath];
+            }
+            else
+            {
+                fileLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+                FileLockDict[fullPath] = fileLock;
+            }
+
+            fileLock.EnterReadLock();
+        }
+
+        private static void EnterFileWriteLock(string filePath)
+        {
+            string fullPath = Path.GetFullPath(filePath);
+
+            ReaderWriterLockSlim fileLock;
+            if (FileLockDict.ContainsKey(filePath))
+            {
+                fileLock = FileLockDict[fullPath];
+            }
+            else
+            {
+                fileLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+                FileLockDict[fullPath] = fileLock;
+            }
+
+            fileLock.EnterWriteLock();
+        }
+        #endregion
+#endif
     }
     #endregion
 
     #region IniFile
     public sealed class IniFile
-    {
-        /// <summary>
-        /// Path of the .ini file.
-        /// </summary>
-        public string FilePath { get; set; }
-        /// <summary>
-        /// Key is section name, and value is a Dictionary of keys and value.
-        /// </summary>
-        public Dictionary<string, Dictionary<string, string>> Sections { get; set; }
-
-        public IniFile(string filePath)
         {
-            FilePath = filePath;
-            Sections = IniReadWriter.ParseFileToDict(filePath);
+            /// <summary>
+            /// Path of the .ini file.
+            /// </summary>
+            public string FilePath { get; set; }
+            /// <summary>
+            /// Key is section name, and value is a Dictionary of keys and value.
+            /// </summary>
+            public Dictionary<string, Dictionary<string, string>> Sections { get; set; }
+
+            public IniFile(string filePath)
+            {
+                FilePath = filePath;
+                Sections = IniReadWriter.ParseFileToDict(filePath);
+            }
         }
-    }
     #endregion
 }

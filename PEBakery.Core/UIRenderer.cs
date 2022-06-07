@@ -245,8 +245,8 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.ComboBox:
                         {
-                            if (ci.Element is ComboBox comboBox && ci.Tag is string sectionName)
-                                ManageComboBoxEvent(comboBox, false, sectionName);
+                            if (ci.Element is ComboBox comboBox)
+                                ManageComboBoxEvent(comboBox, false);
                         }
                         break;
                     case UIControlType.Image:
@@ -573,7 +573,7 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
-                ManageComboBoxEvent(box, true, info.SectionName);
+                ManageComboBoxEvent(box, true);
 
             SetToolTip(box, info.ToolTip);
             SetEditModeProperties(box, uiCtrl);
@@ -582,37 +582,15 @@ namespace PEBakery.Core
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        public void ManageComboBoxEvent(ComboBox box, bool addMode, string? sectionName)
+        public void ManageComboBoxEvent(ComboBox box, bool addMode)
         {
             if (addMode)
             {
-                box.LostFocus += ComboBox_LostFocus;
-                if (sectionName != null)
-                    box.SelectionChanged += ComboBox_SelectionChanged;
+                box.SelectionChanged += ComboBox_SelectionChanged;
             }
             else
             {
-                box.LostFocus -= ComboBox_LostFocus;
-                if (sectionName != null)
-                    box.SelectionChanged -= ComboBox_SelectionChanged;
-            }
-        }
-
-        public void ComboBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ComboBox box)
-                return;
-            if (box.Tag is not UIControl uiCtrl)
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_LostFocus)}]");
-            UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
-
-            if (info.Index != box.SelectedIndex)
-            {
-                info.Index = box.SelectedIndex;
-                uiCtrl.Text = info.Items[box.SelectedIndex];
-                uiCtrl.Update();
+                box.SelectionChanged -= ComboBox_SelectionChanged;
             }
         }
 
@@ -625,7 +603,16 @@ namespace PEBakery.Core
 
             Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_SelectionChanged)}]");
 
+            // Update value of a ComboBox control.
             UIInfo_ComboBox info = (UIInfo_ComboBox)uiCtrl.Info;
+            if (info.Index != box.SelectedIndex)
+            {
+                info.Index = box.SelectedIndex;
+                uiCtrl.Text = info.Items[box.SelectedIndex];
+                uiCtrl.Update();
+            }
+
+            // Run [SectionToRun] if provided.
             if (info.SectionName != null)
                 RunOneSection(_window, uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
