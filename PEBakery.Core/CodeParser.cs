@@ -4591,6 +4591,33 @@ namespace PEBakery.Core
                    sectionReturnValueMatch;
         }
 
+        private static readonly string[] SpecialSharpVars = new string[] { "#c", "#a", "#oa", "#r" };
+        public static HashSet<string> DetectStringVariableReference(string str)
+        {
+            HashSet<string> refSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
+            if (0 < matches.Count)
+                refSet.Add(matches[0].Value);
+
+            matches = Regex.Matches(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            if (0 < matches.Count)
+                refSet.Add(matches[0].Value);
+
+            matches = Regex.Matches(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
+            if (0 < matches.Count)
+                refSet.Add(matches[0].Value);
+
+            // #c, #a, #oa, #r
+            foreach (string specialSharpVar in SpecialSharpVars)
+            {
+                if (str.IndexOf(specialSharpVar, StringComparison.OrdinalIgnoreCase) != -1)
+                    refSet.Add(specialSharpVar);
+            }
+
+            return refSet;
+        }
+
         public CodeCommand ForgeControlEmbedCommand(string rawCode, List<string> args, int lineIdx)
         {
             CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);

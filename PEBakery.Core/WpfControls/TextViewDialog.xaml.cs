@@ -110,7 +110,6 @@ namespace PEBakery.WPF.Controls
         /// </summary>
         public static void DispatcherShow(Window? owner, string title, string message, string viewText, PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
-            MessageBoxResult result = MessageBoxResult.None;
             if (Application.Current?.Dispatcher != null)
             {
                 Application.Current?.Dispatcher?.Invoke(() =>
