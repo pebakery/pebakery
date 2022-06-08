@@ -580,20 +580,22 @@ namespace PEBakery.Core.Commands
                         MathInfo_ToChar subInfo = (MathInfo_ToChar)info.SubInfo;
 
                         string uniCodePointStr = StringEscaper.Preprocess(s, subInfo.UnicodeCodePoint);
+
                         if (!NumberHelper.ParseUInt16(uniCodePointStr, out ushort uniCodePointInt))
                             return LogInfo.LogErrorMessage(logs, $"[{uniCodePointStr}] is not a valid UCS-2 code point");
                         char uniCodePoint = (char)uniCodePointInt;
 
                         string dest;
-                        if (char.IsControl(uniCodePoint))
-                        {
-                            if (MathInfo_ToChar.AllowedControlCharConvertDict.ContainsKey(uniCodePoint))
-                                dest = StringEscaper.Escape(MathInfo_ToChar.AllowedControlCharConvertDict[uniCodePoint]);
-                            else
-                                return LogInfo.LogErrorMessage(logs, $"[{uniCodePointStr}] is a non-convertable control character");
+                        if (MathInfo_ToChar.AllowedControlCharConvertDict.ContainsKey(uniCodePoint))
+                        { // Check for allowed control character (\n, \t) -> (\r\n, \t)
+                            string convertedChar = MathInfo_ToChar.AllowedControlCharConvertDict[uniCodePoint];
+                            dest = StringEscaper.Escape(convertedChar);
                         }
                         else
                         {
+                            if (char.IsControl(uniCodePoint))
+                                return LogInfo.LogErrorMessage(logs, $"[{uniCodePointStr}] is a non-convertable control character");
+
                             dest = StringEscaper.Escape(new string(uniCodePoint, 1));
                         }
 
@@ -605,18 +607,29 @@ namespace PEBakery.Core.Commands
                         MathInfo_FromChar subInfo = (MathInfo_FromChar)info.SubInfo;
 
                         string charStr = StringEscaper.Preprocess(s, subInfo.Character);
-                        if (charStr.Length != 1)
-                            return LogInfo.LogErrorMessage(logs, $"[{charStr}] must be a single UCS-2 character");
 
-                        char ch = charStr[0];
+                        // Check for allowed control character (\r\n, \t) -> (\n, \t)
+                        char ch;
+                        if (MathInfo_FromChar.AllowedControlCharConvertDict.ContainsKey(charStr))
+                        {
+                            ch = MathInfo_FromChar.AllowedControlCharConvertDict[charStr];
+                        }
+                        else
+                        {
+                            if (charStr.Length != 1)
+                                return LogInfo.LogErrorMessage(logs, $"[{charStr}] must be a single UCS-2 character");
+
+                            ch = charStr[0];
+                            if (char.IsControl(ch))
+                                return LogInfo.LogErrorMessage(logs, $"[{charStr}] is a non-convertable control character");
+                        }
+
+                        ushort codePoint = ch;
                         string dest;
                         if (char.IsAscii(ch))
-                            dest = $"0x{((ushort)ch):X2}";
+                            dest = $"0x{codePoint:X2}";
                         else
-                            dest = $"0x{((ushort)ch):X4}";
-
-                        if (char.IsControl(ch) && MathInfo_FromChar.AllowedControlChars.All(x => x != ch))
-                            return LogInfo.LogErrorMessage(logs, $"[{dest}] is a non-convertable control character");
+                            dest = $"0x{codePoint:X4}";
                         
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest));
                     }
