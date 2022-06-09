@@ -157,7 +157,7 @@ namespace PEBakery.Core
             }
 
             if (_opts.OptimizeCode)
-                foldedList = CodeOptimizer.Optimize(foldedList);
+                CodeOptimizer.Optimize(foldedList);
 
             return (foldedList.ToArray(), errLogs);
         }
@@ -4781,7 +4781,7 @@ namespace PEBakery.Core
                             nestDepth++;
                             break;
                         }
-                        
+
                         break;
                     }
                 }

@@ -145,7 +145,7 @@ namespace PEBakery.Core
     public class CodeInfo
     {
         #region Optimize
-        public virtual bool OptimizeCompare(CodeInfo info) => false;
+        public virtual bool IsOptimizable(CodeInfo info) => false;
         #endregion
 
         #region Deprecate
@@ -839,7 +839,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Line, Mode);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTAddLine info)
                 return false;
@@ -903,7 +903,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, OldStr, NewStr);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTReplace info)
                 return false;
@@ -963,7 +963,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, DeleteLine);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTDelLine info)
                 return false;
@@ -1068,7 +1068,7 @@ namespace PEBakery.Core
         public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key, DefaultValue);
         public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniRead info)
                 return false;
@@ -1140,7 +1140,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key, Value);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniWrite info)
                 return false;
@@ -1204,7 +1204,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniDelete info)
                 return false;
@@ -1269,7 +1269,7 @@ namespace PEBakery.Core
         public override HashSet<string> InVars() => CreateInVars(FileName, Section, Delim);
         public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             CodeInfo_IniReadSection info = (CodeInfo_IniReadSection)cmpInfo;
             if (info == null)
@@ -1335,7 +1335,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Section);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniAddSection info)
                 return false;
@@ -1393,7 +1393,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Section);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniDeleteSection info)
                 return false;
@@ -1455,7 +1455,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Section, Line);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniWriteTextLine info)
                 return false;
@@ -1693,7 +1693,7 @@ namespace PEBakery.Core
 
         public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, ExtractPath, DestDir, Split);
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         { // Condition : Every argument except DestDir should be identical
             if (cmpInfo is not CodeInfo_WimExtract info)
                 return false;
@@ -2035,7 +2035,7 @@ namespace PEBakery.Core
             PreserveFlag = preserveFlag;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -2107,7 +2107,7 @@ namespace PEBakery.Core
             Path = path;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -2175,7 +2175,7 @@ namespace PEBakery.Core
             DestPath = destPath;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -2683,7 +2683,7 @@ namespace PEBakery.Core
             Visibility = visibility;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo) => true;
+        public override bool IsOptimizable(CodeInfo cmpInfo) => true;
 
         public override string ToString()
         {
@@ -2759,7 +2759,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_ReadInterface info)
                 return false;
@@ -2838,7 +2838,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_WriteInterface info)
                 return false;
@@ -4999,7 +4999,7 @@ namespace PEBakery.Core
     public class CodeInfo_Return : CodeInfo
     { // Return,[ReturnValue]
         public string? ReturnValue { get; private set; }
-        
+
         public CodeInfo_Return(string? returnValue)
         {
             ReturnValue = returnValue;

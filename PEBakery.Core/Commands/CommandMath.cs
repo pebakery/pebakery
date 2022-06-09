@@ -617,7 +617,7 @@ namespace PEBakery.Core.Commands
 
                         if (char.IsControl(ch) && MathInfo_FromChar.AllowedControlChars.All(x => x != ch))
                             return LogInfo.LogErrorMessage(logs, $"[{dest}] is a non-convertable control character");
-                        
+
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest));
                     }
                     break;

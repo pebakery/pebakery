@@ -401,6 +401,17 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
+        #region ParseLines
+        public static CodeCommand[] ParseLines(IReadOnlyList<string> lines, out List<LogInfo> errorLogs)
+        {
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
+            CodeCommand[] cmds;
+            (cmds, errorLogs) = parser.ParseStatements(lines);
+            return cmds;
+        }
+        #endregion
+
         #region CheckErrorLogs
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)
         {

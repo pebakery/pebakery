@@ -328,7 +328,7 @@ namespace PEBakery.Core.Commands
                         // start == end : empty list
                         List<string> list = new List<string>();
                         if (startVal < endVal)
-                        { 
+                        {
                             for (long i = startVal; i < endVal; i += stepVal)
                                 list.Add(i.ToString());
                         }
@@ -336,7 +336,7 @@ namespace PEBakery.Core.Commands
                         {
                             for (long i = startVal; endVal < i; i += stepVal)
                                 list.Add(i.ToString());
-                        }                        
+                        }
 
                         listStr = StringEscaper.PackListStr(list, delimiter);
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.ListVar, listStr);
