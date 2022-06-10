@@ -27,136 +27,28 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
 namespace PEBakery.Core
 {
-    // [Basic of Code Optimization]
-    // If a sequence of commands access same file, one file will be opened many time.
-    // -> Pack them into one command to reduce disk access
+    /*
+    [Basic of Code Optimization]
+    If a sequence of commands access same file, one file will be opened many time.
+    -> Pack them into one command to reduce disk access.
+
+    [Optimization Process]
+    (1) Group a seqeunce of commands which meets basic principles:
+      - CodeType is equal (or, rarely, compatible) to each other
+      - Commands perform equal operation to an same file.
+    (2) Ensure that grouped commands do not have any varaible dependency between.
+      - If dependency does exist, break the group into two, to prevent variable hazards.
+    (3) Pack grouped commands into a single *Op command.
+    */
+
     public static class CodeOptimizer
     {
-        #region OptimizedCodeTypes
-        private static readonly CodeType[] OptimizedCodeTypes =
-        {
-            CodeType.TXTAddLine,
-            CodeType.TXTReplace,
-            CodeType.TXTDelLine,
-            CodeType.IniRead,
-            CodeType.IniWrite,
-            CodeType.IniDelete,
-            CodeType.IniReadSection,
-            CodeType.IniAddSection,
-            CodeType.IniDeleteSection,
-            CodeType.IniWriteTextLine,
-            CodeType.Visible,
-            CodeType.ReadInterface,
-            CodeType.WriteInterface,
-            CodeType.WimExtract,
-            CodeType.WimPathAdd, // WimPathAdd is a representative of WimPath{Add, Delete, Rename}
-        };
-        #endregion
-
-        #region OptimizeCommands
-
-        #endregion
-
-        #region PackCommand
-        private static CodeCommand PackCommand(CodeType type, List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            CodeType packType;
-            CodeInfo packInfo;
-
-            switch (type)
-            {
-                case CodeType.TXTAddLine:
-                    packType = CodeType.TXTAddLineOp;
-                    packInfo = new CodeInfo_TXTAddLineOp(cmds);
-                    break;
-                case CodeType.TXTReplace:
-                    packType = CodeType.TXTReplaceOp;
-                    packInfo = new CodeInfo_TXTReplaceOp(cmds);
-                    break;
-                case CodeType.TXTDelLine:
-                    packType = CodeType.TXTDelLineOp;
-                    packInfo = new CodeInfo_TXTDelLineOp(cmds);
-                    break;
-                case CodeType.IniRead:
-                    packType = CodeType.IniReadOp;
-                    packInfo = new CodeInfo_IniReadOp(cmds);
-                    break;
-                case CodeType.IniWrite:
-                    packType = CodeType.IniWriteOp;
-                    packInfo = new CodeInfo_IniWriteOp(cmds);
-                    break;
-                case CodeType.IniDelete:
-                    packType = CodeType.IniDeleteOp;
-                    packInfo = new CodeInfo_IniDeleteOp(cmds);
-                    break;
-                case CodeType.IniReadSection:
-                    packType = CodeType.IniReadSectionOp;
-                    packInfo = new CodeInfo_IniReadSectionOp(cmds);
-                    break;
-                case CodeType.IniAddSection:
-                    packType = CodeType.IniAddSectionOp;
-                    packInfo = new CodeInfo_IniAddSectionOp(cmds);
-                    break;
-                case CodeType.IniDeleteSection:
-                    packType = CodeType.IniDeleteSectionOp;
-                    packInfo = new CodeInfo_IniDeleteSectionOp(cmds);
-                    break;
-                case CodeType.IniWriteTextLine:
-                    packType = CodeType.IniWriteTextLineOp;
-                    packInfo = new CodeInfo_IniWriteTextLineOp(cmds);
-                    break;
-                case CodeType.Visible:
-                    packType = CodeType.VisibleOp;
-                    packInfo = new CodeInfo_VisibleOp(cmds);
-                    break;
-                case CodeType.ReadInterface:
-                    packType = CodeType.ReadInterfaceOp;
-                    packInfo = new CodeInfo_ReadInterfaceOp(cmds);
-                    break;
-                case CodeType.WriteInterface:
-                    packType = CodeType.WriteInterfaceOp;
-                    packInfo = new CodeInfo_WriteInterfaceOp(cmds);
-                    break;
-                case CodeType.WimExtract:
-                    packType = CodeType.WimExtractOp;
-                    packInfo = new CodeInfo_WimExtractOp(cmds);
-                    break;
-                case CodeType.WimPathAdd: // Use WimPathAdd as representative of WimPath*
-                    packType = CodeType.WimPathOp;
-                    packInfo = new CodeInfo_WimPathOp(cmds);
-                    break;
-                default:
-                    throw new InternalException("Internal Logic Error at CodeOptimizer.InternalOptimize");
-            }
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Section, packType, packInfo, cmds[0].LineIdx);
-        }
-
-        private static string MergeRawCodes(List<CodeCommand> cmds)
-        {
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < cmds.Count; i++)
-            {
-                b.Append(cmds[i].RawCode);
-                if (i + 1 < cmds.Count)
-                    b.AppendLine();
-            }
-
-            return b.ToString();
-        }
-        #endregion
-
-        //---- Next-Gen Optimizer
-
-        #region OptimizeNext
+        #region Optimize
         public static void Optimize(List<CodeCommand> rootBlock)
         {
             Queue<List<CodeCommand>> blockQueue = new Queue<List<CodeCommand>>();
@@ -180,7 +72,7 @@ namespace PEBakery.Core
                 List<OptRange> optimizedGroups = VariableDependencyAnalysis(block, optimizableGroups);
 
                 // [Pass 3] Optimize commands following optimizedGroups
-                List<CodeCommand> optBlock = CompactCommands(block, optimizedGroups);
+                List<CodeCommand> optBlock = PackCommands(block, optimizedGroups);
                 block.Clear();
                 block.AddRange(optBlock);
             }
@@ -204,10 +96,20 @@ namespace PEBakery.Core
                 {
                     CodeCommand nextCmd = block[y];
 
+                    // In a lot of case, lastCmd.Type and nextCmd.Type should be equal to be optimized.
                     if (lastCmd.Type != nextCmd.Type)
                     {
-                        if (!(WimCodeTypeOp.Contains(lastCmd.Type) && WimCodeTypeOp.Contains(nextCmd.Type)))
+                        if (WimCodeTypeOp.Contains(lastCmd.Type) && WimCodeTypeOp.Contains(nextCmd.Type))
+                        { // WimPathAdd, WimPathRename, WimPathDelete can be treated at once.
+                        }
+                        else if (nextCmd.Type == CodeType.Comment)
+                        { // Do not check and ignore Comment.
+                            continue;
+                        }
+                        else
+                        { // CodeType is incompatible between lastCmd and nextCmd.
                             break;
+                        }
                     }
 
                     if (lastCmd.Info.IsOptimizable(nextCmd.Info))
@@ -216,10 +118,10 @@ namespace PEBakery.Core
                         break;
                 }
 
-                if (optBlockEnd != -1) // Not Found
+                if (optBlockEnd != -1) // Found
                 {
                     optimizableGroups.Add(new OptRange(lastCmd.Type, x, optBlockEnd + 1));
-                    x = optBlockEnd + 1;
+                    x = optBlockEnd;
                 }
             }
 
@@ -246,7 +148,7 @@ namespace PEBakery.Core
                     HashSet<string> inVars = cmd.Info.InVars();
                     HashSet<string> outVars = cmd.Info.OutVars();
 
-                    if (0 < inVars.Intersect(blockOutVars).Count())
+                    if (inVars.Intersect(blockOutVars).Any())
                     { // Dependency exists between commands
                         optimizedGroups.Add(new OptRange(optRange.CodeType, lastIdx, i));
                         lastIdx = i;
@@ -267,7 +169,7 @@ namespace PEBakery.Core
             return optimizedGroups;
         }
 
-        private static List<CodeCommand> CompactCommands(List<CodeCommand> block, List<OptRange> optimizedRange)
+        private static List<CodeCommand> PackCommands(List<CodeCommand> block, List<OptRange> optimizedRange)
         {
             if (optimizedRange.Count == 0)
                 return new List<CodeCommand>(block);
@@ -279,10 +181,9 @@ namespace PEBakery.Core
             {
                 CodeCommand cmd = block[i];
 
-                OptRange? detectedRange;
-                if (OptRange.IsIndexInRanges(optimizedRange, i, out detectedRange) && detectedRange != null)
+                if (OptRange.IsIndexInRanges(optimizedRange, i, out OptRange? detectedRange) && detectedRange != null)
                 {
-                    List<CodeCommand> cmdsToOpt = block.Skip(detectedRange.Begin).Take(detectedRange.Count).ToList();
+                    List<CodeCommand> cmdsToOpt = block.Skip(detectedRange.Begin).Take(detectedRange.Count).Where(x => x.Type != CodeType.Comment).ToList();
                     CodeCommand opCmd = PackCommand(detectedRange.CodeType, cmdsToOpt);
                     optBlock.Add(opCmd);
                     i += detectedRange.Count;
@@ -298,6 +199,58 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region PackCommand
+        private static Dictionary<CodeType, CodeType> RawOptCodeTypeDict { get; } = new Dictionary<CodeType, CodeType>()
+        {
+            [CodeType.TXTAddLine] = CodeType.TXTAddLineOp,
+            [CodeType.TXTReplace] = CodeType.TXTReplaceOp,
+            [CodeType.TXTDelLine] = CodeType.TXTDelLineOp,
+            [CodeType.IniRead] = CodeType.IniReadOp,
+            [CodeType.IniWrite] = CodeType.IniWriteOp,
+            [CodeType.IniDelete] = CodeType.IniDeleteOp,
+            [CodeType.IniReadSection] = CodeType.IniReadSectionOp,
+            [CodeType.IniAddSection] = CodeType.IniAddSectionOp,
+            [CodeType.IniDeleteSection] = CodeType.IniDeleteSectionOp,
+            [CodeType.IniWriteTextLine] = CodeType.IniWriteTextLineOp,
+            [CodeType.Visible] = CodeType.VisibleOp,
+            [CodeType.ReadInterface] = CodeType.ReadInterfaceOp,
+            [CodeType.WriteInterface] = CodeType.WriteInterfaceOp,
+            [CodeType.WimExtract] = CodeType.WimExtractOp,
+            [CodeType.WimPathAdd] = CodeType.WimPathOp,
+            [CodeType.WimPathRename] = CodeType.WimPathOp,
+            [CodeType.WimPathDelete] = CodeType.WimPathOp,
+        };
+
+        private static CodeCommand PackCommand(CodeType type, List<CodeCommand> cmds)
+        {
+            if (cmds.Count == 0)
+                throw new InternalParserException($"No commands to optimize in {nameof(PackCommand)}");
+            if (cmds.Count == 1)
+                return cmds[0];
+
+            if (RawOptCodeTypeDict.ContainsKey(type) == false)
+                throw new InternalParserException($"Unsuppoerted CodeType [{type}] in {nameof(PackCommand)}");
+
+            CodeType packType = RawOptCodeTypeDict[type];
+            CodeInfo packInfo = new CodeOptInfo(cmds);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Section, packType, packInfo, cmds[0].LineIdx);
+        }
+
+        private static string MergeRawCodes(List<CodeCommand> cmds)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmds.Count; i++)
+            {
+                b.Append(cmds[i].RawCode);
+                if (i + 1 < cmds.Count)
+                    b.AppendLine();
+            }
+
+            return b.ToString();
+        }
+        #endregion
+
+        #region (class) OptRange
         class OptRange
         {
             public CodeType CodeType { get; set; }
@@ -332,7 +285,6 @@ namespace PEBakery.Core
 
             public override string ToString() => $"OptRange({Begin}, {End})";
         }
+        #endregion
     }
-
-    
 }

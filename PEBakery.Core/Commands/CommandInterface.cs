@@ -106,7 +106,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_VisibleOp infoOp = (CodeInfo_VisibleOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_Visible[] optInfos = infoOp.Infos<CodeInfo_Visible>().ToArray();
 
             // Refresh is required to simulate WinBuilder 082 behavior
             Script? sc = s.Project.RefreshScript(cmd.Section.Script, s);
@@ -561,9 +562,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_ReadInterfaceOp infoOp = (CodeInfo_ReadInterfaceOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_ReadInterface[] optInfos = infoOp.Infos<CodeInfo_ReadInterface>().ToArray();
 
-            CodeInfo_ReadInterface firstInfo = infoOp.Infos[0];
+            CodeInfo_ReadInterface firstInfo = optInfos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
 
@@ -1158,9 +1160,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WriteInterfaceOp infoOp = (CodeInfo_WriteInterfaceOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_WriteInterface[] optInfos = infoOp.Infos<CodeInfo_WriteInterface>().ToArray();
 
-            CodeInfo_WriteInterface firstInfo = infoOp.Infos[0];
+            CodeInfo_WriteInterface firstInfo = optInfos[0];
             string scriptFile = StringEscaper.Preprocess(s, firstInfo.ScriptFile);
             string section = StringEscaper.Preprocess(s, firstInfo.Section);
 

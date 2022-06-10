@@ -203,6 +203,27 @@ namespace PEBakery.Core
             Embed = embed;
         }
     }
+
+    public class CodeOptInfo : CodeInfo
+    {
+        public List<CodeCommand> Cmds { get; private set; }
+
+        public CodeOptInfo(IEnumerable<CodeCommand> cmds)
+        {
+            if (cmds.Count() == 0)
+                throw new InternalException($"No commands to optmize in [{nameof(CodeOptInfo)}]");
+
+            if (cmds is List<CodeCommand> cmdList)
+                Cmds = cmdList;
+            else
+                Cmds = cmds.ToList();
+        }
+
+        public IEnumerable<T> Infos<T>() where T : CodeInfo
+        {
+            return Cmds.Where(x => x.Info is T).Select(x => (T)x.Info);
+        }
+    }
     #endregion
 
     #region CodeInfo 00 - Misc
@@ -860,34 +881,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTAddLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; set; }
-        public List<CodeInfo_TXTAddLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTAddLine> infos = new List<CodeInfo_TXTAddLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTAddLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTAddLine)}");
-                        continue;
-                    }
-
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTAddLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_TXTReplace : CodeInfo
     { // TXTReplace,<FileName>,<OldStr>,<NewStr>
         public string FileName { get; private set; }
@@ -923,33 +916,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTReplaceOp : CodeInfo
-    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_TXTReplace> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTReplace> infos = new List<CodeInfo_TXTReplace>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTReplace info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTReplace)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTReplaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_TXTDelLine : CodeInfo
     { // TXTDelLine,<FileName>,<DeleteLine>
         public string FileName { get; private set; }
@@ -978,33 +944,6 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(DeleteLine);
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_TXTDelLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_TXTDelLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTDelLine> infos = new List<CodeInfo_TXTDelLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTDelLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTDelLine)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTDelLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1096,33 +1035,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniReadOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniRead> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniRead> infos = new List<CodeInfo_IniRead>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniRead info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniRead)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniReadOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniWrite : CodeInfo
     { // IniWrite,<FileName>,<Section>,<Key>,<Value>
         public string FileName { get; private set; }
@@ -1162,33 +1074,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniWriteOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniWrite> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniWrite> infos = new List<CodeInfo_IniWrite>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniWrite info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWrite)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniWriteOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniDelete : CodeInfo
     { // IniDelete,<FileName>,<Section>,<Key>
         public string FileName { get; private set; }
@@ -1221,33 +1106,6 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(Key);
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_IniDeleteOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniDelete> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniDelete> infos = new List<CodeInfo_IniDelete>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniDelete info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDelete)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1295,33 +1153,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniReadSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniReadSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniReadSection> infos = new List<CodeInfo_IniReadSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniReadSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniReadSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniAddSection : CodeInfo
     { // IniAddSection,<FileName>,<Section>
         public string FileName { get; private set; }
@@ -1353,33 +1184,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniAddSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniAddSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniAddSection> infos = new List<CodeInfo_IniAddSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniAddSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniAddSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniAddSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniDeleteSection : CodeInfo
     { // IniDeleteSection,<FileName>,<Section>
         public string FileName { get; private set; }
@@ -1408,33 +1212,6 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(Section);
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_IniDeleteSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniDeleteSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniDeleteSection> infos = new List<CodeInfo_IniDeleteSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniDeleteSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDeleteSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniDeleteSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1475,33 +1252,6 @@ namespace PEBakery.Core
             if (Append)
                 b.Append(",APPEND");
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_IniWriteTextLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniWriteTextLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniWriteTextLine> infos = new List<CodeInfo_IniWriteTextLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniWriteTextLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWriteTextLine)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniWriteTextLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1740,33 +1490,6 @@ namespace PEBakery.Core
             if (NoAttribFlag)
                 b.Append(",NOATTRIB");
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_WimExtractOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_WimExtract> Infos
-        {
-            get
-            {
-                List<CodeInfo_WimExtract> infos = new List<CodeInfo_WimExtract>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_WimExtract info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WimExtract)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -2217,16 +1940,6 @@ namespace PEBakery.Core
             if (RebuildFlag)
                 b.Append(",REBUILD");
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_WimPathOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-
-        public CodeInfo_WimPathOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -2691,33 +2404,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_VisibleOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_Visible> Infos
-        {
-            get
-            {
-                List<CodeInfo_Visible> infos = new List<CodeInfo_Visible>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_Visible info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_Visible)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_VisibleOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public enum InterfaceElement
     {
         // General
@@ -2789,33 +2475,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_ReadInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_ReadInterface> Infos
-        {
-            get
-            {
-                List<CodeInfo_ReadInterface> infos = new List<CodeInfo_ReadInterface>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_ReadInterface info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_ReadInterface)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     [Serializable]
     public class CodeInfo_WriteInterface : CodeInfo
     { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
@@ -2865,33 +2524,6 @@ namespace PEBakery.Core
                 b.Append(Delim);
             }
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_WriteInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_WriteInterface> Infos
-        {
-            get
-            {
-                List<CodeInfo_WriteInterface> infos = new List<CodeInfo_WriteInterface>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_WriteInterface info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WriteInterface)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 

@@ -91,9 +91,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniReadOp infoOp = (CodeInfo_IniReadOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniRead[] optInfos = infoOp.Infos<CodeInfo_IniRead>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
@@ -102,7 +103,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_IniRead info = infoOp.Infos[i];
+                CodeInfo_IniRead info = optInfos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string key = StringEscaper.Preprocess(s, info.Key);
@@ -122,7 +123,7 @@ namespace PEBakery.Core.Commands
             {
                 IniKey kv = keys[i];
                 CodeCommand subCmd = infoOp.Cmds[i];
-                CodeInfo_IniRead subInfo = infoOp.Infos[i];
+                CodeInfo_IniRead subInfo = optInfos[i];
 
                 if (kv.Value != null)
                 {
@@ -139,7 +140,7 @@ namespace PEBakery.Core.Commands
                 {
                     if (subInfo.DefaultValue != null)
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist. Assigning default value [{infoOp.Infos[i].DefaultValue}]"));
+                        logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist. Assigning default value [{optInfos[i].DefaultValue}]"));
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, subInfo.DefaultValue, false, false, false);
                         logs.AddRange(varLogs);
@@ -206,9 +207,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWriteOp infoOp = (CodeInfo_IniWriteOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniWrite[] optInfos = infoOp.Infos<CodeInfo_IniWrite>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -216,7 +218,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_IniWrite info = infoOp.Infos[i];
+                CodeInfo_IniWrite info = optInfos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string key = StringEscaper.Preprocess(s, info.Key);
@@ -309,9 +311,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDeleteOp infoOp = (CodeInfo_IniDeleteOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniDelete[] optInfos = infoOp.Infos<CodeInfo_IniDelete>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -319,7 +322,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_IniDelete info = infoOp.Infos[i];
+                CodeInfo_IniDelete info = optInfos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string key = StringEscaper.Preprocess(s, info.Key);
@@ -413,16 +416,17 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniReadSectionOp infoOp = (CodeInfo_IniReadSectionOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniReadSection[] optInfos = infoOp.Infos<CodeInfo_IniReadSection>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
             string[] sections = new string[infoOp.Cmds.Count];
             string[] destVars = new string[infoOp.Cmds.Count];
             string[] delims = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
-                CodeInfo_IniReadSection info = infoOp.Infos[i];
+                CodeInfo_IniReadSection info = optInfos[i];
 
                 string section = StringEscaper.Preprocess(s, info.Section);
                 if (section.Length == 0)
@@ -518,9 +522,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniAddSectionOp infoOp = (CodeInfo_IniAddSectionOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniAddSection[] optInfos = infoOp.Infos<CodeInfo_IniAddSection>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -528,7 +533,7 @@ namespace PEBakery.Core.Commands
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
-                CodeInfo_IniAddSection info = infoOp.Infos[i];
+                CodeInfo_IniAddSection info = optInfos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 if (sectionName.Length == 0)
@@ -594,9 +599,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniDeleteSectionOp infoOp = (CodeInfo_IniDeleteSectionOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniDeleteSection[] optInfos = infoOp.Infos<CodeInfo_IniDeleteSection>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -604,7 +610,7 @@ namespace PEBakery.Core.Commands
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
-                CodeInfo_IniDeleteSection info = infoOp.Infos[i];
+                CodeInfo_IniDeleteSection info = optInfos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 if (sectionName.Length == 0)
@@ -673,17 +679,18 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_IniWriteTextLineOp infoOp = (CodeInfo_IniWriteTextLineOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_IniWriteTextLine[] optInfos = infoOp.Infos<CodeInfo_IniWriteTextLine>().ToArray();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            string fileName = StringEscaper.Preprocess(s, optInfos[0].FileName);
 
-            bool append = infoOp.Infos[0].Append;
+            bool append = optInfos[0].Append;
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            List<IniKey> keyList = new List<IniKey>(infoOp.Infos.Count);
-            foreach (CodeInfo_IniWriteTextLine info in infoOp.Infos)
+            List<IniKey> keyList = new List<IniKey>(optInfos.Length);
+            foreach (CodeInfo_IniWriteTextLine info in optInfos)
             {
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string line = StringEscaper.Preprocess(s, info.Line);

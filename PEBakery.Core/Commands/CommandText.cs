@@ -116,9 +116,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_TXTAddLineOp infoOp = (CodeInfo_TXTAddLineOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_TXTAddLine[] optInfos = infoOp.Infos<CodeInfo_TXTAddLine>().ToArray();
 
-            CodeInfo_TXTAddLine firstInfo = infoOp.Infos[0];
+            CodeInfo_TXTAddLine firstInfo = optInfos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
             string modeStr = StringEscaper.Preprocess(s, firstInfo.Mode);
             TXTAddLineMode mode;
@@ -135,7 +136,7 @@ namespace PEBakery.Core.Commands
             // Detect encoding of text. If text does not exists, create blank file (ANSI)
             Encoding encoding;
             if (File.Exists(fileName))
-                encoding = EncodingHelper.SmartDetectEncoding(fileName, infoOp.Infos.Select(x => x.Line));
+                encoding = EncodingHelper.SmartDetectEncoding(fileName, optInfos.Select(x => x.Line));
             else
                 encoding = EncodingHelper.DefaultAnsi;
 
@@ -147,7 +148,7 @@ namespace PEBakery.Core.Commands
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     StringBuilder b = new StringBuilder();
-                    List<CodeInfo_TXTAddLine> infos = infoOp.Infos;
+                    List<CodeInfo_TXTAddLine> infos = optInfos.ToList();
                     infos.Reverse();
                     foreach (CodeInfo_TXTAddLine subInfo in infos)
                         b.AppendLine(StringEscaper.Preprocess(s, subInfo.Line));
@@ -163,7 +164,7 @@ namespace PEBakery.Core.Commands
             else if (mode == TXTAddLineMode.Append)
             {
                 StringBuilder b = new StringBuilder();
-                foreach (CodeInfo_TXTAddLine subInfo in infoOp.Infos)
+                foreach (CodeInfo_TXTAddLine subInfo in optInfos)
                     b.AppendLine(StringEscaper.Preprocess(s, subInfo.Line));
 
                 linesToWrite = b.ToString();
@@ -254,9 +255,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            CodeInfo_TXTReplaceOp infoOp = (CodeInfo_TXTReplaceOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_TXTReplace[] optInfos = infoOp.Infos<CodeInfo_TXTReplace>().ToArray();
 
-            CodeInfo_TXTReplace firstInfo = infoOp.Infos[0];
+            CodeInfo_TXTReplace firstInfo = optInfos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
@@ -283,8 +285,8 @@ namespace PEBakery.Core.Commands
             {
                 encoding = EncodingHelper.SmartDetectEncoding(fileName, () =>
                 {
-                    return infoOp.Infos.All(x => EncodingHelper.IsActiveCodePageCompatible(x.OldStr)) &&
-                        infoOp.Infos.All(x => EncodingHelper.IsActiveCodePageCompatible(x.NewStr));
+                    return optInfos.All(x => EncodingHelper.IsActiveCodePageCompatible(x.OldStr)) &&
+                        optInfos.All(x => EncodingHelper.IsActiveCodePageCompatible(x.NewStr));
                 });
             }
             else
@@ -361,9 +363,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_TXTDelLineOp infoOp = (CodeInfo_TXTDelLineOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_TXTDelLine[] optInfos = infoOp.Infos<CodeInfo_TXTDelLine>().ToArray();
 
-            CodeInfo_TXTDelLine firstInfo = infoOp.Infos[0];
+            CodeInfo_TXTDelLine firstInfo = optInfos[0];
             string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
