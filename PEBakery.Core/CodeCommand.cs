@@ -3592,7 +3592,6 @@ namespace PEBakery.Core
         public static readonly Dictionary<char, string> AllowedControlCharConvertDict = new Dictionary<char, string>()
         {
             ['\t'] = "\t",
-            ['\r'] = "\r\n",
             ['\n'] = "\r\n",
         };
 
@@ -3619,9 +3618,10 @@ namespace PEBakery.Core
         /// <summary>
         /// List of allowed control characters.
         /// </summary>
-        public static readonly char[] AllowedControlChars = new char[]
+        public static readonly Dictionary<string, char> AllowedControlCharConvertDict = new Dictionary<string, char>(StringComparer.Ordinal)
         {
-            '\r', '\n', '\t',
+            ["\r\n"] = '\n',
+            ["\t"] = '\t',
         };
 
         public MathInfo_FromChar(string destVar, string character)

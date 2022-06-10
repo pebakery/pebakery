@@ -537,10 +537,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            // ASCII : Allowed Control Characters (\t, \r, \n)
+            // ASCII : Allowed Control Characters (\t, \n)
             SuccessTemplate(s, "Math,ToChar,%Dest%,0x09", "#$t");
-            SuccessTemplate(s, "Math,ToChar,%Dest%,0x0D", "#$x");
-            SuccessTemplate(s, "Math,ToChar,%Dest%,10", "#$x");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,10", "#$x"); // \n -> \r\n
 
             // ASCII : Printable Characters
             SuccessTemplate(s, "Math,ToChar,%Dest%,0x20", " ");
@@ -569,8 +568,9 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,ToChar,Dest,0x40", ErrorCheck.ParserError);
             // Non-Integer
             ErrorTemplate(s, "Math,ToChar,%Dest%,가", ErrorCheck.RuntimeError);
-            // ASCII Control Characters is prohibited except for some (\r, \n, \t)
+            // ASCII Control Characters is prohibited except for \n and \t
             ErrorTemplate(s, "Math,ToChar,%Dest%,7", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,ToChar,%Dest%,0x0D", ErrorCheck.RuntimeError); // \r
             // Negative Integer
             ErrorTemplate(s, "Math,FromChar,%Dest%,-1", ErrorCheck.RuntimeError);
             // UCS-4 : Emoji, ToChar only supports UCS-2 character set.
@@ -585,11 +585,10 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            // ASCII : Allowed Control Characters (\r, \n, \t)
+            // ASCII : Allowed Control Characters (\r\n, \t)
             SuccessTemplate(s, "Math,FromChar,%Dest%,#$t", "0x09");
-            s.Variables.SetValue(VarsType.Local, "Src", "\r");
-            SuccessTemplate(s, "Math,FromChar,%Dest%,%Src%", "0x0D");
-            s.Variables.SetValue(VarsType.Local, "Src", "\n");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,#$x", "0x0A"); // \r\n
+            s.Variables.SetValue(VarsType.Local, "Src", "\r\n"); // Raw \r\n
             SuccessTemplate(s, "Math,FromChar,%Dest%,%Src%", "0x0A");
             s.Variables.DeleteKey(VarsType.Local, "Src");
 
@@ -618,12 +617,14 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,FromChar,%Dest%,2,1", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,FromChar,%Dest%", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,FromChar,Dest,가", ErrorCheck.ParserError);
-            // ASCII Control Characters is prohibited except for some (\r, \n, \t)
+            // ASCII Control Characters is prohibited except for \r\n and \t
             s.Variables.SetValue(VarsType.Local, "Src", "\a");
             ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
+            s.Variables.SetValue(VarsType.Local, "Src", "\r");
+            ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
+            s.Variables.SetValue(VarsType.Local, "Src", "\n");
+            ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
             s.Variables.DeleteKey(VarsType.Local, "Src");
-            // #$x is escaped to a two character string, \r\n.
-            ErrorTemplate(s, "Math,FromChar,%Dest%,#$x", ErrorCheck.RuntimeError);
             // Old Hangul -> 3 unicode characters
             ErrorTemplate(s, "Math,FromChar,%Dest%,ᄒᆞᆫ", ErrorCheck.RuntimeError);
             // UCS-4 : Emoji, FromChar only supports UCS-2 character set.
