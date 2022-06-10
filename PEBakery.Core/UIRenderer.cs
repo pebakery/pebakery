@@ -536,7 +536,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
             if (uiCtrl.Type != UIControlType.CheckBox)
                 return;
-            
+
             UIInfo_CheckBox info = (UIInfo_CheckBox)uiCtrl.Info;
 
             // Update value of a CheckBox control.

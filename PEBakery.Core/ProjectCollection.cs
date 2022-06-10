@@ -262,7 +262,7 @@ namespace PEBakery.Core
                     // Projects\MyApps
                     // [Project Tree]
                     // %BaseDir%\{Compat,System}
-                    
+
                     // dirPath: %BaseDir%\MyApps
                     // realPath: %BaseDir%\MyApps\Compat\Test.script
 

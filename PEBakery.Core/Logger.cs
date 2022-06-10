@@ -106,7 +106,7 @@ namespace PEBakery.Core
         System,
         Build
     }
-    
+
     public enum LogExportFormat
     {
         Text,

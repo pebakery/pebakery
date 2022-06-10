@@ -145,12 +145,40 @@ namespace PEBakery.Core
     public class CodeInfo
     {
         #region Optimize
-        public virtual bool OptimizeCompare(CodeInfo info) => false;
+        public virtual bool IsOptimizable(CodeInfo info) => false;
         #endregion
 
         #region Deprecate
         public virtual bool IsInfoDeprecated => false;
         public virtual string DeprecateMessage() => string.Empty;
+        #endregion
+
+        #region Data Flow Analysis
+        public virtual HashSet<string> InVars() => CreateInVars();
+        public virtual HashSet<string> OutVars() => CreateOutVars();
+
+        public static HashSet<string> CreateInVars(params string?[] paramVals)
+        {
+            HashSet<string> inVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string? paramVal in paramVals)
+            {
+                if (paramVal == null)
+                    continue;
+                inVars.UnionWith(CodeParser.DetectStringVariableReference(paramVal));
+            }
+            return inVars;
+        }
+
+        public static HashSet<string> CreateOutVars(params string[] varNames)
+        {
+            HashSet<string> outVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string? varName in varNames)
+            {
+                if (Variables.DetectType(varName) != Variables.VarKeyType.None)
+                    outVars.Add(varName);
+            }
+            return outVars;
+        }
         #endregion
     }
 
@@ -174,8 +202,27 @@ namespace PEBakery.Core
         {
             Embed = embed;
         }
+    }
 
+    public class CodeOptInfo : CodeInfo
+    {
+        public List<CodeCommand> Cmds { get; private set; }
 
+        public CodeOptInfo(IEnumerable<CodeCommand> cmds)
+        {
+            if (cmds.Count() == 0)
+                throw new InternalException($"No commands to optmize in [{nameof(CodeOptInfo)}]");
+
+            if (cmds is List<CodeCommand> cmdList)
+                Cmds = cmdList;
+            else
+                Cmds = cmds.ToList();
+        }
+
+        public IEnumerable<T> Infos<T>() where T : CodeInfo
+        {
+            return Cmds.Where(x => x.Info is T).Select(x => (T)x.Info);
+        }
     }
     #endregion
 
@@ -210,6 +257,8 @@ namespace PEBakery.Core
         public bool NoWarn { get; private set; }
         public bool NoRec { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcFile, DestPath);
+
         public CodeInfo_FileCopy(string srcFile, string destPath, bool preserve, bool noWarn, bool noRec)
         {
             SrcFile = srcFile;
@@ -242,6 +291,8 @@ namespace PEBakery.Core
         public bool NoWarn { get; private set; }
         public bool NoRec { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
+
         public CodeInfo_FileDelete(string filePath, bool noWarn, bool noRec)
         {
             FilePath = filePath;
@@ -267,6 +318,8 @@ namespace PEBakery.Core
         public string SrcPath { get; private set; }
         public string DestPath { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcPath, DestPath);
+
         public CodeInfo_FileRename(string srcPath, string destPath)
         {
             SrcPath = srcPath;
@@ -289,6 +342,8 @@ namespace PEBakery.Core
         public string? Encoding { get; private set; } // Optional parameter - [UTF8|UTF8BOM|UTF16|UTF16LE|UTF16BE|ANSI]
 
         private readonly bool _isEncodingFlagDeprecated = false;
+
+        public override HashSet<string> InVars() => CreateInVars(FilePath, Encoding);
 
         public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, string? encoding, bool isFlagDeprecated)
         {
@@ -328,6 +383,9 @@ namespace PEBakery.Core
         public string FilePath { get; private set; }
         public string DestVar { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public CodeInfo_FileSize(string filePath, string destVar)
         {
             FilePath = filePath;
@@ -344,6 +402,9 @@ namespace PEBakery.Core
     { // FileVersion,<FilePath>,<%DestVar%>
         public string FilePath { get; private set; }
         public string DestVar { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public CodeInfo_FileVersion(string filePath, string destVar)
         {
@@ -362,6 +423,8 @@ namespace PEBakery.Core
         public string SrcDir { get; private set; }
         public string DestDir { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcDir, DestDir);
+
         public CodeInfo_DirCopy(string srcDir, string destPath)
         {
             SrcDir = srcDir;
@@ -377,6 +440,8 @@ namespace PEBakery.Core
     public class CodeInfo_DirDelete : CodeInfo
     { // DirDelete,<DirPath>
         public string DirPath { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(DirPath);
 
         public CodeInfo_DirDelete(string dirPath)
         {
@@ -394,6 +459,8 @@ namespace PEBakery.Core
         public string SrcDir { get; private set; }
         public string DestPath { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcDir, DestPath);
+
         public CodeInfo_DirMove(string srcPath, string destPath)
         {
             SrcDir = srcPath;
@@ -410,6 +477,8 @@ namespace PEBakery.Core
     { // DirMake,<DestDir>
         public string DestDir { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(DestDir);
+
         public CodeInfo_DirMake(string destDir)
         {
             DestDir = destDir;
@@ -420,6 +489,9 @@ namespace PEBakery.Core
     { // DirSize,<DirPath>,<%DestVar%>
         public string DirPath { get; private set; }
         public string DestVar { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(DirPath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public CodeInfo_DirSize(string dirPath, string destVar)
         {
@@ -437,6 +509,8 @@ namespace PEBakery.Core
     { // PathMove,<SrcPath>,<DestPath>
         public string SrcPath { get; private set; }
         public string DestPath { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcPath, DestPath);
 
         public CodeInfo_PathMove(string srcPath, string destPath)
         {
@@ -457,6 +531,8 @@ namespace PEBakery.Core
         public string KeyPath { get; private set; }
         public string HiveFile { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(KeyPath, HiveFile);
+
         public CodeInfo_RegHiveLoad(string keyPath, string hiveFile)
         {
             KeyPath = keyPath;
@@ -472,6 +548,8 @@ namespace PEBakery.Core
     public class CodeInfo_RegHiveUnload : CodeInfo
     { // RegHiveUnload,<KeyPath>
         public string KeyPath { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(KeyPath);
 
         public CodeInfo_RegHiveUnload(string keyPath)
         {
@@ -490,6 +568,9 @@ namespace PEBakery.Core
         public string KeyPath { get; private set; }
         public string ValueName { get; private set; }
         public string DestVar { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(KeyPath, ValueName);
+        public override HashSet<string> OutVars() => CreateInVars(DestVar);
 
         public CodeInfo_RegRead(RegistryKey hKey, string keyPath, string valueName, string destVar)
         {
@@ -519,6 +600,14 @@ namespace PEBakery.Core
         public string? ValueData { get; private set; }
         public string[]? ValueDataList { get; private set; }
         public bool NoWarn { get; private set; }
+
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateInVars(KeyPath, ValueName, ValueData);
+            if (ValueDataList != null)
+                inVars.UnionWith(CreateInVars(ValueDataList));
+            return inVars;
+        }
 
         public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, uint valueTypeInt, string keyPath, string? valueName, string? valueData, string[]? valueDataList, bool noWarn)
         {
@@ -570,6 +659,14 @@ namespace PEBakery.Core
         public string[]? ValueDataList { get; private set; }
         public bool NoWarn { get; private set; }
 
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateInVars(HKey, ValueType, KeyPath, ValueName);
+            if (ValueDataList != null)
+                inVars.UnionWith(CreateInVars(ValueDataList));
+            return inVars;
+        }
+
         public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string? valueName, string[]? valueDataList, bool noWarn)
         {
             HKey = hKey;
@@ -608,6 +705,8 @@ namespace PEBakery.Core
         public string KeyPath { get; private set; }
         public string? ValueName { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(KeyPath, ValueName);
+
         public CodeInfo_RegDelete(RegistryKey hKey, string keyPath, string? valueName = null)
         {
             HKey = hKey;
@@ -644,6 +743,8 @@ namespace PEBakery.Core
         public string Arg1 { get; private set; }
         public string? Arg2 { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(KeyPath, ValueName, Arg1, Arg2);
+
         public CodeInfo_RegMulti(RegistryKey hKey, string keyPath, string valueName, RegMultiType actionType, string arg1, string? arg2 = null)
         {
             HKey = hKey;
@@ -679,6 +780,8 @@ namespace PEBakery.Core
     { // RegImport,<RegFile>
         public string RegFile { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(RegFile);
+
         public CodeInfo_RegImport(string regFile)
         {
             RegFile = regFile;
@@ -695,6 +798,8 @@ namespace PEBakery.Core
         public RegistryKey HKey { get; private set; }
         public string KeyPath { get; private set; }
         public string RegFile { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(KeyPath, RegFile);
 
         public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
         {
@@ -717,6 +822,8 @@ namespace PEBakery.Core
         public RegistryKey HDestKey { get; private set; }
         public string DestKeyPath { get; private set; }
         public bool WildcardFlag { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcKeyPath, DestKeyPath);
 
         public CodeInfo_RegCopy(RegistryKey hSrcKey, string srcKeyPath, RegistryKey hDestKey, string destKeyPath, bool wildcard)
         {
@@ -751,7 +858,9 @@ namespace PEBakery.Core
             Mode = mode;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Line, Mode);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTAddLine info)
                 return false;
@@ -772,34 +881,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTAddLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; set; }
-        public List<CodeInfo_TXTAddLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTAddLine> infos = new List<CodeInfo_TXTAddLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTAddLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTAddLine)}");
-                        continue;
-                    }
-
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTAddLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_TXTReplace : CodeInfo
     { // TXTReplace,<FileName>,<OldStr>,<NewStr>
         public string FileName { get; private set; }
@@ -813,7 +894,9 @@ namespace PEBakery.Core
             NewStr = newStr;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, OldStr, NewStr);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTReplace info)
                 return false;
@@ -833,33 +916,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTReplaceOp : CodeInfo
-    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_TXTReplace> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTReplace> infos = new List<CodeInfo_TXTReplace>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTReplace info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTReplace)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTReplaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_TXTDelLine : CodeInfo
     { // TXTDelLine,<FileName>,<DeleteLine>
         public string FileName { get; private set; }
@@ -871,7 +927,9 @@ namespace PEBakery.Core
             DeleteLine = deleteLine;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, DeleteLine);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_TXTDelLine info)
                 return false;
@@ -889,33 +947,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTDelLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_TXTDelLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_TXTDelLine> infos = new List<CodeInfo_TXTDelLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_TXTDelLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_TXTDelLine)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_TXTDelLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_TXTDelSpaces : CodeInfo
     { // TXTDelSpaces,<FileName>
         public string FileName { get; private set; }
@@ -924,6 +955,8 @@ namespace PEBakery.Core
         {
             FileName = fileName;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName);
 
         public override string ToString()
         {
@@ -941,6 +974,8 @@ namespace PEBakery.Core
         {
             FileName = fileName;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName);
 
         public override string ToString()
         {
@@ -969,7 +1004,10 @@ namespace PEBakery.Core
             DefaultValue = defaultValue;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key, DefaultValue);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniRead info)
                 return false;
@@ -997,33 +1035,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniReadOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniRead> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniRead> infos = new List<CodeInfo_IniRead>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniRead info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniRead)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniReadOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniWrite : CodeInfo
     { // IniWrite,<FileName>,<Section>,<Key>,<Value>
         public string FileName { get; private set; }
@@ -1039,7 +1050,9 @@ namespace PEBakery.Core
             Value = value;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key, Value);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniWrite info)
                 return false;
@@ -1061,33 +1074,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniWriteOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniWrite> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniWrite> infos = new List<CodeInfo_IniWrite>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniWrite info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWrite)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniWriteOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniDelete : CodeInfo
     { // IniDelete,<FileName>,<Section>,<Key>
         public string FileName { get; private set; }
@@ -1101,7 +1087,9 @@ namespace PEBakery.Core
             Key = key;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section, Key);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniDelete info)
                 return false;
@@ -1121,33 +1109,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniDeleteOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniDelete> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniDelete> infos = new List<CodeInfo_IniDelete>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniDelete info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDelete)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniReadSection : CodeInfo
     { // IniReadSection,<FileName>,<Section>,<%DestVar%>,[Delim=<Str>]
         public string FileName { get; private set; }
@@ -1163,7 +1124,10 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section, Delim);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             CodeInfo_IniReadSection info = (CodeInfo_IniReadSection)cmpInfo;
             if (info == null)
@@ -1189,33 +1153,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniReadSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniReadSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniReadSection> infos = new List<CodeInfo_IniReadSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniReadSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniReadSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniAddSection : CodeInfo
     { // IniAddSection,<FileName>,<Section>
         public string FileName { get; private set; }
@@ -1227,7 +1164,9 @@ namespace PEBakery.Core
             Section = section;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniAddSection info)
                 return false;
@@ -1245,33 +1184,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniAddSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniAddSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniAddSection> infos = new List<CodeInfo_IniAddSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniAddSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniAddSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniAddSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniDeleteSection : CodeInfo
     { // IniDeleteSection,<FileName>,<Section>
         public string FileName { get; private set; }
@@ -1283,7 +1195,9 @@ namespace PEBakery.Core
             Section = section;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniDeleteSection info)
                 return false;
@@ -1298,33 +1212,6 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(Section);
             return b.ToString();
-        }
-    }
-
-    public class CodeInfo_IniDeleteSectionOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniDeleteSection> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniDeleteSection> infos = new List<CodeInfo_IniDeleteSection>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniDeleteSection info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniDeleteSection)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniDeleteSectionOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1343,7 +1230,9 @@ namespace PEBakery.Core
             Append = append;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(FileName, Section, Line);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_IniWriteTextLine info)
                 return false;
@@ -1366,33 +1255,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_IniWriteTextLineOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_IniWriteTextLine> Infos
-        {
-            get
-            {
-                List<CodeInfo_IniWriteTextLine> infos = new List<CodeInfo_IniWriteTextLine>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_IniWriteTextLine info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_IniWriteTextLine)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_IniWriteTextLineOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_IniMerge : CodeInfo
     { // IniMerge,<SrcFile>,<DestFile>
         public string SrcFile { get; private set; }
@@ -1403,6 +1265,8 @@ namespace PEBakery.Core
             SrcFile = srcFile;
             DestFile = destFile;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcFile, DestFile);
 
         public override string ToString()
         {
@@ -1418,6 +1282,8 @@ namespace PEBakery.Core
         {
             FilePath = filePath;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
 
         public override string ToString()
         {
@@ -1442,6 +1308,8 @@ namespace PEBakery.Core
             MountOption = mountOption;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, MountDir, MountOption);
+
         public override string ToString()
         {
             return $"{SrcWim},{ImageIndex},{MountDir},{MountOption}";
@@ -1458,6 +1326,8 @@ namespace PEBakery.Core
             MountDir = mountDir;
             UnmountOption = unmountOption;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(MountDir, UnmountOption);
 
         public override string ToString()
         {
@@ -1481,6 +1351,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             NoErrFlag = noErrFlag;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, Key);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -1518,6 +1391,8 @@ namespace PEBakery.Core
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, DestDir, Split);
 
         public override string ToString()
         {
@@ -1566,7 +1441,9 @@ namespace PEBakery.Core
             NoAttribFlag = noAttrib;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, ExtractPath, DestDir, Split);
+
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         { // Condition : Every argument except DestDir should be identical
             if (cmpInfo is not CodeInfo_WimExtract info)
                 return false;
@@ -1616,33 +1493,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_WimExtractOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_WimExtract> Infos
-        {
-            get
-            {
-                List<CodeInfo_WimExtract> infos = new List<CodeInfo_WimExtract>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_WimExtract info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WimExtract)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_WimExtractBulk : CodeInfo
     { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB],[NOERR],[NOWARN]
         public string SrcWim { get; private set; }
@@ -1671,6 +1521,8 @@ namespace PEBakery.Core
             NoErrFlag = noErr;
             NoWarnFlag = noWarn;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, ListFile, DestDir, Split);
 
         public override string ToString()
         {
@@ -1734,6 +1586,8 @@ namespace PEBakery.Core
             NoAclFlag = noAcl;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcDir, DestWim, Compress, ImageName, ImageDesc, WimFlags);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -1780,6 +1634,8 @@ namespace PEBakery.Core
         public bool BootFlag { get; private set; } // Optional Flag
         public bool CheckFlag { get; private set; } // Optional Flag
         public bool NoAclFlag { get; private set; } // Optional Flag
+
+        public override HashSet<string> InVars() => CreateInVars(SrcDir, DestWim, ImageName, ImageDesc, WimFlags, DeltaIndex);
 
         public CodeInfo_WimAppend(string srcDir, string destWim,
             string? imageName, string? imageDesc, string? wimFlags, string? deltaIndex,
@@ -1844,6 +1700,8 @@ namespace PEBakery.Core
         public string ImageIndex { get; private set; }
         public bool CheckFlag { get; private set; } // Optional Flag
 
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex);
+
         public CodeInfo_WimDelete(string srcWim, string imageIndex, bool check)
         {
             SrcWim = srcWim;
@@ -1878,6 +1736,8 @@ namespace PEBakery.Core
         public bool PreserveFlag { get; private set; }
         public bool RebuildFlag { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(WimFile, ImageIndex, SrcPath, DestPath);
+
         public CodeInfo_WimPathAdd(string wimFile, string imageIndex,
             string srcPath, string destPath,
             bool checkFlag, bool noAclFlag, bool preserveFlag, bool rebuildFlag)
@@ -1898,7 +1758,7 @@ namespace PEBakery.Core
             PreserveFlag = preserveFlag;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -1955,6 +1815,8 @@ namespace PEBakery.Core
         public bool CheckFlag { get; private set; }
         public bool RebuildFlag { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(WimFile, ImageIndex, Path);
+
         public CodeInfo_WimPathDelete(string wimFile, string imageIndex, string path, bool checkFlag, bool rebuildFlag)
         {
             // WimPath (WimUpdate) Series Common
@@ -1968,7 +1830,7 @@ namespace PEBakery.Core
             Path = path;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -2020,6 +1882,8 @@ namespace PEBakery.Core
         public bool CheckFlag { get; private set; }
         public bool RebuildFlag { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(WimFile, ImageIndex, SrcPath, DestPath);
+
         public CodeInfo_WimPathRename(string wimFile, string imageIndex, string srcPath, string destPath, bool checkFlag, bool rebuildFlag)
         {
             // WimPath (WimUpdate) Series Common
@@ -2034,7 +1898,7 @@ namespace PEBakery.Core
             DestPath = destPath;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is CodeInfo_WimPathAdd addInfo)
             {
@@ -2079,21 +1943,13 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_WimPathOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-
-        public CodeInfo_WimPathOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public class CodeInfo_WimOptimize : CodeInfo
     { // WimOptimize,<WimFile>,[Recomp=<Str>],[CHECK|NOCHECK]
         public string WimFile { get; private set; }
         public string? Recompress { get; private set; } // [KEEP|NONE|XPRESS|LZX|LZMS]
         public bool? CheckFlag { get; private set; } // Optional Flag
+
+        public override HashSet<string> InVars() => CreateInVars(WimFile, Recompress);
 
         public CodeInfo_WimOptimize(string wimFile, string? recompress, bool? checkFlag)
         {
@@ -2130,6 +1986,8 @@ namespace PEBakery.Core
         public string? Split { get; private set; }  // Optional
         public bool BootFlag { get; private set; } // Optional Flag
         public bool? CheckFlag { get; private set; } // Optional Flag
+
+        public override HashSet<string> InVars() => CreateInVars(SrcWim, ImageIndex, DestWim, ImageName, ImageDesc, Recompress, Split);
 
         public CodeInfo_WimExport(string srcWim, string imageIndex, string destWim,
             string? imageName, string? imageDesc, string? split, string? recompress,
@@ -2191,11 +2049,13 @@ namespace PEBakery.Core
 
     #region CodeInfo 06 - Archive
     public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>[,Password=<Str>][,CompressLevel]
+    { // Compress,<Format>,<SrcPath>,<DestArchive>[,CompressLevel]
         public ArchiveCompressFormat Format { get; private set; }
         public string SrcPath { get; private set; }
         public string DestArchive { get; private set; }
         public CompressLevel? CompressLevel { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcPath, DestArchive);
 
         public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, CompressLevel? compressLevel)
         {
@@ -2228,6 +2088,8 @@ namespace PEBakery.Core
         public string DestDir { get; private set; }
         public string? Password { get; private set; } // Optional
 
+        public override HashSet<string> InVars() => CreateInVars(SrcArchive, DestDir, Password);
+
         public CodeInfo_Decompress(string srcArchive, string destArchive, string? password)
         {
             SrcArchive = srcArchive;
@@ -2257,6 +2119,8 @@ namespace PEBakery.Core
         public string? SingleFile { get; private set; }
         public bool Preserve { get; private set; } // Only enabled if SingleFile is set
         public bool NoWarn { get; private set; } // Only enabled if SingleFile is set
+
+        public override HashSet<string> InVars() => CreateInVars(SrcCab, DestDir, SingleFile);
 
         public CodeInfo_Expand(string srcCab, string destDir, string? singleFile, bool preserve, bool noWarn)
         {
@@ -2293,6 +2157,8 @@ namespace PEBakery.Core
         public bool Preserve { get; private set; }
         public bool NoWarn { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcFile, DestPath);
+
         public CodeInfo_CopyOrExpand(string srcCab, string destDir, bool preserve, bool noWarn)
         {
             SrcFile = srcCab;
@@ -2328,6 +2194,8 @@ namespace PEBakery.Core
         public string? Referer { get; private set; } // Optional Argument
         public string? UserAgent { get; private set; } // Optional Argument
         public bool NoErrFlag { get; private set; } // Optional Flag
+
+        public override HashSet<string> InVars() => CreateInVars(URL, DestPath, HashDigest, TimeOut, Referer, UserAgent);
 
         public CodeInfo_WebGet(string url, string destPath, HashType hashType, string? hashDigest, string? timeOut, string? referer, string? userAgent, bool noErr)
         {
@@ -2383,6 +2251,9 @@ namespace PEBakery.Core
         public string FilePath { get; private set; }
         public string DestVar { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(HashType, FilePath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public CodeInfo_Hash(string hashType, string filePath, string destVar)
         {
             HashType = hashType;
@@ -2405,6 +2276,8 @@ namespace PEBakery.Core
         public string FileName { get; private set; }
         public string DestDir { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, DirName, FileName, DestDir);
+
         public CodeInfo_ExtractFile(string scriptFile, string dirName, string fileName, string extractTo)
         {
             ScriptFile = scriptFile;
@@ -2425,6 +2298,8 @@ namespace PEBakery.Core
         public string DirName { get; private set; }
         public string FileName { get; private set; }
         public string? Params { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, DirName, FileName, Params);
 
         public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string? parameters)
         {
@@ -2457,6 +2332,8 @@ namespace PEBakery.Core
         public string DirName { get; private set; }
         public string DestDir { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, DirName, DestDir);
+
         public CodeInfo_ExtractAllFiles(string scriptFile, string dirName, string extractTo)
         {
             ScriptFile = scriptFile;
@@ -2476,6 +2353,8 @@ namespace PEBakery.Core
         public string DirName { get; private set; }
         public string FilePath { get; private set; } // Can have Wildcard
         public string? Compression { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, DirName, FilePath, Compression);
 
         public CodeInfo_Encode(string scriptFile, string dirName, string filePath, string? compression)
         {
@@ -2509,44 +2388,19 @@ namespace PEBakery.Core
         public string UIControlKey { get; private set; } // Must start and end with %
         public string Visibility { get; private set; } // True or False
 
+        public override HashSet<string> InVars() => CreateInVars(UIControlKey, Visibility);
+
         public CodeInfo_Visible(string uiCtrlKey, string visibility)
         {
             UIControlKey = uiCtrlKey;
             Visibility = visibility;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo) => true;
+        public override bool IsOptimizable(CodeInfo cmpInfo) => true;
 
         public override string ToString()
         {
             return $"{UIControlKey},{Visibility}";
-        }
-    }
-
-    public class CodeInfo_VisibleOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_Visible> Infos
-        {
-            get
-            {
-                List<CodeInfo_Visible> infos = new List<CodeInfo_Visible>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_Visible info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_Visible)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_VisibleOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -2578,6 +2432,9 @@ namespace PEBakery.Core
         public string DestVar { get; private set; }
         public string? Delim { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, Section, Key, Delim);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar, string? delim)
         {
             Element = element;
@@ -2588,7 +2445,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_ReadInterface info)
                 return false;
@@ -2618,33 +2475,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_ReadInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_ReadInterface> Infos
-        {
-            get
-            {
-                List<CodeInfo_ReadInterface> infos = new List<CodeInfo_ReadInterface>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_ReadInterface info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_ReadInterface)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     [Serializable]
     public class CodeInfo_WriteInterface : CodeInfo
     { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
@@ -2654,6 +2484,8 @@ namespace PEBakery.Core
         public string Key { get; private set; }
         public string Value { get; private set; }
         public string? Delim { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, Section, Key, Value, Delim);
 
         public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value, string? delim)
         {
@@ -2665,7 +2497,7 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
-        public override bool OptimizeCompare(CodeInfo cmpInfo)
+        public override bool IsOptimizable(CodeInfo cmpInfo)
         {
             if (cmpInfo is not CodeInfo_WriteInterface info)
                 return false;
@@ -2695,33 +2527,6 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_WriteInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds { get; private set; }
-        public List<CodeInfo_WriteInterface> Infos
-        {
-            get
-            {
-                List<CodeInfo_WriteInterface> infos = new List<CodeInfo_WriteInterface>();
-                foreach (CodeCommand cmd in Cmds)
-                {
-                    if (cmd.Info is not CodeInfo_WriteInterface info)
-                    {
-                        Debug.Assert(false, $"{nameof(CodeInfo)} is not {nameof(CodeInfo_WriteInterface)}");
-                        continue;
-                    }
-                    infos.Add(info);
-                }
-                return infos;
-            }
-        }
-
-        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
     public enum CodeMessageAction
     {
         None, Information, Confirmation, Error, Warning
@@ -2732,6 +2537,8 @@ namespace PEBakery.Core
         public string Message { get; private set; }
         public CodeMessageAction Action { get; private set; } // Optional
         public string? Timeout { get; private set; } // Optional, Its type should be int, but set to string because of variable system
+
+        public override HashSet<string> InVars() => CreateInVars(Message, Timeout);
 
         public CodeInfo_Message(string message, CodeMessageAction action, string? timeout)
         {
@@ -2763,6 +2570,8 @@ namespace PEBakery.Core
         public string Message { get; private set; }
         public bool Warn { get; private set; }
 
+        public override HashSet<string> InVars() => CreateInVars(Message);
+
         public CodeInfo_Echo(string message, bool warn)
         {
             Message = message;
@@ -2783,6 +2592,8 @@ namespace PEBakery.Core
     { // EchoFile,<SrcFile>,[WARN]
         public string SrcFile { get; private set; }
         public bool Warn { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcFile);
 
         public CodeInfo_EchoFile(string srcFile, bool warn)
         {
@@ -2805,6 +2616,8 @@ namespace PEBakery.Core
         public string ScriptFile { get; private set; }
         public string Section { get; private set; }
         public string Prefix { get; private set; }
+
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, Section, Prefix);
 
         public CodeInfo_AddInterface(string scriptFile, string ifaceSection, string prefix)
         {
@@ -2830,6 +2643,9 @@ namespace PEBakery.Core
             SubInfo = subInfo;
         }
 
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
+
         public override string ToString()
         {
             return $"{Type},{SubInfo}";
@@ -2853,6 +2669,9 @@ namespace PEBakery.Core
         public string DestVar { get; private set; }
         public string? Title { get; private set; } // Optional
         public string? Filter { get; private set; } // Optional
+
+        public override HashSet<string> InVars() => CreateInVars(InitPath, Title, Filter);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public UserInputInfo_DirFile(string initPath, string destVar, string? title, string? filter)
         {
@@ -4812,7 +4631,7 @@ namespace PEBakery.Core
     public class CodeInfo_Return : CodeInfo
     { // Return,[ReturnValue]
         public string? ReturnValue { get; private set; }
-        
+
         public CodeInfo_Return(string? returnValue)
         {
             ReturnValue = returnValue;

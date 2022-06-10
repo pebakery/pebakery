@@ -27,7 +27,6 @@
 
 using MahApps.Metro.IconPacks;
 using PEBakery.Helper;
-using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

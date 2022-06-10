@@ -358,7 +358,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            
+
             WriteTemplate(s, "List,Range,%ListStr%,0,7,1", null, "0|1|2|3|4|5|6");
             WriteTemplate(s, "List,Range,%ListStr%,0,7,2", null, "0|2|4|6");
             WriteTemplate(s, "List,Range,%ListStr%,0,7,8", null, "0");
@@ -373,7 +373,7 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,Range,%ListStr%,0,7,-1", null, null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Range,%ListStr%,7,0,1", null, null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,Range,%ListStr%,7,0,2", null, null, ErrorCheck.RuntimeError);
-            
+
             WriteTemplate(s, "List,Range,%ListStr%,0,", null, null, ErrorCheck.ParserError);
             WriteTemplate(s, "List,Range,%ListStr%,0,7", null, null, ErrorCheck.ParserError);
             WriteTemplate(s, "List,Range,%ListStr%,7,0", null, null, ErrorCheck.ParserError);

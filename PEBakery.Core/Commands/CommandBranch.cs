@@ -383,7 +383,7 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        
+
 
         public static void While(EngineState s, CodeCommand cmd)
         {
@@ -1344,7 +1344,7 @@ namespace PEBakery.Core.Commands
                         else
                         {
                             MessageBoxResult result = SystemHelper.MessageBoxDispatcherShow(s.OwnerWindow, message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                                
+
                             switch (result)
                             {
                                 case MessageBoxResult.Yes:
