@@ -434,7 +434,7 @@ namespace PEBakery.Core.Commands
                                 throw new InternalException("Internal Logic Error at StrFormat,Trim");
                             }
 
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                             logs.AddRange(varLogs);
                         }
                         catch (ArgumentOutOfRangeException)

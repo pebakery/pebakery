@@ -484,7 +484,7 @@ namespace PEBakery.Core
             // Check CodeType / CodeInfo deprecation
             if (cmd.IsTypeDeprecated)
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
-            if (cmd.Info.IsInfoDeprecated)
+            if (cmd.Info.IsDeprecated)
                 logs.Add(new LogInfo(LogState.Warning, cmd.Info.DeprecateMessage()));
 
             // If last command enabled ErrorOff, activate it now.

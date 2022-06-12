@@ -144,19 +144,46 @@ namespace PEBakery.Core
     #region CodeInfo
     public class CodeInfo
     {
-        #region Optimize
-        public virtual bool IsOptimizable(CodeInfo info) => false;
-        #endregion
-
-        #region Deprecate
-        public virtual bool IsInfoDeprecated => false;
+        #region Deprecate Check
+        /// <summary>
+        /// Is this Command was deprecated?
+        /// </summary>
+        public virtual bool IsDeprecated => false;
         public virtual string DeprecateMessage() => string.Empty;
         #endregion
 
-        #region Data Flow Analysis
-        public virtual HashSet<string> InVars() => CreateInVars();
+        #region Optimize - Check I/O Access & FilePath
+        /// <summary>
+        /// Checks if two CodeInfos are doing same access to same file.
+        /// </summary>
+        /// <param name="info"></param>
+        /// <returns></returns>
+        public virtual bool IsOptimizable(CodeInfo info) => false;
+        #endregion
+
+        #region Optimize - Data Flow Analysis
+        /// <summary>
+        /// Return a set of referenced variables.
+        /// </summary>
+        /// <remarks>
+        /// Call `CreateInVars()` to make a set.
+        /// </remarks>
+        /// <returns>A HashSet instance of referenced variables.</returns>
+        // public virtual HashSet<string> InVars() => CreateInVars();
+        public virtual HashSet<string> InVars() => CreateOutVars();
+        /// <summary>
+        /// Return a set of used variables.
+        /// </summary>
+        /// <remarks>
+        /// Call `CreateOutVars()` to make a set.
+        /// </remarks>
+        /// <returns>A HashSet instance of used variables.</returns>
         public virtual HashSet<string> OutVars() => CreateOutVars();
 
+        /// <summary>
+        /// Collect a set of referenced variable from parameters.
+        /// </summary>
+        /// <param name="paramVals">Parameters of a command.</param>
         public static HashSet<string> CreateInVars(params string?[] paramVals)
         {
             HashSet<string> inVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -169,11 +196,17 @@ namespace PEBakery.Core
             return inVars;
         }
 
-        public static HashSet<string> CreateOutVars(params string[] varNames)
+        /// <summary>
+        /// Collect a set of referenced variable from parameters.
+        /// </summary>
+        /// <param name="varNames">Variable name parameters.</param>
+        public static HashSet<string> CreateOutVars(params string?[] varNames)
         {
             HashSet<string> outVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string? varName in varNames)
             {
+                if (varName == null)
+                    continue;
                 if (Variables.DetectType(varName) != Variables.VarKeyType.None)
                     outVars.Add(varName);
             }
@@ -183,9 +216,12 @@ namespace PEBakery.Core
     }
 
     /// <summary>
-    /// CodeInfo which has 
+    /// CodeInfo which has another command embedded.
     /// </summary>
-    public class CodeEmbedInfo : CodeInfo
+    /// <remarks>
+    /// Branch commands usually has CodeEmbedInfo.
+    /// </remarks>
+    public abstract class CodeEmbedInfo : CodeInfo
     {
         /// <summary>
         /// Direct parse of embedded command
@@ -202,15 +238,38 @@ namespace PEBakery.Core
         {
             Embed = embed;
         }
+
+        protected HashSet<string> CreateEmbedInVars(params string?[] paramVals)
+        {
+            HashSet<string> inVars = CreateInVars(paramVals);
+            foreach (CodeCommand linkCmd in Link)
+            {
+                inVars.UnionWith(linkCmd.Info.InVars());
+            }
+            return inVars;
+        }
+
+        protected HashSet<string> CreateEmbedOutVars(params string?[] varNames)
+        {
+            HashSet<string> outVars = CreateOutVars(varNames);
+            foreach (CodeCommand linkCmd in Link)
+            {
+                outVars.UnionWith(linkCmd.Info.OutVars());
+            }
+            return outVars;
+        }
     }
 
+    /// <summary>
+    /// CodeInfo which was optimized from other commands.
+    /// </summary>
     public class CodeOptInfo : CodeInfo
     {
         public List<CodeCommand> Cmds { get; private set; }
 
         public CodeOptInfo(IEnumerable<CodeCommand> cmds)
         {
-            if (cmds.Count() == 0)
+            if (!cmds.Any())
                 throw new InternalException($"No commands to optmize in [{nameof(CodeOptInfo)}]");
 
             if (cmds is List<CodeCommand> cmdList)
@@ -223,10 +282,33 @@ namespace PEBakery.Core
         {
             return Cmds.Where(x => x.Info is T).Select(x => (T)x.Info);
         }
+
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateInVars();
+            foreach (CodeCommand rawCmd in Cmds)
+            {
+                inVars.UnionWith(rawCmd.Info.InVars());
+            }
+            return inVars;
+        }
+
+        public override HashSet<string> OutVars()
+        {
+            HashSet<string> outVars = CreateOutVars();
+            foreach (CodeCommand rawCmd in Cmds)
+            {
+                outVars.UnionWith(rawCmd.Info.OutVars());
+            }
+            return outVars;
+        }
     }
     #endregion
 
     #region CodeInfo 00 - Misc
+    /// <summary>
+    /// CodeInfo_Error is designed only for internal use.
+    /// </summary>
     public class CodeInfo_Error : CodeInfo
     {
         public string ErrorMessage { get; private set; }
@@ -240,6 +322,8 @@ namespace PEBakery.Core
         {
             ErrorMessage = Logger.LogExceptionMessage(e);
         }
+
+        public override HashSet<string> InVars() => CreateInVars();
 
         public override string ToString()
         {
@@ -355,10 +439,10 @@ namespace PEBakery.Core
             _isEncodingFlagDeprecated = isFlagDeprecated;
         }
 
-        public override bool IsInfoDeprecated => _isEncodingFlagDeprecated && Encoding != null;
+        public override bool IsDeprecated => _isEncodingFlagDeprecated && Encoding != null;
         public override string DeprecateMessage()
         {
-            if (IsInfoDeprecated && Encoding != null)
+            if (IsDeprecated && Encoding != null)
                 return $"Flag [{Encoding}] is deprecated. Use optional parameter [Encoding={Encoding}] instead.";
             else
                 return string.Empty;
@@ -2196,6 +2280,7 @@ namespace PEBakery.Core
         public bool NoErrFlag { get; private set; } // Optional Flag
 
         public override HashSet<string> InVars() => CreateInVars(URL, DestPath, HashDigest, TimeOut, Referer, UserAgent);
+        public override HashSet<string> OutVars() => CreateOutVars("#r");
 
         public CodeInfo_WebGet(string url, string destPath, HashType hashType, string? hashDigest, string? timeOut, string? referer, string? userAgent, bool noErr)
         {
@@ -2659,7 +2744,9 @@ namespace PEBakery.Core
         FilePath,
     }
 
-    public class UserInputInfo : CodeInfo { }
+    public abstract class UserInputInfo : CodeInfo
+    {
+    }
 
     public class UserInputInfo_DirFile : UserInputInfo
     {
@@ -2670,9 +2757,6 @@ namespace PEBakery.Core
         public string? Title { get; private set; } // Optional
         public string? Filter { get; private set; } // Optional
 
-        public override HashSet<string> InVars() => CreateInVars(InitPath, Title, Filter);
-        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
-
         public UserInputInfo_DirFile(string initPath, string destVar, string? title, string? filter)
         {
             InitPath = initPath;
@@ -2680,6 +2764,9 @@ namespace PEBakery.Core
             Title = title;
             Filter = filter;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(InitPath, Title, Filter);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2727,7 +2814,7 @@ namespace PEBakery.Core
         ShortPath = 800, LongPath, // Will be deprecated
     }
 
-    public class StrFormatInfo : CodeInfo { }
+    public abstract class StrFormatInfo : CodeInfo { }
 
     public class StrFormatInfo_IntToBytes : StrFormatInfo
     { // StrFormat,Bytes,<Integer>,<%DestVar%>
@@ -2739,6 +2826,9 @@ namespace PEBakery.Core
             ByteSize = byteSize;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(ByteSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2757,6 +2847,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(HumanReadableByteSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"{HumanReadableByteSize},{DestVar}";
@@ -2773,6 +2866,9 @@ namespace PEBakery.Core
             Integer = integer;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Integer);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2800,6 +2896,9 @@ namespace PEBakery.Core
             RoundTo = roundTo;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(RoundTo);
+        public override HashSet<string> OutVars() => CreateOutVars(SizeVar);
+
         public override string ToString()
         {
             return $"{SizeVar},{RoundTo}";
@@ -2816,6 +2915,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             FormatString = formatString;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(FormatString);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2842,6 +2944,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -2864,6 +2969,9 @@ namespace PEBakery.Core
             FileName = fileName;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(DirPath, FileName);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2893,6 +3001,9 @@ namespace PEBakery.Core
             Integer = integer;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Integer);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -2917,6 +3028,9 @@ namespace PEBakery.Core
             Count = count;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, Count);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -2945,6 +3059,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, StartPos, Length);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -2970,6 +3087,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -2988,14 +3108,18 @@ namespace PEBakery.Core
 
         public string SrcStr { get; private set; }
         public string ToTrim { get; private set; }
-        public string DestVarName { get; private set; }
+        public string DestVar { get; private set; }
 
         public StrFormatInfo_Trim(string srcStr, string trimValue, string destVar)
         {
             SrcStr = srcStr;
             ToTrim = trimValue;
-            DestVarName = destVar;
+            DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, ToTrim);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
 
         public override string ToString()
         {
@@ -3004,7 +3128,7 @@ namespace PEBakery.Core
             b.Append(',');
             b.Append(StringEscaper.DoubleQuote(ToTrim));
             b.Append(',');
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
@@ -3019,6 +3143,9 @@ namespace PEBakery.Core
             SrcStr = srcStr;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3043,6 +3170,9 @@ namespace PEBakery.Core
             SrcStr = srcStr;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3069,6 +3199,9 @@ namespace PEBakery.Core
             SubStr = subStr;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, SubStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3100,6 +3233,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, SearchStr, ReplaceStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3128,6 +3264,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcStr);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3152,6 +3291,9 @@ namespace PEBakery.Core
             Index = index;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, Delimiter, Index);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3184,6 +3326,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(SrcStr, TotalWidth, PadChar);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3211,6 +3356,9 @@ namespace PEBakery.Core
             SubInfo = subInfo;
         }
 
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3221,7 +3369,7 @@ namespace PEBakery.Core
         }
 
         #region Deprecate
-        public override bool IsInfoDeprecated
+        public override bool IsDeprecated
         {
             get
             {
@@ -3237,7 +3385,7 @@ namespace PEBakery.Core
         }
         public override string DeprecateMessage()
         {
-            if (IsInfoDeprecated == false)
+            if (IsDeprecated == false)
                 return string.Empty;
             return $"Command [StrFormat,{Type}] is deprecated.";
         }
@@ -3265,7 +3413,7 @@ namespace PEBakery.Core
         ToChar = 120, FromChar,
     }
 
-    public class MathInfo : CodeInfo { }
+    public abstract class MathInfo : CodeInfo { }
 
     public class MathInfo_Arithmetic : MathInfo
     {
@@ -3284,6 +3432,9 @@ namespace PEBakery.Core
             Src1 = src1;
             Src2 = src2;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src1, Src2);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3306,6 +3457,9 @@ namespace PEBakery.Core
             Src2 = src2;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Src1, Src2);
+        public override HashSet<string> OutVars() => CreateOutVars(QuotientVar, RemainderVar);
+
         public override string ToString()
         {
             return $"{QuotientVar},{RemainderVar},{Src1},{Src2}";
@@ -3322,6 +3476,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             Src = src;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3344,6 +3501,9 @@ namespace PEBakery.Core
             Src = src;
             BitSize = bitSize;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src, BitSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3368,6 +3528,9 @@ namespace PEBakery.Core
             Src2 = src2;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Src1, Src2);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"{DestVar},{Src1},{Src2}";
@@ -3384,6 +3547,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             Src = src;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3408,6 +3574,9 @@ namespace PEBakery.Core
             Src2 = src2;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Src1, Src2);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"{DestVar},{Src1},{Src2}";
@@ -3426,6 +3595,9 @@ namespace PEBakery.Core
             Src = src;
             BitSize = bitSize;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src, BitSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3452,6 +3624,9 @@ namespace PEBakery.Core
             Unsigned = _unsigned;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Src, Direction, Shift, BitSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"{DestVar},{Src},{Direction},{Shift},{BitSize},{Unsigned}";
@@ -3475,6 +3650,9 @@ namespace PEBakery.Core
             Unit = unit;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Src, Unit);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"{DestVar},{Src},{Unit}";
@@ -3491,6 +3669,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             Src = src;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3510,6 +3691,9 @@ namespace PEBakery.Core
             Base = _base;
             Power = powerOf;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Base, Power);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3531,6 +3715,9 @@ namespace PEBakery.Core
             Src = src;
             BitSize = bitSize;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Src, BitSize);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3559,6 +3746,9 @@ namespace PEBakery.Core
             Max = max;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Min, Max);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3586,6 +3776,15 @@ namespace PEBakery.Core
         /// </summary>
         public string UnicodeCodePoint { get; private set; }
 
+        public MathInfo_ToChar(string destVar, string unicodeCodePoint)
+        {
+            DestVar = destVar;
+            UnicodeCodePoint = unicodeCodePoint;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(UnicodeCodePoint);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         /// <summary>
         /// Dictionary of allowed control characters.
         /// </summary>
@@ -3594,12 +3793,6 @@ namespace PEBakery.Core
             ['\t'] = "\t",
             ['\n'] = "\r\n",
         };
-
-        public MathInfo_ToChar(string destVar, string unicodeCodePoint)
-        {
-            DestVar = destVar;
-            UnicodeCodePoint = unicodeCodePoint;
-        }
 
         public override string ToString()
         {
@@ -3615,6 +3808,15 @@ namespace PEBakery.Core
         /// </summary>
         public string Character { get; private set; }
 
+        public MathInfo_FromChar(string destVar, string character)
+        {
+            DestVar = destVar;
+            Character = character;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(Character);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         /// <summary>
         /// List of allowed control characters.
         /// </summary>
@@ -3623,12 +3825,6 @@ namespace PEBakery.Core
             ["\r\n"] = '\n',
             ["\t"] = '\t',
         };
-
-        public MathInfo_FromChar(string destVar, string character)
-        {
-            DestVar = destVar;
-            Character = character;
-        }
 
         public override string ToString()
         {
@@ -3648,6 +3844,9 @@ namespace PEBakery.Core
             Type = type;
             SubInfo = subInfo;
         }
+
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
 
         public override string ToString()
         {
@@ -3675,13 +3874,20 @@ namespace PEBakery.Core
         Range = 70,
     }
 
-    public class ListInfo : CodeInfo
+    public abstract class ListInfo : CodeInfo
     {
         public string ListVar { get; private set; }
 
         public ListInfo(string listVar)
         {
             ListVar = listVar;
+        }
+
+        protected HashSet<string> CreateListOutVars(params string?[] varNames)
+        {
+            HashSet<string> outVars = CreateOutVars(varNames);
+            outVars.Add(ListVar);
+            return outVars;
         }
     }
 
@@ -3698,6 +3904,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             Delim = delim;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Index, Delim);
+        public override HashSet<string> OutVars() => CreateListOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3730,6 +3939,9 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Index, Item, Delim);
+        public override HashSet<string> OutVars() => CreateListOutVars();
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3758,6 +3970,8 @@ namespace PEBakery.Core
             Item = item;
             Delim = delim;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Item, Delim);
 
         public override string ToString()
         {
@@ -3788,6 +4002,8 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Index, Item, Delim);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3817,6 +4033,8 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Item, Delim);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3844,6 +4062,8 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Index, Delim);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3870,6 +4090,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             Delim = delim;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Delim);
+        public override HashSet<string> OutVars() => CreateListOutVars(DestVar);
 
         public override string ToString()
         {
@@ -3904,6 +4127,9 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Item, Delim);
+        public override HashSet<string> OutVars() => CreateListOutVars(DestVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3937,6 +4163,8 @@ namespace PEBakery.Core
             Delim = delim;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Order, Delim);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -3967,6 +4195,8 @@ namespace PEBakery.Core
             Step = step;
             Delim = delim;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Start, End, Step, Delim);
 
         public override string ToString()
         {
@@ -4000,6 +4230,9 @@ namespace PEBakery.Core
             SubInfo = subInfo;
         }
 
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4018,9 +4251,6 @@ namespace PEBakery.Core
         // Comparison
         Equal = 100, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
         // Existence
-        // Note : Wrong terminology with ExistRegSection/ExistRegKey!
-        // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
-        // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
         ExistFile = 200, // <FilePath>
         ExistDir, // <DirPath>
         ExistSection, // <IniFile>,<Section>
@@ -4042,7 +4272,6 @@ namespace PEBakery.Core
         License = 900
     }
 
-    [Serializable]
     public class BranchCondition
     {
         public BranchConditionType Type { get; private set; }
@@ -4146,6 +4375,8 @@ namespace PEBakery.Core
                     throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
             }
         }
+
+        public HashSet<string> InVars() => CodeInfo.CreateInVars(Arg1, Arg2, Arg3, Arg4);
 
         public override string ToString()
         {
@@ -4251,6 +4482,20 @@ namespace PEBakery.Core
             OutParams = outParams;
         }
 
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateInVars(ScriptFile, SectionName);
+            inVars.UnionWith(CreateInVars(InParams.ToArray()));
+            return inVars;
+        }
+        public override HashSet<string> OutVars()
+        {
+            if (OutParams == null)
+                return CreateOutVars();
+            else
+                return CreateOutVars(OutParams.ToArray());
+        }
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4314,6 +4559,21 @@ namespace PEBakery.Core
             Break = true;
         }
 
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateInVars(ScriptFile, SectionName, StartIdx, EndIdx);
+            if (InParams != null)
+                inVars.UnionWith(CreateInVars(InParams.ToArray()));
+            return inVars;
+        }
+        public override HashSet<string> OutVars()
+        {
+            if (OutParams == null)
+                return CreateOutVars();
+            else
+                return CreateOutVars(OutParams.ToArray());
+        }
+
         public override string ToString()
         {
             if (Break)
@@ -4357,6 +4617,14 @@ namespace PEBakery.Core
             Condition = cond;
         }
 
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateEmbedInVars();
+            inVars.UnionWith(Condition.InVars());
+            return inVars;
+        }
+        public override HashSet<string> OutVars() => CreateEmbedOutVars();
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4373,6 +4641,9 @@ namespace PEBakery.Core
             : base(embed)
         {
         }
+
+        public override HashSet<string> InVars() => CreateEmbedInVars();
+        public override HashSet<string> OutVars() => CreateEmbedOutVars();
 
         public override string ToString()
         {
@@ -4391,6 +4662,14 @@ namespace PEBakery.Core
         {
             Condition = cond;
         }
+
+        public override HashSet<string> InVars()
+        {
+            HashSet<string> inVars = CreateEmbedInVars();
+            inVars.UnionWith(Condition.InVars());
+            return inVars;
+        }
+        public override HashSet<string> OutVars() => CreateEmbedOutVars();
 
         public override string ToString()
         {
@@ -4417,6 +4696,9 @@ namespace PEBakery.Core
             End = end;
             Step = step;
         }
+
+        public override HashSet<string> InVars() => CreateEmbedInVars(Start, End, Step);
+        public override HashSet<string> OutVars() => CreateEmbedOutVars(LoopVar);
 
         public override string ToString()
         {
@@ -4445,6 +4727,9 @@ namespace PEBakery.Core
             IterateList = iterateList;
             Delim = delim;
         }
+
+        public override HashSet<string> InVars() => CreateEmbedInVars(IterateList, Delim);
+        public override HashSet<string> OutVars() => CreateEmbedOutVars(LoopVar);
 
         public override string ToString()
         {
@@ -4481,6 +4766,9 @@ namespace PEBakery.Core
             Permanent = permanent;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(VarValue);
+        public override HashSet<string> OutVars() => CreateOutVars(VarKey);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4511,6 +4799,9 @@ namespace PEBakery.Core
             Permanent = permanent;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(MacroCommand);
+        public override HashSet<string> OutVars() => CreateOutVars(MacroName);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4537,6 +4828,8 @@ namespace PEBakery.Core
             SectionName = sectionName;
             Global = global;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(ScriptFile, SectionName);
     }
 
     public class CodeInfo_GetParam : CodeInfo
@@ -4549,6 +4842,9 @@ namespace PEBakery.Core
             Index = index;
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Index);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -4568,6 +4864,9 @@ namespace PEBakery.Core
             DestVar = destVar;
             VarCount = varCount;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(StartIndex, VarCount);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -4594,6 +4893,8 @@ namespace PEBakery.Core
             Message = message;
             NoWarn = noWarn;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Message);
     }
 
     public class CodeInfo_Halt : CodeInfo
@@ -4604,6 +4905,8 @@ namespace PEBakery.Core
         {
             Message = message;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Message);
     }
 
     public class CodeInfo_Wait : CodeInfo
@@ -4614,6 +4917,8 @@ namespace PEBakery.Core
         {
             Second = second;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Second);
     }
 
     public enum BeepType { OK = 0, Error, Asterisk, Confirmation }
@@ -4626,6 +4931,8 @@ namespace PEBakery.Core
         {
             Type = type;
         }
+
+        public override HashSet<string> InVars() => CreateInVars();
     }
 
     public class CodeInfo_Return : CodeInfo
@@ -4636,6 +4943,9 @@ namespace PEBakery.Core
         {
             ReturnValue = returnValue;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(ReturnValue);
+        public override HashSet<string> OutVars() => CreateOutVars("#r");
 
         public override string ToString()
         {
@@ -4662,13 +4972,16 @@ namespace PEBakery.Core
             SubInfo = subInfo;
         }
 
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
+
         public override string ToString()
         {
             return $"{Type},{SubInfo}";
         }
 
         #region Deprecate
-        public override bool IsInfoDeprecated
+        public override bool IsDeprecated
         {
             get
             {
@@ -4688,7 +5001,7 @@ namespace PEBakery.Core
         }
         public override string DeprecateMessage()
         {
-            if (IsInfoDeprecated == false)
+            if (IsDeprecated == false)
                 return string.Empty;
             return $"Command [System,{Type}] is deprecated.";
         }
@@ -4731,6 +5044,8 @@ namespace PEBakery.Core
             State = state;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(State);
+
         public override string ToString()
         {
             return $"Cursor,{State}";
@@ -4745,6 +5060,8 @@ namespace PEBakery.Core
         {
             Lines = lines;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Lines);
 
         public override string ToString()
         {
@@ -4763,6 +5080,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(EnvVar);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"GetEnv,{EnvVar},{DestVar}";
@@ -4777,6 +5097,9 @@ namespace PEBakery.Core
         {
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars();
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -4795,6 +5118,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Path);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"GetFreeDrive,{Path},{DestVar}";
@@ -4809,6 +5135,9 @@ namespace PEBakery.Core
         {
             DestVar = destVar;
         }
+
+        public override HashSet<string> InVars() => CreateInVars();
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
 
         public override string ToString()
         {
@@ -4825,6 +5154,9 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars();
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
         public override string ToString()
         {
             return $"IsAdmin,{DestVar}";
@@ -4840,6 +5172,9 @@ namespace PEBakery.Core
             Cmd = cmd;
         }
 
+        public override HashSet<string> InVars() => Cmd.Info.InVars();
+        public override HashSet<string> OutVars() => Cmd.Info.OutVars();
+
         public override string ToString()
         {
             return $"OnBuildExit,{Cmd}";
@@ -4854,6 +5189,9 @@ namespace PEBakery.Core
         {
             Cmd = cmd;
         }
+
+        public override HashSet<string> InVars() => Cmd.Info.InVars();
+        public override HashSet<string> OutVars() => Cmd.Info.OutVars();
 
         public override string ToString()
         {
@@ -4881,6 +5219,8 @@ namespace PEBakery.Core
             NoWarnFlag = noWarn;
             NoRecFlag = noRec;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(SrcFilePath, DestTreeDir);
 
         public override string ToString()
         {
@@ -4910,6 +5250,8 @@ namespace PEBakery.Core
             NoRecFlag = noRec;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(FilePath);
+        
         public override string ToString()
         {
             StringBuilder b = new StringBuilder(8);
@@ -4931,6 +5273,8 @@ namespace PEBakery.Core
             DestPath = destPath;
             LogFormat = logFormat;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(DestPath, LogFormat);
 
         public override string ToString()
         {
@@ -4967,6 +5311,9 @@ namespace PEBakery.Core
             ExitOutVar = exitOutVar;
         }
 
+        public override HashSet<string> InVars() => CreateInVars(Action, FilePath, Params, WorkDir);
+        public override HashSet<string> OutVars() => CreateOutVars(ExitOutVar);
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -4999,7 +5346,7 @@ namespace PEBakery.Core
         Breakpoint = 0,
     }
 
-    public class DebugInfo : CodeInfo { }
+    public abstract class DebugInfo : CodeInfo { }
 
     public class DebugInfo_Breakpoint : DebugInfo
     { // Debug,Breakpoint,[BranchCondition]
@@ -5008,6 +5355,14 @@ namespace PEBakery.Core
         public DebugInfo_Breakpoint(BranchCondition? cond)
         {
             Cond = cond;
+        }
+
+        public override HashSet<string> InVars()
+        {
+            if (Cond == null)
+                return CreateInVars();
+            else
+                return Cond.InVars();
         }
 
         public override string ToString() => Cond == null ? string.Empty : Cond.ToString();
@@ -5025,6 +5380,9 @@ namespace PEBakery.Core
             Type = type;
             SubInfo = subInfo;
         }
+
+        public override HashSet<string> InVars() => SubInfo.InVars();
+        public override HashSet<string> OutVars() => SubInfo.OutVars();
 
         public override string ToString()
         {
@@ -5048,6 +5406,9 @@ namespace PEBakery.Core
             MacroType = macroType;
             Args = args;
         }
+
+        public override HashSet<string> InVars() => CreateInVars(Args.ToArray());
+        public override HashSet<string> OutVars() => CreateOutVars(MacroType);
 
         public override string ToString()
         {
