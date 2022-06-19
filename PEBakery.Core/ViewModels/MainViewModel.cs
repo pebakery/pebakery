@@ -1119,7 +1119,9 @@ namespace PEBakery.Core.ViewModels
 
                     if (!quiet)
                     {
-                        string coverageMsg = $"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})";
+                        if (v.CodeSectionCount < v.VisitedSectionCount)
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Warning, $"{nameof(SyntaxChecker)} failed to track some sections from [{sc.RealPath}]. Report this log to a PEBakery developers with a script file."));
+                        string coverageMsg = $"{v.VisitedSectionCount} sections checked.";
                         switch (result)
                         {
                             case SyntaxChecker.Result.Clean:

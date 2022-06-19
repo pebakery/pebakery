@@ -451,7 +451,7 @@ namespace PEBakery.Core
                 totalLineCount += 1;
 
                 // Is this line a code?
-                if (Regex.IsMatch(line, "^(([A-Za-z]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase))
+                if (Regex.IsMatch(line, "^(([A-Za-z0-9_]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase))
                     codeMatchCount += 1;
 
                 // Is this line an interface Control?
@@ -515,7 +515,7 @@ namespace PEBakery.Core
         #region Override Methods
         public override string ToString()
         {
-            return Name;
+            return $"{Name} ({Type})";
         }
         #endregion
     }
