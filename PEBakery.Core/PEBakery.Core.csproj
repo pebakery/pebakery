@@ -85,12 +85,21 @@
     <None Update="runtimes\win-arm64\native\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Content Update="C:\Users\Joveler\.nuget\packages\joveler.filemagician\2.2.0\contentFiles\any\any\magic.mgc">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
     <Content Update="C:\Users\Joveler\.nuget\packages\joveler.filemagician\2.2.0\contentFiles\any\any\magic.src">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <None Update="runtimes\magic.mgc.gz">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

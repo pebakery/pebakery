@@ -204,32 +204,50 @@ namespace PEBakery.Core
             });
 
             // mainScriptIdx
-            SetMainScriptIndex();
+            ResultReport report = SetMainScriptIndex();
+            if (!report.Success)
+            {
+                logs.Add(report.ToLogInfo());
+                return logs;
+            }
 
             // Read [ProjectUpdate]
-            ReadUpdateSection();
+            report = ReadUpdateSection();
+            if (!report.Success)
+            {
+                logs.Add(report.ToLogInfo());
+                return logs;
+            }
 
             return logs;
         }
         #endregion
 
         #region SetMainScriptIdx, ReadUpdateSection
-        public void SetMainScriptIndex()
+        public ResultReport SetMainScriptIndex()
         {
-            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
-            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
-            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
+            int mainScriptCount = AllScripts.Count(x => x.IsMainScript);
+            if (mainScriptCount != 1)
+                return new ResultReport(false, $"[{mainScriptCount}] main scripts reported instead of [1].");
+
+            int idx = AllScripts.FindIndex(x => x.IsMainScript);
+            if (idx == -1)
+                return new ResultReport(false, $"Unable to find MainScript of [{ProjectName}]");
+            _mainScriptIdx = idx;
+
+            return new ResultReport(true);
         }
 
-        public void ReadUpdateSection()
+        public ResultReport ReadUpdateSection()
         {
-            Debug.Assert(_mainScriptIdx != -1, $"Please call {nameof(SetMainScriptIndex)} first");
+            if (_mainScriptIdx == -1)
+                return new ResultReport(false, $"Please call {nameof(SetMainScriptIndex)} first");
 
             // If [ProjectUpdateSection] is not available, return empty ProjectUpdateInfo
             if (!MainScript.Sections.ContainsKey(ProjectUpdateInfo.Const.ProjectUpdateSection))
             {
                 UpdateInfo = new ProjectUpdateInfo();
-                return;
+                return new ResultReport(true);
             }
 
             // Read [ProjectUpdateSection]
@@ -240,7 +258,7 @@ namespace PEBakery.Core
                   pUpdateDict.ContainsKey(ProjectUpdateInfo.Const.BaseUrl)))
             {
                 UpdateInfo = new ProjectUpdateInfo();
-                return;
+                return new ResultReport(true);
             }
 
             // Check integrity of IniDict value
@@ -249,7 +267,7 @@ namespace PEBakery.Core
             if (StringHelper.GetUriProtocol(pBaseUrl) == null)
             {
                 UpdateInfo = new ProjectUpdateInfo();
-                return;
+                return new ResultReport(true);
             }
 
             try
@@ -260,6 +278,7 @@ namespace PEBakery.Core
             {
                 UpdateInfo = new ProjectUpdateInfo();
             }
+            return new ResultReport(true);
         }
         #endregion
 
@@ -273,7 +292,9 @@ namespace PEBakery.Core
         public void SortAllScripts()
         {
             AllScripts = InternalSortScripts(AllScripts, DirEntries);
-            SetMainScriptIndex();
+            ResultReport report = SetMainScriptIndex();
+            if (!report.Success)
+                throw new InternalException("Main script is not searchable after sorting.");
         }
 
         private List<Script> InternalSortScripts(IReadOnlyList<Script> scripts, IReadOnlyList<ScriptParseInfo> dpis)

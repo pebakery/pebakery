@@ -116,7 +116,7 @@ namespace PEBakery.Core
 
             // Set Interface using MainWindow, MainViewModel
             long allLineCount = 0;
-            foreach (ScriptSection section in s.CurrentScript.Sections.Values.Where(x => x.Type == SectionType.Code))
+            foreach (ScriptSection section in s.CurrentScript.Sections.Values.Where(x => x.Type == SectionType.CodeOrUnknown))
             {
                 Debug.Assert(section.Lines != null, "CodeSection should return proper \'Lines\' property");
                 allLineCount += section.Lines.Length;
@@ -1575,7 +1575,7 @@ namespace PEBakery.Core
         {
             ProcessedSectionLines = 0;
             ProcessedCodeCount = 0;
-            TotalSectionLines = CurrentScript != null ? CurrentScript.Sections.Values.Where(x => x.Type == SectionType.Code).Sum(s => s.Lines.Length) : 0;
+            TotalSectionLines = CurrentScript != null ? CurrentScript.Sections.Values.Where(x => x.Type == SectionType.CodeOrUnknown).Sum(s => s.Lines.Length) : 0;
 
             MainViewModel.BuildScriptProgressValue = 0;
             MainViewModel.BuildScriptProgressMax = TotalSectionLines;

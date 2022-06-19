@@ -82,16 +82,21 @@ namespace PEBakery.Core
         */
         #endregion
 
+        #region (docs) Section Deep Detector 
+        #endregion
+
         #region Field and Property
         private readonly Script _sc;
 
         // Coverage
-        private readonly List<string> _visitedSections = new List<string>();
+        private readonly HashSet<string> _visitedSections = new HashSet<string>();
         public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code || x.Value.Type == SectionType.Interface);
         public int VisitedSectionCount => _visitedSections.Count;
         public double Coverage => CodeSectionCount == 0 ? 0 : (double)VisitedSectionCount / CodeSectionCount;
 
-        // Compat option detector
+        // 
+        // TODO: Compat option detector
+
         #endregion
 
         #region Constructor
@@ -105,6 +110,9 @@ namespace PEBakery.Core
         public (List<LogInfo>, Result) CheckScript()
         {
             List<LogInfo> logs = new List<LogInfo>();
+
+            // Deep inspect unknown sections to figure out hidden code sections.
+            _sc.DeepInspectSections();
 
             // Codes
             if (_sc.Sections.ContainsKey(ScriptSection.Names.Process))
@@ -140,7 +148,7 @@ namespace PEBakery.Core
                         string next;
                         (next, remainder) = CodeParser.GetNextArgument(remainder);
 
-                        // Does section exist?
+                        // Does this section exist?
                         if (!_sc.Sections.ContainsKey(next))
                             logs.Add(new LogInfo(LogState.Error, $"Section [{next}] does not exist (InterfaceList={interfaceList})"));
                     }
@@ -158,6 +166,14 @@ namespace PEBakery.Core
                 if (_sc.Sections.ContainsKey(ifaceSection))
                     logs.AddRange(CheckInterfaceSection(_sc.Sections[ifaceSection]));
             }
+
+            // Check more deep-inspected code sections
+            foreach (ScriptSection section in _sc.Sections.Values.Where(x => x.Type == SectionType.Code && !_visitedSections.Contains(x.Name)))
+                logs.AddRange(CheckCodeSection(section));
+
+            // Check more deep-inspected interface sections
+            foreach (ScriptSection section in _sc.Sections.Values.Where(x => x.Type == SectionType.Interface && !_visitedSections.Contains(x.Name)))
+                logs.AddRange(CheckInterfaceSection(section));
 
             // Result
             Result result = Result.Clean;

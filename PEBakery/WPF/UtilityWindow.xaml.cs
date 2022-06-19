@@ -304,7 +304,7 @@ namespace PEBakery.WPF
                     if (p.MainScript.Sections.ContainsKey(ScriptSection.Names.Process))
                         section = sc.Sections[ScriptSection.Names.Process];
                     else // Create dummy [Process] section instance
-                        section = new ScriptSection(sc, ScriptSection.Names.Process, SectionType.Code, Array.Empty<string>(), 1);
+                        section = new ScriptSection(sc, ScriptSection.Names.Process, SectionType.CodeOrUnknown, Array.Empty<string>(), 1);
 
                     // Split lines from SyntaxInputCode
                     List<string> lines = new List<string>();

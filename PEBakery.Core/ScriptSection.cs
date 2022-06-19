@@ -31,30 +31,68 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
 {
     #region (enum) SectionType
+    /// <summary>
+    /// Type of a PEBakery script section.
+    /// Used to determine (1) whether a section content should be loaded into a memory, and (2) whether a section should be syntax-checked.
+    /// PEBakery Engine will treat a section always as a Code, regardless of actual SectionType value.
+    /// </summary>
     public enum SectionType
     {
         None = 0,
-        // [Main]
+        /// <summary>
+        /// [Main]
+        /// </summary>
         Main = 10,
-        // [Variables]
+        /// <summary>
+        /// [Variables]
+        /// </summary>
         Variables = 20,
-        // [Interface]
+        /// <summary>
+        /// Simpler .ini style, detected with Deep Inspection.
+        /// </summary>
+        SimpleIni = 21,
+        /// <summary>
+        /// [Interface] 
+        /// </summary>
         Interface = 30,
-        // [Process], ...
+        /// <summary>
+        /// [Process], ...
+        /// </summary>
         Code = 40,
-        // Code or AttachFileList
-        NonInspected = 90,
-        // [EncodedFolders]
+        /// <summary>
+        /// Assumed as a Code section.
+        /// </summary>
+        CodeOrUnknown = 41,
+        /// <summary>
+        /// Comments - [#...#], or detected with Deep Inspection. 
+        /// </summary>
+        Commentary = 50,
+        /// <summary>
+        /// Would be a Code, a SimpleIni, a Interface or an AttachFileList section.
+        /// AttachFileList - detectable with simple AttachFileList section inspection.
+        /// Code/SimpleIni/Interface - requires deep inspection.
+        /// </summary>
+        NotInspected = 90,
+        /// <summary>
+        /// [EncodedFolders]
+        /// </summary>
         AttachFolderList = 100,
-        // [AuthorEncoded], [InterfaceEncoded], and other folders
+        /// <summary>
+        /// [AuthorEncoded], [InterfaceEncoded], and other folders
+        /// </summary>
         AttachFileList = 101,
-        // [EncodedFile-InterfaceEncoded-*], [EncodedFile-AuthorEncoded-*]
+        /// <summary>
+        /// [EncodedFile-InterfaceEncoded-*], [EncodedFile-AuthorEncoded-*]
+        /// </summary>
         AttachEncodeNow = 102,
-        // [EncodedFile-*]
+        /// <summary>
+        /// [EncodedFile-*]
+        /// </summary>
         AttachEncodeLazy = 103,
     }
     #endregion
@@ -110,8 +148,9 @@ namespace PEBakery.Core
             {
                 _type = Type switch
                 {
-                    SectionType.NonInspected => value,
-                    _ => throw new InvalidOperationException($"Overwriting a type of a ScriptSection is only allowed to SectionType.NonInstpected."),
+                    SectionType.NotInspected => value,
+                    SectionType.CodeOrUnknown => value,
+                    _ => throw new InvalidOperationException($"Overwriting a type of a ScriptSection is only allowed to [{nameof(SectionType.NotInspected)}] or [{nameof(SectionType.CodeOrUnknown)}]."),
                 };
             }
         }
@@ -207,10 +246,10 @@ namespace PEBakery.Core
 
         #region Load, Unload, Reload
         /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
+        /// If _lines was not loaded from file, load it to memory.
         /// </summary>
         /// <returns>
-        /// true if _lines is valid
+        /// Return true if _lines is valid.
         /// </returns>
         public bool LoadLines()
         {
@@ -225,7 +264,7 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
+        /// If _lines was not loaded from file, load it to memory.
         /// </summary>
         /// <returns>
         /// true if _lines is valid
@@ -363,15 +402,91 @@ namespace PEBakery.Core
                 case SectionType.Main:
                 case SectionType.Variables:
                 case SectionType.Interface:
+                case SectionType.CodeOrUnknown:
                 case SectionType.Code:
-                case SectionType.NonInspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
                     return true;
+                case SectionType.SimpleIni:
                 default:
                     return false;
             }
+        }
+        #endregion
+
+        #region DeepInspectSection
+        /// <summary>
+        /// Deep inspect a section by analyzing its content.
+        /// Only runs on NotInspected/CodeOrUnknown sections.
+        /// </summary>
+        public void DeepInspect()
+        {
+            // Check only Code/NonInspected sections.
+            switch (Type)
+            {
+                case SectionType.NotInspected:
+                case SectionType.CodeOrUnknown:
+                    break;
+                default:
+                    return;
+            }
+
+            int ifaceMatchCount = 0;
+            int iniMatchCount = 0;
+            int varMatchCount = 0;
+            int codeMatchCount = 0;
+            int totalLineCount = 0;
+
+            // Check the type of a line using regexes.
+            // Even though regex does have some errors, regexes are used for its simplexity and speed advantage.
+            // TODO: How many times running a precise parsers like CodeParser/UIParser/IniReadWriter are slower than regexes?
+            foreach (string line in Lines.Where(x => 0 < x.Length))
+            {
+                // Exclude comment lines
+                if (Regex.IsMatch(line, "^(//|#|;).*$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                    continue;
+
+                totalLineCount += 1;
+
+                // Is this line a code?
+                if (Regex.IsMatch(line, "^(([A-Za-z]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase))
+                    codeMatchCount += 1;
+
+                // Is this line an interface Control?
+                if (Regex.IsMatch(line, "^([^=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                    ifaceMatchCount += 1;
+
+                // Is this line a var-style line?
+                if (Regex.IsMatch(line, "^(%[^=\r\n]+%)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                    varMatchCount += 1;
+
+                // Is this line a simple ini-style line?
+                if (Regex.IsMatch(line, "^([^=\r\n]+)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                    iniMatchCount += 1;
+            }
+
+            // If more than {threshold}% of sections lines are analyzed as a single type, 
+            // Convert the type of this section to a inferred section type.
+            const double threshold = 0.7;
+            
+            // Infer the type of this section, using the line count data.
+            // Keep the order, as SimpleIni detection are mostly prone to false-positive error.
+            SectionType newType;
+            if (totalLineCount == 0)
+                newType = SectionType.Commentary;
+            else if (totalLineCount * threshold <= codeMatchCount) 
+                newType = SectionType.Code;
+            else if (totalLineCount * threshold <= ifaceMatchCount)
+                newType = SectionType.Interface;
+            else if (totalLineCount * threshold <= varMatchCount)
+                newType = SectionType.Variables;
+            else if (totalLineCount * threshold <= iniMatchCount)
+                newType = SectionType.SimpleIni;
+            else
+                newType = SectionType.Commentary;
+            Type = newType;
         }
         #endregion
 

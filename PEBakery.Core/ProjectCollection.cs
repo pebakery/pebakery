@@ -434,6 +434,10 @@ namespace PEBakery.Core
                     // Load scripts
                     List<LogInfo> errLogs = project.Load(scriptCache, _spiDict[key], progress);
                     logs.AddRange(errLogs);
+                    foreach (LogInfo errLog in errLogs)
+                    {
+                        SystemHelper.MessageBoxDispatcherShow(errLog.Message, "Load Error", System.Windows.MessageBoxButton.OK);
+                    }
 
                     // Add Project.Scripts to ProjectCollections.Scripts
                     _allProjectScripts.AddRange(project.AllScripts);
