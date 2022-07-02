@@ -1089,6 +1089,24 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region CodeSectionTotalLineCount
+        public long CodeSectionTotalLineCount()
+        {
+            long totalLineCount = 0;
+            foreach (ScriptSection section in Sections.Values)
+            {
+                switch (section.Type)
+                {
+                    case SectionType.CodeOrUnknown:
+                    case SectionType.Code:
+                        totalLineCount += section.Lines.Length;
+                        break;
+                }
+            }
+            return totalLineCount;
+        }
+        #endregion
+
         #region Virtual, Overriden Methods
         public override string ToString()
         {

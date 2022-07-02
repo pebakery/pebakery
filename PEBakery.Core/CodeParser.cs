@@ -102,7 +102,7 @@ namespace PEBakery.Core
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements()
         {
-            if (_section.Lines is string[] lines)
+            if (_section.Lines is IReadOnlyList<string> lines)
             {
                 return ParseStatements(lines);
             }
@@ -219,7 +219,7 @@ namespace PEBakery.Core
                     return (next, remainder);
                 }
             }
-            else // No double-quote for now
+            else // No double-quote
             { // Ex) FileCreateBlank,#3.au3
                 int pIdx = str.IndexOf(",", StringComparison.Ordinal);
                 if (pIdx == -1) // Last one
@@ -247,10 +247,10 @@ namespace PEBakery.Core
 
             // Check if rawCode is empty
             if (rawCode.Length == 0)
-                return new CodeCommand(string.Empty, _section, CodeType.None, new CodeInfo(), lineIdx);
+                return new CodeCommand(rawCode, _section, CodeType.None, new CodeInfo(), lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
-            if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
+            if (rawCode.StartsWith("//") || rawCode[0] == '#' || rawCode[0] == ';')
                 return new CodeCommand(rawCode, _section, CodeType.Comment, new CodeInfo(), lineIdx);
 
             // Split with period

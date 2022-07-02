@@ -49,7 +49,7 @@ namespace PEBakery.Core
         #region Constants
         public static class Const
         {
-            public const string ScriptCacheRevision = "r22";
+            public const string ScriptCacheRevision = "r23";
             public const int EngineVersion = 100;
             public const string ProgramVersionStr = "1.0.1";
             public const string ProgramVersionStrFull = "1.0.1";

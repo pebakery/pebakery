@@ -113,14 +113,7 @@ namespace PEBakery.Core
 
             // Clear Processed Section Hashes
             s.ProcessedSectionSet.Clear();
-
-            // Set Interface using MainWindow, MainViewModel
-            long allLineCount = 0;
-            foreach (ScriptSection section in s.CurrentScript.Sections.Values.Where(x => x.Type == SectionType.CodeOrUnknown))
-            {
-                Debug.Assert(section.Lines != null, "CodeSection should return proper \'Lines\' property");
-                allLineCount += section.Lines.Length;
-            }
+            s.ProcessedLineSet.Clear();
 
             // Reset progress report
             s.ResetScriptProgress();
@@ -443,7 +436,7 @@ namespace PEBakery.Core
                 }
 
                 // Update script progress (approximate)
-                s.IncrementalUpdateSriptProgress(section);
+                s.IncrementalUpdateSriptProgress(cmd);
 
                 // Check if a script should be stopped / section should return.
                 if (s.HaltReturnFlags.CheckScriptHalt() || s.HaltReturnFlags.CheckSectionReturn())
@@ -1264,9 +1257,13 @@ namespace PEBakery.Core
 
         #region Progress Tracking Properties
         /// <summary>
-        /// Which sections are already processed (so they should be not processed again in Processed* counters?)
+        /// Track which sections are already processed (so they should be not processed again in Processed* counters)
         /// </summary>
         public HashSet<string> ProcessedSectionSet { get; private set; } = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// Track which lines were already processed
+        /// </summary>
+        public HashSet<int> ProcessedLineSet { get; private set; } = new HashSet<int>();
         /// <summary>
         /// Accurate counter of how many section lines of the script was processed. 
         /// </summary>
@@ -1575,7 +1572,7 @@ namespace PEBakery.Core
         {
             ProcessedSectionLines = 0;
             ProcessedCodeCount = 0;
-            TotalSectionLines = CurrentScript != null ? CurrentScript.Sections.Values.Where(x => x.Type == SectionType.CodeOrUnknown).Sum(s => s.Lines.Length) : 0;
+            TotalSectionLines = CurrentScript?.CodeSectionTotalLineCount() ?? 0;
 
             MainViewModel.BuildScriptProgressValue = 0;
             MainViewModel.BuildScriptProgressMax = TotalSectionLines;
@@ -1610,14 +1607,11 @@ namespace PEBakery.Core
         /// <param name="section">Current ScriptSection being run</param>
         public void PreciseUpdateScriptProgress(ScriptSection section)
         {
-            // TODO: ScriptProgress calculation must be changed to line-basis from section-basis
-            // -> Introduction of While, For make it impossible to accurately track script progress.
-            if (CurrentScript == null)
-                return;
-
             // Increase only if cmd is one of CurrentScript
             // Q) Why reset BuildScriptProgressValue with proper processed line count, not relying on `IncrementalUpdateSriptProgress()`?
-            // A) Computing exact progress of a script is very hard due to loose WinBuilder's ini-based format.
+            // A) Computing exact progress of a script is very hard due to:
+            //    (1) loose WinBuilder's ini-based format.
+            //    (2) Turing-completeness of a script means that we cannot predict when the program will end.
             //    So PEBakery approximate it by adding a section's LINE COUNT (not a CODE COUNT) to progress when it runs first time.
             //    (LINE COUNT and CODE COUNT is different, some of the LINES may not be actually runned due to If and Else branch commands).
             //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
@@ -1646,16 +1640,16 @@ namespace PEBakery.Core
         /// Update script/full progress approximately (code count)
         /// </summary>
         /// <param name="section">Current ScriptSection being run</param>
-        public void IncrementalUpdateSriptProgress(ScriptSection section)
+        public void IncrementalUpdateSriptProgress(CodeCommand cmd)
         {
             if (CurrentScript == null)
                 return;
 
-            // Increase only if the current section came from CurrentScript to prevent Macro section being counted.
-            // s.ProcessedCodeCount is a temporary value; It will be reset to s.ProcessedSectionLines later in InternalRunSection().
-            if (CurrentScript.Equals(section.Script) && !ProcessedSectionSet.Contains(section.Name))
+            // Increase only if the command came from CurrentScript to prevent Macro section being counted, and this lineIdx was newly approached
+            if (CurrentScript.Equals(cmd.Section.Script) && !ProcessedSectionSet.Contains(cmd.Section.Name) && ProcessedLineSet.Add(cmd.LineIdx))
             {
-                ProcessedCodeCount = Math.Min(ProcessedSectionLines + section.Lines.Length, ProcessedCodeCount + 1);
+                ProcessedCodeCount = ProcessedLineSet.Count;
+
                 DisplayScriptProgress();
                 DisplayFullProgress();
             }
