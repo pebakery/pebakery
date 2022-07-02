@@ -1570,6 +1570,8 @@ namespace PEBakery.Core
         /// </summary>
         public void ResetScriptProgress()
         {
+            ProcessedSectionSet.Clear();
+            ProcessedLineSet.Clear();
             ProcessedSectionLines = 0;
             ProcessedCodeCount = 0;
             TotalSectionLines = CurrentScript?.CodeSectionTotalLineCount() ?? 0;
@@ -1617,17 +1619,14 @@ namespace PEBakery.Core
             //    But this stragety does not work well if a section is too long, making a progress bar irresponsive.
             //    To mitigate it, `IncrementalUpdateSriptProgress()` increases CODE COUNT and show it to the user as a progress temporary.
             //    After a section was successfully finished, PEBakery reset the script progress with correct LINE COUNT value.
-            if (CurrentScript.Equals(section.Script))
+            if (CurrentScript.Equals(section.Script) && ProcessedSectionSet.Add(section.Name))
             {
-                // Only increase BuildScriptProgressValue once per section
-                ProcessedSectionSet.Add(section.Name);
-
                 // Q) Why we have to apply Math.Max(s.ProcessedSectionLines, s.ProcessedCodeLines)?
                 // A) Some branch commands (If, Else, Loop) call RunSection and RunCommands themselves.
                 //    Their recursive calling of RunSection disturbs `section.Line.Length` checking.
                 //    Current progress tracking impl does not take account of how much commands are actually executed, but how many lines were processed.
                 //    If a branch command ran in a middle of section, sometimes it results in decresasing the script progress %.
-                //    In order to prevent (hide, in fact) this issue, Math.Max() is used.
+                //    In order to hide this issue, Math.Max() is used.
                 //    The progress bar is eventually set to correct value after a section (which contains branch command) is finished.
                 ProcessedSectionLines += section.Lines.Length;
                 ProcessedCodeCount = Math.Max(ProcessedSectionLines, ProcessedCodeCount);
@@ -1642,14 +1641,10 @@ namespace PEBakery.Core
         /// <param name="section">Current ScriptSection being run</param>
         public void IncrementalUpdateSriptProgress(CodeCommand cmd)
         {
-            if (CurrentScript == null)
-                return;
-
             // Increase only if the command came from CurrentScript to prevent Macro section being counted, and this lineIdx was newly approached
             if (CurrentScript.Equals(cmd.Section.Script) && !ProcessedSectionSet.Contains(cmd.Section.Name) && ProcessedLineSet.Add(cmd.LineIdx))
             {
-                ProcessedCodeCount = ProcessedLineSet.Count;
-
+                ProcessedCodeCount += 1;
                 DisplayScriptProgress();
                 DisplayFullProgress();
             }
