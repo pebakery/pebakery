@@ -34,13 +34,13 @@ enum class ArchVal
 	ARM64,
 };
 
+typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2) (HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine);
+
 class SysArch
 {
 private:
-	
-
 	static ArchVal getCpuArchGetNativeSystemInfo();
-	static ArchVal getCpuArchIsWow64Process2();
+	static ArchVal getCpuArchIsWow64Process2(LPFN_ISWOW64PROCESS2 funcPtr);
 public:
 	static ArchVal getCpuArch();
 	static ArchVal getProcArch();
