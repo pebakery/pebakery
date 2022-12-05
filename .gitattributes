@@ -12,7 +12,9 @@ PEBakery.Core.Tests/Samples/WorkBench/TestSuite/**/*.txt    text eol=crlf
 PEBakery.Core.Tests/Samples/WorkBench/TestSuite/**/*.ini    text eol=crlf
 PEBakery.Ini.Tests/Samples/**/*.ini                         text eol=crlf
 PEBakery.Ini.Tests/Samples/IniWin32/*.ini                   binary
-PEBakeryLauncher/*.cpp                                      text eol=crlf
+Launcher/*.cpp                                              text eol=crlf
+NetLauncherLib/*.cpp                                        text eol=crlf
+NetLauncherLib.Tests/*.cpp                                  text eol=crlf
 
 ###############################################################################
 # Set default behavior for command prompt diff.
