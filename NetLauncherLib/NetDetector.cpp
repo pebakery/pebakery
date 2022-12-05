@@ -242,9 +242,7 @@ bool NetCoreDetector::isInstalled()
 		std::vector<NetVersion> versions = nit->second;
 		for (NetVersion& v : versions)
 		{
-			// Do not compare patch version.
-			// Patch number is only used on generating download urls.
-			if (targetVer.isEqual(v, true))
+			if (targetVer.isCompatible(v))
 			{
 				success = true;
 				break;

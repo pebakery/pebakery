@@ -250,6 +250,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NetDetectorTests.cpp" />
+    <ClCompile Include="NetVersionTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetLauncherLib\NetLauncherLib.vcxproj">
