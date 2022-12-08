@@ -66,7 +66,7 @@
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.0" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
     <PackageReference Include="NaturalSort.Extension" Version="3.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="NUglify" Version="1.20.0" />
     <PackageReference Include="Scriban" Version="5.4.4" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
