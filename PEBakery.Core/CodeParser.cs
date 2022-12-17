@@ -1850,9 +1850,9 @@ namespace PEBakery.Core
                 #region 07 Network
                 case CodeType.WebGet:
                 case CodeType.WebGetIfNotExist: // Will be deprecated
-                    { // WebGet,<URL>,<DestPath>[,<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,NOERR]
+                    { // WebGet,<URL>,<DestPath>[,<HashType>=<HashDigest>][,TimeOut=<Int>][,Referer=<URL>][,UserAgent=<String>][,NOERR]
                         const int minArgCount = 2;
-                        const int maxArgCount = 5;
+                        const int maxArgCount = 7;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -1923,7 +1923,7 @@ namespace PEBakery.Core
                             }
                             else if (arg.StartsWith(userAgentKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (referer != null)
+                                if (userAgent != null)
                                     throw new InvalidCommandException("Argument <UserAgent> cannot be duplicated", rawCode);
                                 userAgent = arg[userAgentKey.Length..];
                             }

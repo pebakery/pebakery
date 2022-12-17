@@ -490,7 +490,7 @@ namespace PEBakery.Core.Commands
             EngineLocalState ls = s.PeekLocalState();
 
             string iterateListStr = StringEscaper.Preprocess(s, info.IterateList);
-            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"List [{iterateListStr}] would be iterated", cmd, ls.Depth));
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"List [{iterateListStr}] will be iterated", cmd, ls.Depth));
 
             // Run info.Link for each list element
             string delimiter = StringEscaper.DefaultListStrDelim;
