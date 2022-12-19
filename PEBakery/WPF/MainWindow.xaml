@@ -45,7 +45,8 @@
         mc:Ignorable="d"
         Icon="/Resources/Donut.ico"
         Closing="Window_Closing"
-        Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
+        Width="{Binding WindowWidth, Mode=TwoWay, FallbackValue=900}"
+        Height="{Binding WindowHeight, Mode=TwoWay, FallbackValue=640}"
         MinWidth="600" MinHeight="480"
         FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
@@ -130,6 +131,7 @@
         <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <local:BooleanToParamConverter x:Key="BooleanToParamConverter"/>
+        <local:GridLengthConverter x:Key="GridLengthConverter" />
     </Window.Resources>
     <DockPanel ccc:SelectTextOnFocus.Active="True">
         <Grid DockPanel.Dock="Top"
@@ -428,7 +430,7 @@
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"
+                <ColumnDefinition Width="{Binding MainTreeViewWidth, Mode=TwoWay, Converter={StaticResource GridLengthConverter}, FallbackValue=200}"
                                   MinWidth="100"
                                   MaxWidth="300"/>
                 <ColumnDefinition/>

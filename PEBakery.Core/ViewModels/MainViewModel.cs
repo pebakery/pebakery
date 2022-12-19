@@ -126,6 +126,34 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region Window Size/Layout/Position
+        private int _windowWidth = 900;
+        public int WindowWidth
+        {
+            get => _windowWidth;
+            set
+            {
+                _windowWidth = value;
+                UpdateTopPanelSize();
+            }
+        }
+
+        private int _windowHeight = 720;
+        public int WindowHeight
+        {
+            get => _windowHeight;
+            set => _windowHeight = value;
+        }
+
+        // Note: We are defining the width of the grid column the MainTreeView lives in, not width of the control itself
+        private double _mainTreeViewWidth = 200;
+        public double MainTreeViewWidth
+        {
+            get => _mainTreeViewWidth;
+            set => SetProperty(ref _mainTreeViewWidth, value);
+        }
+        #endregion
+
         #region Adaptive Interface Size
         private Setting.InterfaceSize _interfaceSize = Setting.InterfaceSize.Adaptive;
         public Setting.InterfaceSize InterfaceSize
@@ -139,16 +167,6 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private int _windowWidth = 900;
-        public int WindowWidth
-        {
-            get => _windowWidth;
-            set
-            {
-                _windowWidth = value;
-                UpdateTopPanelSize();
-            }
-        }
         private const int WindowWidthThreshold = 700;
 
         private T GetAdaptiveSize<T>(T standard, T small)
@@ -165,7 +183,6 @@ namespace PEBakery.Core.ViewModels
 
         public void UpdateTopPanelSize()
         {
-            // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
             OnPropertyUpdate(nameof(ScriptTreeFontSize));

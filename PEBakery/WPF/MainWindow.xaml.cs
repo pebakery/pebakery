@@ -73,6 +73,9 @@ namespace PEBakery.WPF
 
             // Load Projects
             Model.StartLoadingProjects(false, false);
+
+            // Read Window Layout/Position
+            ReadLayoutFromSetting();
         }
         #endregion
 
@@ -1020,14 +1023,36 @@ namespace PEBakery.WPF
                 await Task.Delay(500);
 
             Global.Cleanup();
+
+            // Save Main Window Layout/Position
+            WriteLayoutToSetting();
         }
 
-        private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
+            private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (sender is not ListBox listBox)
                 return;
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);
+        }
+        #endregion
+
+        #region ReadLayoutFromSetting, WriteLayoutToSetting
+        public static void ReadLayoutFromSetting()
+        {
+            // Read Main Window Size/Layout/Position
+            Global.MainViewModel.WindowWidth = Global.Setting.Interface.MainWindowWidth;
+            Global.MainViewModel.WindowHeight = Global.Setting.Interface.MainWindowHeight;
+            Global.MainViewModel.MainTreeViewWidth = Global.Setting.Interface.MainTreeViewWidth;
+        }
+
+        public static void WriteLayoutToSetting()
+        {
+            // Write Main Window Size/Layout/Position
+            Global.Setting.Interface.MainWindowWidth = Global.MainViewModel.WindowWidth;
+            Global.Setting.Interface.MainWindowHeight = Global.MainViewModel.WindowHeight;
+            Global.Setting.Interface.MainTreeViewWidth = (int)Global.MainViewModel.MainTreeViewWidth;
+            Global.Setting.WriteToFile();
         }
         #endregion
 

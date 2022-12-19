@@ -117,6 +117,11 @@ namespace PEBakery.Core
             public FontWeight MonospacedFontWeight => MonospacedFont.FontWeight;
             public int MonospacedFontSize => MonospacedFont.PointSize;
 
+            // Window Layout/Position (not shown in SettingsWindow)
+            public int MainWindowWidth { get; set; }
+            public int MainWindowHeight { get; set; }
+            public int MainTreeViewWidth { get; set; }
+
             public InterfaceSetting()
             {
                 Default();
@@ -133,6 +138,9 @@ namespace PEBakery.Core
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
                 InterfaceSize = InterfaceSize.Adaptive;
+                MainWindowWidth = 900;
+                MainWindowHeight = 720;
+                MainTreeViewWidth = 200;
             }
         }
 
@@ -629,6 +637,9 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (70 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Enum (InterfaceSize)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth)), // Integer (600 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight)), // Integer (480 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth)), // Integer (100 - 300)
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
@@ -737,6 +748,9 @@ namespace PEBakery.Core
                 Interface.ScaleFactor = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
                 Interface.DisplayShellExecuteConOut = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
                 Interface.InterfaceSize = SettingDictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
+                Interface.MainWindowWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth, 600, null);
+                Interface.MainWindowHeight = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight, 480, null);
+                Interface.MainTreeViewWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth, 100, 300);
             }
 
             // Theme
@@ -833,6 +847,9 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth.ToString()), // Integer
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
