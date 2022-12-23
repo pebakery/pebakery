@@ -48,11 +48,13 @@
         Width="{Binding WindowWidth, Mode=TwoWay, FallbackValue=900}"
         Height="{Binding WindowHeight, Mode=TwoWay, FallbackValue=640}"
         MinWidth="600" MinHeight="480"
+        Top="{Binding WindowTop, Mode=TwoWay, FallbackValue=25}"
+        Left="{Binding WindowLeft, Mode=TwoWay, FallbackValue=25}"
         FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
         FocusManager.FocusedElement="{Binding RelativeSource={x:Static RelativeSource.Self}, Mode=OneTime}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="Manual">
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>

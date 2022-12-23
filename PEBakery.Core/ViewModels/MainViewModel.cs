@@ -127,6 +127,20 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Window Size/Layout/Position
+        private int _windowTop = 25;
+        public int WindowTop
+        {
+            get => _windowTop;
+            set => _windowTop = value;
+        }
+
+        private int _windowLeft = 25;
+        public int WindowLeft
+        {
+            get => _windowLeft;
+            set => _windowLeft = value;
+        }
+
         private int _windowWidth = 900;
         public int WindowWidth
         {

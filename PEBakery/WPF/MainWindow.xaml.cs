@@ -76,6 +76,8 @@ namespace PEBakery.WPF
 
             // Read Window Layout/Position
             ReadLayoutFromSetting();
+            SizeToFit();
+            MoveIntoView();
         }
         #endregion
 
@@ -1041,6 +1043,8 @@ namespace PEBakery.WPF
         public static void ReadLayoutFromSetting()
         {
             // Read Main Window Size/Layout/Position
+            Global.MainViewModel.WindowTop = Global.Setting.Interface.MainWindowTop;
+            Global.MainViewModel.WindowLeft = Global.Setting.Interface.MainWindowLeft;
             Global.MainViewModel.WindowWidth = Global.Setting.Interface.MainWindowWidth;
             Global.MainViewModel.WindowHeight = Global.Setting.Interface.MainWindowHeight;
             Global.MainViewModel.MainTreeViewWidth = Global.Setting.Interface.MainTreeViewWidth;
@@ -1049,10 +1053,61 @@ namespace PEBakery.WPF
         public static void WriteLayoutToSetting()
         {
             // Write Main Window Size/Layout/Position
+            Global.Setting.Interface.MainWindowTop = Global.MainViewModel.WindowTop;
+            Global.Setting.Interface.MainWindowLeft = Global.MainViewModel.WindowLeft;
             Global.Setting.Interface.MainWindowWidth = Global.MainViewModel.WindowWidth;
             Global.Setting.Interface.MainWindowHeight = Global.MainViewModel.WindowHeight;
             Global.Setting.Interface.MainTreeViewWidth = (int)Global.MainViewModel.MainTreeViewWidth;
             Global.Setting.WriteToFile();
+        }
+        #endregion
+
+        #region SizeToFit, MoveIntoView
+        /// <summary>
+        /// Resize the window to fit the current monitor/resolution
+        /// </summary>
+        public static void SizeToFit()
+        {
+            if (Global.MainViewModel.WindowWidth > System.Windows.SystemParameters.VirtualScreenWidth)
+            {
+                Global.MainViewModel.WindowWidth = (int)System.Windows.SystemParameters.VirtualScreenWidth;
+            }
+
+            if (Global.MainViewModel.WindowHeight > System.Windows.SystemParameters.VirtualScreenHeight)
+            {
+                Global.MainViewModel.WindowHeight = (int)System.Windows.SystemParameters.VirtualScreenHeight;
+            }
+        }
+
+        /// <summary>
+        /// Move the window into the visible region of the monitor in case a user changes resolution or the number of monitors.
+        /// </summary>
+        public static void MoveIntoView()
+        {
+            // If more then half our window is off screen move it back into view
+            if (Global.MainViewModel.WindowTop + Global.MainViewModel.WindowHeight / 2 > System.Windows.SystemParameters.VirtualScreenHeight)
+            {
+                double taskbarHeight = System.Windows.SystemParameters.VirtualScreenHeight - System.Windows.SystemParameters.WorkArea.Height;
+                Global.MainViewModel.WindowTop = (int)(System.Windows.SystemParameters.VirtualScreenHeight - taskbarHeight) - Global.MainViewModel.WindowHeight;
+            }
+                        
+            if (Global.MainViewModel.WindowLeft + Global.MainViewModel.WindowWidth / 2 > System.Windows.SystemParameters.VirtualScreenWidth)
+            {
+                double taskbarWidth = System.Windows.SystemParameters.VirtualScreenWidth - System.Windows.SystemParameters.WorkArea.Width;
+                Global.MainViewModel.WindowLeft = (int)(System.Windows.SystemParameters.VirtualScreenWidth - taskbarWidth) - Global.MainViewModel.WindowWidth;
+            }
+
+            // Move the window back on screen if we have a negative value.
+            // This should not happen due to PEBakery checking the minimum allowed value when the settings are parsed, but better safe then sorry.
+            if (Global.MainViewModel.WindowTop < 0)
+            {
+                Global.MainViewModel.WindowTop = 0;
+            }
+
+            if (Global.MainViewModel.WindowLeft < 0)
+            {
+                Global.MainViewModel.WindowLeft = 0;
+            }
         }
         #endregion
 
