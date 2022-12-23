@@ -383,8 +383,6 @@ namespace PEBakery.Core.Commands
             }
         }
 
-
-
         public static void While(EngineState s, CodeCommand cmd)
         {
             CodeInfo_While info = (CodeInfo_While)cmd.Info;
@@ -587,6 +585,7 @@ namespace PEBakery.Core.Commands
 
         /// <summary>
         /// Return true if a loop syntax needs to be breaked.
+        /// Referenced in While, ForRange, ForEach
         /// </summary>
         private static bool CheckLoopSyntaxBreak(EngineState s)
         {

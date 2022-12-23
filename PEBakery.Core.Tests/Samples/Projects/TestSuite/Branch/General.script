@@ -325,3 +325,24 @@ ForRange,%x%,0,4,1,Begin
   End
 End
 Set,#r,#r%y%%x%
+
+
+[Variables]
+DelLang=Run,%ScriptFile%,Macro-LoopSyntaxParams-DelLang
+Del=Run,%ScriptFile%,Macro-LoopSyntaxParams-Del
+
+[Process-LoopSyntaxParams]
+Set,%LangList%,ar-SA|bg-BG|cs-CZ
+//SetMacro,DelLang,"Run,%ScriptFile%,Macro-//LoopSyntaxParams-DelLang"
+//SetMacro,Del,"Run,%ScriptFile%,Macro-LoopSyntaxParams-Del"
+DelLang,"Hello"
+
+[Macro-LoopSyntaxParams-DelLang]
+ForEach,%Language%,%LangList%,Begin
+  Del,"#1_%Language%"
+End
+
+[Macro-LoopSyntaxParams-Del]
+Echo,"DEBUG: InMacro: #1"
+Set,#r,#1
+

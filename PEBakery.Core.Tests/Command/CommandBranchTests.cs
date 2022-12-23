@@ -1065,6 +1065,24 @@ namespace PEBakery.Core.Tests.Command
         }
         #endregion
 
+        #region LoopSyntaxParams
+        [TestMethod]
+        public void LoopSyntaxParams()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Console.WriteLine($"ReturnValue={destStr}");
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-LoopSyntaxParams", "Hello_cs-CZ");
+        }
+        #endregion
+
         #region Utility
         public static void SingleTemplate(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else

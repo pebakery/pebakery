@@ -426,6 +426,7 @@ namespace PEBakery.Core
             List<LogInfo>? allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
             {
+                // Rollback the section parameters that could have be overwritten in ExecuteCommand().
                 s.CurSectionInParams = inParams;
                 s.CurSectionOutParams = outParams;
 
@@ -434,6 +435,10 @@ namespace PEBakery.Core
                 {
                     allLogs.AddRange(logs);
                 }
+
+                // Rollback the section parameters that could have be overwritten in ExecuteCommand() AGAIN.
+                s.CurSectionInParams = inParams;
+                s.CurSectionOutParams = outParams;
 
                 // Update script progress (approximate)
                 s.IncrementalUpdateSriptProgress(cmd);
