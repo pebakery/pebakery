@@ -49,7 +49,7 @@ Nightly binaries are served by AppVeyor artifacts.
 PEBakery runs on .NET 6. 
 
 - *Standalone Nightly* does not require any runtime installed, but runs only on one architecture (e.g. **x64**).
-- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **arm64** Windows, but requires **[.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
+- *Runtime Dependent Nightly* runs on both **x64**, **x86** and **arm64** Windows, but requires latest **[.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
 
 ## License
 

@@ -68,7 +68,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #elif BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
 	// Check if required version of .NET Core is installed.
 	// It is reported that .NET runtime somtetimes break minor-level forward compatibility.
-	NetVersion coreVer = NetVersion(6, 0, 11);
+	NetVersion coreVer = NetVersion(6, 0, 12);
 	NetCoreDetector coreDetector = NetCoreDetector(coreVer, true);
 	if (!coreDetector.isInstalled())
 		coreDetector.downloadRuntime(true);
