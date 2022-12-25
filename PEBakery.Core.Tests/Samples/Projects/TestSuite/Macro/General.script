@@ -104,5 +104,3 @@ Set,%B%,"B"
 Set,%C%,"C"
 Set,#r,"F"
 SetLocalParamsMacro,"X","Y","Z","%A%/%B%/%C%"
-
-

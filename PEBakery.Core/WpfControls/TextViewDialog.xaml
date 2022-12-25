@@ -27,9 +27,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:wpfControls="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls"
         mc:Ignorable="d"
         Title="TextViewDialog" Width="480" Height="320"
         WindowStartupLocation="CenterOwner">
@@ -60,7 +59,7 @@
                       x:Name="TextScrollViewer">
             <TextBox x:Name="ViewTextBox"
                      Width="Auto" Height="Auto"
-                     wpfControls:SelectTextOnFocus.Active="True"
+                     ccc:SelectTextOnFocus.Active="True"
                      VerticalAlignment="Stretch"
                      VerticalContentAlignment="Center"
                      IsReadOnly="True"

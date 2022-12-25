@@ -32,7 +32,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -116,6 +115,9 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-IfElseChain01");
             ScriptTemplate(scPath, "Process-IfElseChain02");
             ScriptTemplate(scPath, "Process-IfElseChain03");
+
+            // It shoudl be a ParserError, but EvalScript treats it as RuntimeError.
+            ScriptTemplate(scPath, "Process-NestedElseFlag-Error", ErrorCheck.RuntimeError);
         }
         #endregion
 
@@ -966,6 +968,118 @@ namespace PEBakery.Core.Tests.Command
             SingleTemplate(s, @"If,Not,Ping,localhost,Set,%Dest%,T", "F");
             SingleTemplate(s, @"If,Not,Ping,127.0.0.1,Set,%Dest%,T", "F");
             SingleTemplate(s, @"If,Not,Ping,::1,Set,%Dest%,T", "F");
+        }
+        #endregion
+
+        #region While
+        [TestMethod]
+        public void While()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-While-Simple", "AAA");
+            ScriptTemplate(scPath, "Process-While-If", "AAA");
+            ScriptTemplate(scPath, "Process-While-Nested", "AAAAAA");
+            ScriptTemplate(scPath, "Process-While-Break01", "AAAA");
+            ScriptTemplate(scPath, "Process-While-Break02", "AAA");
+            ScriptTemplate(scPath, "Process-While-Continue01", "AAAA");
+            ScriptTemplate(scPath, "Process-While-Continue02", "AAA");
+        }
+        #endregion
+
+        #region ForEach
+        [TestMethod]
+        public void ForEach()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-ForEach-IntList", "17");
+            ScriptTemplate(scPath, "Process-ForEach-StrList", "TomatoAppleOrange");
+            ScriptTemplate(scPath, "Process-ForEach-IdxList", "ACB");
+        }
+        #endregion
+
+        #region ForRange
+        [TestMethod]
+        public void ForRange()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string start, string end, string step, string? expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                void SetEngineStateOptions(EngineState s)
+                {
+                    s.Variables.SetValue(VarsType.Global, "Start", start);
+                    s.Variables.SetValue(VarsType.Global, "End", end);
+                    s.Variables.SetValue(VarsType.Global, "Step", step);
+                }
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetEngineStateOptions, entrySection);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destStr = s.ReturnValue;
+                    Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+                }
+            }
+
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "5", "1", "01234");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "7", "2", "0246");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "5", "0");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "0", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "0", "3", "-1", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "5", "0", "-1", "54321");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "7", "0", "-2", "7531");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "-5", "3");
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "0", null, ErrorCheck.RuntimeError);
+            ScriptTemplate(scPath, "Process-ForRange-Param", "3", "0", "1", null, ErrorCheck.RuntimeError);
+        }
+        #endregion
+
+        #region ForRangeEach
+        [TestMethod]
+        public void ForRangeEach()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-ForRangeEach-Nested", "0X0Y1X1Y3X3YY3");
+        }
+        #endregion
+
+        #region LoopSyntaxParams
+        [TestMethod]
+        public void LoopSyntaxParams()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.ReturnValue;
+                Console.WriteLine($"ReturnValue={destStr}");
+                Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-LoopSyntaxParams", "Hello_cs-CZ");
         }
         #endregion
 

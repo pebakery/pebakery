@@ -111,6 +111,28 @@ bool NetVersion::isEqual(const NetVersion& rhs, bool onlyMajorMinor) const
 	return isEqual;
 }
 
+// Is the target version compatible with this instance?
+bool NetVersion::isCompatible(const NetVersion& rhs) const
+{
+	// https://learn.microsoft.com/en-us/dotnet/core/compatibility/categories
+	// rhs needs to satisfy these conditions:
+	// Major : equal 
+	// Minor : equal
+	// Patch : equal or higher (.NET Desktop Runtime often breaks forward compatibility even on patch version)
+	if (_major != rhs.getMajor())
+		return false;
+	if (_minor != rhs.getMinor())
+		return false;
+	if (rhs.getPatch() < _patch)
+		return false;
+
+	// If lhs is a preview version, everything must be equal
+	if (0 < _preview || 0 < rhs.getPreview())
+		return isEqual(rhs, false);
+	else
+		return true;
+}
+
 bool NetVersion::parse(const std::string& str, NetVersion& ver)
 {
 	// Ex) 3.1.5

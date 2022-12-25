@@ -1,4 +1,4 @@
-/*
+﻿/*
 	Copyright (C) 2016-2022 Hajin Jang
 	Licensed under MIT License.
 

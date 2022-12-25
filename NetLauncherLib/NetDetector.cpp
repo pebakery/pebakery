@@ -242,9 +242,7 @@ bool NetCoreDetector::isInstalled()
 		std::vector<NetVersion> versions = nit->second;
 		for (NetVersion& v : versions)
 		{
-			// Do not compare patch version.
-			// Patch number is only used on generating download urls.
-			if (targetVer.isEqual(v, true))
+			if (targetVer.isCompatible(v))
 			{
 				success = true;
 				break;
@@ -271,7 +269,7 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 	if (_checkDesktopRuntime)
 		woss << L"Desktop ";
 	woss << L"Runtime ";
-	woss << _targetVer.toStr(true);
+	woss << _targetVer.toStr(false);
 	woss << L".";
 	std::wstring errMsg = woss.str();
 
@@ -279,7 +277,7 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 	woss.str(L"");
 	woss << L"Install ";
 	woss << netCoreStr << L" ";
-	woss << _targetVer.toStr(true);
+	woss << _targetVer.toStr(false);
 	if (_checkDesktopRuntime)
 		woss << L" Desktop";
 	woss << L" Runtime";

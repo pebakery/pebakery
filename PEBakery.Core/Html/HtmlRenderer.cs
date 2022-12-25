@@ -58,7 +58,7 @@ namespace PEBakery.Core.Html
             string? templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
             if (templateBody == null)
             {
-                MessageBox.Show("Failed to read HTML Template.", "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow("Failed to read HTML Template.", "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace PEBakery.Core.Html
                 }
                 string errMsg = b.ToString();
 
-                MessageBox.Show(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace PEBakery.Core.Html
             catch (Exception e)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
-                MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

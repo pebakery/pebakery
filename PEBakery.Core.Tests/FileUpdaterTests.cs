@@ -42,13 +42,9 @@ namespace PEBakery.Core.Tests
     [TestCategory(nameof(FileUpdater))]
     public class FileUpdaterTests
     {
-        #region Fields and Properties
-        #endregion
-
         #region Class Init/Cleanup
-#pragma warning disable IDE0060
         [ClassInitialize]
-        public static void ServerInit(TestContext testContext)
+        public static void ServerInit(TestContext _)
         {
             TestSetup.StartWebFileServer();
         }
@@ -57,7 +53,6 @@ namespace PEBakery.Core.Tests
         public static void ServerCleanup()
         {
         }
-#pragma warning restore IDE0060
         #endregion
 
         #region ServerStatus - Is kestrel server successfully running?
@@ -90,7 +85,7 @@ namespace PEBakery.Core.Tests
         #region UpdateScript
         [TestMethod]
         [TestCategory("FileUpdater")]
-        public async Task UpdateScript()
+        public void UpdateScript()
         {
             string destDir = FileHelper.GetTempDir();
             try
@@ -100,7 +95,9 @@ namespace PEBakery.Core.Tests
                 string workScriptFile = Path.Combine(destDir, "PreserveInterface.script");
                 string workScriptTreePath = Path.Combine("TestSuite", "Updater", "PreserveInterface.script");
                 File.Copy(srcScriptFile, workScriptFile);
-                IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", @$"http://localhost:{TestSetup.ServerPort}/Updater/Standalone/PreserveInterface_r2.script");
+                string updateUrl = @$"{TestSetup.UrlRoot}/Updater/Standalone/PreserveInterface_r2.script";
+                IniReadWriter.WriteKey(workScriptFile, "ScriptUpdate", "Url", updateUrl);
+                Console.WriteLine($"UpdateUrl: {updateUrl}");
 
                 Project p = EngineTests.Project;
                 Script? sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
@@ -113,7 +110,7 @@ namespace PEBakery.Core.Tests
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                (Script? newScript, LogInfo log) = await updater.UpdateScriptAsync(sc, true);
+                (Script? newScript, LogInfo log) = updater.UpdateScript(sc, true);
 
                 // Validate updated script
                 Console.WriteLine(log);

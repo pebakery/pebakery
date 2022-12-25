@@ -33,6 +33,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -73,30 +74,14 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Class Init/Cleanup
-#pragma warning disable IDE0060
         [ClassInitialize]
-        public static void ServerInit(TestContext testContext)
+        public static void ServerInit(TestContext _)
         {
             TestSetup.StartWebFileServer();
 
             _sampleSrcFile = Path.Combine(TestSetup.WebRoot, "CommandNetwork", "xz-a4.pdf");
             _sampleFileUrl = $"{TestSetup.UrlRoot}/CommandNetwork/xz-a4.pdf";
-        }
 
-        [ClassCleanup]
-        public static void ServerCleanup()
-        {
-            _sampleSrcFile = null;
-            _sampleFileUrl = null;
-        }
-#pragma warning restore IDE0060
-        #endregion
-
-        #region WebGet
-        [TestMethod]
-        [TestCategory("CommandNetwork")]
-        public void WebGet()
-        {
             if (EngineTests.IsOnline)
             {
                 Console.WriteLine(@"Network is online. Running WebGet tests...");
@@ -106,30 +91,33 @@ namespace PEBakery.Core.Tests.Command
                 Console.WriteLine(@"Network is offline. Ignoring some WebGet tests...");
                 return;
             }
+        }
 
-            EngineState s = EngineTests.CreateEngineState();
+        [ClassCleanup]
+        public static void ServerCleanup()
+        {
+            _sampleSrcFile = null;
+            _sampleFileUrl = null;
+        }
+        #endregion
 
+        #region Utility
+        public void SetEngineUserAgent(EngineState s)
+        {
             // Avoid using PEBakery default user agent so often to specific homepage.
             int idx = s.Random.Next(_userAgentPool.Length);
             s.CustomUserAgent = _userAgentPool[idx];
-
-            // IsOnline ensures access only to GitHub!
-            WebGet_Http(s);
-            WebGet_Compat(s);
-            WebGet_TimeOut(s);
-            WebGet_Referer(s);
-            WebGet_HashSuccess(s);
-            WebGet_HashError(s);
-
-            if (EngineTests.IsOnline)
-            {
-                WebGet_Https(s);
-                WebGet_NonExistDomain(s);
-            }
         }
+        #endregion
 
-        public static void WebGet_Http(EngineState s)
+        #region WebGet
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetHttp()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -152,8 +140,16 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_Https(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetHttps()
         {
+            if (EngineTests.IsOnline == false)
+                return;
+
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -174,8 +170,16 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_NonExistDomain(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetNonExistDomain()
         {
+            if (EngineTests.IsOnline == false)
+                return;
+
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -208,8 +212,13 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_Compat(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetCompat()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.GetTempFile("html");
             try
@@ -232,8 +241,13 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_TimeOut(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetTimeOut()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -277,8 +291,13 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_Referer(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetReferer()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -312,8 +331,13 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_UserAgent(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetUserAgent()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
             string destFile = FileHelper.ReserveTempFile("html");
             try
@@ -337,11 +361,16 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void WebGet_HashSuccess(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetHashSuccess()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             Assert.IsNotNull(_sampleSrcFile);
 
-            foreach (HashType hashType in SampleDigestDict.Keys)
+            Parallel.ForEach(SampleDigestDict.Keys, (HashType hashType) =>
             {
                 string destFile = FileHelper.ReserveTempFile("html");
                 try
@@ -360,11 +389,16 @@ namespace PEBakery.Core.Tests.Command
                     if (File.Exists(destFile))
                         File.Delete(destFile);
                 }
-            }
+            });
         }
 
-        public static void WebGet_HashError(EngineState s)
+        [TestMethod]
+        [TestCategory("CommandNetwork")]
+        public void WebGetHashError()
         {
+            EngineState s = EngineTests.CreateEngineState();
+            SetEngineUserAgent(s);
+
             string destFile = FileHelper.ReserveTempFile("html");
             try
             {

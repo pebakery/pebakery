@@ -99,7 +99,7 @@ namespace PEBakery.Core.Commands
                 // (3) Use PEBakery's default User-Agent
                 string? userAgent = null;
                 if (info.UserAgent != null)
-                    userAgent = info.UserAgent;
+                    userAgent = StringEscaper.Preprocess(s, info.UserAgent);
                 else
                     userAgent = s.CustomUserAgent;
 
@@ -141,9 +141,9 @@ namespace PEBakery.Core.Commands
                         if (report.ErrorMsg != null)
                             logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
-                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response was received from the server."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP status code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"Server response returned HTTP status code [{statusCode}]"));
                     }
 
                     // PEBakery extension -> Report exit code via #r
@@ -188,7 +188,7 @@ namespace PEBakery.Core.Commands
                     { // Success -> Check hash
                         string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
                         if (hashDigest.Length != 2 * HashHelper.GetHashByteLen(info.HashType))
-                            return LogInfo.LogErrorMessage(logs, $"Hash digest [{hashDigest}] is not [{info.HashType}]");
+                            return LogInfo.LogErrorMessage(logs, $"[{hashDigest}] is not a valid [{info.HashType}] hash digest");
 
                         string downDigest;
                         using (FileStream fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read))
@@ -200,24 +200,24 @@ namespace PEBakery.Core.Commands
                         if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                         {
                             FileHelper.FileReplaceEx(tempPath, destFile);
-                            logs.Add(new LogInfo(LogState.Success, $"[{destFile}] downloaded from [{url}] and verified "));
+                            logs.Add(new LogInfo(LogState.Success, $"[{destFile}] downloaded from [{url}] and verified with a [{info.HashType}] hash digest"));
                         }
                         else
                         {
                             statusCode = 1; // 1 means hash mismatch
-                            logs.Add(new LogInfo(LogState.Error, $"Downloaded file from [{url}] was corrupted"));
+                            logs.Add(new LogInfo(LogState.Error, $"The [{info.HashType}] hash [{downDigest}] of file downloaded from [{url}] does not match [{hashDigest}]. The file may be corrupt."));
                         }
                     }
                     else
                     { // Failure -> Log error message
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
-                        logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
+                        logs.Add(new LogInfo(state, $"An error occured while downloading [{url}]"));
                         if (report.ErrorMsg != null)
                             logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
-                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response was received from the server."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"Server response returned HTTP Status Code [{statusCode}]"));
                     }
 
                     // PEBakery extension -> Report exit code via #r

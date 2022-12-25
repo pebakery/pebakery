@@ -38,8 +38,6 @@
 #include "PEParser.h"
 #include "SysArch.h"
 
-typedef BOOL(WINAPI LPFN_ISWOW64PROCESS2) (HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine);
-
 ArchVal SysArch::getCpuArch()
 {
 	HMODULE hModule = NULL;
@@ -47,8 +45,9 @@ ArchVal SysArch::getCpuArch()
 		return getCpuArchGetNativeSystemInfo();
 
 	ArchVal ret = ArchVal::UNKNOWN;
-	if (GetProcAddress(hModule, "IsWow64Process2") != nullptr) // Host supports IsWow64Process2 (Win 10 v1511+)
-		ret = getCpuArchIsWow64Process2();
+	LPFN_ISWOW64PROCESS2 funcPtr = reinterpret_cast<LPFN_ISWOW64PROCESS2>(GetProcAddress(hModule, "IsWow64Process2"));
+	if (funcPtr != nullptr) // Host supports IsWow64Process2 (Win 10 v1511+)
+		ret = getCpuArchIsWow64Process2(funcPtr);
 	else // Host is Win 7, 8, 8.1 or 10 v1507
 		ret = getCpuArchGetNativeSystemInfo();
 
@@ -81,12 +80,14 @@ ArchVal SysArch::getCpuArchGetNativeSystemInfo()
 	return ret;
 }
 
-ArchVal SysArch::getCpuArchIsWow64Process2()
+ArchVal SysArch::getCpuArchIsWow64Process2(LPFN_ISWOW64PROCESS2 funcPtr)
 {
 	USHORT wProcessMachine = 0;
 	USHORT wNativeMachine = 0;
 
-	if (IsWow64Process2(GetCurrentProcess(), &wProcessMachine, &wNativeMachine) == 0)
+	if (funcPtr == nullptr)
+		return ArchVal::UNKNOWN;
+	if (funcPtr(GetCurrentProcess(), &wProcessMachine, &wNativeMachine) == 0)
 		return ArchVal::UNKNOWN;
 
 	return toArchVal(wNativeMachine);

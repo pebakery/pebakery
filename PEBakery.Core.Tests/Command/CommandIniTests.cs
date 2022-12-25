@@ -630,8 +630,10 @@ namespace PEBakery.Core.Tests.Command
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
-                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.RuntimeError);
+                // Warning - Section does not exist
+                WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, string.Empty, string.Empty, ErrorCheck.Warning);
 
+                // Successful Read
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("[6DoF]");
                 b.AppendLine("Descent=Overload");
@@ -669,6 +671,7 @@ namespace PEBakery.Core.Tests.Command
                 resultStr = b.ToString();
                 WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},6DoF", tempFile, sampleStr, resultStr);
 
+                // Parser Error
                 WriteTemplate(s, CodeType.IniDeleteSection, $@"IniDeleteSection,{tempFile},A,B", tempFile, string.Empty, null, ErrorCheck.ParserError);
 
                 // Optimization

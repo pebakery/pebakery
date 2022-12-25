@@ -37,48 +37,51 @@ namespace NetLauncherLibTests
 
 		TEST_METHOD(ParseRuntimeInfoLineTest)
 		{
+			const std::string ASP_NET_CORE_ALL = "Microsoft.AspNetCore.All";
+			const std::string ASP_NET_CORE_APP = "Microsoft.AspNetCore.App";
+			const std::string NET_CORE_APP = "Microsoft.NETCore.App";
+			const std::string WINDOWS_DESKTOP_APP = "Microsoft.WindowsDesktop.App";
+
 			std::vector<NetCoreDetectInfo> infos;
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.AspNetCore.All 2.1.27 [c:\\program files\\dotnet\\shared\\Microsoft.AspNetCore.All]",
-				"Microsoft.AspNetCore.All", NetVersion(2, 1, 27)));
+				ASP_NET_CORE_ALL, NetVersion(2, 1, 27)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.AspNetCore.App 2.1.27 [c:\\program files\\dotnet\\shared\\Microsoft.AspNetCore.App]",
-				"Microsoft.AspNetCore.App", NetVersion(2, 1, 27)));
+				ASP_NET_CORE_APP, NetVersion(2, 1, 27)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.AspNetCore.App 3.1.14 [c:\\program files\\dotnet\\shared\\Microsoft.AspNetCore.App]",
-				"Microsoft.AspNetCore.App", NetVersion(3, 1, 14)));
+				ASP_NET_CORE_APP, NetVersion(3, 1, 14)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.AspNetCore.App 5.0.5 [c:\\program files\\dotnet\\shared\\Microsoft.AspNetCore.App]",
-				"Microsoft.AspNetCore.App", NetVersion(5, 0, 5)));
+				ASP_NET_CORE_APP, NetVersion(5, 0, 5)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.AspNetCore.App 6.0.0-preview.3.21201.13 [c:\\program files\\dotnet\\shared\\Microsoft.AspNetCore.App]",
-				"Microsoft.AspNetCore.App", NetVersion(6, 0, 0, 3)));
+				ASP_NET_CORE_APP, NetVersion(6, 0, 0, 3)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.NETCore.App 2.1.27 [c:\\program files\\dotnet\\shared\\Microsoft.NETCore.App]",
-				"Microsoft.NETCore.App", NetVersion(2, 1, 27)));
+				NET_CORE_APP, NetVersion(2, 1, 27)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.NETCore.App 3.1.14 [c:\\program files\\dotnet\\shared\\Microsoft.NETCore.App]",
-				"Microsoft.NETCore.App", NetVersion(3, 1, 14)));
+				NET_CORE_APP, NetVersion(3, 1, 14)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.NETCore.App 5.0.5 [c:\\program files\\dotnet\\shared\\Microsoft.NETCore.App]",
-				"Microsoft.NETCore.App", NetVersion(5, 0, 5)));
+				NET_CORE_APP, NetVersion(5, 0, 5)));
 			infos.push_back(NetCoreDetectInfo(
-				"Microsoft.NETCore.App 6.0.0-preview.3.21201.4 [c:\\program files\\dotnet\\shared\Microsoft.NETCore.App]",
-				"Microsoft.NETCore.App", NetVersion(6, 0, 0, 3)));
+				"Microsoft.NETCore.App 6.0.0-preview.3.21201.4 [c:\\program files\\dotnet\\shared\\Microsoft.NETCore.App]",
+				NET_CORE_APP, NetVersion(6, 0, 0, 3)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.WindowsDesktop.App 3.1.14 [c:\\program files\\dotnet\\shared\\Microsoft.WindowsDesktop.App]",
-				"Microsoft.WindowsDesktop.App", NetVersion(3, 1, 14)));
+				WINDOWS_DESKTOP_APP, NetVersion(3, 1, 14)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.WindowsDesktop.App 5.0.5 [c:\\program files\\dotnet\\shared\\Microsoft.WindowsDesktop.App]",
-				"Microsoft.WindowsDesktop.App", NetVersion(5, 0, 5)));
+				WINDOWS_DESKTOP_APP, NetVersion(5, 0, 5)));
 			infos.push_back(NetCoreDetectInfo(
 				"Microsoft.WindowsDesktop.App 6.0.0-preview.3.21201.3 [c:\\program files\\dotnet\\shared\\Microsoft.WindowsDesktop.App]",
-				"Microsoft.WindowsDesktop.App", NetVersion(6, 0, 0, 3)));
+				WINDOWS_DESKTOP_APP, NetVersion(6, 0, 0, 3)));
 
-			for (auto it = infos.begin(); it != infos.end(); it++)
+			for (NetCoreDetectInfo& info : infos)
 			{
-				NetCoreDetectInfo& info = *it;
-
 				std::string key;
 				NetVersion ver;
 				Assert::IsTrue(NetCoreDetector::parseRuntimeInfoLine(info.getLine(), key, ver));

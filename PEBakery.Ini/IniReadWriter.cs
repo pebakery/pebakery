@@ -2878,7 +2878,7 @@ namespace PEBakery.Ini
 
         #region (TextReader, TextWriter) Fast Forward
         /// <summary>
-        /// Move position of TextReader to read content of specific .ini section.
+        /// Move position of TextReader to read content of a specific .ini section.
         /// </summary>
         /// <remarks>
         /// Designed for use in EncodedFile class.
@@ -2910,7 +2910,7 @@ namespace PEBakery.Ini
         }
 
         /// <summary>
-        /// Copy from TextReader to TextWriter until specific .ini section is found.
+        /// Copy from TextReader to TextWriter until a specific .ini section is found.
         /// </summary>
         /// <remarks>
         /// Designed for use in EncodedFile class.
@@ -3058,7 +3058,7 @@ namespace PEBakery.Ini
         {
             // This regex exclude %A%=BCD form.
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex(@"^(?<!\/\/|#|;)([^%=\r\n]+)=(.*)$", lines);
+            return InternalParseIniLinesRegex("^(?<!//|#|;)([^%=\r\n]+)=(.*)$", lines);
         }
 
         /// <summary>
@@ -3067,7 +3067,7 @@ namespace PEBakery.Ini
         public static Dictionary<string, string> ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
+            return InternalParseIniLinesRegex("^%([^\r\n=]+)%=(.*)$", lines);
         }
 
         /// <summary>
@@ -3171,7 +3171,7 @@ namespace PEBakery.Ini
         }
         #endregion
 
-        #region (Internal) SmarterAnsiDetect
+        #region (Internal) SmarterDetectEncoding
         private static Encoding SmarterDetectEncoding(string filePath, IReadOnlyList<IniKey> iniKeys)
         {
             // Test if content to write is ANSI-compatible.

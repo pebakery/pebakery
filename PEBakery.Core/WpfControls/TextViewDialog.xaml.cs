@@ -28,9 +28,6 @@ using System.Windows.Controls;
 
 namespace PEBakery.WPF.Controls
 {
-    /// <summary>
-    /// TextViewDialog.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class TextViewDialog : Window
     {
         #region Properties
@@ -104,6 +101,34 @@ namespace PEBakery.WPF.Controls
             ViewText = viewText;
             MessageIcon = icon;
             TextWrapping = TextWrapping.NoWrap;
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Displays a message box within a Dispatcher, that has a message, title bar caption, button, and icon; and that returns a result.
+        /// </summary>
+        public static void DispatcherShow(Window? owner, string title, string message, string viewText, PackIconMaterialKind icon = PackIconMaterialKind.None)
+        {
+            if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    TextViewDialog tvDialog;
+                    if (owner != null)
+                        tvDialog = new TextViewDialog(owner, title, message, viewText, icon);
+                    else if (Application.Current.MainWindow != null)
+                        tvDialog = new TextViewDialog(Application.Current.MainWindow, title, message, viewText, icon);
+                    else
+                        tvDialog = new TextViewDialog(title, message, viewText, icon);
+                    tvDialog.Show();
+                });
+            }
+            else
+            {
+                TextViewDialog tvDialog = new TextViewDialog(title, message, viewText, icon);
+                tvDialog.Show();
+            }
         }
         #endregion
 

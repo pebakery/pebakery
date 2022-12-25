@@ -126,6 +126,48 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region Window Size/Layout/Position
+        private int _windowTop = 25;
+        public int WindowTop
+        {
+            get => _windowTop;
+            set => _windowTop = value;
+        }
+
+        private int _windowLeft = 25;
+        public int WindowLeft
+        {
+            get => _windowLeft;
+            set => _windowLeft = value;
+        }
+
+        private int _windowWidth = 900;
+        public int WindowWidth
+        {
+            get => _windowWidth;
+            set
+            {
+                _windowWidth = value;
+                UpdateTopPanelSize();
+            }
+        }
+
+        private int _windowHeight = 720;
+        public int WindowHeight
+        {
+            get => _windowHeight;
+            set => _windowHeight = value;
+        }
+
+        // Note: We are defining the width of the grid column the MainTreeView lives in, not width of the control itself
+        private double _mainTreeViewWidth = 200;
+        public double MainTreeViewWidth
+        {
+            get => _mainTreeViewWidth;
+            set => SetProperty(ref _mainTreeViewWidth, value);
+        }
+        #endregion
+
         #region Adaptive Interface Size
         private Setting.InterfaceSize _interfaceSize = Setting.InterfaceSize.Adaptive;
         public Setting.InterfaceSize InterfaceSize
@@ -139,16 +181,6 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private int _windowWidth = 900;
-        public int WindowWidth
-        {
-            get => _windowWidth;
-            set
-            {
-                _windowWidth = value;
-                UpdateTopPanelSize();
-            }
-        }
         private const int WindowWidthThreshold = 700;
 
         private T GetAdaptiveSize<T>(T standard, T small)
@@ -165,7 +197,6 @@ namespace PEBakery.Core.ViewModels
 
         public void UpdateTopPanelSize()
         {
-            // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
             OnPropertyUpdate(nameof(ScriptTreeFontSize));
@@ -1115,86 +1146,93 @@ namespace PEBakery.Core.ViewModels
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
                     (List<LogInfo> logs, SyntaxChecker.Result result) = v.CheckScript();
-                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
-                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
-
-                    int errorWarns = errorLogs.Length + warnLogs.Length;
-                    StringBuilder b = new StringBuilder();
-                    if (0 < errorLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < errorLogs.Length; i++)
-                            {
-                                LogInfo log = errorLogs[i];
-                                b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
-                    if (0 < warnLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{warnLogs.Length} syntax warning detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < warnLogs.Length; i++)
-                            {
-                                LogInfo log = warnLogs[i];
-                                b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
                     ScriptCheckResult = result;
+
                     if (!quiet)
                     {
+                        if (v.CodeSectionCount < v.VisitedSectionCount)
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Warning, $"{nameof(SyntaxChecker)} failed to track some sections from [{sc.RealPath}]. Report this log to a PEBakery developers with a script file."));
+                        string coverageMsg = $"{v.VisitedSectionCount} sections checked.";
                         switch (result)
                         {
                             case SyntaxChecker.Result.Clean:
-                                b.AppendLine("No syntax issue detected.");
-                                b.AppendLine();
-                                b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-                                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                {
+                                    StringBuilder b = new StringBuilder();
+                                    b.AppendLine("No syntax issue detected.");
+                                    b.AppendLine();
+                                    b.AppendLine(coverageMsg);
+                                    SystemHelper.MessageBoxDispatcherShow(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
                                 break;
                             case SyntaxChecker.Result.Warning:
                             case SyntaxChecker.Result.Error:
-                                string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
-                                MessageBoxImage dialogIcon = result == SyntaxChecker.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
-                                MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
-                                if (dialogResult == MessageBoxResult.OK)
                                 {
-                                    b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+                                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+                                    int errorWarns = errorLogs.Length + warnLogs.Length;
+
+                                    StringBuilder b = new StringBuilder();
+                                    string mainMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected at [{sc.TreePath}].";
+                                    b.AppendLine("[Summary]");
+                                    b.AppendLine(mainMsg);
+                                    b.AppendLine();
+                                    b.AppendLine("[Coverage]");
+                                    b.AppendLine(coverageMsg);
+                                    b.AppendLine();
+
+                                    if (0 < errorLogs.Length)
+                                    {
+                                        b.AppendLine($"[Error{(errorLogs.Length == 1 ? string.Empty : "s")}]");
+                                        b.AppendLine($"{errorLogs.Length} syntax error{(errorLogs.Length == 1 ? string.Empty : "s")} detected.");
+                                        b.AppendLine();
+                                        for (int i = 0; i < errorLogs.Length; i++)
+                                        {
+                                            LogInfo log = errorLogs[i];
+                                            b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                                            if (log.Command != null)
+                                            {
+                                                b.Append($" ({log.Command})");
+                                                if (0 < log.Command.LineIdx)
+                                                    b.Append($" (Line {log.Command.LineIdx})");
+                                            }
+                                            else if (log.UIControl != null)
+                                            {
+                                                b.Append($" ({log.UIControl})");
+                                                if (0 < log.UIControl.LineIdx)
+                                                    b.Append($" (Line {log.UIControl.LineIdx})");
+                                            }
+                                            b.AppendLine();
+                                        }
+                                        b.AppendLine();
+                                    }
+
+                                    if (0 < warnLogs.Length)
+                                    {
+                                        b.AppendLine($"[Warning{(warnLogs.Length == 1 ? string.Empty : "s")}]");
+                                        b.AppendLine($"{warnLogs.Length} syntax warning{(warnLogs.Length == 1 ? string.Empty : "s")} detected.");
+                                        b.AppendLine();
+                                        for (int i = 0; i < warnLogs.Length; i++)
+                                        {
+                                            LogInfo log = warnLogs[i];
+                                            b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
+                                            if (log.Command != null)
+                                            {
+                                                b.Append($" ({log.Command})");
+                                                if (0 < log.Command.LineIdx)
+                                                    b.Append($" (Line {log.Command.LineIdx})");
+                                            }
+                                            else if (log.UIControl != null)
+                                            {
+                                                b.Append($" ({log.UIControl})");
+                                                if (0 < log.UIControl.LineIdx)
+                                                    b.Append($" (Line {log.UIControl.LineIdx})");
+                                            }
+                                            b.AppendLine();
+                                        }
+                                        b.AppendLine();
+                                    }
+
+                                    // TextViewDialog.DispatcherShow(null, "Syntax Check Report", mainMsg, b.ToString(), PackIconMaterialKind.Exclamation);
 
                                     // Do not clear tempDir right after calling OpenTextFile(). Doing this will trick the text editor.
                                     // Instead, leave it to Global.Cleanup() when program is exited.
@@ -1202,7 +1240,6 @@ namespace PEBakery.Core.ViewModels
                                     string reportFile = Path.Combine(tempDir, Path.ChangeExtension(Path.GetFileName(sc.RealPath), null) + "_Report.txt");
                                     using (StreamWriter w = new StreamWriter(reportFile, false, Encoding.UTF8))
                                         w.Write(b.ToString());
-
                                     OpenTextFile(reportFile);
                                 }
                                 break;
@@ -1681,7 +1718,7 @@ namespace PEBakery.Core.ViewModels
             if (treeModel == null)
                 return;
 
-            MessageBoxResult result = MessageBox.Show($"Script [{treeModel.Script.Title}] has been modified in background.\r\nDo you want to reload it?",
+            MessageBoxResult result = SystemHelper.MessageBoxDispatcherShow($"Script [{treeModel.Script.Title}] has been modified in background.\r\nDo you want to reload it?",
                 "Script Reload",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -1702,7 +1739,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (!File.Exists(filePath))
             {
-                MessageBox.Show($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -1713,13 +1750,13 @@ namespace PEBakery.Core.ViewModels
                 string ext = Path.GetExtension(customEditor);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SystemHelper.MessageBoxDispatcherShow($"Custom editor [{customEditor}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 if (!File.Exists(customEditor))
                 {
-                    MessageBox.Show($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SystemHelper.MessageBoxDispatcherShow($"Custom editor [{customEditor}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -1732,7 +1769,7 @@ namespace PEBakery.Core.ViewModels
 
             if (!result.Success)
             {
-                MessageBox.Show($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
+                SystemHelper.MessageBoxDispatcherShow($"File [{filePath}] could not be opened.\r\n\r\n{result.Message}.",
                     "Error Opening File", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1745,7 +1782,7 @@ namespace PEBakery.Core.ViewModels
         {
             if (!Directory.Exists(filePath))
             {
-                MessageBox.Show($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

@@ -194,7 +194,6 @@ namespace PEBakery.Core.Commands
                     if (Directory.Exists(tempDir))
                         Directory.Delete(tempDir, true);
 
-                    // ReSharper disable once AccessToDisposedClosure
                     proc.Dispose();
                 };
 

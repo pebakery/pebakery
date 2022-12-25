@@ -18,5 +18,8 @@
     <ClCompile Include="NetDetectorTests.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="NetVersionTests.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

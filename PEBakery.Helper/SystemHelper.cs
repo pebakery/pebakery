@@ -28,6 +28,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
 
 namespace PEBakery.Helper
 {
@@ -166,6 +167,49 @@ namespace PEBakery.Helper
 
             // Every try failed, fail-safe to 1 threads
             return 1;
+        }
+        #endregion
+
+        #region WOW64 Redirection
+
+        #endregion
+
+        #region Auto WPF MessageBox with Owner Window
+        public static MessageBoxResult MessageBoxDispatcherShow(string messageBoxText, string caption, MessageBoxButton button)
+        {
+            return MessageBoxDispatcherShow(null, messageBoxText, caption, button, MessageBoxImage.None);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+        {
+            return MessageBoxDispatcherShow(null, messageBoxText, caption, button, icon);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button)
+        {
+            return MessageBoxDispatcherShow(owner, messageBoxText, caption, button, MessageBoxImage.None);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+        {
+            MessageBoxResult result = MessageBoxResult.None;
+            if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    if (owner != null)
+                        result = MessageBox.Show(owner, messageBoxText, caption, button, icon);
+                    else if (Application.Current.MainWindow != null)
+                        result = MessageBox.Show(Application.Current.MainWindow, messageBoxText, caption, button, icon);
+                    else
+                        result = MessageBox.Show(messageBoxText, caption, button, icon);
+                });
+            }
+            else
+            {
+                result = MessageBox.Show(messageBoxText, caption, button, icon);
+            }
+            return result;
         }
         #endregion
     }
