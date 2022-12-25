@@ -3,7 +3,7 @@
   <assemblyIdentity
     type="Win32"
     name="PEBakery.LauncherNative"
-    version="1.1.0.0"
+    version="1.1.1.0"
     processorArchitecture="*"
   />
   <description>PEBakery Launcher</description>
