@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -218,7 +219,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.SystemLog log = _m.SystemLogs[_m.SystemLogSelectedIndex];
-            Clipboard.SetText(log.State == LogState.None ? log.Message : $"[{log.State}] {log.Message}");
+            SetClipboardText(log.State == LogState.None ? log.Message : $"[{log.State}] {log.Message}");
         }
 
         private void FullLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -227,7 +228,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.FullBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportFormat.Text, false, true));
+            SetClipboardText(log.Export(LogExportFormat.Text, false, true));
         }
 
         private void SimpleLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -236,7 +237,7 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.BuildLog log = _m.BuildLogs[_m.SimpleBuildLogSelectedIndex];
-            Clipboard.SetText(log.Export(LogExportFormat.Text, false, true));
+            SetClipboardText(log.Export(LogExportFormat.Text, false, true));
         }
 
         private void VariableLogViewCopy_Click(object sender, RoutedEventArgs e)
@@ -245,7 +246,32 @@ namespace PEBakery.WPF
                 return;
 
             LogModel.Variable log = _m.VariableLogs[_m.VariableLogSelectedIndex];
-            Clipboard.SetText($"[{log.Type}] %{log.Key}%={log.Value}");
+
+            SetClipboardText($"[{log.Type}] %{log.Key}%={log.Value}");
+         }
+        #endregion
+
+        #region SetClipboardText
+        private static void SetClipboardText(string text)
+        {
+            try
+            {
+                Clipboard.SetText(text);
+            }
+            catch (COMException ex)
+            {
+                const uint CLIPBRD_E_CANT_OPEN = 0x800401D0;
+                if ((uint)ex.ErrorCode == CLIPBRD_E_CANT_OPEN)
+                {
+                    // If another application is using the clipboard handle the exception gracefully
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Copy from log failed because the clipboard could not be opened."));
+                }
+                else
+                {
+                    // otherwise let PEBakery's exception handler deal with it
+                    throw;
+                }
+            }
         }
         #endregion
 
