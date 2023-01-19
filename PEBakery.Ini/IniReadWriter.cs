@@ -3056,9 +3056,9 @@ namespace PEBakery.Ini
         /// </summary>
         public static Dictionary<string, string> ParseIniLinesIniStyle(IEnumerable<string> lines)
         {
-            // This regex exclude %A%=BCD form.
+            // This regex excludes %A%=BCD form.
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex("^(?<!//|#|;)([^%=\r\n]+)=(.*)$", lines);
+            return InternalParseIniLinesRegex("^(?!//|#|;)([^%=\r\n]+)=(.*)$", lines);
         }
 
         /// <summary>
