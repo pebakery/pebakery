@@ -21,7 +21,7 @@
     <ClInclude Include="targetver.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="BuildMode.h">
+    <ClInclude Include="BuildVars.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

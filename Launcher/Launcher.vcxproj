@@ -275,7 +275,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BuildMode.h" />
+    <ClInclude Include="BuildVars.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

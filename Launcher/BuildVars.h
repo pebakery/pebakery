@@ -32,6 +32,10 @@
 // Development only
 #define BUILD_MODE		BUILD_NETCORE_RT_DEPENDENT
 
+#define NETCORE_TARGET_VER_MAJOR	6
+#define NETCORE_TARGET_VER_MINOR	0
+#define NETCORE_TARGET_VER_PATCH	13
+
 #ifdef PUBLISH_MODE
 	// Force given build mode when publishing
 #undef BUILD_MODE

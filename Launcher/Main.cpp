@@ -44,7 +44,7 @@
 #include "NetVersion.h"
 #include "NetDetector.h"
 #include "PEParser.h"
-#include "BuildMode.h"
+#include "BuildVars.h"
 
 // Prototypes
 void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring& dllPath);
@@ -68,7 +68,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #elif BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
 	// Check if required version of .NET Core is installed.
 	// It is reported that .NET runtime somtetimes break minor-level forward compatibility.
-	NetVersion coreVer = NetVersion(6, 0, 12);
+	NetVersion coreVer = NetVersion(NETCORE_TARGET_VER_MAJOR, NETCORE_TARGET_VER_MINOR, NETCORE_TARGET_VER_PATCH);
 	NetCoreDetector coreDetector = NetCoreDetector(coreVer, true);
 	if (!coreDetector.isInstalled())
 		coreDetector.downloadRuntime(true);
