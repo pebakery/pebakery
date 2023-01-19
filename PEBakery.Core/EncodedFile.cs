@@ -2503,9 +2503,14 @@ namespace PEBakery.Core
                 if (IniReadWriter.IsLineSection(line))
                     break;
 
+                // Filter comments
+                if (IniReadWriter.IsLineComment(line))
+                    continue;
+
+                // Parse key and value
                 (string? key, string? block) = IniReadWriter.GetKeyValueFromLine(line);
                 if (key == null || block == null)
-                    throw new InvalidOperationException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed.");
 
                 // [Stage 1] Get count of lines
                 if (key.Equals("lines", StringComparison.OrdinalIgnoreCase))
@@ -2518,12 +2523,12 @@ namespace PEBakery.Core
 
                 // [Stage 2] Get length of line
                 if (!StringHelper.IsInteger(key))
-                    throw new InvalidOperationException("Key of the encoded lines are malformed");
+                    throw new InvalidOperationException("Key of the encoded lines are malformed.");
                 if (lineLen == -1)
                     lineLen = block.Length;
                 if (4090 < block.Length ||
                     i + 1 < lineCount && block.Length != lineLen)
-                    throw new InvalidOperationException("Length of encoded lines is inconsistent");
+                    throw new InvalidOperationException("Length of encoded lines is inconsistent.");
 
                 // [Stage 3] Decode 
                 b.Append(block);
@@ -2576,23 +2581,28 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            (List<string>? keys, List<string>? base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
+            // Filter comments
+            IEnumerable<string> encodedLines = encodedList.Where(x => !IniReadWriter.IsLineComment(x));
+
+            // Parse into base64 blocks
+            (List<string>? keys, List<string>? base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedLines);
             if (keys == null || base64Blocks == null)
-                throw new InvalidOperationException("Encoded lines are malformed");
+                throw new InvalidOperationException("Encoded lines are malformed.");
             if (!keys.All(StringHelper.IsInteger))
-                throw new InvalidOperationException("Key of the encoded lines are malformed");
+                throw new InvalidOperationException("Key of the encoded lines are malformed.");
             if (base64Blocks.Count == 0)
-                throw new InvalidOperationException("Encoded lines are not found");
+                throw new InvalidOperationException("Encoded lines are not found.");
 
             StringBuilder b = new StringBuilder();
             foreach (string block in base64Blocks)
                 b.Append(block);
+            
             switch (b.Length % 4)
             {
                 case 0:
                     break;
                 case 1:
-                    throw new InvalidOperationException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed.");
                 case 2:
                     b.Append("==");
                     break;

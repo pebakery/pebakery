@@ -3096,11 +3096,19 @@ namespace PEBakery.Ini
 
         #region (Utility) GetKeyValueFromLine
         /// <summary>
-        /// Used to handle [EncodedFile-InterfaceEncoded-*] section
-        /// Return null if failed
+        /// Used to handle [EncodedFile-InterfaceEncoded-*] section.
         /// </summary>
+        /// <remarks>
+        /// Line comments will be ignored.
+        /// </remarks>
+        /// <returns>
+        /// Returns null if failed.
+        /// </returns>
         public static (string? Key, string? Value) GetKeyValueFromLine(string rawLine)
         {
+            if (IsLineComment(rawLine))
+                return (null, null);
+
             int idx = rawLine.IndexOf('=');
             if (idx == -1) // Unable to find key and value
                 return (null, null);
@@ -3113,18 +3121,25 @@ namespace PEBakery.Ini
         /// <summary>
         /// Used to handle [EncodedFile-InterfaceEncoded-*] section.
         /// </summary>
+        /// <remarks>
+        /// Line comments will be ignored.
+        /// </remarks>
         /// <returns>
-        /// Null is returned if failed.
+        /// Returns null if failed.
         /// </returns>
-        public static (List<string>? Keys, List<string>? Values) GetKeyValueFromLines(IReadOnlyList<string> rawLines)
+        public static (List<string> Keys, List<string> Values) GetKeyValueFromLines(IEnumerable<string> rawLines)
         {
             List<string> keys = new List<string>();
             List<string> values = new List<string>();
             foreach (string rawLine in rawLines)
             {
+                if (IsLineComment(rawLine))
+                    continue;
+
                 (string? key, string? value) = GetKeyValueFromLine(rawLine);
                 if (key == null || value == null)
-                    return (null, null);
+                    continue;
+
                 keys.Add(key);
                 values.Add(value);
             }

@@ -39,11 +39,11 @@ namespace PEBakery.Core.Commands
     {
         /*
          * WB082 Behavior
-         * ExtractFile : DestDir must be Directory, create if not exists.
+         * ExtractFile : DestDir must be a directory, create if not exists.
          * Ex) (...),README.txt,%BaseDir%\Temp\Hello
          *   -> No Hello : Create directory "Hello" and extract files into new directory.
          *   -> Hello is a file : Failure
-         *   -> Hello is a directory : Extract files into directory.
+         *   -> Hello is a directory : Extract files into a directory.
          * 
          * ExtractAllFiles
          * Ex) (...),Fonts,%BaseDir%\Temp\Hello
@@ -52,11 +52,11 @@ namespace PEBakery.Core.Commands
          *   -> Hello is a directory : Extract files into directory.
          * 
          * PEBakery Behavior
-         * ExtractFile/ExtractAllFiles : DestDir must be Directory, create if not exists.
+         * ExtractFile/ExtractAllFiles : DestDir must be a directory, create if not exists.
          * Ex) (...),README.txt,%BaseDir%\Temp\Hello
          *   -> No Hello : Create directory "Hello" and extract files into new directory.
          *   -> Hello is a file : Failure
-         *   -> Hello is a directory : Extract files into directory.
+         *   -> Hello is a directory : Extract files into a directory.
          */
 
         public static List<LogInfo> ExtractFile(EngineState s, CodeCommand cmd)
