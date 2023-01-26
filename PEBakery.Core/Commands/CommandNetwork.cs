@@ -137,13 +137,13 @@ namespace PEBakery.Core.Commands
                     else
                     {
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
-                        logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
+                        logs.Add(new LogInfo(state, $"An error occurred while downloading [{url}]"));
                         if (report.ErrorMsg != null)
                             logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response was received from the server."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Server response returned HTTP status code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"The server responded with HTTP status code [{statusCode}]"));
                     }
 
                     // PEBakery extension -> Report exit code via #r
@@ -153,7 +153,7 @@ namespace PEBakery.Core.Commands
                         if (statusCode < 100)
                             logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
                         else
-                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [#r]"));
                     }
                 }
                 else
@@ -211,13 +211,13 @@ namespace PEBakery.Core.Commands
                     else
                     { // Failure -> Log error message
                         LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
-                        logs.Add(new LogInfo(state, $"An error occured while downloading [{url}]"));
+                        logs.Add(new LogInfo(state, $"An error occurred while downloading [{url}]"));
                         if (report.ErrorMsg != null)
                             logs.Add(new LogInfo(LogState.Info, report.ErrorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response was received from the server."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Server response returned HTTP Status Code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"The server responded with HTTP Status Code [{statusCode}]"));
                     }
 
                     // PEBakery extension -> Report exit code via #r
@@ -227,7 +227,7 @@ namespace PEBakery.Core.Commands
                         if (statusCode < 100)
                             logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
                         else
-                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [#r]"));
                     }
                 }
             }

@@ -214,10 +214,10 @@ namespace PEBakery.Core
 
         private void RecursiveFindCodeSection(IReadOnlyList<CodeCommand> codes, List<LogInfo> logs)
         {
-            string? targetCodeSection = null;
-            string? targetInterfaceSection = null;
             foreach (CodeCommand cmd in codes)
             {
+                string? targetCodeSection = null;
+                string? targetInterfaceSection = null;
                 switch (cmd.Type)
                 {
                     #region Check CodeSections
@@ -386,7 +386,7 @@ namespace PEBakery.Core
                     if (_sc.Sections.ContainsKey(targetInterfaceSection))
                         logs.AddRange(CheckInterfaceSection(_sc.Sections[targetInterfaceSection], cmd.RawCode, cmd.LineIdx));
                     else
-                        logs.Add(new LogInfo(LogState.Error, $"Section [{targetInterfaceSection}] does not exist", cmd));
+                        logs.Add(new LogInfo(LogState.Error, $"Interface section [{targetInterfaceSection}] does not exist", cmd));
                 }
             }
         }
@@ -517,7 +517,7 @@ namespace PEBakery.Core
                                 if (url.IndexOf("://", StringComparison.Ordinal) != -1)
                                     logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                 else
-                                    logs.Add(new LogInfo(LogState.Warning, "URL does not have scheme. Did you omit \"http(s)://\"?", uiCtrl));
+                                    logs.Add(new LogInfo(LogState.Warning, "URL does not have a scheme. Did you omit \"http(s)://\"?", uiCtrl));
                             }
                         }
                         break;
