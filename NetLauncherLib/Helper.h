@@ -28,6 +28,9 @@
 // C++ Runtime Headers
 #include <string>
 
+// Local Headers
+#include "NetVersion.h"
+
 class Helper
 {
 private:
@@ -37,4 +40,9 @@ public:
 	static const wchar_t* tokenize(const wchar_t* wstr, const wchar_t token, std::wstring& out);
 	static const char* tokenize(const char* str, const std::string& token, std::string& out);
 	static const wchar_t* tokenize(const wchar_t* wstr, const std::wstring& token, std::wstring& out);
+
+	static bool isWindows11orLater();
+
+	static std::string to_str(const std::wstring& wstr);
+	static std::wstring to_wstr(const std::string& str);
 };

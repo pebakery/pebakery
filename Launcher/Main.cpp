@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) 2016-2022 Hajin Jang
+	Copyright (C) 2016-2023 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -104,7 +104,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		// Check and run native PE exe file.
 		if (parser.isNet())
-			NetLaunch::printError(L"PEBakery.exe is corrupted.", true);
+			NetLaunch::printError(L"PEBakery.exe is not a .NET PE Executable.", true);
 
 		// Check if PEBakery.exe matches the current processor architecture.
 		// If not, launch PEBakery.dll.

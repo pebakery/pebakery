@@ -133,6 +133,14 @@ bool NetVersion::isCompatible(const NetVersion& rhs) const
 		return true;
 }
 
+void NetVersion::clear()
+{
+	_major = 0;
+	_minor = 0;
+	_patch = 0;
+	_preview = 0;
+}
+
 bool NetVersion::parse(const std::string& str, NetVersion& ver)
 {
 	// Ex) 3.1.5
@@ -172,7 +180,7 @@ bool NetVersion::parse(const std::string& str, NetVersion& ver)
 		major = StrToIntA(slice.c_str());
 		before = after;
 
-		// Read patch (if exists)
+		// Read minor, and patch (if exists)
 		// before=0
 		after = Helper::tokenize(before, '.', slice);
 		if (after == nullptr)
@@ -207,6 +215,8 @@ bool NetVersion::parse(const std::string& str, NetVersion& ver)
 
 bool NetVersion::parse(const std::wstring& wstr, NetVersion& ver)
 {
+	// Ex) 3.1.5
+	// Ex) 6.0.0-preview.3.21201.3
 	std::wstring slice;
 	uint16_t major = 0;
 	uint16_t minor = 0;
@@ -235,27 +245,24 @@ bool NetVersion::parse(const std::wstring& wstr, NetVersion& ver)
 		const wchar_t* after = before;
 
 		// Read major
+		// before=6.0.0
 		after = Helper::tokenize(before, '.', slice);
 		if (after == nullptr)
 			return false;
-		uint16_t major = StrToIntW(slice.c_str());
+		major = StrToIntW(slice.c_str());
 		before = after;
 
-		// Read minor
-		after = Helper::tokenize(before, '.', slice);
-		if (after == nullptr)
-			return false;
-		uint16_t minor = StrToIntW(slice.c_str());
-		before = after;
-
-		// Read patch (if exists)
+		// Read minor, and patch (if exists)
+		// before=0
 		after = Helper::tokenize(before, '.', slice);
 		if (after == nullptr)
 		{ // Ex) 3.1
+			minor = StrToIntW(slice.c_str());
 		}
 		else
 		{ // Ex) 3.1.5
-			patch = StrToIntW(slice.c_str());
+			minor = StrToIntW(slice.c_str());
+			patch = StrToIntW(after);
 		}
 	}
 

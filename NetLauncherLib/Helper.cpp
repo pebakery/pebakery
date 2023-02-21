@@ -93,3 +93,59 @@ const wchar_t* Helper::tokenize(const wchar_t* wstr, const std::wstring& token, 
 	out = std::wstring(before, after - before);
 	return after + token.size();
 }
+
+bool Helper::isWindows11orLater()
+{
+	// Check if the host system is Windows 11 or later (10.0.22000+)
+	OSVERSIONINFOEXW osvi;
+	memset(&osvi, 0, sizeof(OSVERSIONINFOEXW));
+	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
+	osvi.dwMajorVersion = 10;
+	osvi.dwMinorVersion = 0;
+	osvi.dwBuildNumber = 22000;
+
+	// Initialize the condition mask.
+	DWORDLONG dwlConditionMask = 0;
+	int op = VER_GREATER_EQUAL;
+	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
+	VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
+	VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, op);
+
+	return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask);
+}
+
+std::string Helper::to_str(const std::wstring& wstr)
+{
+	int cchRequired = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	if (cchRequired == 0)
+		return "";
+
+	auto strDeleter = [](char* ptr) { delete[] ptr; };
+	std::unique_ptr<char[], decltype(strDeleter)> strBufPtr(new char[cchRequired], strDeleter);
+	char* strBuf = strBufPtr.get();
+	strBuf[0] = '\0';
+
+	int cchWritten = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, strBuf, cchRequired, nullptr, nullptr);
+	if (cchWritten == 0)
+		return "";
+
+	return strBuf;
+}
+
+std::wstring Helper::to_wstr(const std::string& str)
+{
+	int cchRequired = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
+	if (cchRequired == 0)
+		return L"";
+
+	auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
+	std::unique_ptr<wchar_t[], decltype(wstrDeleter)> wstrBufPtr(new wchar_t[cchRequired], wstrDeleter);
+	wchar_t* wstrBuf = wstrBufPtr.get();
+	wstrBuf[0] = L'\0';
+	
+	int cchWritten = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, wstrBuf, cchRequired);
+	if (cchWritten == 0)
+		return L"";
+
+	return wstrBuf;
+}

@@ -25,6 +25,13 @@
 
 #pragma once
 
+// Windows SDK Headers
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+// C++ Runtime Headers
+#include <vector>
+
 enum class ArchVal
 {
 	UNKNOWN = 0,
@@ -46,4 +53,6 @@ public:
 	static ArchVal getProcArch();
 	static ArchVal toArchVal(WORD wIamgeFileMachine);
 	static const wchar_t* toStr(ArchVal arch);
+	static std::vector<ArchVal> getWowCompatibleArch(ArchVal hostArch);
+	static bool isWoWCompatibleArch(ArchVal hostArch, ArchVal procArch);
 };
