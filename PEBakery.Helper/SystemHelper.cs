@@ -27,6 +27,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using System.Text;
 using System.Windows;
 
@@ -87,12 +88,14 @@ namespace PEBakery.Helper
                 throw new PlatformNotSupportedException();
             }
         }
+        #endregion
 
+        #region Memory-related Functions
         /// <summary>
         /// Query how much system memory is available 
         /// </summary>
-        /// <param name="maxReqMem">Max limit of requested memory which program is going to use</param>
-        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use</param>
+        /// <param name="maxReqMem">Max limit of requested memory which program is going to use. Use <see cref="ulong.MaxValue"/> to ignore it.</param>
+        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use.</param>
         /// <returns></returns>
         public static ulong AvailableSystemMemory(ulong maxReqMem, double usableSysMemPercent)
         {
@@ -167,6 +170,16 @@ namespace PEBakery.Helper
 
             // Every try failed, fail-safe to 1 threads
             return 1;
+        }
+
+        public static int GetProcArchBitness()
+        {
+            return RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X86 or Architecture.Arm => 4,
+                Architecture.X64 or Architecture.Arm64 => 8,
+                _ => IntPtr.Size,
+            };
         }
         #endregion
 

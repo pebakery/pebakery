@@ -1440,12 +1440,22 @@ namespace PEBakery.Core
                                 // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
                                 // When using default compress level, using 8 threads will results in about 1.3GB of memory.
                                 // PEBakery will use 12 threads at maximum when the system has enough memory. 
-                                // Let's set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
-                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, 2 * NumberHelper.GigaByte, 0.9);
+
+                                // 32bit: Set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
+                                ulong maxRequestMem = 2 * NumberHelper.GigaByte;
+                                double useMemPercent = 0.8;
+                                switch (SystemHelper.GetProcArchBitness())
+                                {
+                                    case 8:
+                                        maxRequestMem = ulong.MaxValue;
+                                        useMemPercent = 0.4; // xz use 0.25 as default value.
+                                        break;
+                                }
+                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, useMemPercent);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
-                                    ulong memUsage = QueryXZCompressMemUsage(threads);
+                                    ulong memUsage = QueryLzma2CompressMemUsage(threads);
                                     string msg = NumberHelper.ByteSizeToSIUnit((long)memUsage, 2);
                                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Tried thread count : {threads}, {msg}"));
                                 }
@@ -2184,12 +2194,12 @@ namespace PEBakery.Core
 
         public static ulong QueryLzma2CompressMemUsage(int threads)
         {
-            return XZInit.EncoderMultiMemUsage(LzmaCompLevel.Default, false, threads);
+            return QueryLzma2CompressMemUsage(LzmaCompLevel.Default, threads);
         }
 
         public static ulong QueryLzma2CompressMemUsage(LzmaCompLevel level, int threads)
         {
-            return XZInit.EncoderMultiMemUsage(level, false, threads);
+            return XZMemory.ThreadedEncoderMemUsage(level, false, threads);
         }
         #endregion
 
