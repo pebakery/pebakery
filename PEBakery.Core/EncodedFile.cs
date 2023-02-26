@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -1438,26 +1438,15 @@ namespace PEBakery.Core
                             try
                             {
                                 // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
-                                // When using default compress level, using 8 threads will results in about 1.3GB of memory.
-                                // PEBakery will use 12 threads at maximum when the system has enough memory. 
-
-                                // 32bit: Set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
-                                ulong maxRequestMem = 2 * NumberHelper.GigaByte;
-                                double useMemPercent = 0.8;
-                                switch (SystemHelper.GetProcArchBitness())
-                                {
-                                    case 8:
-                                        maxRequestMem = ulong.MaxValue;
-                                        useMemPercent = 0.4; // xz use 0.25 as default value.
-                                        break;
-                                }
-                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, useMemPercent);
+                                // When using default compress level, using 8 threads will results in about 1.3GB of memory on XZ compression.
+                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, usableSysMemPercent);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
                                     ulong memUsage = QueryLzma2CompressMemUsage(threads);
                                     string msg = NumberHelper.ByteSizeToSIUnit((long)memUsage, 2);
-                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Tried thread count : {threads}, {msg}"));
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Trying compress thread count : {threads}, {msg}"));
                                 }
 #endif
 
@@ -1811,12 +1800,29 @@ namespace PEBakery.Core
                                 compStream.Flush();
                                 compStream.Position = 0;
 
+                                // Max amount of free memory program is allowed to use
+                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                ulong availFreeMem = SystemHelper.AvailableSystemMemory(maxRequestMem, usableSysMemPercent);
+
+#if DEBUG_XZ_MEM_USAGE
+                                {
+                                    string msg = NumberHelper.ByteSizeToSIUnit((long)availFreeMem, 2);
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Trying decompress mem limit: {msg}"));
+                                }
+#endif
+
                                 int offset = 0;
-                                XZDecompressOptions decompOpts = new XZDecompressOptions()
+                                XZDecompressOptions xzDecompOpts = new XZDecompressOptions()
                                 {
                                     LeaveOpen = true,
                                 };
-                                using (XZStream xzs = new XZStream(compStream, decompOpts))
+                                XZThreadedDecompressOptions xzThreadOpts = new XZThreadedDecompressOptions()
+                                {
+                                    Threads = Environment.ProcessorCount,
+                                    MemlimitThreading = availFreeMem,
+                                };
+
+                                using (XZStream xzs = new XZStream(compStream, xzDecompOpts, xzThreadOpts))
                                 {
                                     while ((bytesRead = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -2194,12 +2200,31 @@ namespace PEBakery.Core
 
         public static ulong QueryLzma2CompressMemUsage(int threads)
         {
-            return QueryLzma2CompressMemUsage(LzmaCompLevel.Default, threads);
+            return XZMemory.ThreadedEncoderMemUsage(LzmaCompLevel.Default, false, threads);
         }
 
         public static ulong QueryLzma2CompressMemUsage(LzmaCompLevel level, int threads)
         {
             return XZMemory.ThreadedEncoderMemUsage(level, false, threads);
+        }
+
+        public static ulong QueryLzma2DecompressMemUsage(int threads)
+        {
+            return XZMemory.DecoderMemUsage(LzmaCompLevel.Default, false);
+        }
+
+        public static (ulong MaxRequestMem, double UsableSysMemPercent) CalcMemLimitParams()
+        {
+            // 32bit: Set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
+            ulong maxRequestMem = 2 * NumberHelper.GigaByte;
+            double usableSysMemPercent = 0.9;
+            if (4 < SystemHelper.GetProcArchBitness())
+            {
+                maxRequestMem = ulong.MaxValue;
+                usableSysMemPercent = 0.8;
+                // NOTE: xz CLI use 0.25 * SystemTotalMemory as default value.
+            }
+            return (maxRequestMem, usableSysMemPercent);
         }
         #endregion
 
