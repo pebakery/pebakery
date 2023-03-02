@@ -2631,7 +2631,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             foreach (string block in base64Blocks)
                 b.Append(block);
-            
+
             switch (b.Length % 4)
             {
                 case 0:

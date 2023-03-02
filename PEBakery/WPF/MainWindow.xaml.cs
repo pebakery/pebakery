@@ -1030,7 +1030,7 @@ namespace PEBakery.WPF
             WriteLayoutToSetting();
         }
 
-            private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (sender is not ListBox listBox)
                 return;
@@ -1090,7 +1090,7 @@ namespace PEBakery.WPF
                 double taskbarHeight = System.Windows.SystemParameters.VirtualScreenHeight - System.Windows.SystemParameters.WorkArea.Height;
                 Global.MainViewModel.WindowTop = (int)(System.Windows.SystemParameters.VirtualScreenHeight - taskbarHeight) - Global.MainViewModel.WindowHeight;
             }
-                        
+
             if (Global.MainViewModel.WindowLeft + Global.MainViewModel.WindowWidth / 2 > System.Windows.SystemParameters.VirtualScreenWidth)
             {
                 double taskbarWidth = System.Windows.SystemParameters.VirtualScreenWidth - System.Windows.SystemParameters.WorkArea.Width;

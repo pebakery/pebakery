@@ -248,7 +248,7 @@ namespace PEBakery.WPF
             LogModel.Variable log = _m.VariableLogs[_m.VariableLogSelectedIndex];
 
             SetClipboardText($"[{log.Type}] %{log.Key}%={log.Value}");
-         }
+        }
         #endregion
 
         #region SetClipboardText

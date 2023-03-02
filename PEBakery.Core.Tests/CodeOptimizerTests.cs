@@ -26,7 +26,6 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Collections.Generic;
 
 namespace PEBakery.Core.Tests
@@ -229,7 +228,6 @@ namespace PEBakery.Core.Tests
             CodeInfo_Else elseInfo = (CodeInfo_Else)cmds[4].Info;
             IsOptimizedCommand(elseInfo.Link[0], CodeType.IniReadOp, 3);
             IsSingleCommand(elseInfo.Link[1], CodeType.IniRead);
-
         }
 
         #region Utility

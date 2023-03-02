@@ -29,7 +29,6 @@ using Microsoft.Win32;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -5251,7 +5250,7 @@ namespace PEBakery.Core
         }
 
         public override HashSet<string> InVars() => CreateInVars(FilePath);
-        
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder(8);

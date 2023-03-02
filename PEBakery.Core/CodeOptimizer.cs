@@ -142,7 +142,7 @@ namespace PEBakery.Core
                 {
                     if (lastIdx == i)
                         continue;
-                        
+
                     CodeCommand cmd = block[i];
 
                     HashSet<string> inVars = cmd.Info.InVars();
