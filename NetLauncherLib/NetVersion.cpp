@@ -297,44 +297,72 @@ bool NetVersion::operator!=(const NetVersion& rhs) const
 
 bool NetVersion::operator<(const NetVersion& rhs) const
 {
-	if (!(_major < rhs.getMajor()))
+	if (_major < rhs.getMajor())
+		return true;
+	else if (rhs.getMajor() < _major)
 		return false;
-	if (!(_minor < rhs.getMinor()))
+
+	if (_minor < rhs.getMinor())
+		return true;
+	else if (rhs.getMinor() < _minor)
 		return false;
-	if (!(_patch < rhs.getPatch()))
+
+	if (_patch < rhs.getPatch())
+		return true;
+	else
 		return false;
-	return true;
 }
 
 bool NetVersion::operator<=(const NetVersion& rhs) const
 {
-	if (!(_major <= rhs.getMajor()))
+	if (_major < rhs.getMajor())
+		return true;
+	else if (rhs.getMajor() < _major)
 		return false;
-	if (!(_minor <= rhs.getMinor()))
+
+	if (_minor < rhs.getMinor())
+		return true;
+	else if (rhs.getMinor() < _minor)
 		return false;
-	if (!(_patch <= rhs.getPatch()))
+
+	if (_patch <= rhs.getPatch())
+		return true;
+	else
 		return false;
-	return true;
 }
 
 bool NetVersion::operator>(const NetVersion& rhs) const
 {
-	if (!(_major > rhs.getMajor()))
+	if (_major > rhs.getMajor())
+		return true;
+	else if (rhs.getMajor() > _major)
 		return false;
-	if (!(_minor > rhs.getMinor()))
+
+	if (_minor > rhs.getMinor())
+		return true;
+	else if (rhs.getMinor() > _minor)
 		return false;
-	if (!(_patch > rhs.getPatch()))
+
+	if (_patch > rhs.getPatch())
+		return true;
+	else
 		return false;
-	return true;
 }
 
 bool NetVersion::operator>=(const NetVersion& rhs) const
 {
-	if (!(_major >= rhs.getMajor()))
+	if (_major > rhs.getMajor())
+		return true;
+	else if (rhs.getMajor() > _major)
 		return false;
-	if (!(_minor >= rhs.getMinor()))
+
+	if (_minor > rhs.getMinor())
+		return true;
+	else if (rhs.getMinor() > _minor)
 		return false;
-	if (!(_patch >= rhs.getPatch()))
+
+	if (_patch >= rhs.getPatch())
+		return true;
+	else
 		return false;
-	return true;
 }

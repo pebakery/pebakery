@@ -75,19 +75,20 @@ class NetCoreDetector : public NetDetector
 {
 private:
 	bool _checkDesktopRuntime;
+protected:
+	virtual const std::wstring getInstallerUrl();
+public:
 	inline static const std::wstring NET_CORE_ID = L"Microsoft.NETCore.App";
 	inline static const std::wstring WINDOWS_DESKTOP_RUNTIME_ID = L"Microsoft.WindowsDesktop.App";
 
-	static bool regListRuntimes(std::wstring& outInstallLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
-	static bool cliListRuntimes(std::wstring installLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
-	static void readFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
-protected:
-	virtual const std::wstring getInstallerUrl();
-public:	
 	NetCoreDetector(NetVersion& targetVer, bool checkDesktopRuntime);
 	virtual ~NetCoreDetector();
 	virtual bool isInstalled();
 	virtual void downloadRuntime(bool exitAfter = true);
-	static bool parseRuntimeInfoLine(const std::string& line, std::string& key, NetVersion& ver);
 	std::wstring getNetCoreString();
+
+	static bool regListRuntimes(std::wstring& outInstallLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
+	static bool cliListRuntimes(std::wstring installLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
+	static bool parseRuntimeInfoLine(const std::string& line, std::string& key, NetVersion& ver);
+	static void readFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
 };

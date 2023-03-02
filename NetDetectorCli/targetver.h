@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) 2016-2022 Hajin Jang
+	Copyright (C) 2016-2023 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -25,40 +25,12 @@
 
 #pragma once
 
-// Build & Publish mode
-#define BUILD_NETFX						1
-#define BUILD_NETCORE_RT_DEPENDENT		2
-#define BUILD_NETCORE_SELF_CONTAINED	3
-
-// Development only
-#ifndef BUILD_MODE
-	#define BUILD_MODE		BUILD_NETCORE_RT_DEPENDENT
+#ifndef WINVER
+	#define WINVER 0x0601
+#endif
+#ifndef _WIN32_WINNT
+	#define _WIN32_WINNT 0x0601
 #endif
 
-// Default .NET Core Target version
-#ifndef NETCORE_TARGET_VER_MAJOR
-	#define NETCORE_TARGET_VER_MAJOR	6
-#endif
-#ifndef NETCORE_TARGET_VER_MINOR
-	#define NETCORE_TARGET_VER_MINOR	0
-#endif
-#ifndef NETCORE_TARGET_VER_PATCH
-	#define NETCORE_TARGET_VER_PATCH	14
-#endif
 
-// Default .NET Framework Target version
-#ifndef NETFX_TARGET_VER_MAJOR
-	#define NETFX_TARGET_VER_MAJOR	4
-#endif
-#ifndef NETFX_TARGET_VER_MINOR
-	#define NETFX_TARGET_VER_MINOR	8
-#endif
-#ifndef NETFX_TARGET_VER_PATCH
-	#define NETFX_TARGET_VER_PATCH	0
-#endif
-
-// Force given build mode when publishing
-#ifdef PUBLISH_MODE
-#undef BUILD_MODE
-#define BUILD_MODE PUBLISH_MODE
-#endif
+#include <SDKDDKVer.h>
