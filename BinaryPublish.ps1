@@ -116,10 +116,10 @@ if ($noclean -eq $false) {
     Write-Output ""
     Write-Host "[*] Cleaning the projects" -ForegroundColor Yellow
     # Clean C++ projects
-    $VCXProjects = (Get-ChildItem -Recurse -Path . -Include *.vcxproj | where {$_.PSIsContainer -eq $false}).fullname 
+    $VCXProjects = (Get-ChildItem -Recurse -Path . -Include *.vcxproj | Where-Object {$_.PSIsContainer -eq $false}).fullname 
     $VCXProjects | ForEach-Object { & "${MSBuild}" "${PSItem}" /t:Clean -verbosity:quiet}
     # Clean C# projects
-    $CSProjects = (Get-ChildItem -Recurse -Path . -Include *.csproj | where {$_.PSIsContainer -eq $false}).fullname
+    $CSProjects = (Get-ChildItem -Recurse -Path . -Include *.csproj | Where-Object {$_.PSIsContainer -eq $false}).fullname
     $CSProjects | ForEach-Object { dotnet clean -c Release "${PSItem}" -verbosity:minimal }
 
     Write-Output ""
