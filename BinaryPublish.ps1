@@ -248,7 +248,7 @@ foreach ($runMode in $runModes)
     Remove-Item "${DestBinDir}\*.db" -ErrorAction SilentlyContinue
     Remove-Item "${DestBinDir}\Database" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
-    Remove-Item "${DestBinDir}\magic.mgc"  -ErrorAction SilentlyContinue
+    Remove-Item "${DestBinDir}\magic.mgc" -ErrorAction SilentlyContinue
 
     # -------------------------------------------------------------------------
     # Copy LICENSE files
