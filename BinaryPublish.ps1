@@ -132,6 +132,9 @@ if ($noclean -eq $false) {
 # -----------------------------------------------------------------------------
 # Query installed .NET version
 # -----------------------------------------------------------------------------
+# .NET runtime-dependent binary is not forward compatible with older version of .NET runtime.
+# Ex) A binary published with .NET 6.0.4 may not run on .NET 6.0.3 or earlier.
+# So query the installed .NET runtime version of the build system, and bake it into the Launcher.
 $NetVerMajor = 6
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow

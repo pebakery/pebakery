@@ -170,5 +170,129 @@ namespace NetLauncherLibTests
 				Assert::IsTrue(info.getExpectVer().isEqual(ver), woss.str().c_str());
 			}
 		}
+
+		TEST_METHOD(CompareTest_Lower)
+		{
+			auto testTemplate = [](const NetVersion& x, const NetVersion& y, bool expect)
+			{
+				return expect == (x < y);
+			};
+
+			testTemplate(NetVersion(6, 0, 12), NetVersion(3, 1, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(5, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 12), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 14), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0, 2), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 3), true);
+
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 2), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 3), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 5), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 3), true);
+		}
+
+		TEST_METHOD(CompareTest_LowerOrEqual)
+		{
+			auto testTemplate = [](const NetVersion& x, const NetVersion& y, bool expect)
+			{
+				return expect == (x <= y);
+			};
+
+			testTemplate(NetVersion(6, 0, 12), NetVersion(3, 1, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(5, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 12), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 14), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0, 2), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 3), true);
+
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 2), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 3), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 5), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 3), true);
+		}
+
+		TEST_METHOD(CompareTest_Equal)
+		{
+			auto testTemplate = [](const NetVersion& x, const NetVersion& y, bool expect)
+			{
+				return expect == (x < y);
+			};
+
+			testTemplate(NetVersion(6, 0, 12), NetVersion(3, 1, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(5, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 12), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 14), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0, 2), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 3), false);
+
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 2), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 3), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 5), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 3), false);
+		}
+
+		TEST_METHOD(CompareTest_GreaterOrEqual)
+		{
+			auto testTemplate = [](const NetVersion& x, const NetVersion& y, bool expect)
+			{
+				return expect == (x >= y);
+			};
+
+			testTemplate(NetVersion(6, 0, 12), NetVersion(3, 1, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(5, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 12), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 14), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0, 2), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 3), false);
+
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 2), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 3), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 5), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 3), false);
+		}
+
+		TEST_METHOD(CompareTest_Greater)
+		{
+			auto testTemplate = [](const NetVersion& x, const NetVersion& y, bool expect)
+			{
+				return expect == (x > y);
+			};
+
+			testTemplate(NetVersion(6, 0, 12), NetVersion(3, 1, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(5, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 12), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(6, 0, 14), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0, 2), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 12), NetVersion(7, 0, 3), false);
+
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 2), true);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0, 3), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(6, 0, 5), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 0), false);
+			testTemplate(NetVersion(6, 0, 0, 2), NetVersion(7, 0, 3), false);
+		}
 	};
 }
