@@ -525,26 +525,9 @@ namespace PEBakery.WPF
             if (value is not LogState state)
                 return Binding.DoNothing;
 
-            switch (state)
-            {
-                case LogState.Success:
-                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
-                case LogState.Warning:
-                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
-                case LogState.Overwrite:
-                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
-                case LogState.CriticalError:
-                case LogState.Error:
-                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
-                case LogState.Info:
-                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
-                case LogState.Ignore:
-                    return new SolidColorBrush(Color.FromRgb(226, 227, 229));
-                case LogState.Muted:
-                    return new SolidColorBrush(Color.FromRgb(214, 216, 217));
-                default:
-                    return Binding.DoNothing;
-            }
+            if (LogInfo.QueryStatBackgroundColor(state) is Color color)
+                return new SolidColorBrush(color);
+            return Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -564,14 +547,8 @@ namespace PEBakery.WPF
             if (values[1] is not int alterIdx)
                 return Binding.DoNothing;
 
-            switch (state)
-            {
-                case LogState.CriticalError:
-                case LogState.Error:
-                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
-                case LogState.Warning:
-                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
-            }
+            if (LogInfo.QueryRowBackgroundColor(state) is Color color)
+                return new SolidColorBrush(color);
 
             if (alterIdx % 2 == 0)
                 return new SolidColorBrush(Color.FromRgb(255, 255, 255));

@@ -33,6 +33,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -603,7 +604,7 @@ namespace PEBakery.WPF
                 { // Total Summary
                     // BuildLog
                     _allBuildLogs = new List<LogModel.BuildLog>();
-                    foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning })
+                    foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning, LogState.CriticalError })
                     {
                         var bLogs = LogDb.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == state);
                         _allBuildLogs.AddRange(bLogs);
@@ -629,14 +630,25 @@ namespace PEBakery.WPF
 
                     // Statistics
                     List<Tuple<LogState, int>> fullStat = new List<Tuple<LogState, int>>();
-                    var existStates = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
+                    var existStates = Enum.GetValues<LogState>().Where(x => x != LogState.None);
                     foreach (LogState state in existStates)
                     {
                         int count = LogDb
                             .Table<LogModel.BuildLog>()
                             .Count(x => x.BuildId == buildId && x.State == state);
 
-                        fullStat.Add(new Tuple<LogState, int>(state, count));
+                        bool include = true;
+                        switch (state)
+                        {
+                            // CriticalError and Debug must not be displayed to users, unless it explicitly exists.
+                            case LogState.CriticalError:
+                            case LogState.Debug:
+                                include = 0 < count;
+                                break;
+                        }
+
+                        if (include)
+                            fullStat.Add(new Tuple<LogState, int>(state, count));
                     }
                     LogStats = new ObservableCollection<Tuple<LogState, int>>(fullStat);
                 }
@@ -665,14 +677,25 @@ namespace PEBakery.WPF
 
                     // Statistics
                     List<Tuple<LogState, int>> fullStat = new List<Tuple<LogState, int>>();
-                    var existStates = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
+                    var existStates = Enum.GetValues<LogState>().Where(x => x != LogState.None);
                     foreach (LogState state in existStates)
                     {
                         int count = LogDb
                             .Table<LogModel.BuildLog>()
                             .Count(x => x.BuildId == buildId && x.ScriptId == scriptId && x.State == state);
 
-                        fullStat.Add(new Tuple<LogState, int>(state, count));
+                        bool include = true;
+                        switch (state)
+                        {
+                            // CriticalError and Debug must not be displayed to users, unless it explicitly exists.
+                            case LogState.CriticalError:
+                            case LogState.Debug:
+                                include = 0 < count;
+                                break;
+                        }
+
+                        if (include)
+                            fullStat.Add(new Tuple<LogState, int>(state, count));
                     }
                     LogStats = new ObservableCollection<Tuple<LogState, int>>(fullStat);
                 }

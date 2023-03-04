@@ -230,7 +230,7 @@
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn Header="State"
-                                                        Width="70"
+                                                        Width="80"
                                                         DisplayMemberBinding="{Binding Item1}" />
                                         <GridViewColumn Header="Count"
                                                         Width="160"
