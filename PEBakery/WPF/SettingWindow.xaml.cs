@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -701,11 +701,18 @@ namespace PEBakery.WPF
             set => SetProperty(ref _themeCustomTopPanelForeground, value);
         }
 
-        private Color _themeCustomTopPanelReportIssue;
-        public Color ThemeCustomTopPanelReportIssue
+        private Color _themeCustomTopPanelReportIssueButton;
+        public Color ThemeCustomTopPanelReportIssueButton
         {
-            get => _themeCustomTopPanelReportIssue;
-            set => SetProperty(ref _themeCustomTopPanelReportIssue, value);
+            get => _themeCustomTopPanelReportIssueButton;
+            set => SetProperty(ref _themeCustomTopPanelReportIssueButton, value);
+        }
+
+        private Color _themeCustomTopPanelReportIssuePoint;
+        public Color ThemeCustomTopPanelReportIssuePoint
+        {
+            get => _themeCustomTopPanelReportIssuePoint;
+            set => SetProperty(ref _themeCustomTopPanelReportIssuePoint, value);
         }
 
         private Color _themeCustomTreePanelBackground;
@@ -1125,15 +1132,11 @@ namespace PEBakery.WPF
                 }
 
                 // Project
-                ProjectSourceSetup? srcSetup = SelectedProjectSourceSetup;
-                if (srcSetup == null)
-                    throw new InvalidOperationException("Invalid SelectedProjectIndex");
+                ProjectSourceSetup? srcSetup = SelectedProjectSourceSetup ?? throw new InvalidOperationException("Invalid SelectedProjectIndex");
                 LoadProjectSourceSetupFrom(srcSetup);
 
                 // Compat Options
-                CompatOption? compat = SelectedCompatOption;
-                if (compat == null)
-                    throw new InvalidOperationException("Invalid SelectedProjectIndex");
+                CompatOption? compat = SelectedCompatOption ?? throw new InvalidOperationException("Invalid SelectedProjectIndex");
                 LoadCompatOptionFrom(compat);
 
                 _firstLoad = false;
@@ -1418,7 +1421,8 @@ namespace PEBakery.WPF
             ThemeType = Setting.Theme.ThemeType;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
-            ThemeCustomTopPanelReportIssue = Setting.Theme.CustomTopPanelReportIssue;
+            ThemeCustomTopPanelReportIssueButton = Setting.Theme.CustomTopPanelReportIssueButton;
+            ThemeCustomTopPanelReportIssuePoint = Setting.Theme.CustomTopPanelReportIssuePoint;
             ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
             ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
             ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
@@ -1483,7 +1487,8 @@ namespace PEBakery.WPF
             Setting.Theme.ThemeType = ThemeType;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
-            Setting.Theme.CustomTopPanelReportIssue = ThemeCustomTopPanelReportIssue;
+            Setting.Theme.CustomTopPanelReportIssueButton = ThemeCustomTopPanelReportIssueButton;
+            Setting.Theme.CustomTopPanelReportIssuePoint = ThemeCustomTopPanelReportIssuePoint;
             Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
             Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
             Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;

@@ -247,11 +247,17 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="BuildEndedWithIssue"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColor"/>
+                                <Binding Path="TopPanelReportIssueColorButton"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>
                 </cc:IconButton>
+                <Ellipse Grid.Row="1" Grid.Column="5"
+                         Width="10" Height="10"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="0, 2.2, 4, 0"
+                         Fill="{Binding TopPanelReportIssueColorPoint, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}"
+                         Visibility="{Binding SystemLogHasIssue, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"/>
                 <TextBlock Grid.Row="2" Grid.Column="5"
                            Text="Logs"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -366,7 +372,7 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="WaitingSubProcFinish"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColor"/>
+                                <Binding Path="TopPanelReportIssueColorButton"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>

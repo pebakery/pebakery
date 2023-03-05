@@ -110,6 +110,7 @@
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
         <local:ThemeTypeIsCustomConverter x:Key="ThemeTypeIsCustomConverter"/>
+        <local:ThemeTypeToSolidColorConverter x:Key="ThemeTypeToSolidColorConverter"/>
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
     </Window.Resources>
     <Grid ccc:SelectTextOnFocus.Active="True">
@@ -551,6 +552,7 @@
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"
                                    FontWeight="Bold"
+                                   Foreground="{Binding ThemeType, Converter={StaticResource ThemeTypeToSolidColorConverter}, FallbackValue=Black}"
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
                                 x:Name="DarkThemeButton"
@@ -575,7 +577,7 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="4" 
-                                Background="#FFA4373A"
+                                Background="#A4373A"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -646,28 +648,29 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="120"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <!-- Background -->
                         <Border Grid.Row="0" Grid.Column="0"
-                                Grid.RowSpan="3" Grid.ColumnSpan="3"
+                                Grid.RowSpan="4" Grid.ColumnSpan="3"
                                 Background="#FFE0E0E0"/>
-                        <Border Grid.Row="3" Grid.Column="0"
+                        <Border Grid.Row="4" Grid.Column="0"
                                 Grid.RowSpan="3" Grid.ColumnSpan="3"
                                 Background="#FFF0F0F0"/>
-                        <Border Grid.Row="6" Grid.Column="0"
+                        <Border Grid.Row="7" Grid.Column="0"
                                 Grid.RowSpan="2" Grid.ColumnSpan="3"
                                 Background="#FFE0E0E0"/>
-                        <Border Grid.Row="8" Grid.Column="0"
+                        <Border Grid.Row="9" Grid.Column="0"
                                 Grid.RowSpan="2" Grid.ColumnSpan="3"
                                 Background="#FFF0F0F0"/>
                         <!-- Element -->
                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Grid.RowSpan="3"
+                                   Grid.RowSpan="4"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
@@ -691,75 +694,83 @@
                         <TextBlock Grid.Row="2" Grid.Column="1"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
-                                   Text="ReportIssue"/>
+                                   Text="ReportIssueButton"/>
                         <cc:ColorEditor Grid.Row="2" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
-                                        Color="{Binding ThemeCustomTopPanelReportIssue, Mode=TwoWay}"
+                                        Color="{Binding ThemeCustomTopPanelReportIssueButton, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="3" Grid.Column="0"
+                        <TextBlock Grid.Row="3" Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Text="ReportIssuePoint"/>
+                        <cc:ColorEditor Grid.Row="3" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
+                                        Color="{Binding ThemeCustomTopPanelReportIssuePoint, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0"
                                    Grid.RowSpan="3"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Tree Panel"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1"
+                        <TextBlock Grid.Row="4" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="3" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="4" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1"
+                        <TextBlock Grid.Row="5" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="4" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="5" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1"
+                        <TextBlock Grid.Row="6" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Highlight"/>
-                        <cc:ColorEditor Grid.Row="5" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="6" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelHighlight, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="6" Grid.Column="0"
+                        <TextBlock Grid.Row="7" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Script Panel"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1"
+                        <TextBlock Grid.Row="7" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="6" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="7" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1"
+                        <TextBlock Grid.Row="8" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="7" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="8" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="8" Grid.Column="0"
+                        <TextBlock Grid.Row="9" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
                                    Text="Status Bar"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1"
+                        <TextBlock Grid.Row="9" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
-                        <cc:ColorEditor Grid.Row="8" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="9" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
-                        <TextBlock Grid.Row="9" Grid.Column="1"
+                        <TextBlock Grid.Row="10" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
-                        <cc:ColorEditor Grid.Row="9" Grid.Column="2"
+                        <cc:ColorEditor Grid.Row="10" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>

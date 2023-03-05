@@ -235,11 +235,18 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private Color _topPanelReportIssueColor = Colors.OrangeRed;
-        public Color TopPanelReportIssueColor
+        private Color _topPanelReportIssueColorButton = Colors.OrangeRed;
+        public Color TopPanelReportIssueColorButton
         {
-            get => _topPanelReportIssueColor;
-            set => SetProperty(ref _topPanelReportIssueColor, value);
+            get => _topPanelReportIssueColorButton;
+            set => SetProperty(ref _topPanelReportIssueColorButton, value);
+        }
+
+        private Color _topPanelReportIssueColorPoint = Colors.OrangeRed;
+        public Color TopPanelReportIssueColorPoint
+        {
+            get => _topPanelReportIssueColorPoint;
+            set => SetProperty(ref _topPanelReportIssueColorPoint, value);
         }
 
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
@@ -339,10 +346,23 @@ namespace PEBakery.Core.ViewModels
         }
 
         private bool _buildEndedWithIssue = false;
+        /// <summary>
+        /// Build log created error, change the color of LogViewer button.
+        /// </summary>
         public bool BuildEndedWithIssue
         {
             get => _buildEndedWithIssue;
             set => SetProperty(ref _buildEndedWithIssue, value);
+        }
+
+        private bool _systemLogHasIssue = true;
+        /// <summary>
+        /// System log has an error, display red dot over the LogViewer button.
+        /// </summary>
+        public bool SystemLogHasIssue
+        {
+            get => _systemLogHasIssue;
+            set => SetProperty(ref _systemLogHasIssue, value);
         }
 
         #region ScriptLogo
@@ -1796,6 +1816,37 @@ namespace PEBakery.Core.ViewModels
                     FileName = filePath,
                 };
                 proc.Start();
+            }
+        }
+        #endregion
+
+        #region Handle SystemLogUpdateEvent (for SystemLogHasIssue)
+        public void SubscribeSystemLogUpdateEvent()
+        {
+            Global.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
+        }
+
+        public void ClearSystemLogUpdateEvent()
+        {
+            Global.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+        }
+
+        public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
+        {
+            if (e.Log is LogModel.SystemLog systemLog)
+            {
+                switch (systemLog.State)
+                {
+                    case LogState.Error:
+                    case LogState.CriticalError:
+                        SystemLogHasIssue = true;
+                        break;
+                }
+            }
+            else if (e.Logs is LogModel.SystemLog[] systemLogs)
+            {
+                if (systemLogs.Any(x => x.State == LogState.Error || x.State == LogState.CriticalError))
+                    SystemLogHasIssue = true;
             }
         }
         #endregion

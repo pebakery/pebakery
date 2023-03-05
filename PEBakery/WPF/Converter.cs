@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -260,9 +260,8 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not bool nextState)
                 return false;
-            bool nextState = (bool)value;
             return nextState ? "Select All" : "Select None";
         }
 
@@ -276,18 +275,32 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not Setting.ThemeType typeVal)
                 return false;
-            Setting.ThemeType type = (Setting.ThemeType)value;
-            Debug.Assert(Enum.IsDefined(typeof(Setting.ThemeType), type), "Check SettingWindow.xaml's theme tab.");
-            return type == Setting.ThemeType.Custom;
+            Debug.Assert(Enum.IsDefined(typeVal), "Check SettingWindow.xaml's theme tab.");
+            return typeVal == Setting.ThemeType.Custom;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not bool boolVal)
                 return false;
-            return !(bool)value;
+            return !boolVal;
+        }
+    }
+
+    public class ThemeTypeToSolidColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not Setting.ThemeType typeVal)
+                return false;
+            return new SolidColorBrush(Setting.ThemeSetting.QueryThemeMainColor(typeVal));
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
         }
     }
     #endregion
