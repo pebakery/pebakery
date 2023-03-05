@@ -140,17 +140,31 @@ namespace PEBakery.Core
 
                         // Log Statistics
                         _w.WriteLine("<Log Statistics>");
-                        var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
-                        foreach (LogState state in states)
+                        foreach (LogState state in Enum.GetValues<LogState>().Where(x => x != LogState.None))
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
-                            _w.WriteLine($"{state,-10}: {count}");
+
+                            bool addLogState = true;
+                            switch (state)
+                            {
+                                // CriticalError and Debug logs are only shown when they exists.
+                                case LogState.CriticalError:
+                                case LogState.Debug:
+                                    if (count == 0)
+                                        addLogState = false;
+                                    break;
+                            }
+
+                            if (addLogState == false)
+                                continue;
+
+                            _w.WriteLine($"{state,-13}: {count}");
                         }
                         _w.WriteLine();
                         _w.WriteLine();
 
                         // Show ErrorLogs
-                        LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
+                        LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && (x.State == LogState.Error || x.State == LogState.CriticalError)).ToArray();
                         if (0 < errors.Length)
                         {
                             _w.WriteLine("<Errors>");
@@ -390,10 +404,24 @@ namespace PEBakery.Core
                         };
 
                         // Log Statistics
-                        var states = Enum.GetValues<LogState>().Where(x => x != LogState.None && x != LogState.CriticalError);
+                        var states = Enum.GetValues<LogState>().Where(x => x != LogState.None);
                         foreach (LogState state in states)
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
+
+                            bool addLogState = true;
+                            switch (state)
+                            {
+                                // CriticalError and Debug logs are only shown when they exists.
+                                case LogState.CriticalError:
+                                case LogState.Debug:
+                                    if (count == 0)
+                                        addLogState = false;
+                                    break;
+                            }
+
+                            if (addLogState == false)
+                                continue;
 
                             // type: LogStatItem[]
                             m.LogStats.AddItem(new LogStatItem
@@ -404,11 +432,14 @@ namespace PEBakery.Core
                         }
 
                         // Show ErrorLogs
-                        // m.ErrorCodeDict = new Dictionary<SriptLogItem, Tuple<CodeLogItem, string>[]>();
                         void BuildErrorWarnLogs(ScriptArray dest, LogState target)
                         {
                             int targetIdx = 0;
-                            LogModel.BuildLog[] targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == target).ToArray();
+                            LogModel.BuildLog[] targetLogs;
+                            if (target == LogState.Error)
+                                targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && (x.State == LogState.Error || x.State == LogState.CriticalError)).ToArray();
+                            else
+                                targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == target).ToArray();
                             if (0 < targetLogs.Length)
                             {
                                 int[] scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
@@ -590,10 +621,16 @@ namespace PEBakery.Core
                                             item.RefScriptTitle = scTitleDict[log.RefScriptId];
                                     }
 
-                                    if (log.State == LogState.Error)
-                                        item.Href = errIdx++;
-                                    else if (log.State == LogState.Warning)
-                                        item.Href = warnIdx++;
+                                    switch (log.State)
+                                    {
+                                        case LogState.Error:
+                                        case LogState.CriticalError:
+                                            item.Href = errIdx++;
+                                            break;
+                                        case LogState.Warning:
+                                            item.Href = warnIdx++;
+                                            break;
+                                    }
 
                                     codeArr.AddItem(item);
                                 }

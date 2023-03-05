@@ -53,6 +53,10 @@
             color: #ff6600;
         }
 
+        .text-debug {
+            color: #ae5aff;
+        }
+
         .text-localvar {
             color: #ff6600;
         }
@@ -60,6 +64,10 @@
         .table-nonfluid {
             width: auto !important;
             word-wrap: break-word;
+        }
+
+        .table-debug {
+            background-color: #e6ccff;
         }
     </style>
 

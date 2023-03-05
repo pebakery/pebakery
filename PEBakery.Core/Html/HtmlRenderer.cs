@@ -115,6 +115,8 @@ namespace PEBakery.Core.Html
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
+                case LogState.Debug:
+                    return "table-debug";
                 default:
                     return string.Empty;
             }
@@ -153,6 +155,8 @@ namespace PEBakery.Core.Html
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
+                case LogState.Debug:
+                    return "text-debug";
                 default:
                     return string.Empty;
             }
@@ -172,14 +176,17 @@ namespace PEBakery.Core.Html
                 case LogState.Overwrite:
                     return @"<i class=""fas fa-fw fa-copy""></i>";
                 case LogState.Error:
-                case LogState.CriticalError:
                     return @"<i class=""fas fa-fw fa-times""></i>";
+                case LogState.CriticalError:
+                    return @"<i class=""fas fa-fw fa-ban""></i>"; 
                 case LogState.Info:
                     return @"<i class=""fas fa-fw fa-info-circle""></i>";
                 case LogState.Ignore:
                     return @"<i class=""fas fa-fw fa-file""></i>";
                 case LogState.Muted:
                     return @"<i class=""fas fa-fw fa-lock""></i>";
+                case LogState.Debug:
+                    return @"<i class=""fas fa-fw fa-bug""></i>";
                 default:
                     return string.Empty;
             }
@@ -199,8 +206,9 @@ namespace PEBakery.Core.Html
                 case LogState.Overwrite:
                     return @"<i class=""bi bi-files""></i>";
                 case LogState.Error:
-                case LogState.CriticalError:
                     return @"<i class=""bi bi-x-circle-fill""></i>";
+                case LogState.CriticalError:
+                    return @"<i class=""bi bi-slash-circle""></i>"; 
                 // return @"<i class=""bi bi-x""></i>";
                 case LogState.Info:
                     return @"<i class=""bi bi-info-circle-fill""></i>";
@@ -208,6 +216,8 @@ namespace PEBakery.Core.Html
                     return @"<i class=""bi bi-file-earmark-text""></i>";
                 case LogState.Muted:
                     return @"<i class=""bi bi-lock-fill""></i>";
+                case LogState.Debug:
+                    return @"<i class=""bi bi-bug-fill""></i>";
                 default:
                     return string.Empty;
             }
