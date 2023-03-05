@@ -802,10 +802,22 @@ namespace PEBakery.Core
                 Interface.ScaleFactor = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
                 Interface.DisplayShellExecuteConOut = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
                 Interface.InterfaceSize = SettingDictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
-                Interface.MainWindowTop = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowTop), Interface.MainWindowTop, 25, null);
-                Interface.MainWindowLeft = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowLeft), Interface.MainWindowLeft, 25, null);
-                Interface.MainWindowWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth, 600, null);
-                Interface.MainWindowHeight = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight, 480, null);
+
+                // Read MainWindow area to check validity of window position and size.
+                Int32Rect screenArea = new Int32Rect(
+                    Convert.ToInt32(SystemParameters.VirtualScreenLeft), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenTop), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenWidth), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenHeight));
+                int screenLeft = screenArea.X;
+                int screenRight = screenArea.X + screenArea.Width;
+                int screenTop = screenArea.Y;
+                int screenBottom = screenArea.Y + screenArea.Height;
+
+                Interface.MainWindowLeft = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowLeft), Interface.MainWindowLeft, screenLeft, screenRight);
+                Interface.MainWindowTop = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowTop), Interface.MainWindowTop, screenTop, screenBottom);
+                Interface.MainWindowWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth, 600, screenArea.Width);
+                Interface.MainWindowHeight = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight, 480, screenArea.Height);
                 Interface.MainTreeViewWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth, 100, 300);
             }
 
@@ -968,43 +980,50 @@ namespace PEBakery.Core
 
         public static bool ParseBoolean(Dictionary<string, string?> dict, string section, string key, bool defaultValue)
         {
-            bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static int ParseInteger(Dictionary<string, string?> dict, string section, string key, int defaultValue, int? min, int? max)
         {
-            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool incorrectValue);
+            if (incorrectValue)
+            {
+                string msg = $"Setting [{section}.{key}] has incorrect value: {dict[key]}";
+                if (min is int minVal && val == minVal)
+                    msg += $" (Requires [{minVal} <= val])";
+                if (max is int maxVal && val == maxVal)
+                    msg += $" (Requires [val <= {maxVal}])";
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
+            }
             return val;
         }
 
         public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
-            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : Enum
         {
-            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static Color ParseColor(Dictionary<string, string?> dict, string section, string key, Color defaultValue)
         {
-            Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
     }

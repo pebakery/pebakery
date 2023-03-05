@@ -35,80 +35,109 @@ namespace PEBakery.Helper
     public static class SilentDictParser
     {
         #region ParseString
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed boolean value.</returns>
         public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
         {
-            return ParseString(dict, key, defaultValue, out _);
-        }
-
-        public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue, out bool notFound)
-        {
-            notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
-            string valStr = dict[key];
-
-            notFound = false;
-            return valStr;
+            return dict[key];
         }
         #endregion
 
         #region ParseString (Nullable)
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed boolean value.</returns>
         public static string ParseStringNullable(Dictionary<string, string?> dict, string key, string defaultValue)
         {
-            return ParseStringNullable(dict, key, defaultValue, out _);
-        }
-
-        public static string ParseStringNullable(Dictionary<string, string?> dict, string key, string defaultValue, out bool notFound)
-        {
-            notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
-            notFound = false;
             return valStr;
         }
         #endregion
 
         #region ParseString (NullDefault)
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed boolean value.</returns>
         public static string? ParseStringNullDefault(Dictionary<string, string?> dict, string key, string? defaultValue)
         {
-            return ParseStringNullDefault(dict, key, defaultValue, out _);
-        }
-
-        public static string? ParseStringNullDefault(Dictionary<string, string?> dict, string key, string? defaultValue, out bool notFound)
-        {
-            notFound = true;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
-            notFound = false;
             return valStr;
         }
         #endregion
 
         #region ParseBoolean
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed boolean value.</returns>
         public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue)
         {
             return ParseBoolean(dict, key, defaultValue, out _);
         }
 
-        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed boolean value.</returns>
+        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue, out bool incorrectValue)
         {
             // Check ContainsKey and null
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
+            incorrectValue = true;
             bool val;
             if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                 val = true;
@@ -117,27 +146,49 @@ namespace PEBakery.Helper
             else
                 return defaultValue;
 
-            notFound = false;
+            incorrectValue = false;
             return val;
         }
         #endregion
 
         #region ParseBoolean (Nullable)
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed boolean value.</returns>
         public static bool ParseBooleanNullable(Dictionary<string, string?> dict, string key, bool defaultValue)
         {
             return ParseBooleanNullable(dict, key, defaultValue, out _);
         }
 
-        public static bool ParseBooleanNullable(Dictionary<string, string?> dict, string key, bool defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse a boolean value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed boolean value.</returns>
+        public static bool ParseBooleanNullable(Dictionary<string, string?> dict, string key, bool defaultValue, out bool incorrectValue)
         {
             // Check ContainsKey and null
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
+            incorrectValue = true;
             bool val;
             if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                 val = true;
@@ -146,233 +197,407 @@ namespace PEBakery.Helper
             else
                 return defaultValue;
 
-            notFound = false;
+            incorrectValue = false;
             return val;
         }
         #endregion
 
         #region ParseInteger
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed int value.</returns>
         public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue)
         {
             return ParseInteger(dict, key, defaultValue, null, null, out _);
         }
 
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="min">Allowed minimal integer value.</param>
+        /// <param name="max">Allowed maximum integer value.</param>
+        /// <returns>Parsed int value.</returns>
         public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int? min, int? max)
         {
             return ParseInteger(dict, key, defaultValue, min, max, out _);
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed int value.</returns>
+        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, out bool incorrectValue)
         {
-            return ParseInteger(dict, key, defaultValue, null, null, out notFound);
+            return ParseInteger(dict, key, defaultValue, null, null, out incorrectValue);
         }
 
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int? min, int? max, out bool notFound)
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="min">Allowed minimal integer value.</param>
+        /// <param name="max">Allowed maximum integer value.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed int value.</returns>
+        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int? min, int? max, out bool incorrectValue)
         {
             // Check ContainsKey and null
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
+            incorrectValue = true;
             if (!NumberHelper.ParseInt32(valStr, out int valInt))
                 return defaultValue;
 
-            if (min == null)
-            {
-                if (max != null && max < valInt)
-                    return defaultValue;
-            }
-            else
-            {
-                if (max == null)
-                {
-                    if (valInt < min)
-                        return defaultValue;
-                }
-                else
-                {
-                    if (valInt < min || max < valInt)
-                        return defaultValue;
-                }
-            }
+            if (min is int minVal && valInt < minVal)
+                return minVal;
+            if (max is int maxVal && maxVal < valInt)
+                return maxVal;
 
-            notFound = false;
+            incorrectValue = false;
             return valInt;
         }
         #endregion
 
         #region ParseInteger (Nullable)
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed int value.</returns>
         public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue)
         {
             return ParseIntegerNullable(dict, key, defaultValue, null, null, out _);
         }
 
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="min">Allowed minimal integer value.</param>
+        /// <param name="max">Allowed maximum integer value.</param>
+        /// <returns>Parsed int value.</returns>
         public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue, int? min, int? max)
         {
             return ParseIntegerNullable(dict, key, defaultValue, min, max, out _);
         }
 
-        public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed int value.</returns>
+        public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue, out bool incorrectValue)
         {
-            return ParseIntegerNullable(dict, key, defaultValue, null, null, out notFound);
+            return ParseIntegerNullable(dict, key, defaultValue, null, null, out incorrectValue);
         }
 
-        public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue, int? min, int? max, out bool notFound)
+        /// <summary>
+        /// Parse an int value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="min">Allowed minimal integer value.</param>
+        /// <param name="max">Allowed maximum integer value.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed int value.</returns>
+        public static int ParseIntegerNullable(Dictionary<string, string?> dict, string key, int defaultValue, int? min, int? max, out bool incorrectValue)
         {
             // Check ContainsKey and null
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
+            incorrectValue = true;
             if (!NumberHelper.ParseInt32(valStr, out int valInt))
                 return defaultValue;
 
-            if (min == null)
-            {
-                if (max != null && max < valInt)
-                    return defaultValue;
-            }
-            else
-            {
-                if (max == null)
-                {
-                    if (valInt < min)
-                        return defaultValue;
-                }
-                else
-                {
-                    if (valInt < min || max < valInt)
-                        return defaultValue;
-                }
-            }
+            if (min is int minVal && valInt < minVal)
+                return minVal;
+            if (max is int maxVal && maxVal < valInt)
+                return maxVal;
 
-            notFound = false;
+            incorrectValue = false;
             return valInt;
         }
         #endregion
 
         #region ParseEnum
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed Enum value.</returns>
         public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
             return ParseStrEnum(dict, key, defaultValue, out _);
         }
 
-        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool incorrectValue)
             where TEnum : struct, Enum
         {
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
+            incorrectValue = true;
             if (!Enum.TryParse(valStr, true, out TEnum kind) || !Enum.IsDefined(typeof(TEnum), kind))
                 return defaultValue;
 
-            notFound = false;
+            incorrectValue = false;
             return kind;
         }
 
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed Enum value.</returns>
         public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue)
             where TEnum : Enum
         {
             return ParseIntEnum(dict, key, defaultValue, out _);
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue, out bool incorrectValue)
             where TEnum : Enum
         {
-            notFound = true;
-            if (!dict.ContainsKey(key))
-                return defaultValue;
-
-            string? valStr = dict[key];
-            if (valStr == null)
-                return defaultValue;
-
-            if (!NumberHelper.ParseInt32(valStr, out int valInt))
-                return defaultValue;
-
-            if (!Enum.IsDefined(typeof(TEnum), valInt))
-                return defaultValue;
-
-            notFound = false;
-            return (TEnum)Enum.ToObject(typeof(TEnum), valInt);
-        }
-        #endregion
-
-        #region ParseEnumNullable
-        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
-            where TEnum : struct, Enum
-        {
-            return ParseStrEnumNullable(dict, key, defaultValue, out _);
-        }
-
-        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool notFound)
-            where TEnum : struct, Enum
-        {
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
             if (dict[key] is not string valStr)
                 return defaultValue;
 
-            if (!Enum.TryParse(valStr, true, out TEnum kind) || !Enum.IsDefined(typeof(TEnum), kind))
-                return defaultValue;
-
-            notFound = false;
-            return kind;
-        }
-
-        public static TEnum ParseIntEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
-            where TEnum : Enum
-        {
-            return ParseIntEnumNullable(dict, key, defaultValue, out _);
-        }
-
-        public static TEnum ParseIntEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool notFound)
-            where TEnum : Enum
-        {
-            notFound = true;
-            if (!dict.ContainsKey(key))
-                return defaultValue;
-
-            string? valStr = dict[key];
-            if (valStr == null)
-                return defaultValue;
-
+            incorrectValue = true;
             if (!NumberHelper.ParseInt32(valStr, out int valInt))
                 return defaultValue;
 
             if (!Enum.IsDefined(typeof(TEnum), valInt))
                 return defaultValue;
 
-            notFound = false;
+            incorrectValue = false;
+            return (TEnum)Enum.ToObject(typeof(TEnum), valInt);
+        }
+        #endregion
+
+        #region ParseEnumNullable
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
+            where TEnum : struct, Enum
+        {
+            return ParseStrEnumNullable(dict, key, defaultValue, out _);
+        }
+
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool incorrectValue)
+            where TEnum : struct, Enum
+        {
+            incorrectValue = false;
+            if (!dict.ContainsKey(key))
+                return defaultValue;
+
+            if (dict[key] is not string valStr)
+                return defaultValue;
+
+            incorrectValue = true;
+            if (!Enum.TryParse(valStr, true, out TEnum kind) || !Enum.IsDefined(typeof(TEnum), kind))
+                return defaultValue;
+
+            incorrectValue = false;
+            return kind;
+        }
+
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseIntEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue)
+            where TEnum : Enum
+        {
+            return ParseIntEnumNullable(dict, key, defaultValue, out _);
+        }
+
+        /// <summary>
+        /// Parse an Enum value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed Enum value.</returns>
+        public static TEnum ParseIntEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool incorrectValue)
+            where TEnum : Enum
+        {
+            incorrectValue = false;
+            if (!dict.ContainsKey(key))
+                return defaultValue;
+
+            if (dict[key] is not string valStr)
+                return defaultValue;
+
+            incorrectValue = true;
+            if (!NumberHelper.ParseInt32(valStr, out int valInt))
+                return defaultValue;
+
+            if (!Enum.IsDefined(typeof(TEnum), valInt))
+                return defaultValue;
+
+            incorrectValue = false;
             return (TEnum)Enum.ToObject(typeof(TEnum), valInt);
         }
         #endregion
 
         #region ParseColor
+        /// <summary>
+        /// Parse a color value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed color value.</returns>
         public static Color ParseColor(Dictionary<string, string> dict, string key, Color defaultValue)
         {
             return ParseColor(dict, key, defaultValue, out _);
         }
 
-        public static Color ParseColor(Dictionary<string, string> dict, string key, Color defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse a color value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed color value.</returns>
+        public static Color ParseColor(Dictionary<string, string> dict, string key, Color defaultValue, out bool incorrectValue)
         {
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
+            incorrectValue = true;
             string valStr = dict[key];
 
             // Format = R, G, B (in base 10)
@@ -408,18 +633,39 @@ namespace PEBakery.Helper
                 c[i] = valByte;
             }
 
-            notFound = false;
+            incorrectValue = false;
             return Color.FromRgb(c[0], c[1], c[2]);
         }
 
+        /// <summary>
+        /// Parse a color value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <returns>Parsed color value.</returns>
         public static Color ParseColorNullable(Dictionary<string, string?> dict, string key, Color defaultValue)
         {
             return ParseColorNullable(dict, key, defaultValue, out _);
         }
 
-        public static Color ParseColorNullable(Dictionary<string, string?> dict, string key, Color defaultValue, out bool notFound)
+        /// <summary>
+        /// Parse a color value from a DOM of an .ini file.
+        /// </summary>
+        /// <param name="dict">
+        /// The DOM of an .ini file.
+        /// Dict Key means ini section, and Dict Value means ini value.
+        /// </param>
+        /// <param name="key">Name of the ini section.</param>
+        /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
+        /// <param name="incorrectValue">Set to true when the value is not correct. Will not be set to true on empty value.</param>
+        /// <returns>Parsed color value.</returns>
+        public static Color ParseColorNullable(Dictionary<string, string?> dict, string key, Color defaultValue, out bool incorrectValue)
         {
-            notFound = true;
+            incorrectValue = false;
             if (!dict.ContainsKey(key))
                 return defaultValue;
 
@@ -427,6 +673,7 @@ namespace PEBakery.Helper
                 return defaultValue;
 
             // Format = R, G, B (in base 10)
+            incorrectValue = true;
             string[] colorStrs = valStr.Split(',').Select(x => x.Trim()).ToArray();
             if (colorStrs.Length != 3)
                 return defaultValue;
@@ -459,7 +706,7 @@ namespace PEBakery.Helper
                 c[i] = valByte;
             }
 
-            notFound = false;
+            incorrectValue = false;
             return Color.FromRgb(c[0], c[1], c[2]);
         }
         #endregion

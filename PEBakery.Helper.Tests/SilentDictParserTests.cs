@@ -66,30 +66,7 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseString()
         {
-            string? result = SilentDictParser.ParseStringNullable(TestDict, "Str", "Default", out bool notFound);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
-            Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseStringNullDefault(TestDict, "Str", null, out notFound);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
-            Assert.IsFalse(notFound);
-            result = SilentDictParser.ParseStringNullable(TestDict, "None", "Default", out notFound);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
-            Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseStringNullDefault(TestDict, "None", null, out notFound);
-            Assert.IsNull(result);
-            Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseStringNullable(TestDict, "Null", "Default", out notFound);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.Equals("Default", StringComparison.Ordinal));
-            Assert.IsTrue(notFound);
-            result = SilentDictParser.ParseStringNullDefault(TestDict, "Null", null, out notFound);
-            Assert.IsNull(result);
-            Assert.IsTrue(notFound);
-
-            result = SilentDictParser.ParseStringNullable(TestDict, "Str", "Default");
+            string? result = SilentDictParser.ParseStringNullable(TestDict, "Str", "Default");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Equals("ing", StringComparison.Ordinal));
             result = SilentDictParser.ParseStringNullDefault(TestDict, "Str", null);

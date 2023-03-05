@@ -355,7 +355,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildEndedWithIssue, value);
         }
 
-        private bool _systemLogHasIssue = true;
+        private bool _systemLogHasIssue = false;
         /// <summary>
         /// System log has an error, display red dot over the LogViewer button.
         /// </summary>
