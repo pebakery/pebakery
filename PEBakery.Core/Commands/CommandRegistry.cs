@@ -107,24 +107,27 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegRead info = (CodeInfo_RegRead)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
 
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
+
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             string valueDataStr;
-            using (RegistryKey? subKey = info.HKey.OpenSubKey(keyPath, false))
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, false))
             {
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 if (kind == RegistryValueKind.Unknown)
-                {
-                    object? valueData = RegistryHelper.RegGetValue(info.HKey, keyPath, valueName, RegistryValueKind.Unknown);
+                { // Not an ordinary Registry value type -> Use Win32 API directly.
+                    object? valueData = RegistryHelper.RegGetValue(rootKey, keyPath, valueName, RegistryValueKind.Unknown);
                     if (valueData is not byte[] bytes)
                         return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
                     valueDataStr = StringEscaper.PackRegBinary(bytes);
@@ -175,15 +178,16 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegWrite info = (CodeInfo_RegWrite)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string? valueName = null;
             if (info.ValueName != null)
                 valueName = StringEscaper.Preprocess(s, info.ValueName);
 
-            if (info.HKey == null)
-                throw new InternalException("Internal Logic Error");
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
 
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
             string fullValuePath = $"{hKeyStr}\\{keyPath}\\{valueName}";
 
@@ -209,7 +213,8 @@ namespace PEBakery.Core.Commands
                 throw new InternalException("Internal Parser Error");
             }
 
-            using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            using (RegistryKey subKey = rootKey.CreateSubKey(keyPath, true))
             {
                 if (valueName == null)
                 {
@@ -217,21 +222,21 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                bool existValue = RegistryHelper.RegExistValue(info.HKey, keyPath, valueName);
+                bool existValue = RegistryHelper.RegExistValue(rootKey, keyPath, valueName);
                 if (existValue)
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Registry value [{fullValuePath}] already exists"));
 
                 switch (info.ValueType)
                 {
                     case RegistryValueKind.Unknown:
-                        { // RegWriteEx only
+                        { // RegWriteEx only - Not an ordinary Registry value type -> Use Win32 API directly.
                             if (cmd.Type != CodeType.RegWriteEx)
                                 throw new InternalException("[RegistryValueKind.Unknown] must be handled by [RegWriteEx], not [RegWrite]");
 
                             (byte[]? binData, string valueData) = ParseByteArrayFromString();
                             if (binData == null)
                                 return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                            RegistryHelper.RegSetValue(info.HKey, keyPath, valueName, binData, info.ValueTypeInt);
+                            RegistryHelper.RegSetValue(rootKey, keyPath, valueName, binData, info.ValueTypeInt);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to [ValueType 0x{info.ValueTypeInt:X}] [{valueData}]"));
                         }
                         break;

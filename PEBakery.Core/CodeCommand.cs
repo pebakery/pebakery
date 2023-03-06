@@ -646,8 +646,8 @@ namespace PEBakery.Core
     }
 
     public class CodeInfo_RegRead : CodeInfo
-    { // RegRead,<HKey>,<KeyPath>,<ValueName>,<%DestVar%>
-        public RegistryKey HKey { get; private set; }
+    { // RegRead,<KeyRoot>,<KeyPath>,<ValueName>,<%DestVar%>
+        public string KeyRoot { get; private set; }
         public string KeyPath { get; private set; }
         public string ValueName { get; private set; }
         public string DestVar { get; private set; }
@@ -655,9 +655,9 @@ namespace PEBakery.Core
         public override HashSet<string> InVars() => CreateInVars(KeyPath, ValueName);
         public override HashSet<string> OutVars() => CreateInVars(DestVar);
 
-        public CodeInfo_RegRead(RegistryKey hKey, string keyPath, string valueName, string destVar)
+        public CodeInfo_RegRead(string keyRoot, string keyPath, string valueName, string destVar)
         {
-            HKey = hKey;
+            KeyRoot = keyRoot;
             KeyPath = keyPath;
             ValueName = valueName;
             DestVar = destVar;
@@ -665,8 +665,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            string? hKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{hKeyStr ?? "NULL"},{KeyPath},{ValueName},{DestVar}";
+            return $"{KeyRoot},{KeyPath},{ValueName},{DestVar}";
         }
     }
 
@@ -675,7 +674,7 @@ namespace PEBakery.Core
         // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
         // RegWriteEx,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
 
-        public RegistryKey HKey { get; private set; }
+        public string KeyRoot { get; private set; }
         public RegistryValueKind ValueType { get; private set; }
         public uint ValueTypeInt { get; private set; }
         public string KeyPath { get; private set; }
@@ -692,9 +691,9 @@ namespace PEBakery.Core
             return inVars;
         }
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, uint valueTypeInt, string keyPath, string? valueName, string? valueData, string[]? valueDataList, bool noWarn)
+        public CodeInfo_RegWrite(String keyRoot, RegistryValueKind valueType, uint valueTypeInt, string keyPath, string? valueName, string? valueData, string[]? valueDataList, bool noWarn)
         {
-            HKey = hKey;
+            KeyRoot = keyRoot;
             ValueType = valueType;
             ValueTypeInt = valueTypeInt;
             KeyPath = keyPath;
@@ -707,7 +706,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(RegistryHelper.RegKeyToString(HKey));
+            b.Append(KeyRoot);
             b.Append(",0x");
             b.Append(ValueTypeInt.ToString("X"));
             b.Append(',');

@@ -154,15 +154,26 @@ namespace PEBakery.Core.Tests.Command
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0xB,{subKeyStr},QWORD,4294967296",
                     Registry.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", 4294967296ul);
 
-                // RegWriteLegacy
+                // was RegWriteLegacy
                 s.Variables.SetValue(VarsType.Local, "Compat", "HKCU");
-                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
                     Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                     new CompatOption { LegacyRegWrite = true });
-                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u, 
+                    new CompatOption());
+                s.Variables.DeleteKey(VarsType.Local, "Compat");
+
+                // still is RegWriteLegacy
+                s.Variables.SetValue(VarsType.Local, "Compat", "0x4");
+                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,%Compat%,{subKeyStr},DWORD,1234",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                    new CompatOption { LegacyRegWrite = true });
+                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,%Compat%,{subKeyStr},DWORD,1234",
                     Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                     new CompatOption(), ErrorCheck.ParserError);
                 s.Variables.DeleteKey(VarsType.Local, "Compat");
+
 
                 // Error
                 WriteErrorTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);
