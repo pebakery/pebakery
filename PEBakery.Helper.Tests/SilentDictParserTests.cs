@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2022 Hajin Jang
+    Copyright (C) 2019-2023 Hajin Jang
  
     MIT License
 
@@ -91,34 +91,43 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseInteger()
         {
-            /*
-            int result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0, out bool incorrectValue);
-            Assert.AreEqual(100, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0, out incorrectValue);
-            Assert.AreEqual(0x100, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0, out incorrectValue);
-            Assert.AreEqual(-1, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0, out incorrectValue);
-            Assert.AreEqual(0, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128, out incorrectValue);
-            Assert.AreEqual(-128, result);
-            Assert.IsFalse(incorrectValue);
-            */
+            // With incorrectValue
+            {
+                int result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0, out bool incorrectValue);
+                Assert.AreEqual(100, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0, out incorrectValue);
+                Assert.AreEqual(0x100, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0, out incorrectValue);
+                Assert.AreEqual(-1, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0, out incorrectValue);
+                Assert.AreEqual(0, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128, out incorrectValue);
+                Assert.AreEqual(-128, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Str", 128, out incorrectValue);
+                Assert.AreEqual(128, result);
+                Assert.IsTrue(incorrectValue);
+            }
 
-            int result = result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0);
-            Assert.AreEqual(100, result);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0);
-            Assert.AreEqual(0x100, result);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0);
-            Assert.AreEqual(-1, result);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0);
-            Assert.AreEqual(0, result);
-            result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128);
-            Assert.AreEqual(-128, result);
+            // Without incorrectValue
+            {
+                int result = SilentDictParser.ParseIntegerNullable(TestDict, "Int1", 0);
+                Assert.AreEqual(100, result);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Int2", 0);
+                Assert.AreEqual(0x100, result);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Int3", 0);
+                Assert.AreEqual(-1, result);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "None", 0);
+                Assert.AreEqual(0, result);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "None", -128);
+                Assert.AreEqual(-128, result);
+                result = SilentDictParser.ParseIntegerNullable(TestDict, "Str", 128);
+                Assert.AreEqual(128, result);
+            }
         }
         #endregion
 
@@ -128,34 +137,43 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseStrEnum()
         {
-            /*
-            TestEnum result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None, out bool incorrectValue);
-            Assert.AreEqual(TestEnum.First, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.Second, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsFalse(incorrectValue);
-            */
+            // With incorrectValue
+            {
+                TestEnum result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None, out bool incorrectValue);
+                Assert.AreEqual(TestEnum.First, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.Second, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsTrue(incorrectValue);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "Int3", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsTrue(incorrectValue);
+            }
 
-            TestEnum result = result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None);
-            Assert.AreEqual(TestEnum.First, result);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None);
-            Assert.AreEqual(TestEnum.Second, result);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
+            // Without incorrectValue
+            {
+                TestEnum result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum1", TestEnum.None);
+                Assert.AreEqual(TestEnum.First, result);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum2", TestEnum.None);
+                Assert.AreEqual(TestEnum.Second, result);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "StrEnum3", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "None", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "Null", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseStrEnumNullable(TestDict, "Int3", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+            }
         }
         #endregion
 
@@ -165,33 +183,44 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseIntEnum()
         {
-            /*
-            TestEnum result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None, out bool incorrectValue);
-            Assert.AreEqual(TestEnum.First, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsTrue(incorrectValue);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.Third, result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsTrue(incorrectValue);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None, out incorrectValue);
-            Assert.AreEqual(TestEnum.None, result);
-            Assert.IsTrue(incorrectValue);
-            */
-            TestEnum result = result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None);
-            Assert.AreEqual(TestEnum.First, result);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None);
-            Assert.AreEqual(TestEnum.Third, result);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
-            result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None);
-            Assert.AreEqual(TestEnum.None, result);
+            // With incorrectValue
+            {
+                TestEnum result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None, out bool incorrectValue);
+                Assert.AreEqual(TestEnum.First, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsTrue(incorrectValue);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.Third, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "StrEnum3", TestEnum.None, out incorrectValue);
+                Assert.AreEqual(TestEnum.None, result);
+                Assert.IsTrue(incorrectValue);
+            }
+
+            // Without incorrectValue
+            {
+                TestEnum result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum1", TestEnum.None);
+                Assert.AreEqual(TestEnum.First, result);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum2", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "IntEnum3", TestEnum.None);
+                Assert.AreEqual(TestEnum.Third, result);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "None", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "Null", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+                result = SilentDictParser.ParseIntEnumNullable(TestDict, "StrEnum3", TestEnum.None);
+                Assert.AreEqual(TestEnum.None, result);
+            }
+            
         }
         #endregion
 
@@ -201,34 +230,44 @@ namespace PEBakery.Helper.Tests
         [TestCategory("SilentDictParser")]
         public void ParseColor()
         {
-            /*
-            Color result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255), out bool incorrectValue);
-            Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255), out incorrectValue);
-            Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
-            Assert.IsFalse(incorrectValue);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255), out incorrectValue);
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            Assert.IsTrue(incorrectValue);
-            result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255), out incorrectValue);
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            Assert.IsTrue(incorrectValue);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255), out incorrectValue);
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            Assert.IsTrue(incorrectValue);
-            */
+            // With incorrectValue
+            {
+                Color result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255), out bool incorrectValue);
+                Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255), out incorrectValue);
+                Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255), out incorrectValue);
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                Assert.IsTrue(incorrectValue);
+                result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255), out incorrectValue);
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255), out incorrectValue);
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                Assert.IsFalse(incorrectValue);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Str", Color.FromRgb(255, 255, 255), out incorrectValue);
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                Assert.IsTrue(incorrectValue);
+            }
 
-            Color result = result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255));
-            Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255));
-            Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255));
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255));
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
-            result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255));
-            Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+            // Without incorrectValue
+            {
+                Color result = result = SilentDictParser.ParseColorNullable(TestDict, "Color1", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(230, 0, 0), result);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Color2", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(16, 32, 64), result);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Color3", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                result = SilentDictParser.ParseColorNullable(TestDict, "None", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Null", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+                result = SilentDictParser.ParseColorNullable(TestDict, "Str", Color.FromRgb(255, 255, 255));
+                Assert.AreEqual(Color.FromRgb(255, 255, 255), result);
+            }
+            
         }
         #endregion
     }
