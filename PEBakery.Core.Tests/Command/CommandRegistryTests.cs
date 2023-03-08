@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -127,52 +127,82 @@ namespace PEBakery.Core.Tests.Command
             {
                 // Success
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x0,{subKeyStr},None",
-                    Registry.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+                    RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0,{subKeyStr},None",
+                    RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_NONE,{subKeyStr},None",
+                    RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x1,{subKeyStr},String,SZ",
-                    Registry.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
+                    RegistryHive.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,1,{subKeyStr},String,SZ",
+                    RegistryHive.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_SZ,{subKeyStr},String,SZ",
+                    RegistryHive.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x2,{subKeyStr},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
-                    Registry.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+                    RegistryHive.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,2,{subKeyStr},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
+                    RegistryHive.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_EXPAND_SZ,{subKeyStr},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
+                    RegistryHive.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x7,{subKeyStr},MultiString,1,2,3",
-                    Registry.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
+                    RegistryHive.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,7,{subKeyStr},MultiString,1,2,3",
+                    RegistryHive.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_MULTI_SZ,{subKeyStr},MultiString,1,2,3",
+                    RegistryHive.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x3,{subKeyStr},Binary,00,01,02",
-                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,3,{subKeyStr},Binary,00,01,02",
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_BINARY,{subKeyStr},Binary,00,01,02",
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""03,04""",
-                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 03, 04 },
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 03, 04 },
                     null, ErrorCheck.Overwrite);
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x3,{subKeyStr},Binary,05,06,07,NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 05, 06, 07 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 05, 06, 07 });
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""08,09"",NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 08, 09 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 08, 09 });
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,1234",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,4,{subKeyStr},DWORD,1234",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_DWORD,{subKeyStr},DWORD,1234",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,-1",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
                     null, ErrorCheck.Overwrite);
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,4294967295",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
                     null, ErrorCheck.Overwrite);
+
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0xB,{subKeyStr},QWORD,4294967296",
-                    Registry.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", 4294967296ul);
+                    RegistryHive.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", 4294967296ul);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,11,{subKeyStr},QWORD,4294967296",
+                    RegistryHive.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", 4294967296ul);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_QWORD,{subKeyStr},QWORD,4294967296",
+                    RegistryHive.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", 4294967296ul);
 
                 // was RegWriteLegacy
-                s.Variables.SetValue(VarsType.Local, "Compat", "HKCU");
-                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                WriteVarSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,#r,0x4,{subKeyStr},DWORD,1234", "HKCU",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                     new CompatOption { LegacyRegWrite = true });
-                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u, 
+                WriteVarSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,#r,0x4,{subKeyStr},DWORD,1234", "HKCU",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u, 
                     new CompatOption());
-                s.Variables.DeleteKey(VarsType.Local, "Compat");
 
                 // still is RegWriteLegacy
-                s.Variables.SetValue(VarsType.Local, "Compat", "0x4");
-                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,%Compat%,{subKeyStr},DWORD,1234",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                WriteVarSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,#r,{subKeyStr},DWORD,1234", "0x4",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                     new CompatOption { LegacyRegWrite = true });
-                WriteSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,%Compat%,{subKeyStr},DWORD,1234",
-                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                WriteVarSuccessTemplate(s, CodeType.RegWriteLegacy, $@"RegWrite,HKCU,#r,{subKeyStr},DWORD,1234", "0x4",
+                    RegistryHive.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                     new CompatOption(), ErrorCheck.ParserError);
-                s.Variables.DeleteKey(VarsType.Local, "Compat");
 
 
                 // Error
@@ -199,16 +229,16 @@ namespace PEBakery.Core.Tests.Command
             {
                 // Success
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0x200000,{subKeyStr},Extra,00,01,02",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 00, 01, 02 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 00, 01, 02 });
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0x100000,{subKeyStr},Extra,""03,04""",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 03, 04 },
+                    RegistryHive.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 03, 04 },
                     null, ErrorCheck.Overwrite);
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0xFFff0009,{subKeyStr},Extra,05,06,07,NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 05, 06, 07 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 05, 06, 07 });
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0xffFF100d,{subKeyStr},Extra,""08,09"",NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 08, 09 });
+                    RegistryHive.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", new byte[] { 08, 09 });
                 WriteSuccessTemplate(s, CodeType.RegWriteEx, $@"RegWriteEx,HKCU,0xFFff2012,{subKeyStr},Extra,,NOWARN",
-                    Registry.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", Array.Empty<byte>());
+                    RegistryHive.CurrentUser, RegistryValueKind.Unknown, subKeyStr, "Extra", Array.Empty<byte>());
 
                 // Error
                 WriteErrorTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x200000,{subKeyStr},Extra,00,01,02", ErrorCheck.ParserError);
@@ -729,8 +759,24 @@ namespace PEBakery.Core.Tests.Command
             ReadTemplate(s, type, rawCode, compStr, check);
         }
 
+        private static void WriteVarSuccessTemplate(EngineState s, CodeType codeType, string rawCode, string varVal,
+                RegistryHive hive, RegistryValueKind compKind, string keyPath, string valueName, object? expect,
+                CompatOption? opts = null, ErrorCheck check = ErrorCheck.Success)
+        {
+            string valBak = s.ReturnValue;
+            try
+            {
+                s.ReturnValue = varVal;
+                WriteSuccessTemplate(s, codeType, rawCode, hive, compKind, keyPath, valueName, expect, opts, check);
+            }
+            finally
+            {
+                s.ReturnValue = valBak;
+            }
+        }
+
         private static void WriteSuccessTemplate(EngineState s, CodeType codeType, string rawCode,
-                RegistryKey hKey, RegistryValueKind compKind, string keyPath, string valueName, object? expect,
+                RegistryHive hive, RegistryValueKind compKind, string keyPath, string valueName, object? expect,
                 CompatOption? opts = null, ErrorCheck check = ErrorCheck.Success)
         {
             if (opts == null)
@@ -740,7 +786,8 @@ namespace PEBakery.Core.Tests.Command
 
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
             {
-                using (RegistryKey? subKey = hKey.OpenSubKey(keyPath, false))
+                using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, false))
                 {
                     Assert.IsNotNull(subKey);
 
@@ -749,7 +796,7 @@ namespace PEBakery.Core.Tests.Command
 
                     object? valueData;
                     if (kind == RegistryValueKind.Unknown)
-                        valueData = RegistryHelper.RegGetValue(hKey, keyPath, valueName, RegistryValueKind.Unknown);
+                        valueData = RegistryHelper.RegGetValue(rootKey, keyPath, valueName, RegistryValueKind.Unknown);
                     else
                         valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                     Assert.IsNotNull(valueData);
@@ -799,7 +846,7 @@ namespace PEBakery.Core.Tests.Command
                                 Assert.IsNotNull(expect);
                                 uint destInt = (uint)(int)valueData;
                                 uint compInt = (uint)expect;
-                                Assert.IsTrue(destInt == compInt);
+                                Assert.AreEqual(compInt, destInt);
                             }
                             break;
                         case RegistryValueKind.QWord:
@@ -807,7 +854,7 @@ namespace PEBakery.Core.Tests.Command
                                 Assert.IsNotNull(expect);
                                 ulong destInt = (ulong)(long)valueData;
                                 ulong compInt = (ulong)expect;
-                                Assert.IsTrue(destInt == compInt);
+                                Assert.AreEqual(compInt, destInt);
                             }
                             break;
                         default:

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -671,46 +671,34 @@ namespace PEBakery.Core
                         }
 
                         // Parse RegistryValueKind
+                        string valueTypeStr = args[1];
                         RegistryValueKind valueType;
-                        if (!NumberHelper.ParseUInt32(args[1], out uint valueTypeInt))
+                        uint valueTypeInt;
+                        if (RegistryHelper.ParseValueKind(valueTypeStr) is RegistryValueKind parsedKind)
+                        { // REG_DWORD, etc.
+                            valueType = parsedKind;
+                            if (RegistryHelper.ValueKindToWBInt(parsedKind) is uint wbInt)
+                                valueTypeInt = wbInt;
+                            else
+                                throw new InvalidCommandException($"[{valueTypeStr}] is not a valid Reigstry value type");
+                        }
+                        else if (NumberHelper.ParseUInt32(valueTypeStr, out valueTypeInt))
+                        {
+                            if (RegistryHelper.WBIntToValudKind(valueTypeInt) is RegistryValueKind intKind)
+                                valueType = intKind;
+                            else if (type == CodeType.RegWriteEx)
+                                valueType = RegistryValueKind.Unknown;
+                            else
+                                throw new InvalidCommandException($"Invalid registry value type [0x{valueTypeInt:X}], consider using [{nameof(CodeType.RegWriteEx)}].");
+                        }
+                        else
                         {
                             if (_opts.AllowLegacyRegWrite)
                             { // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                                 type = CodeType.RegWriteLegacy;
                                 goto case CodeType.RegWriteLegacy;
                             }
-                            throw new InvalidCommandException($"[{args[1]}] is not a valid number");
-                        }
-
-                        switch (valueTypeInt)
-                        {
-                            case 0:
-                                valueType = RegistryValueKind.None;
-                                break;
-                            case 1:
-                                valueType = RegistryValueKind.String;
-                                break;
-                            case 2:
-                                valueType = RegistryValueKind.ExpandString;
-                                break;
-                            case 3:
-                                valueType = RegistryValueKind.Binary;
-                                break;
-                            case 4:
-                                valueType = RegistryValueKind.DWord;
-                                break;
-                            case 7:
-                                valueType = RegistryValueKind.MultiString;
-                                break;
-                            case 11:
-                                valueType = RegistryValueKind.QWord;
-                                break;
-                            default:
-                                if (type == CodeType.RegWriteEx)
-                                    valueType = RegistryValueKind.Unknown;
-                                else
-                                    throw new InvalidCommandException($"Invalid registry value type [0x{valueTypeInt:X}], consider using [{nameof(CodeType.RegWriteEx)}].");
-                                break;
+                            throw new InvalidCommandException($"[{valueTypeStr}] is not a valid Registry value type");
                         }
 
                         // Create CodeInfo_RegWrite instance
