@@ -107,33 +107,36 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegRead info = (CodeInfo_RegRead)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
 
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
+
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             string valueDataStr;
-            using (RegistryKey? subKey = info.HKey.OpenSubKey(keyPath, false))
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, false))
             {
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 if (kind == RegistryValueKind.Unknown)
-                {
-                    object? valueData = RegistryHelper.RegGetValue(info.HKey, keyPath, valueName, RegistryValueKind.Unknown);
+                { // Not an ordinary Registry value type -> Use Win32 API directly.
+                    object? valueData = RegistryHelper.RegGetValue(rootKey, keyPath, valueName, RegistryValueKind.Unknown);
                     if (valueData is not byte[] bytes)
-                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry value [{fullKeyPath}\\{valueName}]");
                     valueDataStr = StringEscaper.PackRegBinary(bytes);
                 }
                 else
                 {
                     object? valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                     if (valueData == null)
-                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry value [{fullKeyPath}\\{valueName}]");
 
                     switch (kind)
                     {
@@ -175,15 +178,16 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegWrite info = (CodeInfo_RegWrite)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string? valueName = null;
             if (info.ValueName != null)
                 valueName = StringEscaper.Preprocess(s, info.ValueName);
 
-            if (info.HKey == null)
-                throw new InternalException("Internal Logic Error");
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
 
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
             string fullValuePath = $"{hKeyStr}\\{keyPath}\\{valueName}";
 
@@ -209,29 +213,30 @@ namespace PEBakery.Core.Commands
                 throw new InternalException("Internal Parser Error");
             }
 
-            using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            using (RegistryKey subKey = rootKey.CreateSubKey(keyPath, true))
             {
                 if (valueName == null)
                 {
-                    logs.Add(new LogInfo(LogState.Success, $"Registry subkey [{fullKeyPath}] created"));
+                    logs.Add(new LogInfo(LogState.Success, $"Created registry subkey [{fullKeyPath}]"));
                     return logs;
                 }
 
-                bool existValue = RegistryHelper.RegExistValue(info.HKey, keyPath, valueName);
+                bool existValue = RegistryHelper.RegExistValue(rootKey, keyPath, valueName);
                 if (existValue)
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Registry value [{fullValuePath}] already exists"));
 
                 switch (info.ValueType)
                 {
                     case RegistryValueKind.Unknown:
-                        { // RegWriteEx only
+                        { // RegWriteEx only - Not an ordinary Registry value type -> Use Win32 API directly.
                             if (cmd.Type != CodeType.RegWriteEx)
-                                throw new InternalException("[RegistryValueKind.Unknown] must be handled by [RegWriteEx], not [RegWrite]");
+                                throw new InternalException($"[RegistryValueKind.Unknown] must be handled by [{CodeType.RegWriteEx}], not [{CodeType.RegWrite}]. Check {nameof(CodeParser)}.");
 
                             (byte[]? binData, string valueData) = ParseByteArrayFromString();
                             if (binData == null)
                                 return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                            RegistryHelper.RegSetValue(info.HKey, keyPath, valueName, binData, info.ValueTypeInt);
+                            RegistryHelper.RegSetValue(rootKey, keyPath, valueName, binData, info.ValueTypeInt);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to [ValueType 0x{info.ValueTypeInt:X}] [{valueData}]"));
                         }
                         break;
@@ -323,18 +328,11 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegWriteLegacy(EngineState s, CodeCommand cmd)
         { // Compatibility Shim for WinBuilder 082
-            List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_RegWriteLegacy info = (CodeInfo_RegWriteLegacy)cmd.Info;
-
-            string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
-            RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
-            if (hKey == null)
-                return LogInfo.LogErrorMessage(logs, $"Invalid HKey [{hKeyStr}]");
 
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
-            List<string> args = new List<string> { hKeyStr, valTypeStr, info.KeyPath };
+            List<string> args = new List<string> { info.KeyRoot, valTypeStr, info.KeyPath };
             if (info.ValueName != null)
                 args.Add(info.ValueName);
             if (info.ValueDataList != null)
@@ -355,46 +353,50 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegDelete info = (CodeInfo_RegDelete)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
 
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
-            if (info.ValueName == null)
-            { // Delete SubKey
-                try
-                {
-                    info.HKey.DeleteSubKeyTree(keyPath, true);
-                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] was deleted"));
-                }
-                catch (ArgumentException)
-                {
-                    logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
-                }
-            }
-            else
-            { // Delete Value
-                string valueName = StringEscaper.Preprocess(s, info.ValueName);
-
-                using (RegistryKey? subKey = info.HKey.OpenSubKey(keyPath, true))
-                {
-                    if (subKey == null)
-                    {
-                        logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
-                        return logs;
-                    }
-
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            {
+                if (info.ValueName == null)
+                { // Delete SubKey
                     try
                     {
-                        subKey.DeleteValue(valueName, true);
-                        logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}\\{valueName}] was deleted"));
+                        rootKey.DeleteSubKeyTree(keyPath, true);
+                        logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] was deleted"));
                     }
                     catch (ArgumentException)
                     {
-                        logs.Add(new LogInfo(LogState.Warning, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
+                        logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
+                    }
+                }
+                else
+                { // Delete Value
+                    string valueName = StringEscaper.Preprocess(s, info.ValueName);
+
+                    using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, true))
+                    {
+                        if (subKey == null)
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
+                            return logs;
+                        }
+
+                        try
+                        {
+                            subKey.DeleteValue(valueName, true);
+                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}\\{valueName}] was deleted"));
+                        }
+                        catch (ArgumentException)
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
+                        }
                     }
                 }
             }
@@ -408,6 +410,7 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegMulti info = (CodeInfo_RegMulti)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
             string arg1 = StringEscaper.Preprocess(s, info.Arg1);
@@ -415,12 +418,14 @@ namespace PEBakery.Core.Commands
             if (info.Arg2 != null)
                 arg2 = StringEscaper.Preprocess(s, info.Arg2);
 
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
+
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
-            using (RegistryKey? subKey = info.HKey.OpenSubKey(keyPath, true))
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hiveKind, RegistryView.Registry64))
+            using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, true))
             {
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
@@ -597,9 +602,6 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegImport info = (CodeInfo_RegImport)cmd.Info;
 
-            // Consider using RegRestoreKeyW
-            // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regrestorekeyw
-
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
             using (Process proc = new Process())
@@ -628,14 +630,16 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegExport info = (CodeInfo_RegExport)cmd.Info;
 
+            string keyRoot = StringEscaper.Preprocess(s, info.KeyRoot);
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
-            // RegSaveKeyW saves key in the HIVE format, not .REG format
-            // .REG file format is baked in to reg.exe/regedit.exe, so no way to access it with APIl
-            string? hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error at RegExport");
+            // RegSaveKeyW saves key in the HIVE format, not .REG format.
+            // .REG file format is baked in to reg.exe/regedit.exe, so we cannot directly call Win32 API.
+            if (RegistryHelper.ParseStringToRegHive(keyRoot) is not RegistryHive hiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Registry hive [{keyRoot}] is not a valid hive");
+
+            string hKeyStr = RegistryHelper.RegHiveToString(hiveKind) ?? keyRoot;
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             if (File.Exists(regFile))
@@ -667,49 +671,59 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegCopy info = (CodeInfo_RegCopy)cmd.Info;
 
+            string srcKeyRoot = StringEscaper.Preprocess(s, info.SrcKeyRoot);
             string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
+            string destKeyRoot = StringEscaper.Preprocess(s, info.DestKeyRoot);
             string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);
 
-            string? hSrcKeyStr = RegistryHelper.RegKeyToString(info.HSrcKey);
-            string? hDestKeyStr = RegistryHelper.RegKeyToString(info.HDestKey);
-            if (hSrcKeyStr == null)
-                return LogInfo.LogErrorMessage(logs, $"{info.HSrcKey} is null");
-            if (hDestKeyStr == null)
-                return LogInfo.LogErrorMessage(logs, $"{info.HDestKey} is null");
+            if (RegistryHelper.ParseStringToRegHive(srcKeyRoot) is not RegistryHive srcHiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Source Registry hive [{srcKeyRoot}] is not a valid hive");
+            if (RegistryHelper.ParseStringToRegHive(destKeyRoot) is not RegistryHive destHiveKind)
+                return LogInfo.LogErrorMessage(logs, $"Destination Registry hive [{destKeyRoot}] is not a valid hive");
+
+            string hSrcKeyStr = RegistryHelper.RegHiveToString(srcHiveKind) ?? srcKeyRoot;
+            string hDestKeyStr = RegistryHelper.RegHiveToString(destHiveKind) ?? destKeyRoot;
+
             string fullSrcKeyPath = $"{hSrcKeyStr}\\{srcKeyPath}";
             string fullDestKeyPath = $"{hDestKeyStr}\\{destKeyPath}";
 
-            if (info.WildcardFlag)
+            using (RegistryKey srcRootKey = RegistryKey.OpenBaseKey(srcHiveKind, RegistryView.Registry64))
+            using (RegistryKey destRootKey = RegistryKey.OpenBaseKey(destHiveKind, RegistryView.Registry64))
             {
-                string wildcard = Path.GetFileName(srcKeyPath);
-                if (wildcard.IndexOfAny(new[] { '*', '?' }) == -1)
-                    return LogInfo.LogErrorMessage(logs, $"SrcKeyPath [{srcKeyPath}] does not contain wildcard");
-
-                string? srcKeyParentPath = Path.GetDirectoryName(srcKeyPath);
-                if (srcKeyParentPath == null)
-                    return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(info.SrcKeyPath)} [{srcKeyPath}]");
-
-                using (RegistryKey? parentSubKey = info.HSrcKey.OpenSubKey(srcKeyParentPath, false))
+                if (info.WildcardFlag)
                 {
-                    if (parentSubKey == null)
-                        return LogInfo.LogErrorMessage(logs, $"Registry key [{srcKeyPath}] does not exist");
+                    string wildcard = Path.GetFileName(srcKeyPath);
+                    if (wildcard.IndexOfAny(new[] { '*', '?' }) == -1)
+                        return LogInfo.LogErrorMessage(logs, $"SrcKeyPath [{srcKeyPath}] does not contain wildcard");
 
-                    foreach (string targetSubKey in StringHelper.MatchGlob(wildcard, parentSubKey.GetSubKeyNames(), StringComparison.OrdinalIgnoreCase))
+                    string? srcKeyParentPath = Path.GetDirectoryName(srcKeyPath);
+                    if (srcKeyParentPath == null)
+                        return LogInfo.LogErrorMessage(logs, $"Invalid {nameof(info.SrcKeyPath)} [{srcKeyPath}]");
+
+                    using (RegistryKey? parentSubKey = srcRootKey.OpenSubKey(srcKeyParentPath, false))
                     {
-                        string copySrcSubKeyPath = Path.Combine(srcKeyParentPath, targetSubKey);
-                        string copyDestSubKeyPath = Path.Combine(destKeyPath, targetSubKey);
-                        RegistryHelper.CopySubKey(info.HSrcKey, copySrcSubKeyPath, info.HDestKey, copyDestSubKeyPath);
+                        if (parentSubKey == null)
+                            return LogInfo.LogErrorMessage(logs, $"Registry key [{srcKeyPath}] does not exist");
+
+                        foreach (string targetSubKey in StringHelper.MatchGlob(wildcard, parentSubKey.GetSubKeyNames(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            string copySrcSubKeyPath = Path.Combine(srcKeyParentPath, targetSubKey);
+                            string copyDestSubKeyPath = Path.Combine(destKeyPath, targetSubKey);
+                            RegistryHelper.CopySubKey(srcRootKey, copySrcSubKeyPath, destRootKey, copyDestSubKeyPath);
+                        }
                     }
+
+                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
                 }
+                else
+                { // No Wildcard
+                    RegistryHelper.CopySubKey(srcRootKey, srcKeyPath, destRootKey, destKeyPath);
 
-                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
+                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
+                }
             }
-            else
-            { // No Wildcard
-                RegistryHelper.CopySubKey(info.HSrcKey, srcKeyPath, info.HDestKey, destKeyPath);
 
-                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
-            }
+            
 
             return logs;
         }

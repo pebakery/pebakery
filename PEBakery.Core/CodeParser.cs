@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -645,15 +645,11 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-
                         string destVar = args[3];
                         if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
+                        return new CodeInfo_RegRead(args[0], args[1], args[2], destVar);
                     }
                 case CodeType.RegWrite:
                 case CodeType.RegWriteEx:
@@ -665,15 +661,6 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
-                        // It will be parsed in RegWriteLegacy
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                        {
-                            type = CodeType.RegWriteLegacy;
-                            goto case CodeType.RegWriteLegacy;
-                        }
-
                         int cnt = args.Count;
                         bool noWarn = false;
                         if (args[cnt - 1].Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
@@ -683,38 +670,34 @@ namespace PEBakery.Core
                         }
 
                         // Parse RegistryValueKind
+                        string valueTypeStr = args[1];
                         RegistryValueKind valueType;
-                        if (!NumberHelper.ParseUInt32(args[1], out uint valueTypeInt))
-                            throw new InvalidCommandException($"[{args[1]}] is not a valid number");
-                        switch (valueTypeInt)
+                        uint valueTypeInt;
+                        if (RegistryHelper.ParseValueKind(valueTypeStr) is RegistryValueKind parsedKind)
+                        { // REG_DWORD, etc.
+                            valueType = parsedKind;
+                            if (RegistryHelper.ValueKindToWBInt(parsedKind) is uint wbInt)
+                                valueTypeInt = wbInt;
+                            else
+                                throw new InvalidCommandException($"[{valueTypeStr}] is not a valid Reigstry value type");
+                        }
+                        else if (NumberHelper.ParseUInt32(valueTypeStr, out valueTypeInt))
                         {
-                            case 0:
-                                valueType = RegistryValueKind.None;
-                                break;
-                            case 1:
-                                valueType = RegistryValueKind.String;
-                                break;
-                            case 2:
-                                valueType = RegistryValueKind.ExpandString;
-                                break;
-                            case 3:
-                                valueType = RegistryValueKind.Binary;
-                                break;
-                            case 4:
-                                valueType = RegistryValueKind.DWord;
-                                break;
-                            case 7:
-                                valueType = RegistryValueKind.MultiString;
-                                break;
-                            case 11:
-                                valueType = RegistryValueKind.QWord;
-                                break;
-                            default:
-                                if (type == CodeType.RegWriteEx)
-                                    valueType = RegistryValueKind.Unknown;
-                                else
-                                    throw new InvalidCommandException($"Invalid registry value type [0x{valueTypeInt:X}]");
-                                break;
+                            if (RegistryHelper.WBIntToValudKind(valueTypeInt) is RegistryValueKind intKind)
+                                valueType = intKind;
+                            else if (type == CodeType.RegWriteEx)
+                                valueType = RegistryValueKind.Unknown;
+                            else
+                                throw new InvalidCommandException($"Invalid registry value type [0x{valueTypeInt:X}], consider using [{nameof(CodeType.RegWriteEx)}].");
+                        }
+                        else
+                        {
+                            if (_opts.AllowLegacyRegWrite)
+                            { // Compatibility shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                                type = CodeType.RegWriteLegacy;
+                                goto case CodeType.RegWriteLegacy;
+                            }
+                            throw new InvalidCommandException($"[{valueTypeStr}] is not a valid Registry value type");
                         }
 
                         // Create CodeInfo_RegWrite instance
@@ -724,13 +707,13 @@ namespace PEBakery.Core
                                 // RegWriteEx only, it bypass RegistryValueKind checking
                                 // Data would be treated as binary
                                 if (cnt == 4)
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
                                 else if (5 == cnt)
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 else if (6 <= cnt)
                                 {
                                     string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.None:
@@ -739,9 +722,9 @@ namespace PEBakery.Core
                                 switch (cnt)
                                 {
                                     case 3:
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], null, null, null, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], null, null, null, noWarn);
                                     case 4:
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, null, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.String:
@@ -749,42 +732,42 @@ namespace PEBakery.Core
                                 switch (cnt)
                                 {
                                     case 3:
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], null, null, null, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], null, null, null, noWarn);
                                     case 4:
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
                                     case 5:
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
                                 if (4 == cnt)
                                 { // RegWrite,HKLM,0x7,"Tmp_Software\PEBakery","Download Directories" 
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
                                 }
                                 else if (5 <= cnt)
                                 { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim"
                                     string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
                                     if (valueDataList.Length == 1 && valueDataList[0].Equals(string.Empty, StringComparison.Ordinal))
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, Array.Empty<string>(), noWarn);
                                     else
-                                        return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
                                 if (cnt == 4)
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], string.Empty, null, noWarn);
                                 else if (5 == cnt)
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 else if (6 <= cnt)
                                 {
                                     string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.DWord:
                             case RegistryValueKind.QWord:
                                 if (cnt == 5)
-                                    return new CodeInfo_RegWrite(hKey, valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                    return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
                                 break;
                             default:
                                 throw new InvalidCommandException($"Invalid ValueType [{valueTypeInt}]", rawCode);
@@ -831,16 +814,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-
                         string keyPath = args[1];
                         string? valueName = null;
                         if (args.Count == maxArgCount)
                             valueName = args[2];
 
-                        return new CodeInfo_RegDelete(hKey, keyPath, valueName);
+                        return new CodeInfo_RegDelete(args[0], keyPath, valueName);
                     }
                 case CodeType.RegMulti:
                     { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
@@ -848,10 +827,6 @@ namespace PEBakery.Core
                         const int maxArgCount = 6;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         string keyPath = args[1];
                         string valueName = args[2];
@@ -866,7 +841,7 @@ namespace PEBakery.Core
                         if (args.Count == maxArgCount)
                             arg2 = args[5];
 
-                        return new CodeInfo_RegMulti(hKey, keyPath, valueName, valType, arg1, arg2);
+                        return new CodeInfo_RegMulti(args[0], keyPath, valueName, valType, arg1, arg2);
                     }
                 case CodeType.RegImport:
                     { // RegImport,<RegFile>
@@ -882,11 +857,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-
-                        return new CodeInfo_RegExport(hKey, args[1], args[2]);
+                        return new CodeInfo_RegExport(args[0], args[1], args[2]);
                     }
                 case CodeType.RegCopy:
                     { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
@@ -894,13 +865,6 @@ namespace PEBakery.Core
                         const int maxArgCount = 5;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        RegistryKey? hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hSrcKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-                        RegistryKey? hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
-                        if (hDestKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[2]}]", rawCode);
 
                         bool wildcard = false;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -918,7 +882,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_RegCopy(hSrcKey, args[1], hDestKey, args[3], wildcard);
+                        return new CodeInfo_RegCopy(args[0], args[1], args[2], args[3], wildcard);
                     }
                 #endregion
                 #region 03 Text

@@ -26,6 +26,7 @@
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -104,6 +105,30 @@ namespace PEBakery.Helper
 
         #region Parse
         [SupportedOSPlatform("windows")]
+        public static RegistryHive? ParseStringToRegHive(string rootKey)
+        {
+            RegistryHive? regHive;
+            if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
+                regHive = RegistryHive.ClassesRoot; // HKEY_CLASSES_ROOT
+            else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
+                regHive = RegistryHive.CurrentUser; // HKEY_CURRENT_USER
+            else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
+                regHive = RegistryHive.LocalMachine; // HKEY_LOCAL_MACHINE
+            else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
+                regHive = RegistryHive.Users; // HKEY_USERS
+            else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
+                regHive = RegistryHive.CurrentConfig; // HKEY_CURRENT_CONFIG
+            else
+                regHive = null;
+            return regHive;
+        }
+
+        [SupportedOSPlatform("windows")]
         public static RegistryKey? ParseStringToRegKey(string rootKey)
         {
             RegistryKey? regRoot;
@@ -125,6 +150,25 @@ namespace PEBakery.Helper
             else
                 regRoot = null;
             return regRoot;
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static string? RegHiveToString(RegistryHive regHive)
+        {
+            string? rootKey;
+            if (regHive == RegistryHive.ClassesRoot)
+                rootKey = "HKCR";
+            else if (regHive == RegistryHive.CurrentUser)
+                rootKey = "HKCU";
+            else if (regHive == RegistryHive.LocalMachine)
+                rootKey = "HKLM";
+            else if (regHive == RegistryHive.Users)
+                rootKey = "HKU";
+            else if (regHive == RegistryHive.CurrentConfig)
+                rootKey = "HKCC";
+            else
+                rootKey = null;
+            return rootKey;
         }
 
         [SupportedOSPlatform("windows")]
@@ -188,6 +232,57 @@ namespace PEBakery.Helper
                 hKey = new SafeRegistryHandle(IntPtr.Zero, true);
             return hKey;
         }
+
+        public static RegistryValueKind? ParseValueKind(string str)
+        {
+            if (str.Equals("REG_BINARY", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.Binary;
+            else if (str.Equals("REG_DWORD", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.DWord;
+            else if (str.Equals("REG_EXPAND_SZ", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.ExpandString;
+            else if (str.Equals("REG_MULTI_SZ", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.MultiString;
+            else if (str.Equals("REG_NONE", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.None;
+            else if (str.Equals("REG_QWORD", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.QWord;
+            else if (str.Equals("REG_SZ", StringComparison.OrdinalIgnoreCase))
+                return RegistryValueKind.String;
+            return null;
+        }
+
+        /// <summary>
+        /// The dictionary to map RegistryValueKidn to WBInt values.
+        /// WBInt value does not exactly map to RegistryValueKind, so maunal conversion is necessary.
+        /// </summary>
+        private static readonly Dictionary<RegistryValueKind, uint> ValueKindWBIntDict = new Dictionary<RegistryValueKind, uint>()
+        {
+            [RegistryValueKind.None] = 0,
+            [RegistryValueKind.String] = 1,
+            [RegistryValueKind.ExpandString] = 2,
+            [RegistryValueKind.Binary] = 3,
+            [RegistryValueKind.DWord] = 4,
+            [RegistryValueKind.MultiString] = 7,
+            [RegistryValueKind.QWord] = 11,
+        };
+
+        public static uint? ValueKindToWBInt(RegistryValueKind valueType)
+        {
+            if (ValueKindWBIntDict.ContainsKey(valueType))
+                return ValueKindWBIntDict[valueType];    
+            return null;
+        }
+
+        public static RegistryValueKind? WBIntToValudKind(uint wbInt)
+        {
+            foreach (var kv in ValueKindWBIntDict)
+            {
+                if (kv.Value == wbInt)
+                    return kv.Key;
+            }
+            return null;
+        }
         #endregion
 
         #region CopySubKey (SHCopyKey wrapper)
@@ -249,10 +344,9 @@ namespace PEBakery.Helper
                 if (subKey == null)
                     throw new ArgumentException($"Unable to open subkey [{subKeyPath}]");
 
-                if (valueType == RegistryValueKind.Unknown ||
-                    !Enum.IsDefined(typeof(RegistryValueKind), valueType))
+                if (valueType == RegistryValueKind.Unknown || !Enum.IsDefined(valueType))
                 {
-                    // We don't know how to interprete byte array into C# objects.
+                    // We don't know how to interpret byte array into C# objects.
                     // Let's return raw byte array we received from RegQueryValueEx.
 
                     // Get required buffer size
