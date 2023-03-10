@@ -29,7 +29,6 @@ using Microsoft.Win32;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -815,16 +814,12 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-
                         string keyPath = args[1];
                         string? valueName = null;
                         if (args.Count == maxArgCount)
                             valueName = args[2];
 
-                        return new CodeInfo_RegDelete(hKey, keyPath, valueName);
+                        return new CodeInfo_RegDelete(args[0], keyPath, valueName);
                     }
                 case CodeType.RegMulti:
                     { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
@@ -832,10 +827,6 @@ namespace PEBakery.Core
                         const int maxArgCount = 6;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
 
                         string keyPath = args[1];
                         string valueName = args[2];
@@ -850,7 +841,7 @@ namespace PEBakery.Core
                         if (args.Count == maxArgCount)
                             arg2 = args[5];
 
-                        return new CodeInfo_RegMulti(hKey, keyPath, valueName, valType, arg1, arg2);
+                        return new CodeInfo_RegMulti(args[0], keyPath, valueName, valType, arg1, arg2);
                     }
                 case CodeType.RegImport:
                     { // RegImport,<RegFile>
@@ -866,11 +857,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        RegistryKey? hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-
-                        return new CodeInfo_RegExport(hKey, args[1], args[2]);
+                        return new CodeInfo_RegExport(args[0], args[1], args[2]);
                     }
                 case CodeType.RegCopy:
                     { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
@@ -878,13 +865,6 @@ namespace PEBakery.Core
                         const int maxArgCount = 5;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        RegistryKey? hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        if (hSrcKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[0]}]", rawCode);
-                        RegistryKey? hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
-                        if (hDestKey == null)
-                            throw new InvalidCommandException($"Invalid HKEY [{args[2]}]", rawCode);
 
                         bool wildcard = false;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -902,7 +882,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_RegCopy(hSrcKey, args[1], hDestKey, args[3], wildcard);
+                        return new CodeInfo_RegCopy(args[0], args[1], args[2], args[3], wildcard);
                     }
                 #endregion
                 #region 03 Text

@@ -28,6 +28,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Win32;
 using PEBakery.Helper;
+using Scriban.Parsing;
 using System;
 using System.IO;
 using System.Linq;
@@ -784,84 +785,82 @@ namespace PEBakery.Core.Tests.Command
             else
                 EngineTests.Eval(s, rawCode, codeType, check, opts);
 
-            if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
+            if (!(check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite))
+                return;
+
+            using RegistryKey rootKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64);
+            using RegistryKey? subKey = rootKey.OpenSubKey(keyPath, false);
+            Assert.IsNotNull(subKey);
+
+            RegistryValueKind kind = subKey.GetValueKind(valueName);
+            Assert.IsTrue(kind == compKind);
+
+            object? valueData;
+            if (kind == RegistryValueKind.Unknown)
+                valueData = RegistryHelper.RegGetValue(rootKey, keyPath, valueName, RegistryValueKind.Unknown);
+            else
+                valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            Assert.IsNotNull(valueData);
+
+            switch (kind)
             {
-                using (RegistryKey rootKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
-                using (RegistryKey? subKey = rootKey.OpenSubKey(keyPath, false))
-                {
-                    Assert.IsNotNull(subKey);
-
-                    RegistryValueKind kind = subKey.GetValueKind(valueName);
-                    Assert.IsTrue(kind == compKind);
-
-                    object? valueData;
-                    if (kind == RegistryValueKind.Unknown)
-                        valueData = RegistryHelper.RegGetValue(rootKey, keyPath, valueName, RegistryValueKind.Unknown);
-                    else
-                        valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                    Assert.IsNotNull(valueData);
-
-                    switch (kind)
-                    {
-                        case RegistryValueKind.Unknown:
-                            { // RegWriteEx
-                                Assert.IsNotNull(expect);
-                                byte[] destBin = (byte[])valueData;
-                                byte[] compBin = (byte[])expect;
-                                Assert.IsTrue(destBin.SequenceEqual(compBin));
-                            }
-                            break;
-                        case RegistryValueKind.None:
-                            break;
-                        case RegistryValueKind.String:
-                        case RegistryValueKind.ExpandString:
-                            {
-                                Assert.IsNotNull(expect);
-                                string destStr = (string)valueData;
-                                string compStr = (string)expect;
-                                Assert.IsTrue(destStr.Equals(compStr, StringComparison.Ordinal));
-                            }
-                            break;
-                        case RegistryValueKind.MultiString:
-                            {
-                                Assert.IsNotNull(expect);
-                                string[] destStrs = (string[])valueData;
-                                string[] compStrs = (string[])expect;
-
-                                Assert.IsTrue(destStrs.Length == compStrs.Length);
-                                for (int i = 0; i < destStrs.Length; i++)
-                                    Assert.IsTrue(destStrs[i].Equals(compStrs[i], StringComparison.Ordinal));
-                            }
-                            break;
-                        case RegistryValueKind.Binary:
-                            {
-                                Assert.IsNotNull(expect);
-                                byte[] destBin = (byte[])valueData;
-                                byte[] compBin = (byte[])expect;
-                                Assert.IsTrue(destBin.SequenceEqual(compBin));
-                            }
-                            break;
-                        case RegistryValueKind.DWord:
-                            {
-                                Assert.IsNotNull(expect);
-                                uint destInt = (uint)(int)valueData;
-                                uint compInt = (uint)expect;
-                                Assert.AreEqual(compInt, destInt);
-                            }
-                            break;
-                        case RegistryValueKind.QWord:
-                            {
-                                Assert.IsNotNull(expect);
-                                ulong destInt = (ulong)(long)valueData;
-                                ulong compInt = (ulong)expect;
-                                Assert.AreEqual(compInt, destInt);
-                            }
-                            break;
-                        default:
-                            Assert.Fail();
-                            break;
+                case RegistryValueKind.Unknown:
+                    { // RegWriteEx
+                        Assert.IsNotNull(expect);
+                        byte[] destBin = (byte[])valueData;
+                        byte[] compBin = (byte[])expect;
+                        Assert.IsTrue(destBin.SequenceEqual(compBin));
                     }
-                }
+                    break;
+                case RegistryValueKind.None:
+                    break;
+                case RegistryValueKind.String:
+                case RegistryValueKind.ExpandString:
+                    {
+                        Assert.IsNotNull(expect);
+                        string destStr = (string)valueData;
+                        string compStr = (string)expect;
+                        Assert.IsTrue(destStr.Equals(compStr, StringComparison.Ordinal));
+                    }
+                    break;
+                case RegistryValueKind.MultiString:
+                    {
+                        Assert.IsNotNull(expect);
+                        string[] destStrs = (string[])valueData;
+                        string[] compStrs = (string[])expect;
+
+                        Assert.IsTrue(destStrs.Length == compStrs.Length);
+                        for (int i = 0; i < destStrs.Length; i++)
+                            Assert.IsTrue(destStrs[i].Equals(compStrs[i], StringComparison.Ordinal));
+                    }
+                    break;
+                case RegistryValueKind.Binary:
+                    {
+                        Assert.IsNotNull(expect);
+                        byte[] destBin = (byte[])valueData;
+                        byte[] compBin = (byte[])expect;
+                        Assert.IsTrue(destBin.SequenceEqual(compBin));
+                    }
+                    break;
+                case RegistryValueKind.DWord:
+                    {
+                        Assert.IsNotNull(expect);
+                        uint destInt = (uint)(int)valueData;
+                        uint compInt = (uint)expect;
+                        Assert.AreEqual(compInt, destInt);
+                    }
+                    break;
+                case RegistryValueKind.QWord:
+                    {
+                        Assert.IsNotNull(expect);
+                        ulong destInt = (ulong)(long)valueData;
+                        ulong compInt = (ulong)expect;
+                        Assert.AreEqual(compInt, destInt);
+                    }
+                    break;
+                default:
+                    Assert.Fail();
+                    break;
             }
         }
         private static void WriteErrorTemplate(EngineState s, CodeType codeType, string rawCode, ErrorCheck check)
