@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -253,9 +253,9 @@
                     </cc:IconButton.IconForeground>
                 </cc:IconButton>
                 <Ellipse Grid.Row="1" Grid.Column="5"
-                         Width="10" Height="10"
+                         Width="{Binding MainReportIssuePointDiameter}" Height="{Binding MainReportIssuePointDiameter}"
                          HorizontalAlignment="Right" VerticalAlignment="Top"
-                         Margin="0, 2.2, 4, 0"
+                         Margin="{Binding MainReportIssuePointMargin}"
                          Fill="{Binding TopPanelReportIssueColorPoint, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}"
                          Visibility="{Binding SystemLogHasIssue, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"/>
                 <TextBlock Grid.Row="2" Grid.Column="5"

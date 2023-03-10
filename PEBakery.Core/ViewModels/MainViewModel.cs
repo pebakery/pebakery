@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -207,6 +207,8 @@ namespace PEBakery.Core.ViewModels
             OnPropertyUpdate(nameof(MainIconGridWidth));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
+            OnPropertyUpdate(nameof(MainReportIssuePointDiameter));
+            OnPropertyUpdate(nameof(MainReportIssuePointMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
@@ -218,6 +220,8 @@ namespace PEBakery.Core.ViewModels
         public int MainIconGridWidth => GetAdaptiveSize(54, 44);
         public int MainIconButtonSize => GetAdaptiveSize(48, 36);
         public int MainIconButtonMargin => GetAdaptiveSize(6, 4);
+        public int MainReportIssuePointDiameter => GetAdaptiveSize(10, 7);
+        public Thickness MainReportIssuePointMargin => GetAdaptiveSize(new Thickness(0, 2.2, 4, 0), new Thickness(0, 1.5, 5, 0));
         #endregion
 
         #region Color Theme
