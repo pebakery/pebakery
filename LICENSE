@@ -5,7 +5,7 @@ Some parts of PEBakery are licensed under various licenses,
 which are compatible with GPLv3. It is specified on a
 per-file basis or LICENSE file placed in a subdirectory.
 -----------------------------------------------------------
-Copyright (C) 2016-2022 Hajin Jang
+Copyright (C) 2016-2023 Hajin Jang
 
 PEBakery is free software: you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,8 +35,8 @@ not derived from or based on this program.
 These parts of PEBakery is licensed under the various license.
 
 PEBakery.Ini
-PEBakery.Ini.Tests
 PEBakery.Tree
+PEBakery.Helper
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -50,11 +50,8 @@ Ookii.Dialogs.Wpf
     https://github.com/vsvyatski/ookii.dialogs
 
 Launcher
+NetDetectorCli
 NetLauncherLib
-    MIT License
-    https://opensource.org/licenses/MIT
-
-PEBakery.Helper
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -155,7 +152,6 @@ ManagedWimgApi
     https://github.com/jeffkl/ManagedWimgApi
 
 ManagedWimLib
-ManagedWimLib.Tests
     LGPLv3 License
     https://www.gnu.org/licenses/lgpl-3.0.en.html
 
