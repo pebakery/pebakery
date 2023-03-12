@@ -71,6 +71,7 @@ namespace PEBakery.Core
             public bool OptimizeCode { get; set; }
             public bool ShowLogAfterBuild { get; set; }
             public bool StopBuildOnError { get; set; }
+            public bool EnableSystemLogAlarmBadge { get; set; }
             public bool EnableLongFilePath { get; set; }
             public bool EnableUpdateServerManagement { get; set; }
             public bool UseCustomUserAgent { get; set; }
@@ -86,6 +87,7 @@ namespace PEBakery.Core
                 OptimizeCode = true;
                 ShowLogAfterBuild = true;
                 StopBuildOnError = true;
+                EnableSystemLogAlarmBadge = true;
                 EnableLongFilePath = false;
                 EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
@@ -164,19 +166,19 @@ namespace PEBakery.Core
             public const string SectionName = "Theme";
 
             // Preset
-            public ThemeType ThemeType;
+            public ThemeType ThemeType { get; set; }
             // Custom
-            public Color CustomTopPanelBackground;
-            public Color CustomTopPanelForeground;
-            public Color CustomTopPanelReportIssueButton;
-            public Color CustomTopPanelReportIssuePoint;
-            public Color CustomTreePanelBackground;
-            public Color CustomTreePanelForeground;
-            public Color CustomTreePanelHighlight;
-            public Color CustomScriptPanelBackground;
-            public Color CustomScriptPanelForeground;
-            public Color CustomStatusBarBackground;
-            public Color CustomStatusBarForeground;
+            public Color CustomTopPanelBackground { get; set; }
+            public Color CustomTopPanelForeground { get; set; }
+            public Color CustomTopPanelIssueAlarmButton { get; set; }
+            public Color CustomTopPanelIssueAlarmBadge { get; set; }
+            public Color CustomTreePanelBackground { get; set; }
+            public Color CustomTreePanelForeground { get; set; }
+            public Color CustomTreePanelHighlight { get; set; }
+            public Color CustomScriptPanelBackground { get; set; }
+            public Color CustomScriptPanelForeground { get; set; }
+            public Color CustomStatusBarBackground { get; set; }
+            public Color CustomStatusBarForeground { get; set; }
 
             public ThemeSetting()
             {
@@ -189,8 +191,8 @@ namespace PEBakery.Core
                 // Apply Classic Theme to Custom Properties
                 CustomTopPanelBackground = Colors.LightBlue;
                 CustomTopPanelForeground = Colors.Black;
-                CustomTopPanelReportIssueButton = Color.FromRgb(255, 132, 0); 
-                CustomTopPanelReportIssuePoint = Colors.Red;
+                CustomTopPanelIssueAlarmButton = Color.FromRgb(255, 132, 0); 
+                CustomTopPanelIssueAlarmBadge = Colors.Red;
                 CustomTreePanelBackground = Colors.LightGreen;
                 CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
@@ -245,7 +247,7 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color TopPanelReportIssueButton
+            public Color TopPanelIssueAlarmButton
             {
                 get
                 {
@@ -260,13 +262,13 @@ namespace PEBakery.Core
                         case ThemeType.Marine:
                             return Colors.Yellow;
                         case ThemeType.Custom:
-                            return CustomTopPanelReportIssueButton;
+                            return CustomTopPanelIssueAlarmButton;
                         default:
-                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelReportIssueButton)}]");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelIssueAlarmButton)}]");
                     }
                 }
             }
-            public Color TopPanelReportIssuePoint
+            public Color TopPanelIssueAlarmBadge
             {
                 get
                 {
@@ -283,9 +285,9 @@ namespace PEBakery.Core
                         case ThemeType.Marine:
                             return Color.FromRgb(255, 145, 0);
                         case ThemeType.Custom:
-                            return CustomTopPanelReportIssuePoint;
+                            return CustomTopPanelIssueAlarmBadge;
                         default:
-                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelReportIssuePoint)}]");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelIssueAlarmBadge)}]");
                     }
                 }
             }
@@ -627,13 +629,14 @@ namespace PEBakery.Core
             Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
+            Global.MainViewModel.EnableSystemIssueAlarmBadge = General.EnableSystemLogAlarmBadge;
             Global.MainViewModel.EnableUpdateServerManagement = General.EnableUpdateServerManagement;
 
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
             Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
-            Global.MainViewModel.TopPanelReportIssueColorButton = Theme.TopPanelReportIssueButton;
-            Global.MainViewModel.TopPanelReportIssueColorPoint = Theme.TopPanelReportIssuePoint;
+            Global.MainViewModel.TopPanelIssueAlarmButtonColor = Theme.TopPanelIssueAlarmButton;
+            Global.MainViewModel.TopPanelIssueAlarmBadgeColor = Theme.TopPanelIssueAlarmBadge;
             Global.MainViewModel.TreePanelBackground = Theme.TreePanelBackground;
             Global.MainViewModel.TreePanelForeground = Theme.TreePanelForeground;
             Global.MainViewModel.TreePanelHighlight = Theme.TreePanelHighlight;
@@ -673,6 +676,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
@@ -697,8 +701,8 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssueButton)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssuePoint)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight)), // Color
@@ -769,6 +773,7 @@ namespace PEBakery.Core
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
+                General.EnableSystemLogAlarmBadge = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge), General.EnableSystemLogAlarmBadge);
                 General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
                 General.EnableUpdateServerManagement = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement);
                 General.UseCustomUserAgent = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
@@ -829,8 +834,8 @@ namespace PEBakery.Core
                 Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTopPanelReportIssueButton = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssueButton), Theme.CustomTopPanelReportIssueButton);
-                Theme.CustomTopPanelReportIssuePoint = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssuePoint), Theme.CustomTopPanelReportIssuePoint);
+                Theme.CustomTopPanelIssueAlarmButton = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), Theme.CustomTopPanelIssueAlarmButton);
+                Theme.CustomTopPanelIssueAlarmBadge = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), Theme.CustomTopPanelIssueAlarmBadge);
                 Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
                 Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
                 Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
@@ -901,6 +906,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge), General.EnableSystemLogAlarmBadge.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
@@ -925,7 +931,8 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssueButton), WriteColor(Theme.CustomTopPanelReportIssueButton)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), WriteColor(Theme.CustomTopPanelIssueAlarmButton)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), WriteColor(Theme.CustomTopPanelIssueAlarmBadge)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), WriteColor(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), WriteColor(Theme.CustomTreePanelHighlight)), // Color

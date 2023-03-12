@@ -574,6 +574,13 @@ namespace PEBakery.WPF
             set => SetProperty(ref _generalStopBuildOnError, value);
         }
 
+        private bool _generalEnableSystemIssueAlarmBadge;
+        public bool GeneralEnableSystemIssueAlarmBadge
+        {
+            get => _generalEnableSystemIssueAlarmBadge;
+            set => SetProperty(ref _generalEnableSystemIssueAlarmBadge, value);
+        }
+
         private bool _generalEnableLongFilePath;
         public bool GeneralEnableLongFilePath
         {
@@ -701,18 +708,18 @@ namespace PEBakery.WPF
             set => SetProperty(ref _themeCustomTopPanelForeground, value);
         }
 
-        private Color _themeCustomTopPanelReportIssueButton;
-        public Color ThemeCustomTopPanelReportIssueButton
+        private Color _themeCustomTopPanelIssueAlarmButton;
+        public Color ThemeCustomTopPanelIssueAlarmButton
         {
-            get => _themeCustomTopPanelReportIssueButton;
-            set => SetProperty(ref _themeCustomTopPanelReportIssueButton, value);
+            get => _themeCustomTopPanelIssueAlarmButton;
+            set => SetProperty(ref _themeCustomTopPanelIssueAlarmButton, value);
         }
 
-        private Color _themeCustomTopPanelReportIssuePoint;
-        public Color ThemeCustomTopPanelReportIssuePoint
+        private Color _themeCustomTopPanelIssueAlarmBadge;
+        public Color ThemeCustomTopPanelIssueAlarmBadge
         {
-            get => _themeCustomTopPanelReportIssuePoint;
-            set => SetProperty(ref _themeCustomTopPanelReportIssuePoint, value);
+            get => _themeCustomTopPanelIssueAlarmBadge;
+            set => SetProperty(ref _themeCustomTopPanelIssueAlarmBadge, value);
         }
 
         private Color _themeCustomTreePanelBackground;
@@ -1332,6 +1339,7 @@ namespace PEBakery.WPF
             GeneralOptimizeCode = newGeneral.OptimizeCode;
             GeneralShowLogAfterBuild = newGeneral.ShowLogAfterBuild;
             GeneralStopBuildOnError = newGeneral.StopBuildOnError;
+            GeneralEnableSystemIssueAlarmBadge = newGeneral.EnableSystemLogAlarmBadge;
             GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
             GeneralUseCustomUserAgent = newGeneral.UseCustomUserAgent;
             GeneralCustomUserAgent = newGeneral.CustomUserAgent;
@@ -1402,6 +1410,7 @@ namespace PEBakery.WPF
             GeneralOptimizeCode = Setting.General.OptimizeCode;
             GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
             GeneralStopBuildOnError = Setting.General.StopBuildOnError;
+            GeneralEnableSystemIssueAlarmBadge = Setting.General.EnableSystemLogAlarmBadge;
             GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
             GeneralEnableUpdateServerManagement = Setting.General.EnableUpdateServerManagement;
             GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
@@ -1421,8 +1430,8 @@ namespace PEBakery.WPF
             ThemeType = Setting.Theme.ThemeType;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
-            ThemeCustomTopPanelReportIssueButton = Setting.Theme.CustomTopPanelReportIssueButton;
-            ThemeCustomTopPanelReportIssuePoint = Setting.Theme.CustomTopPanelReportIssuePoint;
+            ThemeCustomTopPanelIssueAlarmButton = Setting.Theme.CustomTopPanelIssueAlarmButton;
+            ThemeCustomTopPanelIssueAlarmBadge = Setting.Theme.CustomTopPanelIssueAlarmBadge;
             ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
             ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
             ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
@@ -1468,6 +1477,7 @@ namespace PEBakery.WPF
             Setting.General.OptimizeCode = GeneralOptimizeCode;
             Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
             Setting.General.StopBuildOnError = GeneralStopBuildOnError;
+            Setting.General.EnableSystemLogAlarmBadge = GeneralEnableSystemIssueAlarmBadge;
             Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
             Setting.General.EnableUpdateServerManagement = GeneralEnableUpdateServerManagement;
             Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
@@ -1487,8 +1497,8 @@ namespace PEBakery.WPF
             Setting.Theme.ThemeType = ThemeType;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
-            Setting.Theme.CustomTopPanelReportIssueButton = ThemeCustomTopPanelReportIssueButton;
-            Setting.Theme.CustomTopPanelReportIssuePoint = ThemeCustomTopPanelReportIssuePoint;
+            Setting.Theme.CustomTopPanelIssueAlarmButton = ThemeCustomTopPanelIssueAlarmButton;
+            Setting.Theme.CustomTopPanelIssueAlarmBadge = ThemeCustomTopPanelIssueAlarmBadge;
             Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
             Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
             Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;

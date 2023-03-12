@@ -747,6 +747,54 @@ namespace PEBakery.WPF
             return Binding.DoNothing;
         }
     }
+
+    public class MultiBooleanAndToVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values is not Array valueArr)
+                return Binding.DoNothing;
+
+            bool boolAndVal = true;
+            foreach (object val in valueArr)
+            {
+                if (val is not bool boolVal)
+                    return Binding.DoNothing;
+                boolAndVal &= boolVal;
+            }
+
+            return boolAndVal ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing };
+        }
+    }
+
+    public class MultiBooleanOrToVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values is not Array valueArr)
+                return Binding.DoNothing;
+
+            bool boolOrVal = false;
+            foreach (object val in valueArr)
+            {
+                if (val is not bool boolVal)
+                    return Binding.DoNothing;
+                boolOrVal |= boolVal;
+            }
+
+            return boolOrVal ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing };
+        }
+    }
     #endregion
 
     #region SolidColorBrush

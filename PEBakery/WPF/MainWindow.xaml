@@ -134,6 +134,8 @@
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <local:BooleanToParamConverter x:Key="BooleanToParamConverter"/>
         <local:GridLengthConverter x:Key="GridLengthConverter" />
+        <local:MultiBooleanAndToVisibilityConverter x:Key="MultiBooleanAndToVisibilityConverter"/>
+        <local:MultiBooleanOrToVisibilityConverter x:Key="MultiBooleanOrToVisibilityConverter"/>
     </Window.Resources>
     <DockPanel ccc:SelectTextOnFocus.Active="True">
         <Grid DockPanel.Dock="Top"
@@ -247,17 +249,26 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="BuildEndedWithIssue"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColorButton"/>
+                                <Binding Path="TopPanelIssueAlarmButtonColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>
                 </cc:IconButton>
                 <Ellipse Grid.Row="1" Grid.Column="5"
-                         Width="{Binding MainReportIssuePointDiameter}" Height="{Binding MainReportIssuePointDiameter}"
+                         Width="{Binding MainIssueAlarmBadgeDiameter}" Height="{Binding MainIssueAlarmBadgeDiameter}"
                          HorizontalAlignment="Right" VerticalAlignment="Top"
-                         Margin="{Binding MainReportIssuePointMargin}"
-                         Fill="{Binding TopPanelReportIssueColorPoint, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}"
-                         Visibility="{Binding SystemLogHasIssue, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"/>
+                         Margin="{Binding MainIssueAlarmBadgeMargin}"
+                         Fill="{Binding TopPanelIssueAlarmBadgeColor, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}">
+                    <Ellipse.Visibility>
+                        <MultiBinding Converter="{StaticResource MultiBooleanAndToVisibilityConverter}" 
+                                      Mode="OneWay" FallbackValue="Hidden">
+                            <MultiBinding.Bindings>
+                                <Binding Path="SystemLogHasIssue"/>
+                                <Binding Path="EnableSystemIssueAlarmBadge"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Ellipse.Visibility>
+                </Ellipse>
                 <TextBlock Grid.Row="2" Grid.Column="5"
                            Text="Logs"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -372,7 +383,7 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="WaitingSubProcFinish"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColorButton"/>
+                                <Binding Path="TopPanelIssueAlarmButtonColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>
@@ -400,6 +411,21 @@
                                Command="local:MainViewCommands.LogWindowCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                <Ellipse Grid.Row="1" Grid.Column="3"
+                         Width="{Binding MainIssueAlarmBadgeDiameter}" Height="{Binding MainIssueAlarmBadgeDiameter}"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="{Binding MainIssueAlarmBadgeMargin}"
+                         Fill="{Binding TopPanelIssueAlarmBadgeColor, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}">
+                    <Ellipse.Visibility>
+                        <MultiBinding Converter="{StaticResource MultiBooleanAndToVisibilityConverter}" 
+                                      Mode="OneWay" FallbackValue="Hidden">
+                            <MultiBinding.Bindings>
+                                <Binding Path="SystemLogHasIssue"/>
+                                <Binding Path="EnableSystemIssueAlarmBadge"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Ellipse.Visibility>
+                </Ellipse>
                 <TextBlock Grid.Row="2" Grid.Column="3"
                            Text="Log" 
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"

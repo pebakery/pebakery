@@ -207,8 +207,8 @@ namespace PEBakery.Core.ViewModels
             OnPropertyUpdate(nameof(MainIconGridWidth));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
-            OnPropertyUpdate(nameof(MainReportIssuePointDiameter));
-            OnPropertyUpdate(nameof(MainReportIssuePointMargin));
+            OnPropertyUpdate(nameof(MainIssueAlarmBadgeDiameter));
+            OnPropertyUpdate(nameof(MainIssueAlarmBadgeMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
@@ -220,8 +220,8 @@ namespace PEBakery.Core.ViewModels
         public int MainIconGridWidth => GetAdaptiveSize(54, 44);
         public int MainIconButtonSize => GetAdaptiveSize(48, 36);
         public int MainIconButtonMargin => GetAdaptiveSize(6, 4);
-        public int MainReportIssuePointDiameter => GetAdaptiveSize(10, 7);
-        public Thickness MainReportIssuePointMargin => GetAdaptiveSize(new Thickness(0, 2.2, 4, 0), new Thickness(0, 1.5, 5, 0));
+        public int MainIssueAlarmBadgeDiameter => GetAdaptiveSize(10, 7);
+        public Thickness MainIssueAlarmBadgeMargin => GetAdaptiveSize(new Thickness(0, 2.2, 4, 0), new Thickness(0, 1.5, 5, 0));
         #endregion
 
         #region Color Theme
@@ -239,18 +239,18 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private Color _topPanelReportIssueColorButton = Colors.OrangeRed;
-        public Color TopPanelReportIssueColorButton
+        private Color _topPanelLogAlarmButtonColor = Colors.OrangeRed;
+        public Color TopPanelIssueAlarmButtonColor
         {
-            get => _topPanelReportIssueColorButton;
-            set => SetProperty(ref _topPanelReportIssueColorButton, value);
+            get => _topPanelLogAlarmButtonColor;
+            set => SetProperty(ref _topPanelLogAlarmButtonColor, value);
         }
 
-        private Color _topPanelReportIssueColorPoint = Colors.OrangeRed;
-        public Color TopPanelReportIssueColorPoint
+        private Color _topPanelLogAlarmBadgeColor = Colors.OrangeRed;
+        public Color TopPanelIssueAlarmBadgeColor
         {
-            get => _topPanelReportIssueColorPoint;
-            set => SetProperty(ref _topPanelReportIssueColorPoint, value);
+            get => _topPanelLogAlarmBadgeColor;
+            set => SetProperty(ref _topPanelLogAlarmBadgeColor, value);
         }
 
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
@@ -361,12 +361,22 @@ namespace PEBakery.Core.ViewModels
 
         private bool _systemLogHasIssue = false;
         /// <summary>
-        /// System log has an error, display red dot over the LogViewer button.
+        /// System log has an error, display red badge over the LogViewer button.
         /// </summary>
         public bool SystemLogHasIssue
         {
             get => _systemLogHasIssue;
             set => SetProperty(ref _systemLogHasIssue, value);
+        }
+
+        private bool _enableSystemIssueAlarmBadge = false;
+        /// <summary>
+        /// Enable system issue alarm badge.
+        /// </summary>
+        public bool EnableSystemIssueAlarmBadge
+        {
+            get => _enableSystemIssueAlarmBadge;
+            set => SetProperty(ref _enableSystemIssueAlarmBadge, value);
         }
 
         #region ScriptLogo
