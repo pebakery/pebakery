@@ -322,7 +322,7 @@
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
                                   Content="Enable system log alarm badge"
-                                  ToolTip="The alarm badge will be displayed on the LogViewer button when a new system error or warning have logged."
+                                  ToolTip="The alarm badge will be displayed on the LogViewer button when a new system error have logged."
                                   IsChecked="{Binding GeneralEnableSystemIssueAlarmBadge}" />
                     </StackPanel>
                     <TextBlock Margin="0, 10, 0, 5"

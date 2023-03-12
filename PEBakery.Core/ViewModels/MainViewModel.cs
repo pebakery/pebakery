@@ -1432,22 +1432,21 @@ namespace PEBakery.Core.ViewModels
                         // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
                         Application.Current?.Dispatcher?.Invoke(() =>
                         {
-                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
+                            using MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _);
+
+                            switch (type)
                             {
-                                switch (type)
-                                {
-                                    case ImageHelper.ImageFormat.Svg:
-                                        DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                                        Rect svgSize = svgDrawing.Bounds;
-                                        ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                                        (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
-                                        break;
-                                    default:
-                                        BitmapImage bitmap;
-                                        ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
-                                        (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
-                                        break;
-                                }
+                                case ImageHelper.ImageFormat.Svg:
+                                    DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                    Rect svgSize = svgDrawing.Bounds;
+                                    ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                    (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
+                                    break;
+                                default:
+                                    BitmapImage bitmap;
+                                    ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
+                                    (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
+                                    break;
                             }
                         });
 
@@ -1600,8 +1599,7 @@ namespace PEBakery.Core.ViewModels
             Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
 
             // Populate MainScript
-            if (projectRoot == null)
-                projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
+            projectRoot ??= PopulateOneTreeItem(project.MainScript, null, null);
 
             foreach (Script sc in scList.Where(x => x.Type != ScriptType.Directory))
             {
