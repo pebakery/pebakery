@@ -32,6 +32,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -60,7 +61,7 @@ namespace PEBakery.Core
         public class Report
         {
             /// <summary>
-            /// Successfully finished receiving the reposne without exceptions
+            /// Successfully finished receiving the reponse without exceptions
             /// </summary>
             public bool Result { get; set; }
             /// <summary>
@@ -185,8 +186,28 @@ namespace PEBakery.Core
                             else
                                 statusCode = (HttpStatusCode)downloader.StatusCode;
 
+                            if (e.InnerException is AggregateException aggEx)
+                            {
+                                StringBuilder eMsg = new StringBuilder();
+                                eMsg.Append((int)statusCode);
+                                eMsg.Append(StringHelper.RemoveLastNewLine(e.Message));
+                                foreach (var innerEx in aggEx.InnerExceptions)
+                                {
+                                    eMsg.Append("\r\n    ");
+                                    eMsg.Append(StringHelper.RemoveLastNewLine(aggEx.Message));
+                                }
+                                eMsg.Append("\r\n ");
+                                errorMsg = eMsg.ToString();
+                            }
+                            else
+                            {
+                               // Non-aggregate exception
+                               errorMsg = $"[{(int)statusCode}] {StringHelper.RemoveLastNewLine(e.Message)}";
+                            }
+
                             result = false;
-                            errorMsg = $"[{(int)statusCode}] {e.Message}";
+                            //errorMsg = $"[{(int)statusCode}] {exceptionMsg}";
+
                         }
                     }
                 }
