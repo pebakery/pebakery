@@ -57,18 +57,18 @@
   <!-- NuGet Packages -->
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Joveler.Compression.XZ" Version="4.2.2" />
-    <PackageReference Include="Joveler.Compression.ZLib" Version="4.2.0" />
+    <PackageReference Include="Joveler.Compression.XZ" Version="4.3.0" />
+    <PackageReference Include="Joveler.Compression.ZLib" Version="5.0.0" />
     <PackageReference Include="Joveler.FileMagician" Version="2.3.1" />
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" />
-    <PackageReference Include="ManagedWimLib" Version="2.5.2" />
+    <PackageReference Include="ManagedWimLib" Version="2.5.3" />
     <PackageReference Include="MessagePack" Version="2.5.124" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
     <PackageReference Include="Microsoft.Wim" Version="1.2.11" />
     <PackageReference Include="NaturalSort.Extension" Version="4.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="NUglify" Version="1.20.7" />
-    <PackageReference Include="Scriban" Version="5.7.0" />
+    <PackageReference Include="Scriban" Version="5.9.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.1.23" />
     <PackageReference Include="Timestamp" Version="1.0.2" />

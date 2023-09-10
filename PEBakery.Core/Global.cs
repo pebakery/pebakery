@@ -300,7 +300,7 @@ namespace PEBakery.Core
         public static void NativeGlobalInit(string baseDir)
         {
             string? magicPath = GetNativeLibraryPath(baseDir, "libmagic-1.dll");
-            string? zlibPath = GetNativeLibraryPath(baseDir, "zlibwapi.dll");
+            string? zlibPath = GetNativeLibraryPath(baseDir, "zlib1.dll");
             string? xzPath = GetNativeLibraryPath(baseDir, "liblzma.dll");
             string? wimlibPath = GetNativeLibraryPath(baseDir, "libwim-15.dll");
             string? sevenZipPath = GetNativeLibraryPath(baseDir, "7z.dll");
@@ -308,7 +308,11 @@ namespace PEBakery.Core
             try
             {
                 Joveler.FileMagician.Magic.GlobalInit(magicPath);
-                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
+                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, new Joveler.Compression.ZLib.ZLibInitOptions()
+                {
+                    IsWindowsStdcall = false,
+                    IsZLibNgModernAbi = false,
+                });
                 Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
                 ManagedWimLib.Wim.GlobalInit(wimlibPath);
                 SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
