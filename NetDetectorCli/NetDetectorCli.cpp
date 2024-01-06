@@ -110,7 +110,6 @@ int main(int argc, char* argv[])
 	const std::string resMinorParamKey = "--res-minor";
 	const std::string resPatchParamKey = "--res-patch";
 	const std::string winDesktopParamKey = "--win-desktop";
-	const std::string verboseKey = "--verbose";
 
 	argparse::ArgumentParser argParser(progName, "1.0.0");
 	argParser.add_argument(reqMajorParamKey)
@@ -126,10 +125,6 @@ int main(int argc, char* argv[])
 		.implicit_value(true);
 	argParser.add_argument(winDesktopParamKey)
 		.help("Also check Windows Desktop Runtime.")
-		.default_value(false)
-		.implicit_value(true);
-	argParser.add_argument(verboseKey)
-		.help("Enable verbose mode")
 		.default_value(false)
 		.implicit_value(true);
 
@@ -162,9 +157,6 @@ int main(int argc, char* argv[])
 
 	// Optional: --win-desktop (bool)
 	bool checkWinDesktop = argParser.get<bool>(winDesktopParamKey);
-
-	// Optional: --verbose, -v (bool)
-	bool isVerbose = argParser.get<bool>(verboseKey);
 
 	// [Stage 02] Check .NET runtimes
 	std::wstring installLoc;

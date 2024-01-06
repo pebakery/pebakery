@@ -451,11 +451,8 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSD
 	std::wstring appName = installLoc + L"dotnet.exe";
 	std::wstring cmdLine = L"\"" + installLoc + L"dotnet.exe\" --list-runtimes";
-	auto hDeleter = [](HANDLE handle)
-	{
-		if (handle != INVALID_HANDLE_VALUE && handle != NULL)
-			CloseHandle(handle);
-	};
+
+	std::wcerr << L"appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
 
 	std::string rtiStr;
 	{
@@ -496,7 +493,7 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
 		if (ret == FALSE)
 		{
-			std::wcerr << L"CreateProcessW failed, appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
+			std::wcerr << L"CreateProcessW failed" << std::endl;
 
 			CloseHandle(hChildStdOutRd);
 			CloseHandle(hChildStdOutWr);
@@ -523,7 +520,7 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		CloseHandle(hChildStdOutRd);
 	}
 
-	std::cerr << rtiStr << std::endl;
+	std::cerr << "[stdout pipe]" << std::endl << rtiStr << std::endl;
 
 	// Build rtMap
 	const char* rtiPtr = rtiStr.c_str();
