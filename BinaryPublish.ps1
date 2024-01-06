@@ -142,14 +142,16 @@ if ($noclean -eq $false) {
 $NetVerMajor = 6
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
-dotnet --list-runtimes
-Write-Output ""
-reg export HKLM\SOFTWARE\dotnet\Setup\InstalledVersions TMP1.reg
-Get-Content TMP1.reg
-Write-Output ""
-reg export HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions TMP2.reg
-Get-Content TMP2.reg
-Write-Output ""
+dotnet --info
+# dotnet --list-runtimes
+# [For CI version detection malfunction DEBUG]
+# Write-Output ""
+# reg export HKLM\SOFTWARE\dotnet\Setup\InstalledVersions TMP1.reg
+# Get-Content TMP1.reg
+# Write-Output ""
+# reg export HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions TMP2.reg
+# Get-Content TMP2.reg
+# Write-Output ""
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
 if ($null -eq $NetVerMinor -or $null -eq $NetVerPatch) {

@@ -241,6 +241,10 @@ bool NetCoreDetector::isInstalled()
 		return success;
 	};
 
+	// https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
+	// The doc posted at 2023-12-31 claims to use `dotnet --list-runtimes` CLI.
+	// However, architecture check is necessary in this launcher...
+
 	// Check registry to make sure a runtime of the proper architecture is installed. 
 	// Value example) 5.0.5 / 6.0.0-preview.3.21201.4
 	std::wstring installLoc;
@@ -320,6 +324,49 @@ bool NetCoreDetector::regListRuntimes(std::wstring& outInstallLoc, std::map<std:
 	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
 	"6.0.14"=dword:00000001
 	"7.0.3"=dword:00000001
+	*/
+
+	/* Starting from 2024, Azure Pipelines dotnet install task does not properly register .NET 6 SDK into the registry hive.
+	
+	[HKEY_LOCAL_MACHINE\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost]
+	"Version"="8.0.0"
+	"Path"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64]
+	"InstallLocation"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sdk]
+	"8.0.100"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86]
+	"InstallLocation"="C:\\Program Files (x86)\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedhost]
+	"Version"="8.0.0"
 	*/
 
 	const std::wstring nativeKeyRoot = L"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\";
