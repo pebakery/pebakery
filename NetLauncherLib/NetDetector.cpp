@@ -447,10 +447,9 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 	Microsoft.NETCore.App 6.0.0-preview.3.21201.4 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
 	Microsoft.WindowsDesktop.App 6.0.0-preview.3.21201.3 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
 	*/
-	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN
-	std::wstring appName = L"\"" + installLoc + L"dotnet.exe\"";
-	std::wstring cmdLine = L"--list-runtimes\"";
-
+	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSD
+	std::wstring appName = installLoc + L"dotnet.exe";
+	std::wstring cmdLine = L"\"" + installLoc + L"dotnet.exe\" --list-runtimes";
 	auto hDeleter = [](HANDLE handle)
 	{
 		if (handle != INVALID_HANDLE_VALUE && handle != NULL)
@@ -531,7 +530,7 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 
 		auto it = outRtMap.find(wkey);
 		if (it == outRtMap.end())
-		{ // key is new 
+		{ // key is a new one.
 			std::vector<NetVersion> versions;
 			versions.push_back(ver);
 			outRtMap[wkey] = versions;
@@ -543,6 +542,27 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		}
 	}
 	
+	return true;
+}
+
+bool NetCoreDetector::findDotnetLocationFromPath(std::wstring& outInstallLoc)
+{
+	constexpr size_t MAX_PATH_LONG = 32768;
+
+	auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
+	std::unique_ptr<wchar_t[], decltype(wstrDeleter)> pathPtr(new wchar_t[MAX_PATH_LONG], wstrDeleter);
+	wchar_t* buffer = pathPtr.get();
+
+	wchar_t* lpFilePart = nullptr;
+	DWORD pathLen = SearchPathW(nullptr, L"dotnet", L".exe", MAX_PATH_LONG, buffer, &lpFilePart);
+	if (pathLen == 0)
+		return false; // dotnet.exe is not searchable from the PATH
+
+	// trim "dotnet.exe" part and leave only directory (include trailing '\')
+	if (lpFilePart == nullptr || lpFilePart < buffer)
+		return false;
+	size_t exeDirLen = lpFilePart - buffer;
+	outInstallLoc.append(buffer, exeDirLen);
 	return true;
 }
 
@@ -570,7 +590,7 @@ bool NetCoreDetector::parseRuntimeInfoLine(const std::string& line, std::string&
 {
 	// Ex)
 	/*
-	> dotnet list-runtimes
+	> dotnet --list-runtimes
 	Microsoft.AspNetCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.AspNetCore.App 6.0.0-preview.3.21201.13 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.NETCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]

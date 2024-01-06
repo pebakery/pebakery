@@ -89,6 +89,7 @@ public:
 
 	static bool regListRuntimes(std::wstring& outInstallLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
 	static bool cliListRuntimes(std::wstring installLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap);
+	static bool findDotnetLocationFromPath(std::wstring& outInstallLoc);
 	static bool parseRuntimeInfoLine(const std::string& line, std::string& key, NetVersion& ver);
 	static void readFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe);
 };
