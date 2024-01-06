@@ -37,6 +37,9 @@
 #include <vector>
 #include <map>
 #include <regex>
+#ifdef CLI_LIST_TRACE
+#include <iostream>
+#endif
 
 // C Runtime Headers
 #include <cstdint>
@@ -238,6 +241,10 @@ bool NetCoreDetector::isInstalled()
 		return success;
 	};
 
+	// https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
+	// The doc posted at 2023-12-31 claims to use `dotnet --list-runtimes` CLI.
+	// However, architecture check is necessary in this launcher...
+
 	// Check registry to make sure a runtime of the proper architecture is installed. 
 	// Value example) 5.0.5 / 6.0.0-preview.3.21201.4
 	std::wstring installLoc;
@@ -317,6 +324,49 @@ bool NetCoreDetector::regListRuntimes(std::wstring& outInstallLoc, std::map<std:
 	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
 	"6.0.14"=dword:00000001
 	"7.0.3"=dword:00000001
+	*/
+
+	/* Starting from 2024, Azure Pipelines dotnet install task does not properly register .NET 6 SDK into the registry hive.
+	
+	[HKEY_LOCAL_MACHINE\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost]
+	"Version"="8.0.0"
+	"Path"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64]
+	"InstallLocation"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sdk]
+	"8.0.100"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86]
+	"InstallLocation"="C:\\Program Files (x86)\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedhost]
+	"Version"="8.0.0"
 	*/
 
 	const std::wstring nativeKeyRoot = L"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\";
@@ -447,15 +497,13 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 	Microsoft.NETCore.App 6.0.0-preview.3.21201.4 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
 	Microsoft.WindowsDesktop.App 6.0.0-preview.3.21201.3 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
 	*/
-	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN
-	std::wstring appName = L"\"" + installLoc + L"dotnet.exe\"";
-	std::wstring cmdLine = L"--list-runtimes\"";
+	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSD
+	std::wstring appName = installLoc + L"dotnet.exe";
+	std::wstring cmdLine = L"\"" + installLoc + L"dotnet.exe\" --list-runtimes";
 
-	auto hDeleter = [](HANDLE handle)
-	{
-		if (handle != INVALID_HANDLE_VALUE && handle != NULL)
-			CloseHandle(handle);
-	};
+#ifdef CLI_LIST_TRACE
+	std::wcerr << L"appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
+#endif
 
 	std::string rtiStr;
 	{
@@ -495,7 +543,18 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 
 		// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
 		if (ret == FALSE)
+		{
+#ifdef CLI_LIST_TRACE
+			std::wcerr << L"CreateProcessW failed" << std::endl;
+#endif
+
+			CloseHandle(hChildStdOutRd);
+			CloseHandle(hChildStdOutWr);
+			CloseHandle(hChildStdInRd);
+			CloseHandle(hChildStdInWr);
+
 			return false;
+		}
 
 		// Close unnecessary handles to the child process and its primary thread
 		CloseHandle(pi.hProcess);
@@ -514,6 +573,10 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		CloseHandle(hChildStdOutRd);
 	}
 
+#ifdef CLI_LIST_TRACE
+	std::cerr << "[stdout pipe]" << std::endl << rtiStr << std::endl;
+#endif
+
 	// Build rtMap
 	const char* rtiPtr = rtiStr.c_str();
 	while (1)
@@ -531,7 +594,7 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 
 		auto it = outRtMap.find(wkey);
 		if (it == outRtMap.end())
-		{ // key is new 
+		{ // key is a new one.
 			std::vector<NetVersion> versions;
 			versions.push_back(ver);
 			outRtMap[wkey] = versions;
@@ -543,6 +606,27 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		}
 	}
 	
+	return true;
+}
+
+bool NetCoreDetector::findDotnetLocationFromPath(std::wstring& outInstallLoc)
+{
+	constexpr size_t MAX_PATH_LONG = 32768;
+
+	auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
+	std::unique_ptr<wchar_t[], decltype(wstrDeleter)> pathPtr(new wchar_t[MAX_PATH_LONG], wstrDeleter);
+	wchar_t* buffer = pathPtr.get();
+
+	wchar_t* lpFilePart = nullptr;
+	DWORD pathLen = SearchPathW(nullptr, L"dotnet", L".exe", MAX_PATH_LONG, buffer, &lpFilePart);
+	if (pathLen == 0)
+		return false; // dotnet.exe is not searchable from the PATH
+
+	// trim "dotnet.exe" part and leave only directory (include trailing '\')
+	if (lpFilePart == nullptr || lpFilePart < buffer)
+		return false;
+	size_t exeDirLen = lpFilePart - buffer;
+	outInstallLoc.append(buffer, exeDirLen);
 	return true;
 }
 
@@ -570,7 +654,7 @@ bool NetCoreDetector::parseRuntimeInfoLine(const std::string& line, std::string&
 {
 	// Ex)
 	/*
-	> dotnet list-runtimes
+	> dotnet --list-runtimes
 	Microsoft.AspNetCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.AspNetCore.App 6.0.0-preview.3.21201.13 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.NETCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
