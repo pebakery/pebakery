@@ -2,6 +2,24 @@
 
 ## v1.x
 
+### v1.1.0
+
+Released on 2022-12-25
+
+- \[ADD\] Implement the `Math,ToChar` and `Math,FromChar` command
+- \[ADD\] Implement modern loop commands (`While`, `ForEach`, `ForRange`, `Continue`, `Break`)
+- \[ADD\] Implement modern loop helper commands (`List,Range`)
+- \[ADD\] Position and size of MainWindow are now persisted
+- \[ADD\] Enhanced `PathBox`, `ComboBox` checking in SyntaxChecker 
+- \[ADD\] SyntaxChecker now identifies types of sections better
+- \[FIX\] CodeOptimizer now performs data flow analysis to avoid broken optimization
+- \[FIX\] Most MessageBoxes are now displayed over the PEBakery window
+- \[FIX\] Section parameters are no longer contaminated at the end of the code block
+- \[FIX\] Fixed invalid `WebGet` parameter parsing 
+- \[FIX\] Launcher now checks the installed .NET Runtime is compatible even on the minor version level
+- \[FIX\] Enhanced script progress tracking
+- \[FIX\] Fix race condition happens in `SectionToRun` build triggered from UIControls
+
 ### v1.0.0
 
 Released on 2022-05-19

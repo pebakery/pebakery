@@ -1,12 +1,12 @@
 [Main]
 Title=NoLogo
 Author=ied206
-Description=Test Plugin for Unit Test of EncodedFile Class
+Description=Test Script for Unit Test of EncodedFile Class
 Credits=ied206
 Level=3
 
 [Interface]
-TextLabel1="Test Plugin for Unit Test of EncodedFile Class",1,1,13,14,146,18,8,Bold
+TextLabel1="Test Script for Unit Test of EncodedFile Class",1,1,13,14,146,18,8,Bold
 
 [Process]
-Echo,"Test Plugin for Unit Test of EncodedFile Class"
+Echo,"Test Script for Unit Test of EncodedFile Class"

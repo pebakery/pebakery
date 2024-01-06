@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -347,6 +347,37 @@ namespace PEBakery.Core.Tests.Command
             WriteTemplate(s, "List,SortNX,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
             WriteTemplate(s, "List,SortNX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.RuntimeError);
             WriteTemplate(s, "List,SortNX,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
+        }
+        #endregion
+
+        #region ListRange
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandList")]
+        public void ListRange()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,1", null, "0|1|2|3|4|5|6");
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,2", null, "0|2|4|6");
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,8", null, "0");
+            WriteTemplate(s, "List,Range,%ListStr%,7,0,-1", null, "7|6|5|4|3|2|1");
+            WriteTemplate(s, "List,Range,%ListStr%,7,0,-2", null, "7|5|3|1");
+            WriteTemplate(s, "List,Range,%ListStr%,7,0,-8", null, "7");
+
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,1,Delim=$", null, "0$1$2$3$4$5$6");
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,1,Delim=abc", null, "0abc1abc2abc3abc4abc5abc6");
+
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,", null, null, ErrorCheck.RuntimeError);
+            WriteTemplate(s, "List,Range,%ListStr%,0,7,-1", null, null, ErrorCheck.RuntimeError);
+            WriteTemplate(s, "List,Range,%ListStr%,7,0,1", null, null, ErrorCheck.RuntimeError);
+            WriteTemplate(s, "List,Range,%ListStr%,7,0,2", null, null, ErrorCheck.RuntimeError);
+
+            WriteTemplate(s, "List,Range,%ListStr%,0,", null, null, ErrorCheck.ParserError);
+            WriteTemplate(s, "List,Range,%ListStr%,0,7", null, null, ErrorCheck.ParserError);
+            WriteTemplate(s, "List,Range,%ListStr%,7,0", null, null, ErrorCheck.ParserError);
+            WriteTemplate(s, "List,Range,%ListStr%,GDP", null, null, ErrorCheck.ParserError);
         }
         #endregion
 

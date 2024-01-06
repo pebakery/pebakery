@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2022 Hajin Jang
+    Copyright (C) 2019-2023 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -28,6 +28,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
 
 namespace PEBakery.Helper
 {
@@ -86,12 +87,14 @@ namespace PEBakery.Helper
                 throw new PlatformNotSupportedException();
             }
         }
+        #endregion
 
+        #region Memory-related Functions
         /// <summary>
         /// Query how much system memory is available 
         /// </summary>
-        /// <param name="maxReqMem">Max limit of requested memory which program is going to use</param>
-        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use</param>
+        /// <param name="maxReqMem">Max limit of requested memory which program is going to use. Use <see cref="ulong.MaxValue"/> to ignore it.</param>
+        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use.</param>
         /// <returns></returns>
         public static ulong AvailableSystemMemory(ulong maxReqMem, double usableSysMemPercent)
         {
@@ -166,6 +169,59 @@ namespace PEBakery.Helper
 
             // Every try failed, fail-safe to 1 threads
             return 1;
+        }
+
+        public static int GetProcArchBitness()
+        {
+            return RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X86 or Architecture.Arm => 4,
+                Architecture.X64 or Architecture.Arm64 => 8,
+                _ => IntPtr.Size,
+            };
+        }
+        #endregion
+
+        #region WOW64 Redirection
+
+        #endregion
+
+        #region Auto WPF MessageBox with Owner Window
+        public static MessageBoxResult MessageBoxDispatcherShow(string messageBoxText, string caption, MessageBoxButton button)
+        {
+            return MessageBoxDispatcherShow(null, messageBoxText, caption, button, MessageBoxImage.None);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+        {
+            return MessageBoxDispatcherShow(null, messageBoxText, caption, button, icon);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button)
+        {
+            return MessageBoxDispatcherShow(owner, messageBoxText, caption, button, MessageBoxImage.None);
+        }
+
+        public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+        {
+            MessageBoxResult result = MessageBoxResult.None;
+            if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    if (owner != null)
+                        result = MessageBox.Show(owner, messageBoxText, caption, button, icon);
+                    else if (Application.Current.MainWindow != null)
+                        result = MessageBox.Show(Application.Current.MainWindow, messageBoxText, caption, button, icon);
+                    else
+                        result = MessageBox.Show(messageBoxText, caption, button, icon);
+                });
+            }
+            else
+            {
+                result = MessageBox.Show(messageBoxText, caption, button, icon);
+            }
+            return result;
         }
         #endregion
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -526,6 +526,109 @@ namespace PEBakery.Core.Tests.Command
             ErrorTemplate(s, "Math,Rand", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Rand,%Dest%,0,1,2", ErrorCheck.ParserError);
             ErrorTemplate(s, $"Math,Rand,%Dest%,0,{(long)int.MaxValue + 16}", ErrorCheck.RuntimeError);
+        }
+        #endregion
+
+        #region Char - ToChar, FromChar
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandMath")]
+        public void ToChar()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            // ASCII : Allowed Control Characters (\t, \n)
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x09", "#$t");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,10", "#$x"); // \n -> \r\n
+
+            // ASCII : Printable Characters
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x20", " ");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x36", "6");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x3F", "?");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,65", "A");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x5B", "[");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x7A", "z");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x7C", "|");
+
+            // UCS-2 : Hangul, Old Hangul Jamo, Hanja (CJK Unified Ideographs)
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0xAC00", "가");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,54620", "한");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0xD7A3", "힣");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x318D", "ㆍ");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x5927", "大");
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x97D3", "韓");
+
+            // UCS-2 : Symbol
+            SuccessTemplate(s, "Math,ToChar,%Dest%,0x2605", "★");
+
+            // Test Error
+            // Parser Error
+            ErrorTemplate(s, "Math,ToChar,%Dest%,2,1", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,ToChar,%Dest%", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,ToChar,Dest,0x40", ErrorCheck.ParserError);
+            // Non-Integer
+            ErrorTemplate(s, "Math,ToChar,%Dest%,가", ErrorCheck.RuntimeError);
+            // ASCII Control Characters is prohibited except for \n and \t
+            ErrorTemplate(s, "Math,ToChar,%Dest%,7", ErrorCheck.RuntimeError);
+            ErrorTemplate(s, "Math,ToChar,%Dest%,0x0D", ErrorCheck.RuntimeError); // \r
+            // Negative Integer
+            ErrorTemplate(s, "Math,FromChar,%Dest%,-1", ErrorCheck.RuntimeError);
+            // UCS-4 : Emoji, ToChar only supports UCS-2 character set.
+            ErrorTemplate(s, "Math,FromChar,%Dest%,0x1F64F", ErrorCheck.RuntimeError); // 🙏 (U+1F64F)
+
+        }
+
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandMath")]
+        public void FromChar()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            // ASCII : Allowed Control Characters (\r\n, \t)
+            SuccessTemplate(s, "Math,FromChar,%Dest%,#$t", "0x09");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,#$x", "0x0A"); // \r\n
+            s.Variables.SetValue(VarsType.Local, "Src", "\r\n"); // Raw \r\n
+            SuccessTemplate(s, "Math,FromChar,%Dest%,%Src%", "0x0A");
+            s.Variables.DeleteKey(VarsType.Local, "Src");
+
+            // ASCII : Printable Characters
+            SuccessTemplate(s, "Math,FromChar,%Dest%,\" \"", "0x20");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,6", "0x36");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,?", "0x3F");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,A", "0x41");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,[", "0x5B");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,z", "0x7A");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,|", "0x7C");
+
+            // UCS-2 : Hangul, Old Hangul Jamo, Hanja (CJK Unified Ideographs)
+            SuccessTemplate(s, "Math,FromChar,%Dest%,가", "0xAC00");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,한", "0xD55C");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,힣", "0xD7A3");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,ㆍ", "0x318D");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,大", "0x5927");
+            SuccessTemplate(s, "Math,FromChar,%Dest%,韓", "0x97D3");
+
+            // UCS-2 : Symbol
+            SuccessTemplate(s, "Math,FromChar,%Dest%,★", "0x2605");
+
+            // Test Error
+            // Parser Error
+            ErrorTemplate(s, "Math,FromChar,%Dest%,2,1", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,FromChar,%Dest%", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,FromChar,Dest,가", ErrorCheck.ParserError);
+            // ASCII Control Characters is prohibited except for \r\n and \t
+            s.Variables.SetValue(VarsType.Local, "Src", "\a");
+            ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
+            s.Variables.SetValue(VarsType.Local, "Src", "\r");
+            ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
+            s.Variables.SetValue(VarsType.Local, "Src", "\n");
+            ErrorTemplate(s, "Math,FromChar,%Dest%,%Src%", ErrorCheck.RuntimeError);
+            s.Variables.DeleteKey(VarsType.Local, "Src");
+            // Old Hangul -> 3 unicode characters
+            ErrorTemplate(s, "Math,FromChar,%Dest%,ᄒᆞᆫ", ErrorCheck.RuntimeError);
+            // UCS-4 : Emoji, FromChar only supports UCS-2 character set.
+            ErrorTemplate(s, "Math,FromChar,%Dest%,🙏", ErrorCheck.RuntimeError); // 🙏 (U+1F64F)
         }
         #endregion
 

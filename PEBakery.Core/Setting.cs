@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -71,6 +71,7 @@ namespace PEBakery.Core
             public bool OptimizeCode { get; set; }
             public bool ShowLogAfterBuild { get; set; }
             public bool StopBuildOnError { get; set; }
+            public bool EnableSystemLogAlarmBadge { get; set; }
             public bool EnableLongFilePath { get; set; }
             public bool EnableUpdateServerManagement { get; set; }
             public bool UseCustomUserAgent { get; set; }
@@ -86,6 +87,7 @@ namespace PEBakery.Core
                 OptimizeCode = true;
                 ShowLogAfterBuild = true;
                 StopBuildOnError = true;
+                EnableSystemLogAlarmBadge = true;
                 EnableLongFilePath = false;
                 EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
@@ -117,6 +119,13 @@ namespace PEBakery.Core
             public FontWeight MonospacedFontWeight => MonospacedFont.FontWeight;
             public int MonospacedFontSize => MonospacedFont.PointSize;
 
+            // Window Layout/Position (not shown in SettingsWindow)
+            public int MainWindowTop { get; set; }
+            public int MainWindowLeft { get; set; }
+            public int MainWindowWidth { get; set; }
+            public int MainWindowHeight { get; set; }
+            public int MainTreeViewWidth { get; set; }
+
             public InterfaceSetting()
             {
                 Default();
@@ -133,6 +142,11 @@ namespace PEBakery.Core
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
                 InterfaceSize = InterfaceSize.Adaptive;
+                MainWindowTop = 25;
+                MainWindowLeft = 25;
+                MainWindowWidth = 900;
+                MainWindowHeight = 720;
+                MainTreeViewWidth = 200;
             }
         }
 
@@ -152,18 +166,19 @@ namespace PEBakery.Core
             public const string SectionName = "Theme";
 
             // Preset
-            public ThemeType ThemeType;
+            public ThemeType ThemeType { get; set; }
             // Custom
-            public Color CustomTopPanelBackground;
-            public Color CustomTopPanelForeground;
-            public Color CustomTopPanelReportIssue;
-            public Color CustomTreePanelBackground;
-            public Color CustomTreePanelForeground;
-            public Color CustomTreePanelHighlight;
-            public Color CustomScriptPanelBackground;
-            public Color CustomScriptPanelForeground;
-            public Color CustomStatusBarBackground;
-            public Color CustomStatusBarForeground;
+            public Color CustomTopPanelBackground { get; set; }
+            public Color CustomTopPanelForeground { get; set; }
+            public Color CustomTopPanelIssueAlarmButton { get; set; }
+            public Color CustomTopPanelIssueAlarmBadge { get; set; }
+            public Color CustomTreePanelBackground { get; set; }
+            public Color CustomTreePanelForeground { get; set; }
+            public Color CustomTreePanelHighlight { get; set; }
+            public Color CustomScriptPanelBackground { get; set; }
+            public Color CustomScriptPanelForeground { get; set; }
+            public Color CustomStatusBarBackground { get; set; }
+            public Color CustomStatusBarForeground { get; set; }
 
             public ThemeSetting()
             {
@@ -176,7 +191,8 @@ namespace PEBakery.Core
                 // Apply Classic Theme to Custom Properties
                 CustomTopPanelBackground = Colors.LightBlue;
                 CustomTopPanelForeground = Colors.Black;
-                CustomTopPanelReportIssue = Colors.Red;
+                CustomTopPanelIssueAlarmButton = Color.FromRgb(255, 132, 0); 
+                CustomTopPanelIssueAlarmBadge = Colors.Red;
                 CustomTreePanelBackground = Colors.LightGreen;
                 CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
@@ -207,7 +223,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomTopPanelBackground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelBackground)}]");
                     }
                 }
             }
@@ -227,11 +243,11 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomTopPanelForeground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelForeground)}]");
                     }
                 }
             }
-            public Color TopPanelReportIssue
+            public Color TopPanelIssueAlarmButton
             {
                 get
                 {
@@ -239,15 +255,39 @@ namespace PEBakery.Core
                     {
                         case ThemeType.Dark:
                         case ThemeType.Darker:
+                            return Colors.Orange;
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Ocean:
                         case ThemeType.Marine:
-                            return Colors.Orange;
+                            return Colors.Yellow;
                         case ThemeType.Custom:
-                            return CustomTopPanelReportIssue;
+                            return CustomTopPanelIssueAlarmButton;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelIssueAlarmButton)}]");
+                    }
+                }
+            }
+            public Color TopPanelIssueAlarmBadge
+            {
+                get
+                {
+                    switch (ThemeType)
+                    {
+                        case ThemeType.Dark:
+                        case ThemeType.Darker:
+                            return Color.FromRgb(255, 110, 0);
+                        case ThemeType.Red:
+                            return Color.FromRgb(255, 145, 0);
+                        case ThemeType.Green:
+                            return Color.FromRgb(255, 170, 0);
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
+                            return Color.FromRgb(255, 145, 0);
+                        case ThemeType.Custom:
+                            return CustomTopPanelIssueAlarmBadge;
+                        default:
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TopPanelIssueAlarmBadge)}]");
                     }
                 }
             }
@@ -265,11 +305,11 @@ namespace PEBakery.Core
                         case ThemeType.Green:
                         case ThemeType.Ocean:
                         case ThemeType.Marine:
-                            return Color.FromRgb(241, 241, 241);
+                            return Color.FromRgb(228, 228, 228);
                         case ThemeType.Custom:
                             return CustomTreePanelBackground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TreePanelBackground)}]");
                     }
                 }
             }
@@ -291,7 +331,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomTreePanelForeground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TreePanelForeground)}]");
                     }
                 }
             }
@@ -314,7 +354,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomTreePanelHighlight;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(TreePanelHighlight)}]");
                     }
                 }
             }
@@ -336,7 +376,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomScriptPanelBackground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(ScriptPanelBackground)}]");
                     }
                 }
             }
@@ -358,7 +398,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomScriptPanelForeground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(ScriptPanelForeground)}]");
                     }
                 }
             }
@@ -382,7 +422,7 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomStatusBarBackground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(StatusBarBackground)}]");
                     }
                 }
             }
@@ -403,9 +443,29 @@ namespace PEBakery.Core
                         case ThemeType.Custom:
                             return CustomStatusBarForeground;
                         default:
-                            throw new InvalidOperationException("Undefined theme preset");
+                            throw new InvalidOperationException($"Undefined theme preset [{nameof(StatusBarForeground)}]");
                     }
                 }
+            }
+            #endregion
+
+            #region MainColorDict
+            public static readonly Dictionary<ThemeType, Color> MainColorDict = new Dictionary<ThemeType, Color>()
+            {
+                [ThemeType.Dark] = Color.FromRgb(66, 66, 66),
+                [ThemeType.Darker] = Color.FromRgb(44, 44, 44),
+                [ThemeType.Red] = Color.FromRgb(164, 55, 58),
+                [ThemeType.Green] = Color.FromRgb(42, 110, 82),
+                [ThemeType.Ocean] = Color.FromRgb(47, 82, 108),
+                [ThemeType.Marine] = Color.FromRgb(44, 110, 151),
+            };
+
+            public static Color QueryThemeMainColor(ThemeType typeVal)
+            {
+                if (MainColorDict.ContainsKey(typeVal))
+                    return MainColorDict[typeVal];
+                else
+                    return Colors.Black;
             }
             #endregion
         }
@@ -569,12 +629,14 @@ namespace PEBakery.Core
             Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
+            Global.MainViewModel.EnableSystemIssueAlarmBadge = General.EnableSystemLogAlarmBadge;
             Global.MainViewModel.EnableUpdateServerManagement = General.EnableUpdateServerManagement;
 
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
             Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
-            Global.MainViewModel.TopPanelReportIssueColor = Theme.TopPanelReportIssue;
+            Global.MainViewModel.TopPanelIssueAlarmButtonColor = Theme.TopPanelIssueAlarmButton;
+            Global.MainViewModel.TopPanelIssueAlarmBadgeColor = Theme.TopPanelIssueAlarmBadge;
             Global.MainViewModel.TreePanelBackground = Theme.TreePanelBackground;
             Global.MainViewModel.TreePanelForeground = Theme.TreePanelForeground;
             Global.MainViewModel.TreePanelHighlight = Theme.TreePanelHighlight;
@@ -614,6 +676,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
@@ -629,11 +692,17 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (70 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Enum (InterfaceSize)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowTop)), // Integer (0 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowLeft)), // Integer (0 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth)), // Integer (600 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight)), // Integer (480 -)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth)), // Integer (100 - 300)
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight)), // Color
@@ -704,6 +773,7 @@ namespace PEBakery.Core
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
+                General.EnableSystemLogAlarmBadge = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge), General.EnableSystemLogAlarmBadge);
                 General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
                 General.EnableUpdateServerManagement = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement);
                 General.UseCustomUserAgent = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
@@ -737,6 +807,23 @@ namespace PEBakery.Core
                 Interface.ScaleFactor = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
                 Interface.DisplayShellExecuteConOut = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
                 Interface.InterfaceSize = SettingDictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
+
+                // Read MainWindow area to check validity of window position and size.
+                Int32Rect screenArea = new Int32Rect(
+                    Convert.ToInt32(SystemParameters.VirtualScreenLeft), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenTop), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenWidth), 
+                    Convert.ToInt32(SystemParameters.VirtualScreenHeight));
+                int screenLeft = screenArea.X;
+                int screenRight = screenArea.X + screenArea.Width;
+                int screenTop = screenArea.Y;
+                int screenBottom = screenArea.Y + screenArea.Height;
+
+                Interface.MainWindowLeft = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowLeft), Interface.MainWindowLeft, screenLeft, screenRight);
+                Interface.MainWindowTop = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowTop), Interface.MainWindowTop, screenTop, screenBottom);
+                Interface.MainWindowWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth, 600, screenArea.Width);
+                Interface.MainWindowHeight = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight, 480, screenArea.Height);
+                Interface.MainTreeViewWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth, 100, 300);
             }
 
             // Theme
@@ -747,7 +834,8 @@ namespace PEBakery.Core
                 Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTopPanelReportIssue = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
+                Theme.CustomTopPanelIssueAlarmButton = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), Theme.CustomTopPanelIssueAlarmButton);
+                Theme.CustomTopPanelIssueAlarmBadge = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), Theme.CustomTopPanelIssueAlarmBadge);
                 Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
                 Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
                 Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
@@ -818,6 +906,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableSystemLogAlarmBadge), General.EnableSystemLogAlarmBadge.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
@@ -833,11 +922,17 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowTop), Interface.MainWindowTop.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowLeft), Interface.MainWindowLeft.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth.ToString()), // Integer
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), WriteColor(Theme.CustomTopPanelReportIssue)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), WriteColor(Theme.CustomTopPanelIssueAlarmButton)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), WriteColor(Theme.CustomTopPanelIssueAlarmBadge)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), WriteColor(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), WriteColor(Theme.CustomTreePanelHighlight)), // Color
@@ -892,43 +987,50 @@ namespace PEBakery.Core
 
         public static bool ParseBoolean(Dictionary<string, string?> dict, string section, string key, bool defaultValue)
         {
-            bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static int ParseInteger(Dictionary<string, string?> dict, string section, string key, int defaultValue, int? min, int? max)
         {
-            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool incorrectValue);
+            if (incorrectValue)
+            {
+                string msg = $"Setting [{section}.{key}] has incorrect value: {dict[key]}";
+                if (min is int minVal && val == minVal)
+                    msg += $" (Requires [{minVal} <= val])";
+                if (max is int maxVal && val == maxVal)
+                    msg += $" (Requires [val <= {maxVal}])";
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
+            }
             return val;
         }
 
         public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
-            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string section, string key, TEnum defaultValue)
             where TEnum : Enum
         {
-            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
 
         public static Color ParseColor(Dictionary<string, string?> dict, string section, string key, Color defaultValue)
         {
-            Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool notFound);
-            if (notFound)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
             return val;
         }
     }

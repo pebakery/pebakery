@@ -14,9 +14,9 @@
     <StartupObject>PEBakery.App</StartupObject>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\Donut.ico</ApplicationIcon>
-    <Version>1.0.0.0</Version>
+    <Version>1.1.1.0</Version>
     <Authors>Team PEBakery</Authors>
-    <Copyright>Copyright © 2016-2022</Copyright>
+    <Copyright>Copyright © 2016-2023</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
     <ErrorReport>send</ErrorReport>
@@ -30,6 +30,9 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
     <Resource Include="Resources\Donut.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -40,7 +43,7 @@
     <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" />
+    <!-- PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" /-->
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
   </ItemGroup>

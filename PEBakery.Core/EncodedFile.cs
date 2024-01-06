@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -1438,16 +1438,15 @@ namespace PEBakery.Core
                             try
                             {
                                 // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
-                                // When using default compress level, using 8 threads will results in about 1.3GB of memory.
-                                // PEBakery will use 12 threads at maximum when the system has enough memory. 
-                                // Let's set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
-                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, 2 * NumberHelper.GigaByte, 0.9);
+                                // When using default compress level, using 8 threads will results in about 1.3GB of memory on XZ compression.
+                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, usableSysMemPercent);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
-                                    ulong memUsage = QueryXZCompressMemUsage(threads);
+                                    ulong memUsage = QueryLzma2CompressMemUsage(threads);
                                     string msg = NumberHelper.ByteSizeToSIUnit((long)memUsage, 2);
-                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Tried thread count : {threads}, {msg}"));
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Trying compress thread count : {threads}, {msg}"));
                                 }
 #endif
 
@@ -1801,12 +1800,29 @@ namespace PEBakery.Core
                                 compStream.Flush();
                                 compStream.Position = 0;
 
+                                // Max amount of free memory program is allowed to use
+                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                ulong availFreeMem = SystemHelper.AvailableSystemMemory(maxRequestMem, usableSysMemPercent);
+
+#if DEBUG_XZ_MEM_USAGE
+                                {
+                                    string msg = NumberHelper.ByteSizeToSIUnit((long)availFreeMem, 2);
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Trying decompress mem limit: {msg}"));
+                                }
+#endif
+
                                 int offset = 0;
-                                XZDecompressOptions decompOpts = new XZDecompressOptions()
+                                XZDecompressOptions xzDecompOpts = new XZDecompressOptions()
                                 {
                                     LeaveOpen = true,
                                 };
-                                using (XZStream xzs = new XZStream(compStream, decompOpts))
+                                XZThreadedDecompressOptions xzThreadOpts = new XZThreadedDecompressOptions()
+                                {
+                                    Threads = Environment.ProcessorCount,
+                                    MemlimitThreading = availFreeMem,
+                                };
+
+                                using (XZStream xzs = new XZStream(compStream, xzDecompOpts, xzThreadOpts))
                                 {
                                     while ((bytesRead = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -2184,12 +2200,31 @@ namespace PEBakery.Core
 
         public static ulong QueryLzma2CompressMemUsage(int threads)
         {
-            return XZInit.EncoderMultiMemUsage(LzmaCompLevel.Default, false, threads);
+            return XZMemory.ThreadedEncoderMemUsage(LzmaCompLevel.Default, false, threads);
         }
 
         public static ulong QueryLzma2CompressMemUsage(LzmaCompLevel level, int threads)
         {
-            return XZInit.EncoderMultiMemUsage(level, false, threads);
+            return XZMemory.ThreadedEncoderMemUsage(level, false, threads);
+        }
+
+        public static ulong QueryLzma2DecompressMemUsage(int threads)
+        {
+            return XZMemory.DecoderMemUsage(LzmaCompLevel.Default, false);
+        }
+
+        public static (ulong MaxRequestMem, double UsableSysMemPercent) CalcMemLimitParams()
+        {
+            // 32bit: Set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
+            ulong maxRequestMem = 2 * NumberHelper.GigaByte;
+            double usableSysMemPercent = 0.9;
+            if (4 < SystemHelper.GetProcArchBitness())
+            {
+                maxRequestMem = ulong.MaxValue;
+                usableSysMemPercent = 0.8;
+                // NOTE: xz CLI use 0.25 * SystemTotalMemory as default value.
+            }
+            return (maxRequestMem, usableSysMemPercent);
         }
         #endregion
 
@@ -2503,9 +2538,14 @@ namespace PEBakery.Core
                 if (IniReadWriter.IsLineSection(line))
                     break;
 
+                // Filter comments
+                if (IniReadWriter.IsLineComment(line))
+                    continue;
+
+                // Parse key and value
                 (string? key, string? block) = IniReadWriter.GetKeyValueFromLine(line);
                 if (key == null || block == null)
-                    throw new InvalidOperationException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed.");
 
                 // [Stage 1] Get count of lines
                 if (key.Equals("lines", StringComparison.OrdinalIgnoreCase))
@@ -2518,12 +2558,12 @@ namespace PEBakery.Core
 
                 // [Stage 2] Get length of line
                 if (!StringHelper.IsInteger(key))
-                    throw new InvalidOperationException("Key of the encoded lines are malformed");
+                    throw new InvalidOperationException("Key of the encoded lines are malformed.");
                 if (lineLen == -1)
                     lineLen = block.Length;
                 if (4090 < block.Length ||
                     i + 1 < lineCount && block.Length != lineLen)
-                    throw new InvalidOperationException("Length of encoded lines is inconsistent");
+                    throw new InvalidOperationException("Length of encoded lines is inconsistent.");
 
                 // [Stage 3] Decode 
                 b.Append(block);
@@ -2576,23 +2616,28 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            (List<string>? keys, List<string>? base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
+            // Filter comments
+            IEnumerable<string> encodedLines = encodedList.Where(x => !IniReadWriter.IsLineComment(x));
+
+            // Parse into base64 blocks
+            (List<string>? keys, List<string>? base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedLines);
             if (keys == null || base64Blocks == null)
-                throw new InvalidOperationException("Encoded lines are malformed");
+                throw new InvalidOperationException("Encoded lines are malformed.");
             if (!keys.All(StringHelper.IsInteger))
-                throw new InvalidOperationException("Key of the encoded lines are malformed");
+                throw new InvalidOperationException("Key of the encoded lines are malformed.");
             if (base64Blocks.Count == 0)
-                throw new InvalidOperationException("Encoded lines are not found");
+                throw new InvalidOperationException("Encoded lines are not found.");
 
             StringBuilder b = new StringBuilder();
             foreach (string block in base64Blocks)
                 b.Append(block);
+
             switch (b.Length % 4)
             {
                 case 0:
                     break;
                 case 1:
-                    throw new InvalidOperationException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed.");
                 case 2:
                     b.Append("==");
                     break;

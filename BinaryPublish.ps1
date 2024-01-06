@@ -99,6 +99,8 @@ $PublishDir = "${BaseDir}\Publish"
 $ToolDir = "${PublishDir}\_tools"
 # Unfortunately, 7zip does not provide arm64 build of 7za.exe yet. (v21.07)
 $SevenZipExe = "${ToolDir}\7za_x64.exe"
+# Detect installed .NET runtime version (from NetDetectorCli.vcxproj)
+$NetDetectorExe = "${ToolDir}\NetDetectorCli_x64.exe"
 # UPX minimizes release size, but many antiviruses definitely hate it.
 # $UpxExe = "${ToolDir}\upx_x64.exe"
 $Cores = ${Env:NUMBER_OF_PROCESSORS}
@@ -107,16 +109,40 @@ Write-Output "Cores = ${Cores}"
 # -----------------------------------------------------------------------------
 # Clean the solution and restore NuGet packages (if -noclean is not set)
 # -----------------------------------------------------------------------------
+# https://learn.microsoft.com/en-us/dotnet/api/microsoft.build.framework.loggerverbosity?view=msbuild-17-netcore
 if ($noclean -eq $false) {
     Push-Location "${BaseDir}"
+
     Write-Output ""
-    Write-Host "[*] Cleaning the solution" -ForegroundColor Yellow
-    dotnet clean -c Release -verbosity:minimal
+    Write-Host "[*] Cleaning the projects" -ForegroundColor Yellow
+    # Clean C++ projects
+    $VCXProjects = (Get-ChildItem -Recurse -Path . -Include *.vcxproj | Where-Object {$_.PSIsContainer -eq $false}).fullname 
+    $VCXProjects | ForEach-Object { & "${MSBuild}" "${PSItem}" /t:Clean -verbosity:quiet}
+    # Clean C# projects
+    $CSProjects = (Get-ChildItem -Recurse -Path . -Include *.csproj | Where-Object {$_.PSIsContainer -eq $false}).fullname
+    $CSProjects | ForEach-Object { dotnet clean -c Release "${PSItem}" -verbosity:minimal }
+
     Write-Output ""
     Write-Host "[*] Restore NuGet packages" -ForegroundColor Yellow
     dotnet restore --force PEBakery
+
     Pop-Location
 }
+
+# -----------------------------------------------------------------------------
+# Query installed .NET version
+# -----------------------------------------------------------------------------
+# .NET runtime-dependent binary is not forward compatible with older version of .NET runtime.
+# Ex) A binary published with .NET 6.0.4 may not run on .NET 6.0.3 or earlier.
+# So query the installed .NET runtime version of the build system, and bake it into the Launcher.
+$NetVerMajor = 6
+$NetVerMinor = 0   # Fail-safe value
+$NetVerPatch = 25  # Fail-safe value
+Write-Output ""
+Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
+$NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
+$NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
+Write-Output "PEBakeryLauncher will search for [.NET ${NetVerMajor}.${NetVerMinor}.${NetVerPatch}]."
 
 # -----------------------------------------------------------------------------
 # Iterate each activated PublishMode
@@ -182,7 +208,11 @@ foreach ($runMode in $runModes)
     Push-Location "${BaseDir}"
     Write-Output ""
     Write-Host "[*] Build PEBakeryLauncher" -ForegroundColor Yellow
-    & "${MSBuild}" -target:Rebuild -verbosity:minimal Launcher /p:Configuration=Release /p:Platform=Win32 /p:PublishMacro="PUBLISH_MODE=${LauncherMode}"
+    & "${MSBuild}" -target:Rebuild -verbosity:minimal Launcher /p:Configuration=Release /p:Platform=Win32 `
+        /p:PublishMacro="PUBLISH_MODE=${LauncherMode}" `
+        /p:NetVerMajor="NETCORE_TARGET_VER_MAJOR=${NetVerMajor}" `
+        /p:NetVerMinor="NETCORE_TARGET_VER_MINOR=${NetVerMinor}" `
+        /p:NetVerPatch="NETCORE_TARGET_VER_PATCH=${NetVerPatch}"
     Copy-Item "${BaseDir}\Launcher\Win32\Release\PEBakeryLauncher.exe" -Destination "${DestDir}\PEBakeryLauncher.exe"
     Pop-Location
 
@@ -223,7 +253,7 @@ foreach ($runMode in $runModes)
     Remove-Item "${DestBinDir}\*.db" -ErrorAction SilentlyContinue
     Remove-Item "${DestBinDir}\Database" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "${DestDir}\Database" -Recurse -ErrorAction SilentlyContinue
-    Remove-Item "${DestBinDir}\magic.mgc"  -ErrorAction SilentlyContinue
+    Remove-Item "${DestBinDir}\magic.mgc" -ErrorAction SilentlyContinue
 
     # -------------------------------------------------------------------------
     # Copy LICENSE files

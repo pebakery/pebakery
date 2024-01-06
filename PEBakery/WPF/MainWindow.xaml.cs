@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -71,8 +71,16 @@ namespace PEBakery.WPF
             Global.Init();
             CommandManager.InvalidateRequerySuggested();
 
+            // Setup SystemLogHasIssue event handler
+            Model.SubscribeSystemLogUpdateEvent();
+
             // Load Projects
             Model.StartLoadingProjects(false, false);
+
+            // Read Window Layout/Position
+            ReadLayoutFromSetting();
+            SizeToFit();
+            MoveIntoView();
         }
         #endregion
 
@@ -104,7 +112,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Add(treeRoot);
                 Model.CurBuildTree = null;
 
-                EngineState s = new EngineState(p, Logger, Model);
+                EngineState s = new EngineState(p, Logger, Model, this);
                 s.SetOptions(Global.Setting);
                 s.SetCompat(p.Compat);
 
@@ -255,6 +263,9 @@ namespace PEBakery.WPF
             // If last build ended with issue, show build log instead of system log
             int selectedTabIndex = Global.MainViewModel.BuildEndedWithIssue ? 1 : 0;
             Global.MainViewModel.BuildEndedWithIssue = false;
+            
+            // Clear the flag that denotes the system log has an error.
+            Global.MainViewModel.SystemLogHasIssue = false;
 
             LogDialog = new LogWindow(selectedTabIndex) { Owner = this };
             LogDialog.Show();
@@ -353,7 +364,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Add(rootItem);
                     Model.CurBuildTree = null;
 
-                    EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
+                    EngineState s = new EngineState(sc.Project, Logger, Model, this, EngineMode.RunMainAndOne, sc);
                     s.SetOptions(Global.Setting);
                     s.SetCompat(sc.Project.Compat);
 
@@ -363,9 +374,10 @@ namespace PEBakery.WPF
                     Model.SwitchNormalBuildInterface = false;
 
                     TimeSpan t;
+                    Task printStatus;
                     using (CancellationTokenSource ct = new CancellationTokenSource())
                     {
-                        Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
+                        printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
                         // Run
                         int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
@@ -383,10 +395,15 @@ namespace PEBakery.WPF
                         t = s.Elapsed;
 
                         ct.Cancel();
-                        await printStatus;
                     }
 
-                    Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
+                    // Report elapsed time
+                    await printStatus;
+                    string? haltReason = s.RunResultReport();
+                    if (haltReason != null)
+                        Model.StatusBarText = $"{sc.Title} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
+                    else
+                        Model.StatusBarText = $"{sc.Title} processed in {s.Elapsed:h\\:mm\\:ss}";
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
@@ -993,6 +1010,10 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine != null)
                 await Engine.WorkingEngine.ForceStopWait(false);
 
+            // Clear SystemLogHasIssue event handler
+            Model.ClearSystemLogUpdateEvent();
+
+            // Close all sub-windows.
             if (LogDialog != null && LogWindow.IsRunning())
             {
                 LogDialog.Close();
@@ -1020,6 +1041,9 @@ namespace PEBakery.WPF
                 await Task.Delay(500);
 
             Global.Cleanup();
+
+            // Save Main Window Layout/Position
+            WriteLayoutToSetting();
         }
 
         private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -1028,6 +1052,78 @@ namespace PEBakery.WPF
                 return;
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);
+        }
+        #endregion
+
+        #region ReadLayoutFromSetting, WriteLayoutToSetting
+        public static void ReadLayoutFromSetting()
+        {
+            // Read Main Window Size/Layout/Position
+            Global.MainViewModel.WindowTop = Global.Setting.Interface.MainWindowTop;
+            Global.MainViewModel.WindowLeft = Global.Setting.Interface.MainWindowLeft;
+            Global.MainViewModel.WindowWidth = Global.Setting.Interface.MainWindowWidth;
+            Global.MainViewModel.WindowHeight = Global.Setting.Interface.MainWindowHeight;
+            Global.MainViewModel.MainTreeViewWidth = Global.Setting.Interface.MainTreeViewWidth;
+        }
+
+        public static void WriteLayoutToSetting()
+        {
+            // Write Main Window Size/Layout/Position
+            Global.Setting.Interface.MainWindowTop = Global.MainViewModel.WindowTop;
+            Global.Setting.Interface.MainWindowLeft = Global.MainViewModel.WindowLeft;
+            Global.Setting.Interface.MainWindowWidth = Global.MainViewModel.WindowWidth;
+            Global.Setting.Interface.MainWindowHeight = Global.MainViewModel.WindowHeight;
+            Global.Setting.Interface.MainTreeViewWidth = (int)Global.MainViewModel.MainTreeViewWidth;
+            Global.Setting.WriteToFile();
+        }
+        #endregion
+
+        #region SizeToFit, MoveIntoView
+        /// <summary>
+        /// Resize the window to fit the current monitor/resolution
+        /// </summary>
+        public static void SizeToFit()
+        {
+            if (Global.MainViewModel.WindowWidth > System.Windows.SystemParameters.VirtualScreenWidth)
+            {
+                Global.MainViewModel.WindowWidth = (int)System.Windows.SystemParameters.VirtualScreenWidth;
+            }
+
+            if (Global.MainViewModel.WindowHeight > System.Windows.SystemParameters.VirtualScreenHeight)
+            {
+                Global.MainViewModel.WindowHeight = (int)System.Windows.SystemParameters.VirtualScreenHeight;
+            }
+        }
+
+        /// <summary>
+        /// Move the window into the visible region of the monitor in case a user changes resolution or the number of monitors.
+        /// </summary>
+        public static void MoveIntoView()
+        {
+            // If more then half our window is off screen move it back into view
+            if (Global.MainViewModel.WindowTop + Global.MainViewModel.WindowHeight / 2 > System.Windows.SystemParameters.VirtualScreenHeight)
+            {
+                double taskbarHeight = System.Windows.SystemParameters.VirtualScreenHeight - System.Windows.SystemParameters.WorkArea.Height;
+                Global.MainViewModel.WindowTop = (int)(System.Windows.SystemParameters.VirtualScreenHeight - taskbarHeight) - Global.MainViewModel.WindowHeight;
+            }
+
+            if (Global.MainViewModel.WindowLeft + Global.MainViewModel.WindowWidth / 2 > System.Windows.SystemParameters.VirtualScreenWidth)
+            {
+                double taskbarWidth = System.Windows.SystemParameters.VirtualScreenWidth - System.Windows.SystemParameters.WorkArea.Width;
+                Global.MainViewModel.WindowLeft = (int)(System.Windows.SystemParameters.VirtualScreenWidth - taskbarWidth) - Global.MainViewModel.WindowWidth;
+            }
+
+            // Move the window back on screen if we have a negative value.
+            // This should not happen due to PEBakery checking the minimum allowed value when the settings are parsed, but better safe then sorry.
+            if (Global.MainViewModel.WindowTop < 0)
+            {
+                Global.MainViewModel.WindowTop = 0;
+            }
+
+            if (Global.MainViewModel.WindowLeft < 0)
+            {
+                Global.MainViewModel.WindowLeft = 0;
+            }
         }
         #endregion
 

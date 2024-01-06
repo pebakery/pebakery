@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -1099,12 +1099,12 @@ namespace PEBakery.Core
                     }
 
                     // Escape #c (Loop Counter)
-                    if (0 < s.LoopStateStack.Count)
+                    if (0 < s.LoopCmdStateStack.Count)
                     {
-                        EngineLoopState peekLoop = s.LoopStateStack.Peek();
+                        EngineLoopCmdState peekLoop = s.LoopCmdStateStack.Peek();
                         switch (peekLoop.State)
                         {
-                            case EngineLoopState.LoopState.OnIndex:
+                            case LoopCmdState.OnIndex:
                                 if (!NumberHelper.ParseInt64(finalValue, out long ctr))
                                 {
                                     logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
@@ -1112,13 +1112,13 @@ namespace PEBakery.Core
                                 }
 
                                 // C#'s struct is immutable, so do pop and push.
-                                EngineLoopState idxLoop = new EngineLoopState(ctr);
-                                s.LoopStateStack.Pop();
-                                s.LoopStateStack.Push(idxLoop);
+                                EngineLoopCmdState idxLoop = new EngineLoopCmdState(ctr);
+                                s.LoopCmdStateStack.Pop();
+                                s.LoopCmdStateStack.Push(idxLoop);
 
                                 logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{ctr}]"));
                                 break;
-                            case EngineLoopState.LoopState.OnDriveLetter:
+                            case LoopCmdState.OnDriveLetter:
                                 if (!(finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0])))
                                 {
                                     logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
@@ -1127,9 +1127,9 @@ namespace PEBakery.Core
 
                                 // C#'s struct is immutable, so do pop and push.
                                 // EngineLoopState's constructor performs conversion to capital alphabet.
-                                EngineLoopState charLoop = new EngineLoopState(finalValue[0]);
-                                s.LoopStateStack.Pop();
-                                s.LoopStateStack.Push(charLoop);
+                                EngineLoopCmdState charLoop = new EngineLoopCmdState(finalValue[0]);
+                                s.LoopCmdStateStack.Pop();
+                                s.LoopCmdStateStack.Push(charLoop);
 
                                 logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{charLoop.CounterLetter}]"));
                                 break;

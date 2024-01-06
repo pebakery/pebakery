@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2020-2022 Hajin Jang
+    Copyright (C) 2020-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -58,7 +58,7 @@ namespace PEBakery.Core.Html
             string? templateBody = ResourceHelper.GetEmbeddedResourceString(templateKey, templateAssembly);
             if (templateBody == null)
             {
-                MessageBox.Show("Failed to read HTML Template.", "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow("Failed to read HTML Template.", "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace PEBakery.Core.Html
                 }
                 string errMsg = b.ToString();
 
-                MessageBox.Show(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow(errMsg, "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace PEBakery.Core.Html
             catch (Exception e)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
-                MessageBox.Show(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                SystemHelper.MessageBoxDispatcherShow(Logger.LogExceptionMessage(e), "HTML Template Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -115,6 +115,8 @@ namespace PEBakery.Core.Html
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
+                case LogState.Debug:
+                    return "table-debug";
                 default:
                     return string.Empty;
             }
@@ -153,6 +155,8 @@ namespace PEBakery.Core.Html
                 case LogState.Ignore:
                 case LogState.Muted:
                     return "text-muted";
+                case LogState.Debug:
+                    return "text-debug";
                 default:
                     return string.Empty;
             }
@@ -172,14 +176,17 @@ namespace PEBakery.Core.Html
                 case LogState.Overwrite:
                     return @"<i class=""fas fa-fw fa-copy""></i>";
                 case LogState.Error:
-                case LogState.CriticalError:
                     return @"<i class=""fas fa-fw fa-times""></i>";
+                case LogState.CriticalError:
+                    return @"<i class=""fas fa-fw fa-ban""></i>"; 
                 case LogState.Info:
                     return @"<i class=""fas fa-fw fa-info-circle""></i>";
                 case LogState.Ignore:
                     return @"<i class=""fas fa-fw fa-file""></i>";
                 case LogState.Muted:
                     return @"<i class=""fas fa-fw fa-lock""></i>";
+                case LogState.Debug:
+                    return @"<i class=""fas fa-fw fa-bug""></i>";
                 default:
                     return string.Empty;
             }
@@ -199,8 +206,9 @@ namespace PEBakery.Core.Html
                 case LogState.Overwrite:
                     return @"<i class=""bi bi-files""></i>";
                 case LogState.Error:
-                case LogState.CriticalError:
                     return @"<i class=""bi bi-x-circle-fill""></i>";
+                case LogState.CriticalError:
+                    return @"<i class=""bi bi-slash-circle""></i>"; 
                 // return @"<i class=""bi bi-x""></i>";
                 case LogState.Info:
                     return @"<i class=""bi bi-info-circle-fill""></i>";
@@ -208,6 +216,8 @@ namespace PEBakery.Core.Html
                     return @"<i class=""bi bi-file-earmark-text""></i>";
                 case LogState.Muted:
                     return @"<i class=""bi bi-lock-fill""></i>";
+                case LogState.Debug:
+                    return @"<i class=""bi bi-bug-fill""></i>";
                 default:
                     return string.Empty;
             }

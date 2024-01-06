@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -31,7 +31,6 @@ using System.Text.RegularExpressions;
 
 namespace PEBakery.Helper
 {
-    #region NumberHelper
     public static class NumberHelper
     {
         #region IsStringHexInteger
@@ -657,6 +656,36 @@ namespace PEBakery.Helper
             return Math.Abs(x - y) < DoubleCompareEpsilon;
         }
         #endregion
+
+        #region ToEnglishOrdinal
+        /// <summary>
+        /// Convert integer to ordinal number string (English only)
+        /// </summary>
+        public static string ToEnglishOridnal(int intVal)
+        {
+            if (intVal <= 0)
+                return intVal.ToString();
+
+            switch (intVal % 100)
+            {
+                case 11:
+                case 12:
+                case 13:
+                    return $"{intVal}th";
+            }
+
+            switch (intVal % 10)
+            {
+                case 1:
+                    return $"{intVal}st";
+                case 2:
+                    return $"{intVal}nd";
+                case 3:
+                    return $"{intVal}rd";
+                default:
+                    return $"{intVal}th";
+            }
+        }
+        #endregion
     }
-    #endregion
 }

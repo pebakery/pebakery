@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2022 Hajin Jang
+    Copyright (C) 2019-2023 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -53,19 +53,26 @@ namespace PEBakery.Helper
 
                 // GET https://github.com
                 const string testUrl = "https://github.com";
-                Task<HttpResponseMessage> resTask = client.GetAsync(testUrl);
-                resTask.Wait();
-                using (HttpResponseMessage res = resTask.Result)
+                try
                 {
-                    try
+                    Task<HttpResponseMessage> resTask = client.GetAsync(testUrl);
+                    resTask.Wait();
+                    using (HttpResponseMessage res = resTask.Result)
                     {
-                        res.EnsureSuccessStatusCode();
-                        return true;
+                        try
+                        {
+                            res.EnsureSuccessStatusCode();
+                            return true;
+                        }
+                        catch (HttpRequestException)
+                        {
+                            return false;
+                        }
                     }
-                    catch (HttpRequestException)
-                    {
-                        return false;
-                    }
+                }
+                catch (AggregateException)
+                {
+                    return false;
                 }
             }
         }

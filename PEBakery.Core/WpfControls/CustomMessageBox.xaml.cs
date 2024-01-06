@@ -357,12 +357,11 @@ namespace PEBakery.Core.WpfControls
         /// <param name="owner">A System.Windows.Window that represents the owner window of the message box.</param>
         /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
-        public static MessageBoxResult Show(Window owner, string messageBoxText)
+        public static MessageBoxResult Show(Window? owner, string messageBoxText)
         {
-            CustomMessageBox msg = new CustomMessageBox(messageBoxText)
-            {
-                Owner = owner
-            };
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText);
+            if (owner != null)
+                msg.Owner = owner;
             msg.ShowDialog();
 
             return msg.Result;
@@ -375,12 +374,11 @@ namespace PEBakery.Core.WpfControls
         /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
         /// <param name="caption">A System.String that specifies the title bar caption to display.</param>
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
-        public static MessageBoxResult Show(Window owner, string messageBoxText, string caption)
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption)
         {
-            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption)
-            {
-                Owner = owner
-            };
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption);
+            if (owner != null)
+                msg.Owner = owner;
             msg.ShowDialog();
 
             return msg.Result;
@@ -625,12 +623,11 @@ namespace PEBakery.Core.WpfControls
         /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
         /// <param name="timeout">A System.Int32 that specifies message box will be closed after how much seconds</param>
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
-        public static MessageBoxResult Show(Window owner, string messageBoxText, int timeout)
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, int timeout)
         {
-            CustomMessageBox msg = new CustomMessageBox(messageBoxText, timeout)
-            {
-                Owner = owner
-            };
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText, timeout);
+            if (owner != null)
+                msg.Owner = owner;
             msg.ShowDialog();
 
             return msg.Result;
@@ -644,12 +641,11 @@ namespace PEBakery.Core.WpfControls
         /// <param name="caption">A System.String that specifies the title bar caption to display.</param>
         /// <param name="timeout">A System.Int32 that specifies message box will be closed after how much seconds</param>
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
-        public static MessageBoxResult Show(Window owner, string messageBoxText, string caption, int timeout)
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, int timeout)
         {
-            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption, timeout)
-            {
-                Owner = owner
-            };
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption, timeout);
+            if (owner != null)
+                msg.Owner = owner;
             msg.ShowDialog();
 
             return msg.Result;
@@ -681,12 +677,11 @@ namespace PEBakery.Core.WpfControls
         /// <param name="icon">A System.Windows.MessageBoxImage value that specifies the icon to display.</param>
         /// <param name="timeout">A System.Int32 that specifies message box will be closed after how much seconds</param>
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
-        public static MessageBoxResult Show(Window owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, int timeout)
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, int timeout)
         {
-            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption, button, icon, timeout)
-            {
-                Owner = owner,
-            };
+            CustomMessageBox msg = new CustomMessageBox(messageBoxText, caption, button, icon, timeout);
+            if (owner != null)
+                msg.Owner = owner;
             msg.ShowDialog();
 
             return msg.Result;
@@ -885,6 +880,35 @@ namespace PEBakery.Core.WpfControls
             msg.ShowDialog();
 
             return msg.Result;
+        }
+        #endregion
+
+        #region DispatcherShow
+        /// <summary>
+        /// Displays a message box within a Dispatcher, that has a message, title bar caption, button, and icon; and that returns a result.
+        /// </summary>
+        /// <param name="messageBoxText">A System.String that specifies the text to display.</param>
+        /// <param name="owner">A System.Windows.Window that represents the owner window of the message box.</param>
+        /// <param name="caption">A System.String that specifies the title bar caption to display.</param>
+        /// <param name="button">A System.Windows.MessageBoxButton value that specifies which button or buttons to display.</param>
+        /// <param name="icon">A System.Windows.MessageBoxImage value that specifies the icon to display.</param>
+        /// <param name="timeout">A System.Int32 that specifies message box will be closed after how much seconds</param>
+        /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
+        public static MessageBoxResult DispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, int timeout)
+        {
+            MessageBoxResult result = MessageBoxResult.None;
+            if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    result = Show(owner, messageBoxText, caption, button, icon, timeout);
+                });
+            }
+            else
+            {
+                result = Show(messageBoxText, caption, button, icon, timeout);
+            }
+            return result;
         }
         #endregion
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -349,6 +349,9 @@ namespace PEBakery.Helper
                 dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
             }
         }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern int Wow64DisableWow64FsRedirection(IntPtr oldValue);
         #endregion
     }
 

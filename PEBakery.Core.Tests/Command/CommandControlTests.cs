@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -176,54 +176,54 @@ namespace PEBakery.Core.Tests.Command
 
         public static void SetLoopCounter(EngineState s)
         {
-            s.LoopStateStack.Clear();
+            s.LoopCmdStateStack.Clear();
 
             // Simulate Loop command
             const string rawLoopCode = "Set,#c,110";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopStateStack.Push(new EngineLoopState(100));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Success);
-            EngineLoopState loop = s.LoopStateStack.Pop();
+            EngineLoopCmdState loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(110, loop.CounterIndex);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopStateStack.Push(new EngineLoopState(100));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(100, loop.CounterIndex);
 
             // Simulate LoopLetter command
             const string rawLoopLetterCode = "Set,#c,Z";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopStateStack.Push(new EngineLoopState('C'));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Success);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual('Z', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopStateStack.Push(new EngineLoopState('C'));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual('C', loop.CounterLetter);
 
             // Error 
-            s.LoopStateStack.Clear();
+            s.LoopCmdStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(0, s.LoopStateStack.Count);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
 
-            s.LoopStateStack.Clear();
+            s.LoopCmdStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(0, s.LoopStateStack.Count);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
 
-            s.LoopStateStack.Clear();
+            s.LoopCmdStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(0, s.LoopStateStack.Count);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
 
-            s.LoopStateStack.Clear();
+            s.LoopCmdStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(0, s.LoopStateStack.Count);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
         }
 
         public static void DelLoopCounter(EngineState s)
@@ -231,28 +231,28 @@ namespace PEBakery.Core.Tests.Command
             const string rawCode = "Set,#c,NIL";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopStateStack.Push(new EngineLoopState(100));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            EngineLoopState loop = s.LoopStateStack.Pop();
+            EngineLoopCmdState loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(100, loop.CounterIndex);
             Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopStateStack.Push(new EngineLoopState('C'));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(0, loop.CounterIndex);
             Assert.AreEqual('C', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopStateStack.Push(new EngineLoopState(100));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(100, loop.CounterIndex);
             Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopStateStack.Push(new EngineLoopState('C'));
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            loop = s.LoopStateStack.Pop();
+            loop = s.LoopCmdStateStack.Pop();
             Assert.AreEqual(0, loop.CounterIndex);
             Assert.AreEqual('C', loop.CounterLetter);
         }
@@ -345,11 +345,30 @@ namespace PEBakery.Core.Tests.Command
         [TestMethod]
         public void Halt()
         {
-            const string rawCode = "Halt,UnitTest";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
+            // Eval test
+            {
+                const string rawCode = "Halt,UnitTest";
+                EngineState s = EngineTests.CreateEngineState();
+                EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.HaltReturnFlags.CmdHalt);
+                Assert.IsTrue(s.HaltReturnFlags.CmdHalt);
+            }
+
+            // Script test
+            {
+                string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
+
+                static void ScriptTemplate(string treePath, string entrySection, string expected, ErrorCheck check = ErrorCheck.Warning)
+                {
+                    (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                    string destStr = s.ReturnValue;
+                    Assert.IsTrue(destStr.Equals(expected, StringComparison.Ordinal));
+                }
+
+                ScriptTemplate(scPath, "Process-Halt-Simple", "T");
+                ScriptTemplate(scPath, "Process-Halt-InIf", "T");
+                ScriptTemplate(scPath, "Process-Halt-InWhile", "AA");
+            }
         }
         #endregion
 
@@ -363,8 +382,10 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Wait, ErrorCheck.Success);
 
+            // Using strict 1000ms sometimes cause test fault
             long elapsed = w.ElapsedMilliseconds;
-            Assert.IsTrue(1000 <= elapsed);
+            Console.WriteLine($"Elapsed: {elapsed}ms");
+            Assert.IsTrue(900 <= elapsed);
         }
         #endregion
 

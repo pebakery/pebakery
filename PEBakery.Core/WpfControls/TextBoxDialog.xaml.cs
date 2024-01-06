@@ -1,7 +1,7 @@
 ﻿/*
     MIT License (MIT)
 
-    Copyright (C) 2019-2022 Hajin Jang
+    Copyright (C) 2019-2023 Hajin Jang
 	
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,6 @@ using System.Windows;
 
 namespace PEBakery.WPF.Controls
 {
-    /// <summary>
-    /// TextBoxDialog.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class TextBoxDialog : Window
     {
         #region Properties

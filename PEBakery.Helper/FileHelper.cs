@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -269,8 +269,8 @@ namespace PEBakery.Helper
         /// <param name="destPath"></param>
         public static void FileReplaceEx(string srcPath, string destPath)
         {
-            // ile.Replace throws IOException if src and dest are located in different volume.
-            // To decreate amount of exception throwed, check drive by ourself and use File.Copy as fallback.
+            // File.Replace throws IOException if src and dest are located in different volume.
+            // To decreate amount of exception throwen, check drive by ourself and use File.Copy as fallback.
             string fullSrcPath = Path.GetFullPath(srcPath);
             string fullDestPath = Path.GetFullPath(destPath);
 

@@ -25,6 +25,13 @@
 
 #pragma once
 
+// Windows SDK Headers
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+// C++ Runtime Headers
+#include <vector>
+
 enum class ArchVal
 {
 	UNKNOWN = 0,
@@ -34,16 +41,18 @@ enum class ArchVal
 	ARM64,
 };
 
+typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2) (HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine);
+
 class SysArch
 {
 private:
-	
-
 	static ArchVal getCpuArchGetNativeSystemInfo();
-	static ArchVal getCpuArchIsWow64Process2();
+	static ArchVal getCpuArchIsWow64Process2(LPFN_ISWOW64PROCESS2 funcPtr);
 public:
 	static ArchVal getCpuArch();
 	static ArchVal getProcArch();
 	static ArchVal toArchVal(WORD wIamgeFileMachine);
 	static const wchar_t* toStr(ArchVal arch);
+	static std::vector<ArchVal> getWowCompatibleArch(ArchVal hostArch);
+	static bool isWoWCompatibleArch(ArchVal hostArch, ArchVal procArch);
 };

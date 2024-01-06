@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -654,9 +654,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimExtractOp infoOp = (CodeInfo_WimExtractOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
+            CodeInfo_WimExtract[] optInfos = infoOp.Infos<CodeInfo_WimExtract>().ToArray(); ;
 
-            CodeInfo_WimExtract firstInfo = infoOp.Infos[0];
+            CodeInfo_WimExtract firstInfo = optInfos[0];
             string srcWim = StringEscaper.Preprocess(s, firstInfo.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
             string destDir = StringEscaper.Preprocess(s, firstInfo.DestDir);
@@ -683,7 +684,7 @@ namespace PEBakery.Core.Commands
                 extractFlags |= ExtractFlags.NoAttributes;
 
             List<string> extractPaths = new List<string>(infoOp.Cmds.Count);
-            foreach (CodeInfo_WimExtract info in infoOp.Infos)
+            foreach (CodeInfo_WimExtract info in optInfos)
             {
                 string extractPath = StringEscaper.Preprocess(s, info.ExtractPath);
                 extractPaths.Add(extractPath);
@@ -1450,7 +1451,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            CodeInfo_WimPathOp infoOp = (CodeInfo_WimPathOp)cmd.Info;
+            CodeOptInfo infoOp = (CodeOptInfo)cmd.Info;
 
             string wimFile;
             string imageIndexStr;

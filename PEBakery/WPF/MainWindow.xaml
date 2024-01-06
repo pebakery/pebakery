@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -45,13 +45,16 @@
         mc:Ignorable="d"
         Icon="/Resources/Donut.ico"
         Closing="Window_Closing"
-        Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
+        Width="{Binding WindowWidth, Mode=TwoWay, FallbackValue=900}"
+        Height="{Binding WindowHeight, Mode=TwoWay, FallbackValue=640}"
         MinWidth="600" MinHeight="480"
+        Top="{Binding WindowTop, Mode=TwoWay, FallbackValue=25}"
+        Left="{Binding WindowLeft, Mode=TwoWay, FallbackValue=25}"
         FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
         FocusManager.FocusedElement="{Binding RelativeSource={x:Static RelativeSource.Self}, Mode=OneTime}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="Manual">
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
@@ -130,6 +133,9 @@
         <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <local:BooleanToParamConverter x:Key="BooleanToParamConverter"/>
+        <local:GridLengthConverter x:Key="GridLengthConverter" />
+        <local:MultiBooleanAndToVisibilityConverter x:Key="MultiBooleanAndToVisibilityConverter"/>
+        <local:MultiBooleanOrToVisibilityConverter x:Key="MultiBooleanOrToVisibilityConverter"/>
     </Window.Resources>
     <DockPanel ccc:SelectTextOnFocus.Active="True">
         <Grid DockPanel.Dock="Top"
@@ -243,11 +249,26 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="BuildEndedWithIssue"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColor"/>
+                                <Binding Path="TopPanelIssueAlarmButtonColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>
                 </cc:IconButton>
+                <Ellipse Grid.Row="1" Grid.Column="5"
+                         Width="{Binding MainIssueAlarmBadgeDiameter}" Height="{Binding MainIssueAlarmBadgeDiameter}"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="{Binding MainIssueAlarmBadgeMargin}"
+                         Fill="{Binding TopPanelIssueAlarmBadgeColor, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}">
+                    <Ellipse.Visibility>
+                        <MultiBinding Converter="{StaticResource MultiBooleanAndToVisibilityConverter}" 
+                                      Mode="OneWay" FallbackValue="Hidden">
+                            <MultiBinding.Bindings>
+                                <Binding Path="SystemLogHasIssue"/>
+                                <Binding Path="EnableSystemIssueAlarmBadge"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Ellipse.Visibility>
+                </Ellipse>
                 <TextBlock Grid.Row="2" Grid.Column="5"
                            Text="Logs"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -362,7 +383,7 @@
                             <MultiBinding.Bindings>
                                 <Binding Path="WaitingSubProcFinish"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportIssueColor"/>
+                                <Binding Path="TopPanelIssueAlarmButtonColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.IconForeground>
@@ -390,6 +411,21 @@
                                Command="local:MainViewCommands.LogWindowCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                <Ellipse Grid.Row="1" Grid.Column="3"
+                         Width="{Binding MainIssueAlarmBadgeDiameter}" Height="{Binding MainIssueAlarmBadgeDiameter}"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="{Binding MainIssueAlarmBadgeMargin}"
+                         Fill="{Binding TopPanelIssueAlarmBadgeColor, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Red}">
+                    <Ellipse.Visibility>
+                        <MultiBinding Converter="{StaticResource MultiBooleanAndToVisibilityConverter}" 
+                                      Mode="OneWay" FallbackValue="Hidden">
+                            <MultiBinding.Bindings>
+                                <Binding Path="SystemLogHasIssue"/>
+                                <Binding Path="EnableSystemIssueAlarmBadge"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Ellipse.Visibility>
+                </Ellipse>
                 <TextBlock Grid.Row="2" Grid.Column="3"
                            Text="Log" 
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -428,7 +464,7 @@
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"
+                <ColumnDefinition Width="{Binding MainTreeViewWidth, Mode=TwoWay, Converter={StaticResource GridLengthConverter}, FallbackValue=200}"
                                   MinWidth="100"
                                   MaxWidth="300"/>
                 <ColumnDefinition/>

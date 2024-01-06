@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -82,16 +82,21 @@ namespace PEBakery.Core
         */
         #endregion
 
+        #region (docs) Section Deep Detector 
+        #endregion
+
         #region Field and Property
         private readonly Script _sc;
 
         // Coverage
-        private readonly List<string> _visitedSections = new List<string>();
+        private readonly HashSet<string> _visitedSections = new HashSet<string>();
         public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code || x.Value.Type == SectionType.Interface);
         public int VisitedSectionCount => _visitedSections.Count;
         public double Coverage => CodeSectionCount == 0 ? 0 : (double)VisitedSectionCount / CodeSectionCount;
 
-        // Compat option detector
+        // 
+        // TODO: Compat option detector
+
         #endregion
 
         #region Constructor
@@ -105,6 +110,9 @@ namespace PEBakery.Core
         public (List<LogInfo>, Result) CheckScript()
         {
             List<LogInfo> logs = new List<LogInfo>();
+
+            // Deep inspect unknown sections to figure out hidden code sections.
+            _sc.DeepInspectSections();
 
             // Codes
             if (_sc.Sections.ContainsKey(ScriptSection.Names.Process))
@@ -140,7 +148,7 @@ namespace PEBakery.Core
                         string next;
                         (next, remainder) = CodeParser.GetNextArgument(remainder);
 
-                        // Does section exist?
+                        // Does this section exist?
                         if (!_sc.Sections.ContainsKey(next))
                             logs.Add(new LogInfo(LogState.Error, $"Section [{next}] does not exist (InterfaceList={interfaceList})"));
                     }
@@ -158,6 +166,14 @@ namespace PEBakery.Core
                 if (_sc.Sections.ContainsKey(ifaceSection))
                     logs.AddRange(CheckInterfaceSection(_sc.Sections[ifaceSection]));
             }
+
+            // Check more deep-inspected code sections
+            foreach (ScriptSection section in _sc.Sections.Values.Where(x => x.Type == SectionType.Code && !_visitedSections.Contains(x.Name)))
+                logs.AddRange(CheckCodeSection(section));
+
+            // Check more deep-inspected interface sections
+            foreach (ScriptSection section in _sc.Sections.Values.Where(x => x.Type == SectionType.Interface && !_visitedSections.Contains(x.Name)))
+                logs.AddRange(CheckInterfaceSection(section));
 
             // Result
             Result result = Result.Clean;
@@ -198,10 +214,10 @@ namespace PEBakery.Core
 
         private void RecursiveFindCodeSection(IReadOnlyList<CodeCommand> codes, List<LogInfo> logs)
         {
-            string? targetCodeSection = null;
-            string? targetInterfaceSection = null;
             foreach (CodeCommand cmd in codes)
             {
+                string? targetCodeSection = null;
+                string? targetInterfaceSection = null;
                 switch (cmd.Type)
                 {
                     #region Check CodeSections
@@ -370,7 +386,7 @@ namespace PEBakery.Core
                     if (_sc.Sections.ContainsKey(targetInterfaceSection))
                         logs.AddRange(CheckInterfaceSection(_sc.Sections[targetInterfaceSection], cmd.RawCode, cmd.LineIdx));
                     else
-                        logs.Add(new LogInfo(LogState.Error, $"Section [{targetInterfaceSection}] does not exist", cmd));
+                        logs.Add(new LogInfo(LogState.Error, $"Interface section [{targetInterfaceSection}] does not exist", cmd));
                 }
             }
         }
@@ -422,6 +438,14 @@ namespace PEBakery.Core
                             // Practically, this means info.Index is -1 -> uiCtrl.Text not being one of info.Items
                             if (info.Index < 0 || info.Items.Count <= info.Index)
                                 logs.Add(new LogInfo(LogState.Warning, $"Incorrect selected value [{uiCtrl.Text}]", uiCtrl));
+
+                            if (info.SectionName != null)
+                            {
+                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
+                            }
                         }
                         break;
                     case UIControlType.Image:
@@ -493,7 +517,7 @@ namespace PEBakery.Core
                                 if (url.IndexOf("://", StringComparison.Ordinal) != -1)
                                     logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                 else
-                                    logs.Add(new LogInfo(LogState.Warning, "URL does not have scheme. Did you omit \"http(s)://\"?", uiCtrl));
+                                    logs.Add(new LogInfo(LogState.Warning, "URL does not have a scheme. Did you omit \"http(s)://\"?", uiCtrl));
                             }
                         }
                         break;
@@ -564,6 +588,14 @@ namespace PEBakery.Core
                             { // Select Folder
                                 if (info.Filter != null)
                                     logs.Add(new LogInfo(LogState.Warning, $"File filters cannot be used for folder selection", uiCtrl));
+                            }
+
+                            if (info.SectionName != null)
+                            {
+                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
                         }
                         break;

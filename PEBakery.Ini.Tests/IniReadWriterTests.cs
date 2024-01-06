@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
  
     MIT License
 
@@ -4001,6 +4001,142 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("[병]");
             b.AppendLine("UnicodeC");
             Template(null, srcStr, b.ToString(), true);
+        }
+        #endregion
+
+        #region Parse IEnumerable<string>
+        [TestMethod]
+        public void ParseIniLinesIniStyle()
+        {
+            static void Template(IEnumerable<string> srcLines, Dictionary<string, string> expectedDict)
+            {
+                Dictionary<string, string> parseDict = IniReadWriter.ParseIniLinesIniStyle(srcLines);
+
+                Assert.IsTrue(parseDict.SequenceEqual(expectedDict));
+            }
+
+            string[] srcLines = new string[]
+            {
+                "InlineMacro=Set,#r,#1",
+                "UnicodeB",
+                "%LangList%=ar-SA|bg-BG|cs-CZ",
+                "DelLang=Run,%ScriptFile%,DelLang",
+                "// Hello=World",
+                "# Hello",
+                ";World",
+                "Del = Run",
+            };
+
+            Dictionary<string, string> expectedDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["InlineMacro"] = "Set,#r,#1",
+                ["DelLang"] = "Run,%ScriptFile%,DelLang",
+                ["Del"] = "Run",
+            };
+
+            Template(srcLines, expectedDict);
+        }
+
+        [TestMethod]
+        public void ParseIniLinesVarStyle()
+        {
+            static void Template(IEnumerable<string> srcLines, Dictionary<string, string> expectedDict)
+            {
+                Dictionary<string, string> parseDict = IniReadWriter.ParseIniLinesVarStyle(srcLines);
+
+                Assert.IsTrue(parseDict.SequenceEqual(expectedDict));
+            }
+
+            string[] srcLines = new string[]
+            {
+                "InlineMacro=Set,#r,#1",
+                "UnicodeB",
+                "%LangList%=ar-SA|bg-BG|cs-CZ",
+                "DelLang=Run,%ScriptFile%,DelLang",
+                "// Hello=World",
+                "# Hello",
+                ";World",
+                "Del = Run",
+            };
+
+            Dictionary<string, string> expectedDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["LangList"] = "ar-SA|bg-BG|cs-CZ",
+            };
+
+            Template(srcLines, expectedDict);
+        }
+        #endregion
+
+        #region GetKeyValueFromLine
+        [TestMethod]
+        public void GetKeyValueFromLine()
+        {
+            static void Template(string src, string? expectKey, string? expectVal)
+            {
+                (string? parseKey, string? parseVal) = IniReadWriter.GetKeyValueFromLine(src);
+
+                if (parseKey == null)
+                    Assert.IsNull(expectKey);
+                else
+                    Assert.IsTrue(parseKey.Equals(expectKey, StringComparison.OrdinalIgnoreCase));
+
+                if (parseVal == null)
+                    Assert.IsNull(expectVal);
+                else
+                    Assert.IsTrue(parseVal.Equals(expectVal, StringComparison.OrdinalIgnoreCase));
+            }
+
+            Template("InlineMacro=Set,#r,#1", "InlineMacro", "Set,#r,#1");
+            Template("UnicodeB", null, null);
+            Template("%LangList%=ar-SA|bg-BG|cs-CZ", "%LangList%", "ar-SA|bg-BG|cs-CZ");
+            Template("DelLang=Run,%ScriptFile%,DelLang", "DelLang", "Run,%ScriptFile%,DelLang");
+            Template("// Hello=World", null, null);
+            Template("# Hello", null, null);
+            Template(";World", null, null);
+            Template("Del = Run", "Del", "Run");
+        }
+
+        [TestMethod]
+        public void GetKeyValueFromLines()
+        {
+            static void Template(IEnumerable<string> srcLines, List<string> expectKeys, List<string> expectVals)
+            {
+                (List<string> parseKeys, List<string> parseVals) = IniReadWriter.GetKeyValueFromLines(srcLines);
+
+                Assert.IsTrue(expectKeys.SequenceEqual(parseKeys, StringComparer.OrdinalIgnoreCase));
+                Assert.IsTrue(expectVals.SequenceEqual(parseVals, StringComparer.OrdinalIgnoreCase));
+            }
+
+            string[] srcLines = new string[]
+            {
+                "InlineMacro=Set,#r,#1",
+                "UnicodeB",
+                "%LangList%=ar-SA|bg-BG|cs-CZ",
+                "DelLang=Run,%ScriptFile%,DelLang",
+                "// Hello=World",
+                "# Hello",
+                ";World",
+                "Del = Run",
+            };
+
+            List<string> expectKeys = new List<string>
+            {
+                "InlineMacro",
+                "%LangList%",
+                "DelLang",
+                "Del",
+            };
+
+            List<string> expectVals = new List<string>
+            {
+                "Set,#r,#1",
+                "ar-SA|bg-BG|cs-CZ",
+                "Run,%ScriptFile%,DelLang",
+                "Run",
+            };
+
+            Template(srcLines, expectKeys, expectVals);
         }
         #endregion
 

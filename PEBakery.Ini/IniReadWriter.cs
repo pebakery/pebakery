@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
  
     MIT License
 
@@ -2878,7 +2878,7 @@ namespace PEBakery.Ini
 
         #region (TextReader, TextWriter) Fast Forward
         /// <summary>
-        /// Move position of TextReader to read content of specific .ini section.
+        /// Move position of TextReader to read content of a specific .ini section.
         /// </summary>
         /// <remarks>
         /// Designed for use in EncodedFile class.
@@ -2910,7 +2910,7 @@ namespace PEBakery.Ini
         }
 
         /// <summary>
-        /// Copy from TextReader to TextWriter until specific .ini section is found.
+        /// Copy from TextReader to TextWriter until a specific .ini section is found.
         /// </summary>
         /// <remarks>
         /// Designed for use in EncodedFile class.
@@ -3056,9 +3056,9 @@ namespace PEBakery.Ini
         /// </summary>
         public static Dictionary<string, string> ParseIniLinesIniStyle(IEnumerable<string> lines)
         {
-            // This regex exclude %A%=BCD form.
+            // This regex excludes %A%=BCD form.
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex(@"^(?<!\/\/|#|;)([^%=\r\n]+)=(.*)$", lines);
+            return InternalParseIniLinesRegex("^(?!//|#|;)([^%=\r\n]+)=(.*)$", lines);
         }
 
         /// <summary>
@@ -3067,7 +3067,7 @@ namespace PEBakery.Ini
         public static Dictionary<string, string> ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
+            return InternalParseIniLinesRegex("^%([^\r\n=]+)%=(.*)$", lines);
         }
 
         /// <summary>
@@ -3096,11 +3096,19 @@ namespace PEBakery.Ini
 
         #region (Utility) GetKeyValueFromLine
         /// <summary>
-        /// Used to handle [EncodedFile-InterfaceEncoded-*] section
-        /// Return null if failed
+        /// Used to handle [EncodedFile-InterfaceEncoded-*] section.
         /// </summary>
+        /// <remarks>
+        /// Line comments will be ignored.
+        /// </remarks>
+        /// <returns>
+        /// Returns null if failed.
+        /// </returns>
         public static (string? Key, string? Value) GetKeyValueFromLine(string rawLine)
         {
+            if (IsLineComment(rawLine))
+                return (null, null);
+
             int idx = rawLine.IndexOf('=');
             if (idx == -1) // Unable to find key and value
                 return (null, null);
@@ -3113,18 +3121,25 @@ namespace PEBakery.Ini
         /// <summary>
         /// Used to handle [EncodedFile-InterfaceEncoded-*] section.
         /// </summary>
+        /// <remarks>
+        /// Line comments will be ignored.
+        /// </remarks>
         /// <returns>
-        /// Null is returned if failed.
+        /// Returns null if failed.
         /// </returns>
-        public static (List<string>? Keys, List<string>? Values) GetKeyValueFromLines(IReadOnlyList<string> rawLines)
+        public static (List<string> Keys, List<string> Values) GetKeyValueFromLines(IEnumerable<string> rawLines)
         {
             List<string> keys = new List<string>();
             List<string> values = new List<string>();
             foreach (string rawLine in rawLines)
             {
+                if (IsLineComment(rawLine))
+                    continue;
+
                 (string? key, string? value) = GetKeyValueFromLine(rawLine);
                 if (key == null || value == null)
-                    return (null, null);
+                    continue;
+
                 keys.Add(key);
                 values.Add(value);
             }
@@ -3171,7 +3186,7 @@ namespace PEBakery.Ini
         }
         #endregion
 
-        #region (Internal) SmarterAnsiDetect
+        #region (Internal) SmarterDetectEncoding
         private static Encoding SmarterDetectEncoding(string filePath, IReadOnlyList<IniKey> iniKeys)
         {
             // Test if content to write is ANSI-compatible.

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ namespace PEBakery.Core.Commands
         /// </summary>
         /// <param name="s"></param>
         /// <param name="cmd"></param>
-        /// <returns></returns>
+        /// <returns>List of logs</returns>
         public static List<LogInfo> List(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -52,7 +52,7 @@ namespace PEBakery.Core.Commands
                 listStr = StringEscaper.Preprocess(s, listVar);
 
             ListType type = info.Type;
-            string delimiter = "|";
+            string delimiter = StringEscaper.DefaultListStrDelim;
             switch (type)
             {
                 case ListType.Get:
@@ -303,8 +303,49 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case ListType.Range:
+                    {
+                        ListInfo_Range subInfo = (ListInfo_Range)info.SubInfo;
+
+                        string startStr = StringEscaper.Preprocess(s, subInfo.Start);
+                        string endStr = StringEscaper.Preprocess(s, subInfo.End);
+                        string stepStr = StringEscaper.Preprocess(s, subInfo.Step);
+                        if (!NumberHelper.ParseInt64(startStr, out long startVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{startStr}] is not a valid integer");
+                        if (!NumberHelper.ParseInt64(endStr, out long endVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{endStr}] is not a valid integer");
+                        if (!NumberHelper.ParseInt64(stepStr, out long stepVal))
+                            return LogInfo.LogErrorMessage(logs, $"[{stepStr}] is not a valid integer");
+
+                        if (subInfo.Delim != null)
+                            delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
+
+                        if (!StringEscaper.IsRangeValid(startVal, endVal, stepVal))
+                            return LogInfo.LogErrorMessage(logs, $"Step [{stepVal}] for [{startVal}] ~ [{endVal}] is invalid, it will cause an infinite loop.");
+
+                        // start <  end : for (long i = s; i < e; i++)
+                        // start >  end : for (long i = s; e < i; i--)
+                        // start == end : empty list
+                        List<string> list = new List<string>();
+                        if (startVal < endVal)
+                        {
+                            for (long i = startVal; i < endVal; i += stepVal)
+                                list.Add(i.ToString());
+                        }
+                        else if (endVal < startVal)
+                        {
+                            for (long i = startVal; endVal < i; i += stepVal)
+                                list.Add(i.ToString());
+                        }
+
+                        listStr = StringEscaper.PackListStr(list, delimiter);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.ListVar, listStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 default: // Error
-                    throw new InternalException("Internal Logic Error at CommandList");
+                    logs.Add(new LogInfo(LogState.CriticalError, $"[List,{info.Type}] is not yet implemented."));
+                    break;
             }
 
             return logs;

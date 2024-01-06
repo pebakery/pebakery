@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -447,14 +447,21 @@ namespace PEBakery.Core
                 type = SectionType.AttachEncodeNow;
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
-            else // Can be SectionType.Code, SectionType.Interface or SectionType.AttachFileList
-                type = inspectCode ? DetectNonInspectedSectionType(sectionName) : SectionType.NonInspected;
+            else if (sectionName.Equals(ScriptSection.Names.Process, StringComparison.OrdinalIgnoreCase))
+                type = SectionType.Code;
+            else if (sectionName.StartsWith('#') && sectionName.EndsWith('#'))
+                type = SectionType.Commentary;
+            else // Can be a SectionType.Code, SectionType.Interface or SectionType.AttachFileList
+                type = inspectCode ? DetectNonInspectedSectionType(sectionName) : SectionType.NotInspected;
+
+            // SyntaxChecker will deep inspect NotInspected or CodeOrUnknown sections later.
+            // Until then, treat them as a maybe-Code secction.
             return type;
         }
 
         private void DetectNonInspectedCodeSectionsType()
         {
-            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NonInspected))
+            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NotInspected))
             {
                 ScriptSection section = kv.Value;
                 section.Type = DetectNonInspectedSectionType(section.Name);
@@ -468,8 +475,8 @@ namespace PEBakery.Core
                 type = SectionType.AttachFileList;
             else if (_interfaceList.Any(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)))
                 type = SectionType.Interface;
-            else // Load it!
-                type = SectionType.Code;
+            else // Unknown section
+                type = SectionType.CodeOrUnknown;
             return type;
         }
 
@@ -502,17 +509,19 @@ namespace PEBakery.Core
             {
                 case SectionType.Main:
                 case SectionType.Variables:
+                case SectionType.SimpleIni:
                 case SectionType.Interface:
+                case SectionType.CodeOrUnknown:
                 case SectionType.Code:
-                case SectionType.NonInspected:
+                case SectionType.Commentary:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
+                default:
                     return new ScriptSection(this, sectionName, type, lines, lineIdx);
                 case SectionType.AttachEncodeLazy: // do not load now
                     return new ScriptSection(this, sectionName, type, false, lineIdx);
-                default:
-                    throw new ScriptParseException($"Invalid SectionType [{type}]");
             }
         }
 
@@ -1066,6 +1075,35 @@ namespace PEBakery.Core
 
             _link = linkTarget;
             _linkLoaded = true;
+        }
+        #endregion
+
+        #region DeepInspectSections
+        public void DeepInspectSections()
+        {
+            foreach (var kv in Sections.Where(x => x.Value.Type == SectionType.CodeOrUnknown || x.Value.Type == SectionType.NotInspected))
+            {
+                ScriptSection section = kv.Value;
+                section.DeepInspect();
+            }
+        }
+        #endregion
+
+        #region CodeSectionTotalLineCount
+        public long CodeSectionTotalLineCount()
+        {
+            long totalLineCount = 0;
+            foreach (ScriptSection section in Sections.Values)
+            {
+                switch (section.Type)
+                {
+                    case SectionType.CodeOrUnknown:
+                    case SectionType.Code:
+                        totalLineCount += section.Lines.Length;
+                        break;
+                }
+            }
+            return totalLineCount;
         }
         #endregion
 

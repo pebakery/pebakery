@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -131,7 +131,6 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetFreeDrive subInfo = (SystemInfo_GetFreeDrive)info.SubInfo;
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
-                        // ReSharper disable once StringLiteralTypo
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
 

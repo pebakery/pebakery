@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System.Diagnostics;
@@ -356,6 +357,7 @@ namespace PEBakery.Core.Tests.Command
             DirTemplate("France.zip");
             DirTemplate("France.7z");
             DirTemplate("France.rar"); // RAR5
+            DirTemplate("7z2301_ARM64_Filter.7z");
             FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
             FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
             FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo", "Korean_IME_Logo.jpg"); // RAR2.9

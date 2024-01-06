@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2022 Hajin Jang
+    Copyright (C) 2017-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -89,9 +89,9 @@ namespace PEBakery.Core.Tests
                 Assert.IsNotNull(model);
 
                 if (sc == null)
-                    s = new EngineState(project, Logger, model, EngineMode.RunAll);
+                    s = new EngineState(project, Logger, model, null, EngineMode.RunAll);
                 else
-                    s = new EngineState(project, Logger, model, EngineMode.RunOne, sc, entrySection);
+                    s = new EngineState(project, Logger, model, null, EngineMode.RunOne, sc, entrySection);
             }
             else
             {
@@ -102,9 +102,9 @@ namespace PEBakery.Core.Tests
                 Assert.IsNotNull(model);
 
                 if (sc == null)
-                    s = new EngineState(Project, Logger, model, EngineMode.RunAll);
+                    s = new EngineState(Project, Logger, model, null, EngineMode.RunAll);
                 else
-                    s = new EngineState(Project, Logger, model, EngineMode.RunOne, sc, entrySection);
+                    s = new EngineState(Project, Logger, model, null, EngineMode.RunOne, sc, entrySection);
             }
 
             s.LogMode = LogMode.NoDefer;
@@ -398,6 +398,17 @@ namespace PEBakery.Core.Tests
             CheckErrorLogs(logs, check);
 
             return (s, logs);
+        }
+        #endregion
+
+        #region ParseLines
+        public static CodeCommand[] ParseLines(IReadOnlyList<string> lines, out List<LogInfo> errorLogs)
+        {
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
+            CodeCommand[] cmds;
+            (cmds, errorLogs) = parser.ParseStatements(lines);
+            return cmds;
         }
         #endregion
 

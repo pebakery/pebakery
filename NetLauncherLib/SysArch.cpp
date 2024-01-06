@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2022 Hajin Jang
+	Copyright (C) 2016-2023 Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -38,8 +38,6 @@
 #include "PEParser.h"
 #include "SysArch.h"
 
-typedef BOOL(WINAPI LPFN_ISWOW64PROCESS2) (HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine);
-
 ArchVal SysArch::getCpuArch()
 {
 	HMODULE hModule = NULL;
@@ -47,8 +45,9 @@ ArchVal SysArch::getCpuArch()
 		return getCpuArchGetNativeSystemInfo();
 
 	ArchVal ret = ArchVal::UNKNOWN;
-	if (GetProcAddress(hModule, "IsWow64Process2") != nullptr) // Host supports IsWow64Process2 (Win 10 v1511+)
-		ret = getCpuArchIsWow64Process2();
+	LPFN_ISWOW64PROCESS2 funcPtr = reinterpret_cast<LPFN_ISWOW64PROCESS2>(GetProcAddress(hModule, "IsWow64Process2"));
+	if (funcPtr != nullptr) // Host supports IsWow64Process2 (Win 10 v1511+)
+		ret = getCpuArchIsWow64Process2(funcPtr);
 	else // Host is Win 7, 8, 8.1 or 10 v1507
 		ret = getCpuArchGetNativeSystemInfo();
 
@@ -81,12 +80,14 @@ ArchVal SysArch::getCpuArchGetNativeSystemInfo()
 	return ret;
 }
 
-ArchVal SysArch::getCpuArchIsWow64Process2()
+ArchVal SysArch::getCpuArchIsWow64Process2(LPFN_ISWOW64PROCESS2 funcPtr)
 {
 	USHORT wProcessMachine = 0;
 	USHORT wNativeMachine = 0;
 
-	if (IsWow64Process2(GetCurrentProcess(), &wProcessMachine, &wNativeMachine) == 0)
+	if (funcPtr == nullptr)
+		return ArchVal::UNKNOWN;
+	if (funcPtr(GetCurrentProcess(), &wProcessMachine, &wNativeMachine) == 0)
 		return ArchVal::UNKNOWN;
 
 	return toArchVal(wNativeMachine);
@@ -158,4 +159,42 @@ const wchar_t* SysArch::toStr(ArchVal arch)
 	}
 
 	return str;
+}
+
+// List of architectures which can be run on host Windows.
+// More compatible archwa will come after the less compatible ones.
+std::vector<ArchVal> SysArch::getWowCompatibleArch(ArchVal hostArch)
+{
+	std::vector<ArchVal> compatArches;
+
+	compatArches.push_back(hostArch);
+
+	switch (hostArch)
+	{
+	case ArchVal::X86:
+		break;
+	case ArchVal::X64:
+		compatArches.push_back(ArchVal::X86);
+		break;
+	case ArchVal::ARM:
+		break;
+	case ArchVal::ARM64:
+		if (Helper::isWindows11orLater())
+			compatArches.push_back(ArchVal::X64);
+		compatArches.push_back(ArchVal::X86);
+		break;
+	}
+
+	return compatArches;
+}
+
+bool SysArch::isWoWCompatibleArch(ArchVal hostArch, ArchVal procArch)
+{
+	std::vector<ArchVal> arches = getWowCompatibleArch(hostArch);
+	for (ArchVal& arch : arches)
+	{
+		if (arch == procArch)
+			return true;
+	}
+	return false;
 }

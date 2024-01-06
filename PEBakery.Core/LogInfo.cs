@@ -1,5 +1,5 @@
 ﻿/*
-   Copyright (C) 2016-2022 Hajin Jang
+   Copyright (C) 2016-2023 Hajin Jang
    Licensed under GPL 3.0
 
    PEBakery is free software: you can redistribute it and/or modify
@@ -27,7 +27,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Windows.Media;
 
 namespace PEBakery.Core
 {
@@ -36,13 +38,38 @@ namespace PEBakery.Core
     {
         None = 0,
         Success = 100,
+        /// <summary>
+        /// Denotes ignorable errors.
+        /// </summary>
         Warning = 200,
+        /// <summary>
+        /// Similar to <see cref="LogState.Warning"/>, but caused by overwriting files.
+        /// </summary>
         Overwrite = 201,
+        /// <summary>
+        /// Fatal error that build stop is recommended.
+        /// </summary>
         Error = 300,
+        /// <summary>
+        /// Hidden to users. Denote internal PEBakery error. Must not happen.
+        /// </summary>
         CriticalError = 301,
+        /// <summary>
+        /// Normal informational log.
+        /// </summary>
         Info = 400,
+        /// <summary>
+        /// Warnings that had been muted by [NoWarn] or etc.
+        /// </summary>
         Ignore = 401,
+        /// <summary>
+        /// Errors that had been muted by System.ErrorOff.
+        /// </summary>
         Muted = 402,
+        /// <summary>
+        /// Hidden to users, only used for development purpose.
+        /// </summary>
+        Debug = 403,
     }
     #endregion
 
@@ -181,8 +208,7 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogInfo AddCommand(LogInfo log, CodeCommand cmd)
         {
-            if (log.Command == null)
-                log.Command = cmd;
+            log.Command ??= cmd;
             return log;
         }
 
@@ -211,8 +237,7 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogInfo AddCommandDepth(LogInfo log, CodeCommand cmd, int depth)
         {
-            if (log.Command == null)
-                log.Command = cmd;
+            log.Command ??= cmd;
             log.Depth = depth;
             return log;
         }
@@ -266,6 +291,53 @@ namespace PEBakery.Core
             else
             {
                 return $"[{State}] {Message}";
+            }
+        }
+        #endregion
+
+        #region (static) LogState Row Background Color
+        /// <summary>
+        /// Defines background color value of LogState row in LogViewer.
+        /// </summary>
+        private readonly static Dictionary<LogState, Color> LogStateBackgroundColorDict = new Dictionary<LogState, Color>()
+        {
+            [LogState.Success] = Color.FromRgb(212, 237, 218),
+            [LogState.Warning] = Color.FromRgb(255, 238, 186),
+            [LogState.Overwrite] = Color.FromRgb(250, 226, 202),
+            [LogState.Error] = Color.FromRgb(248, 215, 218),
+            [LogState.CriticalError] = Color.FromRgb(255, 190, 190),
+            [LogState.Info] = Color.FromRgb(204, 229, 255),
+            [LogState.Ignore] = Color.FromRgb(226, 227, 229),
+            [LogState.Muted] = Color.FromRgb(214, 216, 217),
+            [LogState.Debug] = Color.FromRgb(230, 204, 255),
+        };
+
+        /// <summary>
+        /// Query background color value of LogState (for stat).
+        /// </summary>
+        public static Color? QueryStatBackgroundColor(LogState state)
+        {
+            if (LogStateBackgroundColorDict.ContainsKey(state))
+                return LogStateBackgroundColorDict[state];
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Query background color value of LogState (for message row).
+        /// </summary>
+        public static Color? QueryRowBackgroundColor(LogState state)
+        {
+            switch (state)
+            {
+                case LogState.Error:
+                case LogState.CriticalError:
+                case LogState.Warning:
+                case LogState.Debug:
+                    Debug.Assert(LogStateBackgroundColorDict.ContainsKey(state), $"{nameof(LogStateBackgroundColorDict)} does not have LogState [{state}].");
+                    return LogStateBackgroundColorDict[state];
+                default:
+                    return null;
             }
         }
         #endregion

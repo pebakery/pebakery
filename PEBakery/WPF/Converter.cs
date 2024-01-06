@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-2023 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -200,6 +200,23 @@ namespace PEBakery.WPF
             return new object[2] { Binding.DoNothing, Binding.DoNothing };
         }
     }
+    public class GridLengthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double val = (double)value;
+            GridLength gridLength = new GridLength(val);
+
+            return gridLength;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            GridLength val = (GridLength)value;
+
+            return val.Value;
+        }
+    }
     #endregion
 
     #region SettingWindow
@@ -243,9 +260,8 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not bool nextState)
                 return false;
-            bool nextState = (bool)value;
             return nextState ? "Select All" : "Select None";
         }
 
@@ -259,18 +275,32 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not Setting.ThemeType typeVal)
                 return false;
-            Setting.ThemeType type = (Setting.ThemeType)value;
-            Debug.Assert(Enum.IsDefined(typeof(Setting.ThemeType), type), "Check SettingWindow.xaml's theme tab.");
-            return type == Setting.ThemeType.Custom;
+            Debug.Assert(Enum.IsDefined(typeVal), "Check SettingWindow.xaml's theme tab.");
+            return typeVal == Setting.ThemeType.Custom;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null)
+            if (value is not bool boolVal)
                 return false;
-            return !(bool)value;
+            return !boolVal;
+        }
+    }
+
+    public class ThemeTypeToSolidColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not Setting.ThemeType typeVal)
+                return false;
+            return new SolidColorBrush(Setting.ThemeSetting.QueryThemeMainColor(typeVal));
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
         }
     }
     #endregion
@@ -508,26 +538,9 @@ namespace PEBakery.WPF
             if (value is not LogState state)
                 return Binding.DoNothing;
 
-            switch (state)
-            {
-                case LogState.Success:
-                    return new SolidColorBrush(Color.FromRgb(212, 237, 218));
-                case LogState.Warning:
-                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
-                case LogState.Overwrite:
-                    return new SolidColorBrush(Color.FromRgb(250, 226, 202));
-                case LogState.CriticalError:
-                case LogState.Error:
-                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
-                case LogState.Info:
-                    return new SolidColorBrush(Color.FromRgb(204, 229, 255));
-                case LogState.Ignore:
-                    return new SolidColorBrush(Color.FromRgb(226, 227, 229));
-                case LogState.Muted:
-                    return new SolidColorBrush(Color.FromRgb(214, 216, 217));
-                default:
-                    return Binding.DoNothing;
-            }
+            if (LogInfo.QueryStatBackgroundColor(state) is Color color)
+                return new SolidColorBrush(color);
+            return Binding.DoNothing;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -547,14 +560,8 @@ namespace PEBakery.WPF
             if (values[1] is not int alterIdx)
                 return Binding.DoNothing;
 
-            switch (state)
-            {
-                case LogState.CriticalError:
-                case LogState.Error:
-                    return new SolidColorBrush(Color.FromRgb(248, 215, 218));
-                case LogState.Warning:
-                    return new SolidColorBrush(Color.FromRgb(255, 238, 186));
-            }
+            if (LogInfo.QueryRowBackgroundColor(state) is Color color)
+                return new SolidColorBrush(color);
 
             if (alterIdx % 2 == 0)
                 return new SolidColorBrush(Color.FromRgb(255, 255, 255));
@@ -738,6 +745,54 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             return Binding.DoNothing;
+        }
+    }
+
+    public class MultiBooleanAndToVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values is not Array valueArr)
+                return Binding.DoNothing;
+
+            bool boolAndVal = true;
+            foreach (object val in valueArr)
+            {
+                if (val is not bool boolVal)
+                    return Binding.DoNothing;
+                boolAndVal &= boolVal;
+            }
+
+            return boolAndVal ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing };
+        }
+    }
+
+    public class MultiBooleanOrToVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values is not Array valueArr)
+                return Binding.DoNothing;
+
+            bool boolOrVal = false;
+            foreach (object val in valueArr)
+            {
+                if (val is not bool boolVal)
+                    return Binding.DoNothing;
+                boolOrVal |= boolVal;
+            }
+
+            return boolOrVal ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing };
         }
     }
     #endregion
