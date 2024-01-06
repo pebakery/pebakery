@@ -54,7 +54,7 @@ enum class PrintMode
 	PATCH = 2,
 };
 
-void printHelp(const std::string& progName)
+static void printHelp(const std::string& progName)
 {
 	std::cerr << ".NET Runtime Detector by Joveler v1.0.0" << std::endl << std::endl;
 	std::cerr << "Usage: " << progName << " <args>" << std::endl;
@@ -63,7 +63,7 @@ void printHelp(const std::string& progName)
 	std::cerr << "  [--win-desktop]" << std::endl;
 }
 
-NetVersion findLatestVersion(const std::set<NetVersion>& versions)
+static NetVersion findLatestVersion(const std::set<NetVersion>& versions)
 {
 	NetVersion latestMajorVer(0, 0, 0);
 	for (const NetVersion& version : versions)
@@ -74,7 +74,7 @@ NetVersion findLatestVersion(const std::set<NetVersion>& versions)
 	return latestMajorVer;
 }
 
-bool filtertInstalledRuntime(const std::wstring& runtimeId, const std::map<std::wstring, std::vector<NetVersion>>& rtMap, int32_t majorVer, std::set<NetVersion>& outVers)
+static bool filterInstalledRuntime(const std::wstring& runtimeId, const std::map<std::wstring, std::vector<NetVersion>>& rtMap, int32_t majorVer, std::set<NetVersion>& outVers)
 {
 	NetVersion latestMajorVer(0, 0, 0);
 	auto it = rtMap.find(runtimeId);
@@ -167,13 +167,15 @@ int main(int argc, char* argv[])
 		std::wcerr << L"ERR: .NET Runtime is not installed." << std::endl;
 		exit(1);
 	}
+	// CLI-based check is also required for .NET SDK installed by zip extraction.
+	NetCoreDetector::cliListRuntimes(installLoc, rtMap);
 	
 	// Check installed .NET runtime versions	
 	std::set<NetVersion> netCoreVerSet;
 	std::set<NetVersion> netWinVerSet;
-	bool foundVersion = filtertInstalledRuntime(NetCoreDetector::NET_CORE_ID, rtMap, reqMajor, netCoreVerSet);
+	bool foundVersion = filterInstalledRuntime(NetCoreDetector::NET_CORE_ID, rtMap, reqMajor, netCoreVerSet);
 	if (checkWinDesktop)
-		foundVersion = filtertInstalledRuntime(NetCoreDetector::WINDOWS_DESKTOP_RUNTIME_ID, rtMap, reqMajor, netWinVerSet);
+		foundVersion = filterInstalledRuntime(NetCoreDetector::WINDOWS_DESKTOP_RUNTIME_ID, rtMap, reqMajor, netWinVerSet);
 
 	if (foundVersion == false)
 		exit(1);

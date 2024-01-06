@@ -140,6 +140,7 @@ $NetVerMinor = 0   # Fail-safe value
 $NetVerPatch = 25  # Fail-safe value
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
+dotnet --list-runtimes
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
 Write-Output "PEBakeryLauncher will search for [.NET ${NetVerMajor}.${NetVerMinor}.${NetVerPatch}]."
