@@ -47,6 +47,7 @@
 #include "NetDetector.h"
 #include "SysArch.h"
 #include "Helper.h"
+#include <iostream>
 
 constexpr auto MAX_REG_KEY_LENGTH = 255;
 constexpr auto REG_VALUENAME_BUF_LENGTH = 2048;
@@ -494,7 +495,16 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 
 		// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
 		if (ret == FALSE)
+		{
+			std::wcerr << L"CreateProcessW failed, appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
+
+			CloseHandle(hChildStdOutRd);
+			CloseHandle(hChildStdOutWr);
+			CloseHandle(hChildStdInRd);
+			CloseHandle(hChildStdInWr);
+
 			return false;
+		}
 
 		// Close unnecessary handles to the child process and its primary thread
 		CloseHandle(pi.hProcess);
@@ -512,6 +522,8 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 
 		CloseHandle(hChildStdOutRd);
 	}
+
+	std::cerr << rtiStr << std::endl;
 
 	// Build rtMap
 	const char* rtiPtr = rtiStr.c_str();

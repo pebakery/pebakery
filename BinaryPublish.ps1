@@ -141,7 +141,7 @@ Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Ye
 dotnet --list-runtimes
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
-if ($NetVerMinor -eq "" || $NetVerPatch -eq "") {
+if ($NetVerMinor -eq "" -or $null -eq $NetVerMinor -or $NetVerPatch -eq "" -or $null -eq $NetVerPatch) {
     Write-Output ".NET SDK version detection error! Using fallback version value."
 }
 if ($NetVerMinor -eq "") { $NetVerMinor = 0 }
