@@ -53,6 +53,10 @@ $runModes = @(
     ,@( [PublishModes]::SelfContained, [PublishArches]::arm64 )
 )
 
+# Fallback .NET SDK version
+$FallbackNetVerMinor = 0
+$FallbackNetVerPatch = 25
+
 # -----------------------------------------------------------------------------
 # Find MSBuild location
 # -----------------------------------------------------------------------------
@@ -139,13 +143,20 @@ $NetVerMajor = 6
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
 dotnet --list-runtimes
+Write-Output ""
+reg export HKLM\SOFTWARE\dotnet\Setup\InstalledVersions TMP1.reg
+Get-Content TMP1.reg
+Write-Output ""
+reg export HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions TMP2.reg
+Get-Content TMP2.reg
+Write-Output ""
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
-if ($NetVerMinor -eq "" -or $null -eq $NetVerMinor -or $NetVerPatch -eq "" -or $null -eq $NetVerPatch) {
+if ($null -eq $NetVerMinor -or $null -eq $NetVerPatch) {
     Write-Output ".NET SDK version detection error! Using fallback version value."
 }
-if ($NetVerMinor -eq "") { $NetVerMinor = 0 }
-if ($NetVerPatch -eq "") { $NetVerPatch = 25 }
+if ($null -eq $NetVerMinor) { $NetVerMinor = $FallbackNetVerMinor }
+if ($null -eq $NetVerPatch) { $NetVerPatch = $FallbackNetVerPatch }
 Write-Output "PEBakeryLauncher will search for [.NET ${NetVerMajor}.${NetVerMinor}.${NetVerPatch}]."
 
 # -----------------------------------------------------------------------------

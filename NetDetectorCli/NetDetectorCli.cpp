@@ -159,34 +159,27 @@ int main(int argc, char* argv[])
 	bool checkWinDesktop = argParser.get<bool>(winDesktopParamKey);
 
 	// [Stage 02] Check .NET runtimes
+	// CLI-based check is required for detecting .NET SDK installed by zip extraction.
+	// It seems that Azure Pipelines incorrectly registers .NET SDK registry values.
 	std::wstring installLoc;
 	std::map<std::wstring, std::vector<NetVersion>> rtMap;
 	bool regCheckRet = NetCoreDetector::regListRuntimes(installLoc, rtMap);
-	if (regCheckRet == false || installLoc.size() == 0)
+	bool cliCheckRet = false;
+	do
 	{
-		// CLI-based check is required for detecting .NET SDK installed by zip extraction.
-		bool cliDetectSucc = false;
-		do
+		if (installLoc.size() == 0)
 		{
-			if (installLoc.size() == 0)
-			{
-				if (NetCoreDetector::findDotnetLocationFromPath(installLoc) == false)
-					break;
-			}
-
-			bool cliCheckRet = NetCoreDetector::cliListRuntimes(installLoc, rtMap);
-			if (cliCheckRet == false)
+			if (NetCoreDetector::findDotnetLocationFromPath(installLoc) == false)
 				break;
-
-			cliDetectSucc = true;
 		}
-		while (false);
 
-		if (cliDetectSucc == false)
-		{
-			std::wcerr << L"ERR: .NET Runtime is not installed." << std::endl;
-			exit(1);
-		}
+		cliCheckRet = NetCoreDetector::cliListRuntimes(installLoc, rtMap);
+	} while (false);
+
+	if (regCheckRet == false && cliCheckRet == false)
+	{
+		std::wcerr << L"ERR: .NET Runtime is not installed." << std::endl;
+		exit(1);
 	}
 
 	// Check installed .NET runtime versions	

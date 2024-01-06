@@ -37,6 +37,9 @@
 #include <vector>
 #include <map>
 #include <regex>
+#ifdef CLI_LIST_TRACE
+#include <iostream>
+#endif
 
 // C Runtime Headers
 #include <cstdint>
@@ -47,7 +50,6 @@
 #include "NetDetector.h"
 #include "SysArch.h"
 #include "Helper.h"
-#include <iostream>
 
 constexpr auto MAX_REG_KEY_LENGTH = 255;
 constexpr auto REG_VALUENAME_BUF_LENGTH = 2048;
@@ -452,7 +454,9 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 	std::wstring appName = installLoc + L"dotnet.exe";
 	std::wstring cmdLine = L"\"" + installLoc + L"dotnet.exe\" --list-runtimes";
 
+#ifdef CLI_LIST_TRACE
 	std::wcerr << L"appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
+#endif
 
 	std::string rtiStr;
 	{
@@ -493,7 +497,9 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
 		if (ret == FALSE)
 		{
+#ifdef CLI_LIST_TRACE
 			std::wcerr << L"CreateProcessW failed" << std::endl;
+#endif
 
 			CloseHandle(hChildStdOutRd);
 			CloseHandle(hChildStdOutWr);
@@ -520,7 +526,9 @@ bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wst
 		CloseHandle(hChildStdOutRd);
 	}
 
+#ifdef CLI_LIST_TRACE
 	std::cerr << "[stdout pipe]" << std::endl << rtiStr << std::endl;
+#endif
 
 	// Build rtMap
 	const char* rtiPtr = rtiStr.c_str();
