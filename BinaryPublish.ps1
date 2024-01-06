@@ -138,8 +138,14 @@ if ($noclean -eq $false) {
 $NetVerMajor = 6
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
+dotnet --list-runtimes
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
+if ($NetVerMinor -eq "" || $NetVerPatch -eq "") {
+    Write-Output ".NET SDK version detection error! Using fallback version value."
+}
+if ($NetVerMinor -eq "") { $NetVerMinor = 0 }
+if ($NetVerPatch -eq "") { $NetVerPatch = 25 }
 Write-Output "PEBakeryLauncher will search for [.NET ${NetVerMajor}.${NetVerMinor}.${NetVerPatch}]."
 
 # -----------------------------------------------------------------------------
