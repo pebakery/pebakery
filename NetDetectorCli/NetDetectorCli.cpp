@@ -137,7 +137,6 @@ int main(int argc, char* argv[])
 		std::cerr << err.what() << std::endl;
 		std::cerr << argParser;
 		exit(1);
-	
 	}
 
 	// Request: --req-major (string)
@@ -162,14 +161,14 @@ int main(int argc, char* argv[])
 	// [Stage 02] Check .NET runtimes
 	std::wstring installLoc;
 	std::map<std::wstring, std::vector<NetVersion>> rtMap;
-	if (NetCoreDetector::regListRuntimes(installLoc, rtMap) == false)
+	bool regCheckRet = NetCoreDetector::regListRuntimes(installLoc, rtMap);
+	bool cliCheckRet = NetCoreDetector::cliListRuntimes(installLoc, rtMap); // CLI-based check is required for detecting .NET SDK installed by zip extraction.
+	if (regCheckRet == false && cliCheckRet == false)
 	{
 		std::wcerr << L"ERR: .NET Runtime is not installed." << std::endl;
 		exit(1);
 	}
-	// CLI-based check is also required for .NET SDK installed by zip extraction.
-	NetCoreDetector::cliListRuntimes(installLoc, rtMap);
-	
+
 	// Check installed .NET runtime versions	
 	std::set<NetVersion> netCoreVerSet;
 	std::set<NetVersion> netWinVerSet;
@@ -178,7 +177,10 @@ int main(int argc, char* argv[])
 		foundVersion = filterInstalledRuntime(NetCoreDetector::WINDOWS_DESKTOP_RUNTIME_ID, rtMap, reqMajor, netWinVerSet);
 
 	if (foundVersion == false)
+	{
+		std::wcerr << L"ERR: .NET Runtimes of v[" << reqMajor << L".x] are not detected." << std::endl;
 		exit(1);
+	}
 	
 	std::set<NetVersion> bothVerSet;
 	if (checkWinDesktop)

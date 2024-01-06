@@ -136,11 +136,8 @@ if ($noclean -eq $false) {
 # Ex) A binary published with .NET 6.0.4 may not run on .NET 6.0.3 or earlier.
 # So query the installed .NET runtime version of the build system, and bake it into the Launcher.
 $NetVerMajor = 6
-$NetVerMinor = 0   # Fail-safe value
-$NetVerPatch = 25  # Fail-safe value
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
-dotnet --list-runtimes
 $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
 $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
 Write-Output "PEBakeryLauncher will search for [.NET ${NetVerMajor}.${NetVerMinor}.${NetVerPatch}]."
