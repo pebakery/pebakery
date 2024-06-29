@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2023 Hajin Jang
+    Copyright (C) 2019-2024 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify

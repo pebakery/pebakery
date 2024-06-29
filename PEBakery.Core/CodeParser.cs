@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2023 Hajin Jang
+    Copyright (C) 2016-2024 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -3008,10 +3008,14 @@ namespace PEBakery.Core
                 case StrFormatType.LTrim:
                 case StrFormatType.RTrim:
                 case StrFormatType.CTrim:
+                case StrFormatType.StartTrim:
+                case StrFormatType.EndTrim:
                     {
                         // StrFormat,LTrim,<SrcString>,<Integer>,<DestVar>
                         // StrFormat,RTrim,<SrcString>,<Integer>,<DestVar>
-                        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVar>
+                        // StrFormat,CTrim,<SrcString>,<TrimChars>,<DestVar>
+                        // StrFormat,StartTrim,<SrcString>,<TrimChars>,<DestVar>
+                        // StrFormat,EndTrim,<SrcString>,<TrimChars>,<DestVar>
 
                         const int argCount = 3;
                         if (args.Count != argCount)

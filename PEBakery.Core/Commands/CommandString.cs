@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2023 Hajin Jang
+    Copyright (C) 2016-2024 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -386,6 +386,8 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.LTrim:
                 case StrFormatType.RTrim:
                 case StrFormatType.CTrim:
+                case StrFormatType.StartTrim:
+                case StrFormatType.EndTrim:
                     {
                         StrFormatInfo_Trim subInfo = (StrFormatInfo_Trim)info.SubInfo;
 
@@ -424,10 +426,38 @@ namespace PEBakery.Core.Commands
                             else if (type == StrFormatType.CTrim) // string.Trim
                             {
                                 if (toTrim.Length == 0)
-                                    return LogInfo.LogErrorMessage(logs, "No characters to trim");
-
-                                char[] chArr = toTrim.ToCharArray();
-                                destStr = srcStr.Trim(chArr);
+                                {
+                                    destStr = srcStr.Trim(); // Trim White-space
+                                }
+                                else
+                                {
+                                    char[] chArr = toTrim.ToCharArray();
+                                    destStr = srcStr.Trim(chArr);
+                                }
+                            }
+                            else if (type == StrFormatType.StartTrim) // string.TrimStart
+                            {
+                                if (toTrim.Length == 0)
+                                {
+                                    destStr = srcStr.TrimStart(); // Trim White-space
+                                }
+                                else
+                                {
+                                    char[] chArr = toTrim.ToCharArray();
+                                    destStr = srcStr.TrimStart(chArr);
+                                }
+                            }
+                            else if (type == StrFormatType.EndTrim) // string.TrimEnd
+                            {
+                                if (toTrim.Length == 0)
+                                {
+                                    destStr = srcStr.TrimEnd(); // Trim White-space
+                                }
+                                else
+                                {
+                                    char[] chArr = toTrim.ToCharArray();
+                                    destStr = srcStr.TrimEnd(chArr);
+                                }
                             }
                             else
                             {

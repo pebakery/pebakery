@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2023 Hajin Jang
+    Copyright (C) 2016-2024 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -2800,7 +2800,7 @@ namespace PEBakery.Core
         Left = 80, Right,
         Mid = 90,
         Len = 100,
-        LTrim = 110, RTrim, CTrim, NTrim,
+        LTrim = 110, RTrim, CTrim, NTrim, StartTrim, EndTrim, // StartTrim & EndTrim added in PEBakery
         UCase = 120, LCase,
         Pos = 130, PosX,
         Replace = 140, ReplaceX,

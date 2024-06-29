@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017-2023 Hajin Jang
+    Copyright (C) 2017-2024 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -458,8 +458,9 @@ namespace PEBakery.Core.Tests.Command
             // In WB082, it returns "-PEBakery-", because WB082 uses only first character
             DestSuccessTemplate(s, @"StrFormat,CTrim,_-PEBakery-_,_-,%Dest%", "PEBakery");
             DestSuccessTemplate(s, "StrFormat,CTrim, PEBakery ,\" \",%Dest%", "PEBakery");
-            // Access violation in WB082
-            DestErrorTemplate(s, "StrFormat,CTrim,PEBakery,,%Dest%", ErrorCheck.RuntimeError);
+            // Access violation in WB082, but that doesn't mean PEBakery can't handle things properly
+            DestSuccessTemplate(s, "StrFormat,CTrim,PEBakery,,%Dest%", "PEBakery");
+            DestSuccessTemplate(s, "StrFormat,CTrim,    PEBakery    ,\"\",%Dest%", "PEBakery");
         }
         #endregion
 
@@ -473,6 +474,38 @@ namespace PEBakery.Core.Tests.Command
 
             DestSuccessTemplate(s, @"StrFormat,NTrim,PEBakery100,%Dest%", "PEBakery");
             DestSuccessTemplate(s, @"StrFormat,NTrim,PEBakery,%Dest%", "PEBakery");
+        }
+        #endregion
+
+        #region StartTrim
+
+
+        [TestMethod]
+        public void StartTrim()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            DestSuccessTemplate(s, @"StrFormat,StartTrim,***PEBakery***,*,%Dest%", "PEBakery***");
+            DestSuccessTemplate(s, @"StrFormat,StartTrim,***PEBakery***,-,%Dest%", "***PEBakery***");
+            DestSuccessTemplate(s, @"StrFormat,StartTrim,PEBakery,,%Dest%", "PEBakery");
+            DestSuccessTemplate(s, "StrFormat,StartTrim,\"    PEBakery    \",,%Dest%", "PEBakery    ");
+            DestSuccessTemplate(s, "StrFormat,StartTrim,\"    PEBakery    \",\"\",%Dest%", "PEBakery    ");
+        }
+        #endregion
+
+        #region EndTrim
+
+
+        [TestMethod]
+        public void EndTrim()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            DestSuccessTemplate(s, @"StrFormat,EndTrim,***PEBakery***,*,%Dest%", "***PEBakery");
+            DestSuccessTemplate(s, @"StrFormat,EndTrim,***PEBakery***,-,%Dest%", "***PEBakery***");
+            DestSuccessTemplate(s, @"StrFormat,EndTrim,PEBakery,,%Dest%", "PEBakery");
+            DestSuccessTemplate(s, "StrFormat,EndTrim,\"    PEBakery    \",,%Dest%", "    PEBakery");
+            DestSuccessTemplate(s, "StrFormat,EndTrim,\"    PEBakery    \",\"\",%Dest%", "    PEBakery");
         }
         #endregion
 
