@@ -579,15 +579,20 @@ namespace PEBakery.Core.Commands
                     // In Windows 11 + .NET Core 3.1, setting UseShellExecute = true causes exception.
                     // -> Win32Exception with "The operation was cancaled by the user" message
                     // To mitigate this, use CreateProcess instead of UseShellExecute on exe files.
-                    bool isExeFile = filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+                    //
+                    // => DISABLED hack as this causes admin elevation issues on some environments
+                    //
+                    // bool isExeFile = filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.UseShellExecute = !isExeFile;
+                        // proc.StartInfo.UseShellExecute = !isExeFile;
+                        proc.StartInfo.UseShellExecute = true;
                     }
                     else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.UseShellExecute = !isExeFile;
+                        // proc.StartInfo.UseShellExecute = !isExeFile;
+                        proc.StartInfo.UseShellExecute = true;
                         proc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
                     }
                     else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
