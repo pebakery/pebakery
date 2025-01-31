@@ -1455,7 +1455,7 @@ namespace PEBakery.Core
                                     Level = LzmaCompLevel.Default,
                                     LeaveOpen = true,
                                 };
-                                XZThreadedCompressOptions xzThreadOpts = new XZThreadedCompressOptions()
+                                XZParallelCompressOptions xzThreadOpts = new XZParallelCompressOptions()
                                 {
                                     Threads = threads,
                                 };
@@ -1816,7 +1816,7 @@ namespace PEBakery.Core
                                 {
                                     LeaveOpen = true,
                                 };
-                                XZThreadedDecompressOptions xzThreadOpts = new XZThreadedDecompressOptions()
+                                XZParallelDecompressOptions xzThreadOpts = new XZParallelDecompressOptions()
                                 {
                                     Threads = Environment.ProcessorCount,
                                     MemlimitThreading = availFreeMem,

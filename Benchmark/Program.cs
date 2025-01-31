@@ -107,7 +107,7 @@ namespace Benchmark
             CheckLibPath(lz4LibPath);
 
             Magic.GlobalInit(magicLibPath);
-            ZLibInit.GlobalInit(gzipLibPath);
+            ZLibInit.GlobalInit(gzipLibPath, new ZLibInitOptions());
             XZInit.GlobalInit(xzLibPath);
             LZ4Init.GlobalInit(lz4LibPath);
         }

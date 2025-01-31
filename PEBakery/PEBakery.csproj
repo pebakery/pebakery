@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows7.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -45,6 +45,7 @@
   <ItemGroup>
     <!-- PackageReference Include="MahApps.Metro.IconPacks.Material" Version="4.11.0" /-->
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
   </ItemGroup>
 </Project>
