@@ -98,8 +98,8 @@ namespace PEBakery.Core
     #endregion
 
     #region ScriptSection
-    [MessagePackObject]
-    public class ScriptSection : IEquatable<ScriptSection>
+    [MessagePackObject(AllowPrivate = true)]
+    public partial class ScriptSection : IEquatable<ScriptSection>
     {
         #region (Const) Known Section Names
         public static class Names

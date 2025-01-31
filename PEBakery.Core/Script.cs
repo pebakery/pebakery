@@ -47,8 +47,8 @@ namespace PEBakery.Core
     #endregion
 
     #region Script
-    [MessagePackObject]
-    public class Script : IEquatable<Script>
+    [MessagePackObject(AllowPrivate = true)]
+    public partial class Script : IEquatable<Script>
     {
         #region Const
         public static class Const

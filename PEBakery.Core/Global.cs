@@ -307,15 +307,15 @@ namespace PEBakery.Core
 
             try
             {
-                Joveler.FileMagician.Magic.GlobalInit(magicPath);
-                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, new Joveler.Compression.ZLib.ZLibInitOptions()
+                Joveler.FileMagician.Magic.GlobalInit(magicPath!);
+                Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath!, new Joveler.Compression.ZLib.ZLibInitOptions()
                 {
                     IsWindowsStdcall = false,
                     IsZLibNgModernAbi = false,
                 });
-                Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
-                ManagedWimLib.Wim.GlobalInit(wimlibPath);
-                SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
+                Joveler.Compression.XZ.XZInit.GlobalInit(xzPath!);
+                ManagedWimLib.Wim.GlobalInit(wimlibPath!);
+                SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath!);
             }
             catch (Exception e)
             {
