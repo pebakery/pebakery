@@ -712,6 +712,7 @@ const std::wstring NetCoreDetector::getInstallerUrl()
 	// [Preview]
 	// Ex) .NET Runtime:      https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-6.0.0-preview.3-windows-x64-installer
 	// Ex) Desktop Runtime:   https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-6.0.0-preview.3-windows-arm64-installer
+
 	std::wstring verStr = _targetVer.toStr(false);
 	std::wostringstream woss;
 	if (5 <= _targetVer.getMajor())

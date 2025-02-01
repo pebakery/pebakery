@@ -37,13 +37,13 @@
 
 // Default .NET Core Target version
 #ifndef NETCORE_TARGET_VER_MAJOR
-	#define NETCORE_TARGET_VER_MAJOR	6
+	#define NETCORE_TARGET_VER_MAJOR	8
 #endif
 #ifndef NETCORE_TARGET_VER_MINOR
 	#define NETCORE_TARGET_VER_MINOR	0
 #endif
 #ifndef NETCORE_TARGET_VER_PATCH
-	#define NETCORE_TARGET_VER_PATCH	14
+	#define NETCORE_TARGET_VER_PATCH	12
 #endif
 
 // Default .NET Framework Target version
@@ -54,7 +54,7 @@
 	#define NETFX_TARGET_VER_MINOR	8
 #endif
 #ifndef NETFX_TARGET_VER_PATCH
-	#define NETFX_TARGET_VER_PATCH	0
+	#define NETFX_TARGET_VER_PATCH	1
 #endif
 
 // Force given build mode when publishing
