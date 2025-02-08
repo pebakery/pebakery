@@ -34,6 +34,7 @@ using Joveler.Compression.ZLib;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -146,7 +147,7 @@ namespace PEBakery.Core
         #region Const
         public const long DecodeInMemorySizeLimit = 4 * 1024 * 1024; // 4MB
         public const long InterfaceTextSizeLimit = 16 * 1024; // 16KB
-        private const long BufferSize = 64 * 1024; // 64KB
+        private const int BufferSize = 1024 * 1024; // 1MB
         private const long ReportInterval = 1024 * 1024; // 1MB
 
         public const double CompReportFactor = 0.8;
@@ -213,12 +214,11 @@ namespace PEBakery.Core
 
         public static void AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double>? progress)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(folderName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
-            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -234,12 +234,11 @@ namespace PEBakery.Core
 
         public static void AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type, IProgress<double> progress)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(folderName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
-            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             Encode(sc, folderName, fileName, srcStream, type, false, progress);
@@ -252,12 +251,11 @@ namespace PEBakery.Core
 
         public static void AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type, IProgress<double> progress)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(folderName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
-            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
@@ -270,14 +268,13 @@ namespace PEBakery.Core
 
         public static void AttachFiles(Script sc, string folderName, (string Name, string Path)[] srcFiles, EncodeMode type, IProgress<double> progress)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(folderName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
             foreach ((string fileName, _) in srcFiles)
             {
-                if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                     throw new ArgumentException($"[{fileName}] contains invalid character");
             }
 
@@ -319,7 +316,7 @@ namespace PEBakery.Core
 
         public static void AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double>? progress)
         {
-            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                 throw new ArgumentException($"Filename [{fileName}] contains invalid character");
 
             if (fileName.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) ||
@@ -398,12 +395,10 @@ namespace PEBakery.Core
 
         public static void AttachLogo(Script sc, string fileName, string srcFilePath)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (srcFilePath == null)
-                throw new ArgumentNullException(nameof(srcFilePath));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(srcFilePath);
 
-            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(fileName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             if (!ImageHelper.GetImageFormat(srcFilePath, out ImageHelper.ImageFormat imageType))
@@ -417,24 +412,21 @@ namespace PEBakery.Core
 
         public static void AttachLogo(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             Encode(sc, folderName, fileName, srcStream, type, true, null);
         }
 
         public static void AttachLogo(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             Encode(sc, folderName, fileName, srcBuffer, type, true, null);
         }
 
         public static bool ContainsLogo(Script sc)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 return false;
@@ -456,12 +448,10 @@ namespace PEBakery.Core
 
         public static Script AddFolder(Script sc, string folderName, bool overwrite)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(folderName);
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+            if (!StringEscaper.IsFileNameValid(folderName, ['[', ']', '\t']))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
 
             if (!overwrite)
@@ -495,10 +485,8 @@ namespace PEBakery.Core
 
         public static bool ContainsFolder(Script sc, string folderName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(folderName);
 
             // AuthorEncoded, InterfaceEncoded is not recorded to EncodedFolders
             if (folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) ||
@@ -523,14 +511,10 @@ namespace PEBakery.Core
 
         public static (Script, string?) RenameFile(Script sc, string folderName, string oldFileName, string newFileName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
-            if (oldFileName == null)
-                throw new ArgumentNullException(nameof(oldFileName));
-            if (newFileName == null)
-                throw new ArgumentNullException(nameof(newFileName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(folderName);
+            ArgumentNullException.ThrowIfNull(oldFileName);
+            ArgumentNullException.ThrowIfNull(newFileName);
             string? errorMsg = null;
 
             // If oldFileName and newFileName is equal, report success without doing anything
@@ -587,12 +571,9 @@ namespace PEBakery.Core
 
         public static (Script, string?) RenameFolder(Script sc, string oldFolderName, string newFolderName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (oldFolderName == null)
-                throw new ArgumentNullException(nameof(oldFolderName));
-            if (newFolderName == null)
-                throw new ArgumentNullException(nameof(newFolderName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(oldFolderName);
+            ArgumentNullException.ThrowIfNull(newFolderName);
             string? errorMsg = null;
 
             // If oldFileName and newFileName is equal, report success without doing anything
@@ -694,8 +675,7 @@ namespace PEBakery.Core
 
         public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream, IProgress<double>? progress)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (!sc.Sections.ContainsKey(section))
@@ -711,8 +691,7 @@ namespace PEBakery.Core
 
         public static MemoryStream ExtractFileInMem(Script sc, string folderName, string fileName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (!sc.Sections.ContainsKey(section))
@@ -731,8 +710,7 @@ namespace PEBakery.Core
 
         public static void ExtractFolder(Script sc, string folderName, string destDir, bool overwrite = false)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             if (fileDict == null)
@@ -765,8 +743,7 @@ namespace PEBakery.Core
 
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageFormat type, out string filename)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
@@ -812,8 +789,7 @@ namespace PEBakery.Core
 
         public static ResultReport<EncodedFileInfo> ReadFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             EncodedFileInfo info = new EncodedFileInfo(folderName, fileName);
 
@@ -847,8 +823,7 @@ namespace PEBakery.Core
 
         public static ResultReport<EncodedFileInfo> ReadLogoInfo(Script sc, bool inspectEncodeMode = false)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             EncodedFileInfo info = new EncodedFileInfo(ScriptSection.Names.AuthorEncoded);
 
@@ -890,13 +865,12 @@ namespace PEBakery.Core
 
         public static ResultReport<EncodedFileInfo[]> ReadFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             if (!sc.Sections.ContainsKey(folderName))
                 return new ResultReport<EncodedFileInfo[]>(false, null, $"Directory [{folderName}] does not exist");
 
-            List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
+            List<EncodedFileInfo> infos = [];
             Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             foreach (string fileName in fileDict.Keys)
             {
@@ -931,13 +905,12 @@ namespace PEBakery.Core
 
         public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> ReadAllFilesInfo(Script sc, ReadFileInfoOptions opts)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
 
             // Encoded folders to check
-            List<string> folderNames = new List<string>();
+            List<string> folderNames = [];
             // Check EncodedFolders (Must come first)
             if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
             {
@@ -966,7 +939,7 @@ namespace PEBakery.Core
             foreach (string folderName in folderNames)
             {
                 if (!infoDict.ContainsKey(folderName))
-                    infoDict[folderName] = new List<EncodedFileInfo>();
+                    infoDict[folderName] = [];
 
                 // Follow WB082 behavior
                 if (!sc.Sections.ContainsKey(folderName))
@@ -1066,12 +1039,9 @@ namespace PEBakery.Core
 
         public static ResultReport<Script> DeleteFile(Script sc, string folderName, string fileName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(folderName);
+            ArgumentNullException.ThrowIfNull(fileName);
             string? errorMsg = null;
 
             // Backup
@@ -1123,14 +1093,7 @@ namespace PEBakery.Core
 
         public static ResultReport<Script, string[]> DeleteFiles(Script sc, string folderName, IReadOnlyList<string> fileNames)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
-            if (fileNames == null)
-                throw new ArgumentNullException(nameof(fileNames));
-
-            List<string> errorMessages = new List<string>();
+            List<string> errorMessages = [];
 
             // Backup
             string backupFile = FileHelper.GetTempFile("script");
@@ -1144,7 +1107,7 @@ namespace PEBakery.Core
                 }
 
                 // Get encoded file index
-                List<IniKey> iniKeys = new List<IniKey>();
+                List<IniKey> iniKeys = [];
                 Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
                 foreach (string fileName in fileNames)
                 {
@@ -1155,7 +1118,7 @@ namespace PEBakery.Core
                 }
 
                 // Delete encoded file index
-                List<int> removeIdx = new List<int>();
+                List<int> removeIdx = [];
                 bool[] results = IniReadWriter.DeleteKeys(sc.RealPath, iniKeys);
                 for (int i = 0; i < results.Length; i++)
                 {
@@ -1215,10 +1178,8 @@ namespace PEBakery.Core
 
         public static ResultReport<Script> DeleteFolder(Script sc, string folderName)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-            if (folderName == null)
-                throw new ArgumentNullException(nameof(folderName));
+            ArgumentNullException.ThrowIfNull(sc);
+            ArgumentNullException.ThrowIfNull(folderName);
             string? errorMsg = null;
 
             // Backup
@@ -1252,13 +1213,9 @@ namespace PEBakery.Core
                     }
                 }
 
-                if (!sc.Sections.ContainsKey(folderName))
+                if (sc.Sections.TryGetValue(folderName, out ScriptSection? section))
                 {
-                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                }
-                else
-                {
-                    Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
+                    Dictionary<string, string> fileDict = section.IniDict;
 
                     // Delete section [folderName]
                     if (!IniReadWriter.DeleteSection(sc.RealPath, folderName))
@@ -1267,8 +1224,7 @@ namespace PEBakery.Core
                     // Get index of files
                     if (folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (fileDict.ContainsKey("Logo"))
-                            fileDict.Remove("Logo");
+                        fileDict.Remove("Logo");
                     }
 
                     // Delete encoded file section
@@ -1277,6 +1233,10 @@ namespace PEBakery.Core
                         if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, file)))
                             errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
                     }
+                }
+                else
+                {
+                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
                 }
             }
             catch
@@ -1307,8 +1267,7 @@ namespace PEBakery.Core
 
         public static ResultReport<Script> DeleteLogo(Script sc)
         {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
+            ArgumentNullException.ThrowIfNull(sc);
 
             string? errorMsg = null;
 
@@ -1396,52 +1355,56 @@ namespace PEBakery.Core
                     // [Stage 2] Compress file with zlib
                     int bytesRead;
                     long offset = 0;
-                    byte[] buffer = new byte[BufferSize];
                     Crc32Checksum crc32 = new Crc32Checksum();
-                    switch (mode)
-                    {
-                        case EncodeMode.ZLib:
-                            ZLibCompressOptions zCompOpts = new ZLibCompressOptions()
-                            {
-                                Level = ZLibCompLevel.Level6,
-                                LeaveOpen = true,
-                            };
-                            ZLibParallelCompressOptions zpCompOpts = new ZLibParallelCompressOptions()
-                            {
-                                Threads = Environment.ProcessorCount,
-                            };
-                            using (ZLibStream zs = new ZLibStream(encodeStream, zCompOpts, zpCompOpts))
-                            {
+
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                    try
+                    {                        
+                        switch (mode)
+                        {
+                            case EncodeMode.ZLib:
+                                ZLibCompressOptions zCompOpts = new ZLibCompressOptions()
+                                {
+                                    Level = ZLibCompLevel.Level6,
+                                    LeaveOpen = true,
+                                };
+                                ZLibParallelCompressOptions zpCompOpts = new ZLibParallelCompressOptions()
+                                {
+                                    Threads = Environment.ProcessorCount,
+                                    WriteTimeout = TimeSpan.Zero,
+                                };
+                                using (ZLibStream zs = new ZLibStream(encodeStream, zCompOpts, zpCompOpts))
+                                {
+                                    while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        crc32.Append(buffer, 0, bytesRead);
+                                        zs.Write(buffer, 0, bytesRead);
+
+                                        offset += bytesRead;
+                                        if (offset % ReportInterval == 0)
+                                            progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor);
+                                    }
+                                }
+                                break;
+                            case EncodeMode.Raw:
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
                                     crc32.Append(buffer, 0, bytesRead);
-                                    zs.Write(buffer, 0, bytesRead);
+                                    encodeStream.Write(buffer, 0, bytesRead);
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
                                         progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor);
                                 }
-                            }
-                            break;
-                        case EncodeMode.Raw:
-                            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
-                            {
-                                crc32.Append(buffer, 0, bytesRead);
-                                encodeStream.Write(buffer, 0, bytesRead);
-
-                                offset += bytesRead;
-                                if (offset % ReportInterval == 0)
-                                    progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor);
-                            }
-                            break;
-                        case EncodeMode.XZ:
-                            XZStream? xzs = null;
-                            try
-                            {
-                                // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
-                                // When using default compress level, using 8 threads will results in about 1.3GB of memory on XZ compression.
-                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
-                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, usableSysMemPercent);
+                                break;
+                            case EncodeMode.XZ:
+                                XZStream? xzs = null;
+                                try
+                                {
+                                    // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
+                                    // When using default compress level, using 8 threads will results in about 1.3GB of memory on XZ compression.
+                                    (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                    int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryLzma2CompressMemUsage, maxRequestMem, usableSysMemPercent);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
@@ -1451,55 +1414,61 @@ namespace PEBakery.Core
                                 }
 #endif
 
-                                XZCompressOptions xzCompOpts = new XZCompressOptions()
-                                {
-                                    Level = LzmaCompLevel.Default,
-                                    LeaveOpen = true,
-                                };
-                                XZParallelCompressOptions xzThreadOpts = new XZParallelCompressOptions()
-                                {
-                                    Threads = threads,
-                                };
+                                    XZCompressOptions xzCompOpts = new XZCompressOptions()
+                                    {
+                                        Level = LzmaCompLevel.Default,
+                                        LeaveOpen = true,
+                                    };
+                                    XZParallelCompressOptions xzThreadOpts = new XZParallelCompressOptions()
+                                    {
+                                        Threads = threads,
+                                    };
 
-                                try
-                                {
-                                    // Try with multi-threaded mode.
-                                    xzs = new XZStream(encodeStream, xzCompOpts, xzThreadOpts);
+                                    try
+                                    {
+                                        // Try with multi-threaded mode.
+                                        xzs = new XZStream(encodeStream, xzCompOpts, xzThreadOpts);
 #if DEBUG_XZ_MEM_USAGE
                                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Compressing XZ with multi-threaded mode"));
 #endif
-                                }
-                                catch (XZException e)
-                                {
-                                    if (e.ReturnCode != LzmaRet.MemError)
-                                        throw;
+                                    }
+                                    catch (XZException e)
+                                    {
+                                        if (e.ReturnCode != LzmaRet.MemError)
+                                            throw;
 
-                                    // Backoff to single-threaded mode.
-                                    // Single-threaded mode takes less memory even compared to multi-threaded mode with 1 thread.
-                                    xzs = new XZStream(encodeStream, xzCompOpts);
+                                        // Backoff to single-threaded mode.
+                                        // Single-threaded mode takes less memory even compared to multi-threaded mode with 1 thread.
+                                        xzs = new XZStream(encodeStream, xzCompOpts);
 #if DEBUG_XZ_MEM_USAGE
                                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Compressing XZ with single-threaded mode (Backoff)"));
 #endif
-                                }
+                                    }
 
-                                while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        crc32.Append(buffer, 0, bytesRead);
+                                        xzs.Write(buffer, 0, bytesRead);
+
+                                        offset += bytesRead;
+                                        if (offset % ReportInterval == 0)
+                                            progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor);
+                                    }
+                                }
+                                finally
                                 {
-                                    crc32.Append(buffer, 0, bytesRead);
-                                    xzs.Write(buffer, 0, bytesRead);
-
-                                    offset += bytesRead;
-                                    if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor);
+                                    xzs?.Dispose();
                                 }
-                            }
-                            finally
-                            {
-                                xzs?.Dispose();
-                            }
-                            break;
-                        default:
-                            throw new InternalException($"Wrong {nameof(EncodeMode)} [{mode}]");
+                                break;
+                            default:
+                                throw new InternalException($"Wrong {nameof(EncodeMode)} [{mode}]");
+                        }
                     }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                    
 
                     progress?.Report(0.8);
 
@@ -1580,9 +1549,9 @@ namespace PEBakery.Core
                 if (!encodeLogo)
                 { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
                     bool writeFolderSection = true;
-                    if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                    if (sc.Sections.TryGetValue(ScriptSection.Names.EncodedFolders, out ScriptSection? value))
                     {
-                        string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
+                        string[] folders = value.Lines;
                         if (folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
                             writeFolderSection = false;
                     }
@@ -1594,7 +1563,6 @@ namespace PEBakery.Core
                         // Update file
                         IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                     }
-
                 }
 
                 // Write file info into [{folderName}]
@@ -1702,13 +1670,15 @@ namespace PEBakery.Core
                     // [Stage 7] Decompress body
                     Crc32Checksum crc32 = new Crc32Checksum();
                     long outPosBak = outStream.Position;
-                    byte[] buffer = new byte[BufferSize]; // 64KB
-                    switch (fileFooter.EncodeMode)
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                    try
                     {
-                        case EncodeMode.ZLib: // Type 1, zlib
-                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
-                            {
-                                StreamSubCopy(decodeStream, compStream, 0, (long)fileFooter.CompressedBodyLength);
+                        switch (fileFooter.EncodeMode)
+                        {
+                            case EncodeMode.ZLib: // Type 1, zlib
+                                using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
+                                {
+                                    StreamSubCopy(decodeStream, compStream, 0, (long)fileFooter.CompressedBodyLength);
 
 #if DEBUG_MIDDLE_FILE
                                 compStream.Flush();
@@ -1722,88 +1692,88 @@ namespace PEBakery.Core
                                 }
 #endif
 
-                                compStream.Flush();
-                                compStream.Position = 0;
+                                    compStream.Flush();
+                                    compStream.Position = 0;
 
-                                int offset = 0;
-                                ZLibDecompressOptions decompOpts = new ZLibDecompressOptions()
-                                {
-                                    LeaveOpen = true,
-                                };
-                                using (ZLibStream zs = new ZLibStream(compStream, decompOpts))
-                                {
-                                    while ((bytesRead = zs.Read(buffer, 0, buffer.Length)) != 0)
+                                    int offset = 0;
+                                    ZLibDecompressOptions decompOpts = new ZLibDecompressOptions()
                                     {
+                                        LeaveOpen = true,
+                                    };
+                                    using (ZLibStream zs = new ZLibStream(compStream, decompOpts))
+                                    {
+                                        while ((bytesRead = zs.Read(buffer, 0, buffer.Length)) != 0)
+                                        {
+                                            crc32.Append(buffer, 0, bytesRead);
+                                            outStream.Write(buffer, 0, bytesRead);
+
+                                            offset += bytesRead;
+                                            if (offset % ReportInterval == 0)
+                                                progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor + Base64ReportFactor);
+                                        }
+                                    }
+                                }
+                                break;
+                            case EncodeMode.Raw: // Type 2, raw
+                                {
+                                    decodeStream.Flush();
+                                    decodeStream.Position = 0;
+
+#if DEBUG_MIDDLE_FILE
+                                    string debugDir = Path.Combine(App.BaseDir, "Debug");
+                                    Directory.CreateDirectory(debugDir);
+                                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".bin");
+                                    FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write);
+#endif
+
+                                    int offset = 0;
+                                    while (offset < (long)fileFooter.RawFileLength)
+                                    {
+                                        if (offset + buffer.Length < (long)fileFooter.RawFileLength)
+                                            bytesRead = decodeStream.Read(buffer, 0, buffer.Length);
+                                        else
+                                            bytesRead = decodeStream.Read(buffer, 0, (int)(fileFooter.RawFileLength - (ulong)offset));
+
                                         crc32.Append(buffer, 0, bytesRead);
                                         outStream.Write(buffer, 0, bytesRead);
+
+#if DEBUG_MIDDLE_FILE
+                                        debug.Write(buffer, 0, readByte);
+#endif
 
                                         offset += bytesRead;
                                         if (offset % ReportInterval == 0)
                                             progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor + Base64ReportFactor);
                                     }
-                                }
-                            }
-                            break;
-                        case EncodeMode.Raw: // Type 2, raw
-                            {
-                                decodeStream.Flush();
-                                decodeStream.Position = 0;
-
-#if DEBUG_MIDDLE_FILE
-                                string debugDir = Path.Combine(App.BaseDir, "Debug");
-                                Directory.CreateDirectory(debugDir);
-                                string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".bin");
-                                FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write);
-#endif
-
-                                int offset = 0;
-                                while (offset < (long)fileFooter.RawFileLength)
-                                {
-                                    if (offset + buffer.Length < (long)fileFooter.RawFileLength)
-                                        bytesRead = decodeStream.Read(buffer, 0, buffer.Length);
-                                    else
-                                        bytesRead = decodeStream.Read(buffer, 0, (int)(fileFooter.RawFileLength - (ulong)offset));
-
-                                    crc32.Append(buffer, 0, bytesRead);
-                                    outStream.Write(buffer, 0, bytesRead);
-
-#if DEBUG_MIDDLE_FILE
-                                    debug.Write(buffer, 0, readByte);
-#endif
-
-                                    offset += bytesRead;
-                                    if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor + Base64ReportFactor);
-                                }
 
 #if DEBUG_MIDDLE_FILE
                                 debug.Dispose();
 #endif
-                            }
-                            break;
-                        case EncodeMode.XZ: // Type 3, LZMA
-                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
-                            {
-                                StreamSubCopy(decodeStream, compStream, 0, (long)fileFooter.CompressedBodyLength);
+                                }
+                                break;
+                            case EncodeMode.XZ: // Type 3, LZMA
+                                using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
+                                {
+                                    StreamSubCopy(decodeStream, compStream, 0, (long)fileFooter.CompressedBodyLength);
 
 #if DEBUG_MIDDLE_FILE
-                                compStream.Flush();
-                                compStream.Position = 0;
-                                string debugDir = Path.Combine(App.BaseDir, "Debug");
-                                Directory.CreateDirectory(debugDir);
-                                string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".xz");
-                                using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                                {
-                                    compStream.CopyTo(debug);
-                                }
+                                    compStream.Flush();
+                                    compStream.Position = 0;
+                                    string debugDir = Path.Combine(App.BaseDir, "Debug");
+                                    Directory.CreateDirectory(debugDir);
+                                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".xz");
+                                    using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
+                                    {
+                                        compStream.CopyTo(debug);
+                                    }
 #endif
 
-                                compStream.Flush();
-                                compStream.Position = 0;
+                                    compStream.Flush();
+                                    compStream.Position = 0;
 
-                                // Max amount of free memory program is allowed to use
-                                (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
-                                ulong availFreeMem = SystemHelper.AvailableSystemMemory(maxRequestMem, usableSysMemPercent);
+                                    // Max amount of free memory program is allowed to use
+                                    (ulong maxRequestMem, double usableSysMemPercent) = CalcMemLimitParams();
+                                    ulong availFreeMem = SystemHelper.AvailableSystemMemory(maxRequestMem, usableSysMemPercent);
 
 #if DEBUG_XZ_MEM_USAGE
                                 {
@@ -1812,34 +1782,40 @@ namespace PEBakery.Core
                                 }
 #endif
 
-                                int offset = 0;
-                                XZDecompressOptions xzDecompOpts = new XZDecompressOptions()
-                                {
-                                    LeaveOpen = true,
-                                };
-                                XZParallelDecompressOptions xzThreadOpts = new XZParallelDecompressOptions()
-                                {
-                                    Threads = Environment.ProcessorCount,
-                                    MemlimitThreading = availFreeMem,
-                                };
-
-                                using (XZStream xzs = new XZStream(compStream, xzDecompOpts, xzThreadOpts))
-                                {
-                                    while ((bytesRead = xzs.Read(buffer, 0, buffer.Length)) != 0)
+                                    int offset = 0;
+                                    XZDecompressOptions xzDecompOpts = new XZDecompressOptions()
                                     {
-                                        crc32.Append(buffer, 0, bytesRead);
-                                        outStream.Write(buffer, 0, bytesRead);
+                                        LeaveOpen = true,
+                                    };
+                                    XZParallelDecompressOptions xzThreadOpts = new XZParallelDecompressOptions()
+                                    {
+                                        Threads = Environment.ProcessorCount,
+                                        MemlimitThreading = availFreeMem,
+                                    };
 
-                                        offset += bytesRead;
-                                        if (offset % ReportInterval == 0)
-                                            progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor + Base64ReportFactor);
+                                    using (XZStream xzs = new XZStream(compStream, xzDecompOpts, xzThreadOpts))
+                                    {
+                                        while ((bytesRead = xzs.Read(buffer, 0, buffer.Length)) != 0)
+                                        {
+                                            crc32.Append(buffer, 0, bytesRead);
+                                            outStream.Write(buffer, 0, bytesRead);
+
+                                            offset += bytesRead;
+                                            if (offset % ReportInterval == 0)
+                                                progress?.Report((double)offset / fileFooter.RawFileLength * CompReportFactor + Base64ReportFactor);
+                                        }
                                     }
                                 }
-                            }
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Encoded file is corrupted: {nameof(FileFooter.EncodeMode)}");
+                                break;
+                            default:
+                                throw new InvalidOperationException($"Encoded file is corrupted: {nameof(FileFooter.EncodeMode)}");
+                        }
                     }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                    
                     long outLen = outStream.Position - outPosBak;
 
                     // [Stage 8] Validate decompressed body
