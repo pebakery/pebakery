@@ -34,6 +34,7 @@ using Joveler.Compression.ZLib;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -178,17 +179,13 @@ namespace PEBakery.Core
             if (containerName)
                 return mode.ToString();
 
-            switch (mode)
+            return mode switch
             {
-                case EncodeMode.ZLib:
-                    return "Deflate";
-                case EncodeMode.Raw:
-                    return "None";
-                case EncodeMode.XZ:
-                    return "LZMA2";
-                default:
-                    throw new ArgumentException($"Wrong EncodeMode [{mode}]");
-            }
+                EncodeMode.ZLib => "Deflate",
+                EncodeMode.Raw => "None",
+                EncodeMode.XZ => "LZMA2",
+                _ => throw new ArgumentException($"Wrong EncodeMode [{mode}]"),
+            };
         }
         #endregion
 
@@ -1409,7 +1406,11 @@ namespace PEBakery.Core
                                 Level = ZLibCompLevel.Level6,
                                 LeaveOpen = true,
                             };
-                            using (ZLibStream zs = new ZLibStream(encodeStream, zCompOpts))
+                            ZLibParallelCompressOptions zpCompOpts = new ZLibParallelCompressOptions()
+                            {
+                                Threads = Environment.ProcessorCount,
+                            };
+                            using (ZLibStream zs = new ZLibStream(encodeStream, zCompOpts, zpCompOpts))
                             {
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
@@ -2284,12 +2285,12 @@ namespace PEBakery.Core
                     return false;
 
                 // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
-                RawFileLength = BitConverter.ToUInt32(span[0x200..]);
+                RawFileLength = BinaryPrimitives.ReadUInt64LittleEndian(span[0x200..]);
                 // 0x208 - 0x20F : 8B -> Length of zlib-compressed file, in little endian
                 //     Note: In Type 2, 0x208 entry is null - padded
-                CompressedBodyLength = BitConverter.ToUInt64(span[0x208..]);
+                CompressedBodyLength = BinaryPrimitives.ReadUInt64LittleEndian(span[0x208..]);
                 // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
-                RawFileCRC32 = BitConverter.ToUInt32(span[0x220..]);
+                RawFileCRC32 = BinaryPrimitives.ReadUInt32LittleEndian(span[0x220..]);
                 // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
                 EncodeMode = (EncodeMode)span[0x224];
                 // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
@@ -2308,16 +2309,16 @@ namespace PEBakery.Core
                 bytes[0x100] = Path.Length;
                 Path.Value.CopyTo(bytes, 0x101);
                 // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
-                BitConverter.GetBytes(RawFileLength).CopyTo(bytes, 0x200);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(0x200), RawFileLength);
                 // 0x208 - 0x20F : 8B ->
                 //   Type 1, 3 : Length of compressed body, in little endian
                 //   Type 2    : Always 0
-                BitConverter.GetBytes(CompressedBodyLength).CopyTo(bytes, 0x208);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(0x208), CompressedBodyLength);
                 // 0x210 - 0x21F : 16B -> Null padding
-                BitConverter.GetBytes(EncryptdBodyLength).CopyTo(bytes, 0x210);
-                BitConverter.GetBytes(BodyLocation).CopyTo(bytes, 0x218);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(0x210), EncryptdBodyLength);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(0x218), BodyLocation);
                 // 0x220 - 0x223 : CRC32 of raw file
-                BitConverter.GetBytes(RawFileCRC32).CopyTo(bytes, 0x220);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(0x220), RawFileCRC32);
                 // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
                 bytes[0x224] = (byte)EncodeMode;
                 // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
@@ -2396,11 +2397,11 @@ namespace PEBakery.Core
                     return false;
 
                 // 0x00 - 0x04 : 4B -> CRC32
-                ArchiveCRC32 = BitConverter.ToUInt32(span[0x00..]);
+                ArchiveCRC32 = BinaryPrimitives.ReadUInt32LittleEndian(span[0x00..]);
                 // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
-                CompressedFileFooterLength = BitConverter.ToUInt32(span[0x0c..]);
+                CompressedFileFooterLength = BinaryPrimitives.ReadUInt32LittleEndian(span[0x0c..]);
                 // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
-                BodyLength = BitConverter.ToUInt64(span[0x10..]);
+                BodyLength = BinaryPrimitives.ReadUInt64LittleEndian(span[0x10..]);
 
                 return true;
             }
@@ -2410,15 +2411,15 @@ namespace PEBakery.Core
                 byte[] bytes = new byte[FixedLength];
 
                 // 0x00 - 0x04 : 4B -> CRC32 of compressed body and compressed footer
-                BitConverter.GetBytes(ArchiveCRC32).CopyTo(bytes, 0x00);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(0x00), ArchiveCRC32);
                 // 0x04 - 0x08 : 4B -> File Count - Always 1
-                BitConverter.GetBytes(FileCount).CopyTo(bytes, 0x04);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(0x04), FileCount);
                 // 0x08 - 0x0B : 4B -> Delphi ZLBArchive Component version (Always 2)
-                BitConverter.GetBytes(ZLBArchiveComponentVersion).CopyTo(bytes, 0x08);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(0x08), ZLBArchiveComponentVersion);
                 // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
-                BitConverter.GetBytes(CompressedFileFooterLength).CopyTo(bytes, 0x0C);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(0x0C), CompressedFileFooterLength);
                 // 0x10 - 0x17 : 8B -> Compressed/Raw File Length
-                BitConverter.GetBytes(BodyLength).CopyTo(bytes, 0x10);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(0x10), BodyLength);
                 // 0x18        : 1B -> Is ArchiveFooter compressed - Always 1
                 bytes[0x18] = (byte)(IsFileFooterCompressed ? 1 : 0);
                 // 0x19        : 1B -> Is body encrypted - Always 0
@@ -2655,9 +2656,9 @@ namespace PEBakery.Core
     #region ReadFileInfoOptions
     public class ReadFileInfoOptions : IEquatable<ReadFileInfoOptions>
     {
-        public bool InspectEncodeMode;
-        public bool IncludeAuthorEncoded;
-        public bool IncludeInterfaceEncoded;
+        public bool InspectEncodeMode { get; set; }
+        public bool IncludeAuthorEncoded { get; set; }
+        public bool IncludeInterfaceEncoded { get; set; }
 
         #region Interface and Override Methods
         public override bool Equals(object? obj)
