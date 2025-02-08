@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2024 Hajin Jang
+    Copyright (C) 2016-present Hajin Jang
  
     MIT License
 

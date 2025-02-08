@@ -85,7 +85,7 @@ BEGIN
             VALUE "FileDescription", "Launch PEBakery executable"
             VALUE "FileVersion", "1.1.1.0"
             VALUE "InternalName", "PEBakeryLauncher.exe"
-            VALUE "LegalCopyright", "Copyright (C) Hajin Jang 2016-2023"
+            VALUE "LegalCopyright", "Copyright (C) 2016-present Hajin Jang"
             VALUE "OriginalFilename", "PEBakeryLauncher.exe"
             VALUE "ProductName", "PEBakeryLauncher"
             VALUE "ProductVersion", "1.1.1.0"
