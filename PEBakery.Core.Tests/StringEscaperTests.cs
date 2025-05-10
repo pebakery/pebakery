@@ -356,6 +356,23 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
+        #region ExpandPercentPatternSectionParams
+        [TestMethod]
+        public void ExpandPercentPatternSectionParams()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
+            s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            s.CurSectionInParams[1] = "World";
+
+            const string src = "%A% #1 %^SPARAM_1%";
+            string dest = StringEscaper.ExpandPercentPatternSectionParams(s, src);
+            const string comp = "%A% #1 World";
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+        #endregion
+
         #region ExpandVariables
         [TestMethod]
         public void ExpandVariables()

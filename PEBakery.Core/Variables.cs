@@ -635,8 +635,8 @@ namespace PEBakery.Core
                     { // WinBuilder compatible
                         if (_localVars.ContainsKey(varName))
                         {
-                            string varValue = _localVars[varName];
-                            b.Append(varValue);
+                            string localVarValue = _localVars[varName];
+                            b.Append(localVarValue);
                         }
                         else if (_globalVars.ContainsKey(varName))
                         {
@@ -655,20 +655,17 @@ namespace PEBakery.Core
                     }
                     else
                     { // PEBakery standard
-                        if (_fixedVars.ContainsKey(varName))
+                        if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
                         {
-                            string varValue = _fixedVars[varName];
-                            b.Append(varValue);
+                            b.Append(fixedVarValue);
                         }
-                        else if (_localVars.ContainsKey(varName))
+                        else if (_localVars.TryGetValue(varName, out string? localVarValue))
                         {
-                            string varValue = _localVars[varName];
-                            b.Append(varValue);
+                            b.Append(localVarValue);
                         }
-                        else if (_globalVars.ContainsKey(varName))
+                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
                         {
-                            string varValue = _globalVars[varName];
-                            b.Append(varValue);
+                            b.Append(globalVarValue);
                         }
                         else // variable not found
                         {
