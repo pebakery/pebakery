@@ -690,7 +690,7 @@ namespace PEBakery.Core
 
                                 _title = SilentDictParser.ParseString(mainIniDict, "Title", Path.GetFileName(RealPath));
                                 _description = SilentDictParser.ParseString(mainIniDict, "Description", string.Empty);
-                                _level = SilentDictParser.ParseInteger(mainIniDict, "Level", 0, null, null);
+                                _level = SilentDictParser.ParseIntegerWithinRange(mainIniDict, "Level", 0, null, null);
                             }
                             else
                             {

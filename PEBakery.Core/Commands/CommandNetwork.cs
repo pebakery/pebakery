@@ -147,7 +147,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // PEBakery extension -> Report exit code via #r
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                     {
                         s.ReturnValue = statusCode.ToString();
                         if (statusCode < 100)
@@ -221,7 +221,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // PEBakery extension -> Report exit code via #r
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                     {
                         s.ReturnValue = statusCode.ToString();
                         if (statusCode < 100)

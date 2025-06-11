@@ -1039,7 +1039,7 @@ namespace PEBakery.Helper
         /// <param name="primaryKey">Name of the ini section.</param>
         /// <param name="defaultValue">Default value to use when the dict value is empty.</param>
         /// <returns>Parsed Enum value.</returns>
-        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string primaryKey , IEnumerable<string> fallbackKeys, TEnum defaultValue)
+        public static TEnum ParseStrEnumNullable<TEnum>(Dictionary<string, string?> dict, string primaryKey, IEnumerable<string> fallbackKeys, TEnum defaultValue)
             where TEnum : struct, Enum
         {
             return ParseStrEnumNullable(dict, primaryKey, fallbackKeys, defaultValue, out _);
@@ -1160,7 +1160,6 @@ namespace PEBakery.Helper
         public static TEnum ParseIntEnumNullable<TEnum>(Dictionary<string, string?> dict, string key, TEnum defaultValue, out bool unparsableValue)
             where TEnum : Enum
         {
-            unparsableValue = false;
             {
                 if (dict.TryGetValue(key, out string? priValStr) && priValStr is string valStr)
                 {

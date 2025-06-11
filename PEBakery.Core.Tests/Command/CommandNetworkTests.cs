@@ -228,7 +228,7 @@ namespace PEBakery.Core.Tests.Command
 
                 string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
                 string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\"";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success, new CompatOption { DisableExtendedSectionParams = true });
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success, new CompatOption { DisableLegacyExtendedSectionParams = true });
 
                 Assert.IsTrue(File.Exists(destFile));
                 Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));

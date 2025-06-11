@@ -43,7 +43,7 @@
         Loaded="Window_Loaded"
         WindowStartupLocation="CenterOwner"
         Title="PEBakery Settings"
-        Width="600" Height="560"
+        Width="700" Height="600"
         Icon="/Resources/Donut.ico"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
@@ -1027,8 +1027,13 @@
                                   IsChecked="{Binding CompatEnableEnvironmentVariables}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
-                                  Content="Disable extended section parameters (e.g. #a, #r)"
-                                  IsChecked="{Binding CompatDisableExtendedSectionParams}" />
+                                  Content="Enable legacy sharp-styled section parameters (e.g. #1, #2, ...)"
+                                  ToolTip="Sharp-styled section parameter is deprecated in favor of new percent style section parameters (%^..%)"
+                                  IsChecked="{Binding CompatEnableAllLegacySectionParams}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Disable legacy sharp-styled extended section parameters (e.g. #a, #r, ...)"
+                                  IsChecked="{Binding CompatDisableLegacyExtendedSectionParams}" />
                     </StackPanel>
                 </StackPanel>
             </TabItem>

@@ -706,7 +706,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         // PEBakery extension -> Report exit code via #r
-                        if (!s.CompatDisableExtendedSectionParams)
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
                         {
                             s.ReturnValue = exitCodeStr;
                             logs.Add(new LogInfo(LogState.Success, $"Returned exit code [{proc.ExitCode}] to [#r]"));

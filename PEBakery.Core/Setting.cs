@@ -462,8 +462,8 @@ namespace PEBakery.Core
 
             public static Color QueryThemeMainColor(ThemeType typeVal)
             {
-                if (MainColorDict.ContainsKey(typeVal))
-                    return MainColorDict[typeVal];
+                if (MainColorDict.TryGetValue(typeVal, out Color valColor))
+                    return valColor;
                 else
                     return Colors.Black;
             }
@@ -669,7 +669,7 @@ namespace PEBakery.Core
                 return;
 
             IniKey[] keys =
-            {
+            [
                 // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject)), // String
                 // General
@@ -740,7 +740,7 @@ namespace PEBakery.Core
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeComments)), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeMacros)), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildShowLogFlags)), // Boolean
-            };
+            ];
 
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
 
@@ -758,18 +758,14 @@ namespace PEBakery.Core
             }
 
             // Project
-            if (keyDict.ContainsKey(ProjectSetting.SectionName))
+            if (keyDict.TryGetValue(ProjectSetting.SectionName, out Dictionary<string, string?>? projectDict) && projectDict is not null)
             {
-                Dictionary<string, string?> projectDict = keyDict[ProjectSetting.SectionName];
-
                 Project.DefaultProject = SettingDictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
             }
 
             // General
-            if (keyDict.ContainsKey(GeneralSetting.SectionName))
+            if (keyDict.TryGetValue(GeneralSetting.SectionName, out Dictionary<string, string?>? generalDict) && generalDict is not null)
             {
-                Dictionary<string, string?> generalDict = keyDict[GeneralSetting.SectionName];
-
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
@@ -781,10 +777,8 @@ namespace PEBakery.Core
             }
 
             // Interface
-            if (keyDict.ContainsKey(InterfaceSetting.SectionName))
+            if (keyDict.TryGetValue(InterfaceSetting.SectionName, out Dictionary<string, string?>? ifaceDict) && ifaceDict is not null)
             {
-                Dictionary<string, string?> ifaceDict = keyDict[InterfaceSetting.SectionName];
-
                 // Parse MonospacedFont
                 FontFamily monoFontFamily = Interface.MonospacedFont.FontFamily;
                 FontWeight monoFontWeight = Interface.MonospacedFont.FontWeight;
@@ -827,48 +821,40 @@ namespace PEBakery.Core
             }
 
             // Theme
-            if (keyDict.ContainsKey(ThemeSetting.SectionName))
+            if (keyDict.TryGetValue(ThemeSetting.SectionName, out Dictionary<string, string?>? themeDict) && themeDict is not null)
             {
-                Dictionary<string, string?> scDict = keyDict[ThemeSetting.SectionName];
-
-                Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
-                Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
-                Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTopPanelIssueAlarmButton = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), Theme.CustomTopPanelIssueAlarmButton);
-                Theme.CustomTopPanelIssueAlarmBadge = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), Theme.CustomTopPanelIssueAlarmBadge);
-                Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
-                Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
-                Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
-                Theme.CustomScriptPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
-                Theme.CustomScriptPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
-                Theme.CustomStatusBarBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
-                Theme.CustomStatusBarForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
+                Theme.ThemeType = SettingDictParser.ParseStrEnum(themeDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
+                Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
+                Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
+                Theme.CustomTopPanelIssueAlarmButton = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmButton), Theme.CustomTopPanelIssueAlarmButton);
+                Theme.CustomTopPanelIssueAlarmBadge = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelIssueAlarmBadge), Theme.CustomTopPanelIssueAlarmBadge);
+                Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
+                Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
+                Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
+                Theme.CustomScriptPanelBackground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
+                Theme.CustomScriptPanelForeground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
+                Theme.CustomStatusBarBackground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
+                Theme.CustomStatusBarForeground = SettingDictParser.ParseColor(themeDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
             }
 
             // Script
-            if (keyDict.ContainsKey(ScriptSetting.SectionName))
+            if (keyDict.TryGetValue(ScriptSetting.SectionName, out Dictionary<string, string?>? scDict) && scDict is not null)
             {
-                Dictionary<string, string?> scDict = keyDict[ScriptSetting.SectionName];
-
                 Script.EnableCache = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
                 Script.AutoSyntaxCheck = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
             }
 
             // Log
-            if (keyDict.ContainsKey(LogSetting.SectionName))
+            if (keyDict.TryGetValue(LogSetting.SectionName, out Dictionary<string, string?>? logDict) && logDict is not null)
             {
-                Dictionary<string, string?> logDict = keyDict[LogSetting.SectionName];
-
                 Log.DebugLevel = SettingDictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
                 Log.DeferredLogging = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
                 Log.MinifyHtmlExport = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
             }
 
             // LogViewer
-            if (keyDict.ContainsKey(LogViewerSetting.SectionName))
+            if (keyDict.TryGetValue(LogViewerSetting.SectionName, out Dictionary<string, string?>? logViewDict) && logViewDict is not null)
             {
-                Dictionary<string, string?> logViewDict = keyDict[LogViewerSetting.SectionName];
-
                 LogViewer.LogWindowWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, null);
                 LogViewer.LogWindowHeight = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, null);
                 LogViewer.BuildFullLogTimeVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible);
@@ -899,7 +885,7 @@ namespace PEBakery.Core
             static string WriteColor(Color c) => $"{c.R}, {c.G}, {c.B}";
 
             IniKey[] keys =
-            {
+            [
                 // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject), Project.DefaultProject), // String
                 // General
@@ -970,7 +956,7 @@ namespace PEBakery.Core
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeComments), LogViewer.LogExportBuildIncludeComments.ToString()), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildIncludeMacros), LogViewer.LogExportBuildIncludeMacros.ToString()), // Boolean
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogExportBuildShowLogFlags), LogViewer.LogExportBuildShowLogFlags.ToString()), // Boolean
-            };
+            ];
             IniReadWriter.WriteKeys(_settingFile, keys);
         }
         #endregion
@@ -985,20 +971,49 @@ namespace PEBakery.Core
             return SilentDictParser.ParseStringNullable(dict, key, defaultValue);
         }
 
+        public static string ParseString(Dictionary<string, string?> dict, string primaryKey, IReadOnlyList<string> fallbackKeys, string defaultValue)
+        {
+            return SilentDictParser.ParseStringNullable(dict, primaryKey, fallbackKeys, defaultValue);
+        }
+
         public static bool ParseBoolean(Dictionary<string, string?> dict, string section, string key, bool defaultValue)
         {
+            
             bool val = SilentDictParser.ParseBooleanNullable(dict, key, defaultValue, out bool incorrectValue);
             if (incorrectValue)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {(dict.TryGetValue(key, out string? valStr) ? valStr : string.Empty)}"));
+            return val;
+        }
+
+        public static bool ParseBoolean(Dictionary<string, string?> dict, string section, string primaryKey, IReadOnlyList<string> fallbackKeys, bool defaultValue)
+        {
+            bool val = SilentDictParser.ParseBooleanNullable(dict, primaryKey, fallbackKeys, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{primaryKey}] has incorrect value: {(dict.TryGetValue(primaryKey, out string? valStr) ? valStr : string.Empty)}"));
             return val;
         }
 
         public static int ParseInteger(Dictionary<string, string?> dict, string section, string key, int defaultValue, int? min, int? max)
         {
-            int val = SilentDictParser.ParseIntegerNullable(dict, key, defaultValue, min, max, out bool incorrectValue);
+            int val = SilentDictParser.ParseIntegerWithinRangeNullable(dict, key, defaultValue, min, max, out bool incorrectValue);
             if (incorrectValue)
             {
-                string msg = $"Setting [{section}.{key}] has incorrect value: {dict[key]}";
+                string msg = $"Setting [{section}.{key}] has incorrect value: {(dict.TryGetValue(key, out string? valStr) ? valStr : string.Empty)}";
+                if (min is int minVal && val == minVal)
+                    msg += $" (Requires [{minVal} <= val])";
+                if (max is int maxVal && val == maxVal)
+                    msg += $" (Requires [val <= {maxVal}])";
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
+            }
+            return val;
+        }
+
+        public static int ParseInteger(Dictionary<string, string?> dict, string section, string primaryKey, IReadOnlyList<string> fallbackKeys, int defaultValue, int? min, int? max)
+        {
+            int val = SilentDictParser.ParseIntegerWithinRangeNullable(dict, primaryKey, fallbackKeys, defaultValue, min, max, out bool incorrectValue);
+            if (incorrectValue)
+            {
+                string msg = $"Setting [{section}.{primaryKey}] has incorrect value: {(dict.TryGetValue(primaryKey, out string? valStr) ? valStr : string.Empty)}";
                 if (min is int minVal && val == minVal)
                     msg += $" (Requires [{minVal} <= val])";
                 if (max is int maxVal && val == maxVal)
@@ -1013,7 +1028,16 @@ namespace PEBakery.Core
         {
             TEnum val = SilentDictParser.ParseStrEnumNullable(dict, key, defaultValue, out bool incorrectValue);
             if (incorrectValue)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {(dict.TryGetValue(key, out string? valStr) ? valStr : string.Empty)}"));
+            return val;
+        }
+
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string?> dict, string section, string primaryKey, IReadOnlyList<string> fallbackKeys, TEnum defaultValue)
+            where TEnum : struct, Enum
+        {
+            TEnum val = SilentDictParser.ParseStrEnumNullable(dict, primaryKey, fallbackKeys, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{primaryKey}] has incorrect value: {(dict.TryGetValue(primaryKey, out string? valStr) ? valStr : string.Empty)}"));
             return val;
         }
 
@@ -1022,7 +1046,16 @@ namespace PEBakery.Core
         {
             TEnum val = SilentDictParser.ParseIntEnumNullable(dict, key, defaultValue, out bool incorrectValue);
             if (incorrectValue)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {(dict.TryGetValue(key, out string? valStr) ? valStr : string.Empty)}"));
+            return val;
+        }
+
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string?> dict, string section, string primaryKey, IReadOnlyList<string> fallbackKeys, TEnum defaultValue)
+            where TEnum : Enum
+        {
+            TEnum val = SilentDictParser.ParseIntEnumNullable(dict, primaryKey, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{primaryKey}] has incorrect value: {(dict.TryGetValue(primaryKey, out string? valStr) ? valStr : string.Empty)}"));
             return val;
         }
 
@@ -1030,7 +1063,15 @@ namespace PEBakery.Core
         {
             Color val = SilentDictParser.ParseColorNullable(dict, key, defaultValue, out bool incorrectValue);
             if (incorrectValue)
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {dict[key]}"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has incorrect value: {(dict.TryGetValue(key, out string? valStr) ? valStr : string.Empty)}"));
+            return val;
+        }
+
+        public static Color ParseColor(Dictionary<string, string?> dict, string section, string primaryKey, IReadOnlyList<string> fallbackKeys, Color defaultValue)
+        {
+            Color val = SilentDictParser.ParseColorNullable(dict, primaryKey, fallbackKeys, defaultValue, out bool incorrectValue);
+            if (incorrectValue)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{primaryKey}] has incorrect value: {(dict.TryGetValue(primaryKey, out string? valStr) ? valStr : string.Empty)}"));
             return val;
         }
     }

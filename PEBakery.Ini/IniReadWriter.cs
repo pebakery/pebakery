@@ -139,7 +139,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string? ReadKey(string filePath, string section, string key)
         {
-            IniKey[] iniKeys = InternalReadKeys(filePath, new IniKey[] { new IniKey(section, key) });
+            IniKey[] iniKeys = InternalReadKeys(filePath, [new IniKey(section, key)]);
             return iniKeys[0].Value;
         }
 
@@ -152,7 +152,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string? ReadKey(string filePath, IniKey iniKey)
         {
-            IniKey[] iniKeys = InternalReadKeys(filePath, new IniKey[] { iniKey });
+            IniKey[] iniKeys = InternalReadKeys(filePath, [iniKey]);
             return iniKeys[0].Value;
         }
 
@@ -164,7 +164,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IniKey[] ReadKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalReadKeys(filePath, iniKeys.ToArray());
+            return InternalReadKeys(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -278,7 +278,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteKey(string filePath, string section, string key, string value)
         {
-            return InternalWriteKeys(filePath, new List<IniKey> { new IniKey(section, key, value) });
+            return InternalWriteKeys(filePath, [new IniKey(section, key, value)]);
         }
 
         /// <summary>
@@ -290,7 +290,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteKey(string filePath, IniKey iniKey)
         {
-            return InternalWriteKeys(filePath, new List<IniKey> { iniKey });
+            return InternalWriteKeys(filePath, [iniKey]);
         }
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalWriteKeys(filePath, iniKeys.ToList());
+            return InternalWriteKeys(filePath, [.. iniKeys]);
         }
 
         private static bool InternalWriteKeys(string filePath, List<IniKey> inputKeys)
@@ -318,16 +318,13 @@ namespace PEBakery.Ini
                 if (0 < inputKeys.Count)
                 {
                     // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
-                    string[] unprocessedSections = inputKeys
+                    string[] unprocessedSections = [.. inputKeys
                         .Select(x => x.Section)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToArray();
+                        .Distinct(StringComparer.OrdinalIgnoreCase)];
                     foreach (string section in unprocessedSections)
                     {
                         // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
-                        IniKey[] secKeys = inputKeys
-                            .Where(x => x.Section.Equals(section))
-                            .ToArray();
+                        IniKey[] secKeys = [.. inputKeys.Where(x => x.Section.Equals(section))];
 
                         if ((lastLine == null || lastLine.Length != 0) && (!firstSection || firstEmptyLine))
                             w.WriteLine();
@@ -375,9 +372,7 @@ namespace PEBakery.Ini
                     void FinalizeSection()
                     {
                         Debug.Assert(currentSection != null);
-                        List<IniKey> secKeys = inputKeys
-                            .Where(x => x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
+                        List<IniKey> secKeys = [.. inputKeys.Where(x => x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase))];
                         Debug.Assert(0 < secKeys.Count);
 
                         // Remove tailing empty lines 
@@ -537,7 +532,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteCompactKey(string filePath, string section, string key, string value)
         {
-            return InternalWriteCompactKeys(filePath, new List<IniKey> { new IniKey(section, key, value) });
+            return InternalWriteCompactKeys(filePath, [new IniKey(section, key, value)]);
         }
 
         /// <summary>
@@ -549,7 +544,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteKeyCompact(string filePath, IniKey iniKey)
         {
-            return InternalWriteCompactKeys(filePath, new List<IniKey> { iniKey });
+            return InternalWriteCompactKeys(filePath, [iniKey]);
         }
 
         /// <summary>
@@ -561,7 +556,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalWriteCompactKeys(filePath, iniKeys.ToList());
+            return InternalWriteCompactKeys(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -583,16 +578,13 @@ namespace PEBakery.Ini
                 if (0 < inputKeys.Count)
                 {
                     // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
-                    string[] unprocessedSections = inputKeys
+                    string[] unprocessedSections = [.. inputKeys
                         .Select(x => x.Section)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToArray();
+                        .Distinct(StringComparer.OrdinalIgnoreCase)];
                     foreach (string section in unprocessedSections)
                     {
                         // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
-                        IniKey[] secKeys = inputKeys
-                            .Where(x => x.Section.Equals(section))
-                            .ToArray();
+                        IniKey[] secKeys = [.. inputKeys.Where(x => x.Section.Equals(section))];
 
                         if ((lastLine == null || lastLine.Length != 0) && (!firstSection || firstEmptyLine))
                             w.WriteLine();
@@ -639,9 +631,7 @@ namespace PEBakery.Ini
                     void FinalizeSection()
                     {
                         Debug.Assert(currentSection != null);
-                        List<IniKey> secKeys = inputKeys
-                            .Where(x => x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
+                        List<IniKey> secKeys = [.. inputKeys.Where(x => x.Section.Equals(currentSection, StringComparison.OrdinalIgnoreCase))];
                         Debug.Assert(0 < secKeys.Count);
 
                         // Remove tailing empty lines 
@@ -809,7 +799,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLine(string filePath, string section, string rawLine)
         {
-            return InternalWriteRawLine(filePath, new List<IniKey> { new IniKey(section, rawLine) }, true);
+            return InternalWriteRawLine(filePath, [new IniKey(section, rawLine)], true);
         }
 
         /// <summary>
@@ -826,7 +816,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLine(string filePath, string section, string rawLine, bool append)
         {
-            return InternalWriteRawLine(filePath, new List<IniKey> { new IniKey(section, rawLine) }, append);
+            return InternalWriteRawLine(filePath, [new IniKey(section, rawLine)], append);
         }
 
         /// <summary>
@@ -838,7 +828,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLine(string filePath, IniKey iniKey)
         {
-            return InternalWriteRawLine(filePath, new List<IniKey> { iniKey }, true);
+            return InternalWriteRawLine(filePath, [iniKey], true);
         }
 
         /// <summary>
@@ -854,7 +844,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLine(string filePath, IniKey iniKey, bool append)
         {
-            return InternalWriteRawLine(filePath, new List<IniKey> { iniKey }, append);
+            return InternalWriteRawLine(filePath, [iniKey], append);
         }
 
         /// <summary>
@@ -866,7 +856,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLines(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalWriteRawLine(filePath, iniKeys.ToList(), true);
+            return InternalWriteRawLine(filePath, [.. iniKeys], true);
         }
 
         /// <summary>
@@ -882,7 +872,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool WriteRawLines(string filePath, IEnumerable<IniKey> iniKeys, bool append)
         {
-            return InternalWriteRawLine(filePath, iniKeys.ToList(), append);
+            return InternalWriteRawLine(filePath, [.. iniKeys], append);
         }
 
         /// <summary>
@@ -1148,7 +1138,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool RenameKey(string filePath, string section, string oldKey, string newKey)
         {
-            return InternalRenameKeys(filePath, new IniKey[] { new IniKey(section, oldKey, newKey) })[0];
+            return InternalRenameKeys(filePath, [new IniKey(section, oldKey, newKey)])[0];
         }
 
         /// <summary>
@@ -1160,7 +1150,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool RenameKey(string filePath, IniKey iniKey)
         {
-            return InternalRenameKeys(filePath, new IniKey[] { iniKey })[0];
+            return InternalRenameKeys(filePath, [iniKey])[0];
         }
 
         /// <summary>
@@ -1172,7 +1162,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] RenameKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalRenameKeys(filePath, iniKeys.ToArray());
+            return InternalRenameKeys(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -1299,7 +1289,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteKey(string filePath, string section, string key)
         {
-            return InternalDeleteKeys(filePath, new IniKey[] { new IniKey(section, key) })[0];
+            return InternalDeleteKeys(filePath, [new IniKey(section, key)])[0];
         }
 
         /// <summary>
@@ -1311,7 +1301,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteKey(string filePath, IniKey iniKey)
         {
-            return InternalDeleteKeys(filePath, new IniKey[] { iniKey })[0];
+            return InternalDeleteKeys(filePath, [iniKey])[0];
         }
 
         /// <summary>
@@ -1325,7 +1315,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] DeleteKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteKeys(filePath, iniKeys.ToArray());
+            return InternalDeleteKeys(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -1451,7 +1441,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteCompactKey(string filePath, string section, string key)
         {
-            return InternalDeleteCompactKeys(filePath, new IniKey[] { new IniKey(section, key) })[0];
+            return InternalDeleteCompactKeys(filePath, [new IniKey(section, key)])[0];
         }
 
         /// <summary>
@@ -1463,7 +1453,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteCompactKey(string filePath, IniKey iniKey)
         {
-            return InternalDeleteCompactKeys(filePath, new IniKey[] { iniKey })[0];
+            return InternalDeleteCompactKeys(filePath, [iniKey])[0];
         }
 
         /// <summary>
@@ -1474,7 +1464,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] DeleteCompactKeys(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteCompactKeys(filePath, iniKeys.ToArray());
+            return InternalDeleteCompactKeys(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -1603,7 +1593,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IniKey[]? ReadSection(string filePath, string section)
         {
-            return InternalReadSection(filePath, new string[] { section }).Select(x => x.Value).First();
+            return InternalReadSection(filePath, [section]).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -1618,7 +1608,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IniKey[]? ReadSection(string filePath, IniKey iniKey)
         {
-            return InternalReadSection(filePath, new string[] { iniKey.Section }).Select(x => x.Value).First();
+            return InternalReadSection(filePath, [iniKey.Section]).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -1635,7 +1625,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, IniKey[]?> ReadSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalReadSection(filePath, sections.ToArray());
+            return InternalReadSection(filePath, [.. sections]);
         }
 
         /// <summary>
@@ -1652,7 +1642,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, IniKey[]?> ReadSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalReadSection(filePath, iniKeys.Select(x => x.Section).ToArray());
+            return InternalReadSection(filePath, [.. iniKeys.Select(x => x.Section)]);
         }
 
         /// <summary>
@@ -1754,7 +1744,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AddSection(string filePath, string section)
         {
-            return InternalAddSection(filePath, new List<string> { section });
+            return InternalAddSection(filePath, [section]);
         }
 
         /// <summary>
@@ -1766,7 +1756,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AddSection(string filePath, IniKey iniKey)
         {
-            return InternalAddSection(filePath, new List<string> { iniKey.Section });
+            return InternalAddSection(filePath, [iniKey.Section]);
         }
 
         /// <summary>
@@ -1778,7 +1768,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AddSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalAddSection(filePath, sections.ToList());
+            return InternalAddSection(filePath, [.. sections]);
         }
 
         /// <summary>
@@ -1790,7 +1780,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AddSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalAddSection(filePath, iniKeys.Select(x => x.Section).ToList());
+            return InternalAddSection(filePath, [.. iniKeys.Select(x => x.Section)]);
         }
 
         private static bool InternalAddSection(string filePath, List<string> sections)
@@ -2054,7 +2044,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool RenameSection(string filePath, string srcSection, string destSection)
         {
-            return InternalRenameSection(filePath, new IniKey[] { new IniKey(srcSection, destSection) })[0];
+            return InternalRenameSection(filePath, [new IniKey(srcSection, destSection)])[0];
         }
 
         /// <summary>
@@ -2069,7 +2059,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool RenameSection(string filePath, IniKey iniKey)
         {
-            return InternalRenameSection(filePath, new IniKey[] { iniKey })[0];
+            return InternalRenameSection(filePath, [iniKey])[0];
         }
 
         /// <summary>
@@ -2084,7 +2074,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool[] RenameSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalRenameSection(filePath, iniKeys.ToArray());
+            return InternalRenameSection(filePath, [.. iniKeys]);
         }
 
         /// <summary>
@@ -2180,7 +2170,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteSection(string filePath, string section)
         {
-            return InternalDeleteSection(filePath, new List<string> { section })[0];
+            return InternalDeleteSection(filePath, [section])[0];
         }
 
         /// <summary>
@@ -2192,7 +2182,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool DeleteSection(string filePath, IniKey iniKey)
         {
-            return InternalDeleteSection(filePath, new List<string> { iniKey.Section })[0];
+            return InternalDeleteSection(filePath, [iniKey.Section])[0];
         }
 
         /// <summary>
@@ -2203,7 +2193,7 @@ namespace PEBakery.Ini
         /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
         public static bool[] DeleteSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalDeleteSection(filePath, sections.ToList());
+            return InternalDeleteSection(filePath, [.. sections]);
         }
 
         /// <summary>
@@ -2214,7 +2204,7 @@ namespace PEBakery.Ini
         /// <returns>An array of return value for each IniKey. Returns true if the operation of an iniKey was successful.</returns>
         public static bool[] DeleteSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteSection(filePath, iniKeys.Select(x => x.Section).ToList());
+            return InternalDeleteSection(filePath, [.. iniKeys.Select(x => x.Section)]);
         }
 
         /// <summary>
@@ -2303,7 +2293,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, string section)
         {
-            return InternalReadRawSection(filePath, new List<string> { section }, false).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, [section], false).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2316,7 +2306,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, string section, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, new List<string> { section }, includeEmptyLines).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, [section], includeEmptyLines).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2328,7 +2318,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, IniKey iniKey)
         {
-            return InternalReadRawSection(filePath, new List<string> { iniKey.Section }, false).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, [iniKey.Section], false).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2341,7 +2331,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> ReadRawSection(string filePath, IniKey iniKey, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, new List<string> { iniKey.Section }, includeEmptyLines).Select(x => x.Value).First();
+            return InternalReadRawSection(filePath, [iniKey.Section], includeEmptyLines).Select(x => x.Value).First();
         }
 
         /// <summary>
@@ -2354,7 +2344,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<string> sections)
         {
-            return InternalReadRawSection(filePath, sections.ToList(), false);
+            return InternalReadRawSection(filePath, [.. sections], false);
         }
 
         /// <summary>
@@ -2367,7 +2357,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<string> sections, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, sections.ToList(), includeEmptyLines);
+            return InternalReadRawSection(filePath, [.. sections], includeEmptyLines);
         }
 
         /// <summary>
@@ -2379,7 +2369,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<IniKey> iniKeys)
         {
-            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section).ToList(), false);
+            return InternalReadRawSection(filePath, [.. iniKeys.Select(x => x.Section)], false);
         }
 
         /// <summary>
@@ -2392,7 +2382,7 @@ namespace PEBakery.Ini
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, List<string>> ReadRawSections(string filePath, IEnumerable<IniKey> iniKeys, bool includeEmptyLines)
         {
-            return InternalReadRawSection(filePath, iniKeys.Select(x => x.Section).ToList(), includeEmptyLines);
+            return InternalReadRawSection(filePath, [.. iniKeys.Select(x => x.Section)], includeEmptyLines);
         }
 
         /// <summary>
@@ -2465,7 +2455,7 @@ namespace PEBakery.Ini
                 string section = kvSec.Key;
                 Dictionary<string, string> kvPairs = kvSec.Value;
 
-                List<IniKey> keys = new List<IniKey>();
+                List<IniKey> keys = [];
 
                 // kvKey => Key:Key Value:Value
                 foreach (var kvKey in kvPairs)
@@ -2488,7 +2478,7 @@ namespace PEBakery.Ini
                 string section = kvSec.Key;
                 Dictionary<string, string> kvPairs = kvSec.Value;
 
-                List<IniKey> keys = new List<IniKey>();
+                List<IniKey> keys = [];
 
                 // kvKey => Key:Key Value:Value
                 foreach (var kvKey in kvPairs)
@@ -2503,10 +2493,10 @@ namespace PEBakery.Ini
         public static bool Merge(string srcFile1, string srcFile2, string destFile)
         {
             IniFile[] srcIniFiles =
-            {
+            [
                 new IniFile(srcFile1),
                 new IniFile(srcFile2),
-            };
+            ];
 
             bool result = true;
             foreach (IniFile srcIniFile in srcIniFiles)
@@ -2514,7 +2504,7 @@ namespace PEBakery.Ini
                 // kvSec => Key: Section Value:<Key-Value>
                 foreach (var kvSec in srcIniFile.Sections)
                 {
-                    List<IniKey> keys = new List<IniKey>();
+                    List<IniKey> keys = [];
 
                     // kvKey => Key:Key Value:Value
                     foreach (var kvKey in kvSec.Value)
@@ -2582,7 +2572,7 @@ namespace PEBakery.Ini
         /// <returns>List of section names.</returns>
         public static List<string> ReadSectionNames(string filePath)
         {
-            List<string> sections = new List<string>();
+            List<string> sections = [];
 
             Encoding encoding = EncodingHelper.DetectEncoding(filePath);
             using (StreamReader r = new StreamReader(filePath, encoding, true))
@@ -2656,7 +2646,7 @@ namespace PEBakery.Ini
         /// <returns>A list of section content text lines. Returns null if section was not found.</returns>
         public static List<string>? ParseIniSection(string filePath, string section)
         {
-            List<string> lines = new List<string>();
+            List<string> lines = [];
 
             Encoding encoding = SmarterDetectEncoding(filePath, section);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
@@ -2709,7 +2699,7 @@ namespace PEBakery.Ini
         /// <returns>A list of section content text lines. Returns null if section was not found.</returns>
         public static List<string>? ParseRawSection(string filePath, string section)
         {
-            List<string> lines = new List<string>();
+            List<string> lines = [];
 
             Encoding encoding = SmarterDetectEncoding(filePath, section);
             using (StreamReader r = new StreamReader(filePath, encoding, false))
@@ -2769,18 +2759,18 @@ namespace PEBakery.Ini
         /// <returns>An array of Dictionary of keys and values.</returns>
         public static List<string>[] ParseIniSections(string filePath, IEnumerable<string> sections)
         {
-            string[] sectionNames = sections.Distinct().ToArray(); // Remove duplicate
+            string[] sectionNames = [.. sections.Distinct()]; // Remove duplicate
 
             List<string>[] lines = new List<string>[sectionNames.Length];
             for (int i = 0; i < sectionNames.Length; i++)
-                lines[i] = new List<string>();
+                lines[i] = [];
 
             Encoding encoding = SmarterDetectEncoding(filePath, sectionNames);
             using (StreamReader r = new StreamReader(filePath, encoding, true))
             {
                 string? rawLine;
                 int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
-                List<int> processedSectionIdxs = new List<int>();
+                List<int> processedSectionIdxs = [];
 
                 while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
@@ -2887,8 +2877,7 @@ namespace PEBakery.Ini
         /// <param name="section">Section to find.</param>
         public static void FastForwardTextReader(TextReader tr, string section)
         {
-            if (section == null)
-                throw new ArgumentNullException(nameof(section));
+            ArgumentNullException.ThrowIfNull(section);
 
             // Read base64 block directly from file
             string? rawLine;
@@ -3129,8 +3118,8 @@ namespace PEBakery.Ini
         /// </returns>
         public static (List<string> Keys, List<string> Values) GetKeyValueFromLines(IEnumerable<string> rawLines)
         {
-            List<string> keys = new List<string>();
-            List<string> values = new List<string>();
+            List<string> keys = [];
+            List<string> values = [];
             foreach (string rawLine in rawLines)
             {
                 if (IsLineComment(rawLine))

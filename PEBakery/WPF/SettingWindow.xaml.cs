@@ -1033,13 +1033,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool _compatDisableExtendedSectionParams;
-        public bool CompatDisableExtendedSectionParams
+        private bool _compatEnableAllLegacySectionParams;
+        public bool CompatEnableAllLegacySectionParams
         {
-            get => _compatDisableExtendedSectionParams;
+            get => _compatEnableAllLegacySectionParams;
             set
             {
-                _compatDisableExtendedSectionParams = value;
+                _compatEnableAllLegacySectionParams = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
+        }
+
+        private bool _compatDisableLegacyExtendedSectionParams;
+        public bool CompatDisableLegacyExtendedSectionParams
+        {
+            get => _compatDisableLegacyExtendedSectionParams;
+            set
+            {
+                _compatDisableLegacyExtendedSectionParams = value;
                 GetCompatToggleNextState();
                 OnPropertyUpdate();
             }
@@ -1230,7 +1242,8 @@ namespace PEBakery.WPF
             CompatOverridableFixedVariables = src.OverridableFixedVariables;
             CompatOverridableLoopCounter = src.OverridableLoopCounter;
             CompatEnableEnvironmentVariables = src.EnableEnvironmentVariables;
-            CompatDisableExtendedSectionParams = src.DisableExtendedSectionParams;
+            CompatEnableAllLegacySectionParams = src.EnableAllLegacySectionParams;
+            CompatDisableLegacyExtendedSectionParams = src.DisableLegacyExtendedSectionParams;
         }
 
         public void SaveCompatOptionTo(CompatOption dest)
@@ -1253,7 +1266,8 @@ namespace PEBakery.WPF
             dest.OverridableFixedVariables = CompatOverridableFixedVariables;
             dest.OverridableLoopCounter = CompatOverridableLoopCounter;
             dest.EnableEnvironmentVariables = CompatEnableEnvironmentVariables;
-            dest.DisableExtendedSectionParams = CompatDisableExtendedSectionParams;
+            dest.EnableAllLegacySectionParams = CompatEnableAllLegacySectionParams;
+            dest.DisableLegacyExtendedSectionParams = CompatDisableLegacyExtendedSectionParams;
         }
         #endregion
 
@@ -1286,7 +1300,8 @@ namespace PEBakery.WPF
             currentState &= CompatOverridableFixedVariables;
             currentState &= CompatOverridableLoopCounter;
             currentState &= CompatEnableEnvironmentVariables;
-            currentState &= CompatDisableExtendedSectionParams;
+            currentState &= CompatEnableAllLegacySectionParams;
+            currentState &= CompatDisableLegacyExtendedSectionParams;
 
             ToggleNextState = !currentState;
         }
@@ -1314,7 +1329,8 @@ namespace PEBakery.WPF
             CompatOverridableFixedVariables = nextState;
             CompatOverridableLoopCounter = nextState;
             CompatEnableEnvironmentVariables = nextState;
-            CompatDisableExtendedSectionParams = nextState;
+            CompatEnableAllLegacySectionParams = nextState;
+            CompatDisableLegacyExtendedSectionParams = nextState;
         }
         #endregion
 
@@ -1547,16 +1563,16 @@ namespace PEBakery.WPF
 
                 if (srcSetup.PathSettingEnabled)
                 { // PathSetting is enabled
-                    string sourceDir = string.Join(",", srcSetup.SourceDirs.Select(x => StringEscaper.DoubleQuote(x)));
+                    string sourceDir = string.Join(",", srcSetup.SourceDirs.Select(StringEscaper.DoubleQuote));
                     string targetDir = srcSetup.TargetDir;
                     string isoFile = srcSetup.IsoFile;
 
-                    IniReadWriter.WriteKeys(p.MainScript.RealPath, new IniKey[]
-                    {
+                    IniReadWriter.WriteKeys(p.MainScript.RealPath,
+                    [
                         new IniKey(ScriptSection.Names.Main, Script.Const.SourceDir, sourceDir),
                         new IniKey(ScriptSection.Names.Main, Script.Const.TargetDir, targetDir),
                         new IniKey(ScriptSection.Names.Main, Script.Const.IsoFile, isoFile),
-                    });
+                    ]);
 
                     p.Variables.SetValue(VarsType.Fixed, Script.Const.SourceDir, sourceDir);
                     p.Variables.SetValue(VarsType.Fixed, Script.Const.TargetDir, targetDir);
@@ -1568,12 +1584,12 @@ namespace PEBakery.WPF
                 }
                 else
                 { // PathSetting is disabled
-                    IniReadWriter.DeleteKeys(p.MainScript.RealPath, new IniKey[]
-                    {
+                    IniReadWriter.DeleteKeys(p.MainScript.RealPath,
+                    [
                         new IniKey(ScriptSection.Names.Main, Script.Const.SourceDir),
                         new IniKey(ScriptSection.Names.Main, Script.Const.TargetDir),
                         new IniKey(ScriptSection.Names.Main, Script.Const.IsoFile),
-                    });
+                    ]);
 
                     p.Variables.DeleteKey(VarsType.Fixed, Script.Const.SourceDir);
                     p.Variables.DeleteKey(VarsType.Fixed, Script.Const.TargetDir);

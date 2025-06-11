@@ -145,13 +145,13 @@ namespace PEBakery.Core.Tests.Command
             const string rawCode = "Set,#r,PEBakery";
 
             // Turn off compat option
-            s.CompatDisableExtendedSectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = false;
             s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
             Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
 
             // Turn on compat option
-            s.CompatDisableExtendedSectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
             s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
             Assert.IsTrue(s.ReturnValue.Length == 0);
@@ -162,13 +162,13 @@ namespace PEBakery.Core.Tests.Command
             const string rawCode = "Set,#r,NIL";
 
             // Turn off compat option
-            s.CompatDisableExtendedSectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = false;
             s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
             Assert.IsTrue(s.ReturnValue.Length == 0);
 
             // Turn on compat option
-            s.CompatDisableExtendedSectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
             s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
             Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));

@@ -246,7 +246,7 @@ namespace PEBakery.Core.Tests.Command
                         s.Variables[exitKey] = string.Empty;
 
                     if (enableCompat)
-                        EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check, new CompatOption { DisableExtendedSectionParams = true });
+                        EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check, new CompatOption { DisableLegacyExtendedSectionParams = true });
                     else
                         EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check);
 

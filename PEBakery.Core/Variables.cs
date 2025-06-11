@@ -966,14 +966,14 @@ namespace PEBakery.Core
                 }
                 else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                         logs.Add(SetSectionOutParam(s, varKey, finalValue));
                     else
                         logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 { // s.SectionReturnValue's default value is string.Empty
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                     {
                         s.ReturnValue = string.Empty;
                         logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
@@ -1070,14 +1070,14 @@ namespace PEBakery.Core
                 }
                 else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
                 {
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                         logs.Add(SetSectionOutParam(s, varKey, finalValue));
                     else
                         logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 {
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (!s.CompatDisableLegacyExtendedSectionParams)
                     {
                         s.ReturnValue = finalValue;
                         logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));

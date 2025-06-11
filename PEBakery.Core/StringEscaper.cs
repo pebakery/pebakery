@@ -528,7 +528,7 @@ namespace PEBakery.Core
                 matches = inRegex.Matches(str);
             }
 
-            if (!s.CompatDisableExtendedSectionParams)
+            if (!s.CompatDisableLegacyExtendedSectionParams)
             {
                 // Expand #o1, #o2, ... (Section Out Parameter)
                 if (s.CurSectionOutParams != null)
@@ -714,7 +714,7 @@ namespace PEBakery.Core
                     }
                     else if (pKind.Equals("SOPARAM", StringComparison.OrdinalIgnoreCase))
                     { // Expand Section Out Parameter
-                        if (!s.CompatDisableExtendedSectionParams && s.CurSectionOutParams != null)
+                        if (!s.CompatDisableLegacyExtendedSectionParams && s.CurSectionOutParams != null)
                         {
                             string param;
                             if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))
