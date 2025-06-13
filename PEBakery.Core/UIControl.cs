@@ -558,12 +558,12 @@ namespace PEBakery.Core
             }
         );
 
-        public static HashSet<UIControlType> HasInterfaceEncodedFile { get; } = new HashSet<UIControlType>()
-        {
+        public static HashSet<UIControlType> HasInterfaceEncodedFile { get; } =
+        [
             UIControlType.Image,
             UIControlType.TextFile,
             UIControlType.Button,
-        };
+        ];
         #endregion
 
         #region Template

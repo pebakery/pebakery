@@ -35,8 +35,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-#nullable enable
-
 namespace PEBakery.Core
 {
     public static class StringEscaper
@@ -466,14 +464,20 @@ namespace PEBakery.Core
 
         public static string ExpandSectionParams(EngineState s, string str)
         {
-            // TODO: Wire ExpandPercentPatternSectionParams
-            return ExpandLegacySharpSectionParams(s, str);
+            string expandedStr = str;
+            if (s.CompatEnableAllLegacySectionParams)
+                expandedStr = ExpandLegacySharpSectionParams(s, expandedStr);
+            expandedStr = ExpandPercentPatternSectionParams(s, expandedStr);
+            return expandedStr;
         }
 
         public static List<string> ExpandSectionParams(EngineState s, IEnumerable<string> strs)
         {
-            // TODO: Wire ExpandPercentPatternSectionParams
-            return ExpandLegacySharpSectionParams(s, strs);
+            List<string> expandedStrs = [.. strs];
+            if (s.CompatEnableAllLegacySectionParams)
+                expandedStrs = ExpandLegacySharpSectionParams(s, strs);
+            expandedStrs = ExpandPercentPatternSectionParams(s, expandedStrs);
+            return expandedStrs;
         }
 
         /// <summary>
@@ -625,8 +629,8 @@ namespace PEBakery.Core
         /// </summary>
         /// <remarks>
         /// %^RET%: #r
-        /// %^SPARAM_<NUMBERS>%, %^SIPARAM_<NUMBERS>%: #1 ~ #9
-        /// %^SPARAM_COUNT%, %^SIPARAM_COUNT%: #a
+        /// %^SIPARAM_<NUMBERS>%, %^SIPARAM_<NUMBERS>%: #1 ~ #9
+        /// %^SIPARAM_COUNT%, %^SIPARAM_COUNT%: #a
         /// %^SOPARAM_<NUMBERS>%: #o1 ~ #o9
         /// %^SOPARAM_COUNT%: #oa
         /// %^LOOP_IDX%: #c
@@ -635,7 +639,7 @@ namespace PEBakery.Core
         {
             // Expand #1 into its value
             Regex paramRegex = new Regex(@"%\^([A-Za-z0-9_]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            Regex pSectVarRegex = new Regex(@"^(S(?:I?|O)PARAM)_([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            Regex pSectVarRegex = new Regex(@"^(S(?:I|O)PARAM)_([1-9][0-9]*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
             StringBuilder b = new StringBuilder();
 
             int lastCopiedIdx = 0;
@@ -664,8 +668,7 @@ namespace PEBakery.Core
                     b.Append(s.ReturnValue);
                     continue;
                 }
-                else if (paramNameStr.Equals("SPARAM_COUNT", StringComparison.OrdinalIgnoreCase) ||
-                        paramNameStr.Equals("SIPARAM_COUNT", StringComparison.OrdinalIgnoreCase))
+                else if (paramNameStr.Equals("SIPARAM_COUNT", StringComparison.OrdinalIgnoreCase))
                 { // Expand Section In Params Count
                     b.Append(s.CurSectionInParamsCount);
                     continue;
@@ -701,8 +704,7 @@ namespace PEBakery.Core
                     if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
                         throw new InternalException($"{nameof(ExpandPercentPatternSectionParams)} failure");
 
-                    if (pKind.Equals("SPARAM", StringComparison.OrdinalIgnoreCase) ||
-                        pKind.Equals("SIPARAM", StringComparison.OrdinalIgnoreCase))
+                    if (pKind.Equals("SIPARAM", StringComparison.OrdinalIgnoreCase))
                     { // Expand Section In Parameter
                         string param;
                         if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))
@@ -714,7 +716,7 @@ namespace PEBakery.Core
                     }
                     else if (pKind.Equals("SOPARAM", StringComparison.OrdinalIgnoreCase))
                     { // Expand Section Out Parameter
-                        if (!s.CompatDisableLegacyExtendedSectionParams && s.CurSectionOutParams != null)
+                        if (s.CurSectionOutParams != null)
                         {
                             string param;
                             if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))

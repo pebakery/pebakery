@@ -1348,6 +1348,7 @@ namespace PEBakery.Core
         public bool CompatFileRenameCanMoveDir { get; set; } = false;
         public bool CompatAllowLetterInLoop { get; set; } = false;
         public bool CompatAllowSetModifyInterface { get; set; } = false;
+        public bool CompatEnableAllLegacySectionParams { get; set; } = false;
         public bool CompatDisableLegacyExtendedSectionParams { get; set; } = false;
         public bool CompatOverridableLoopCounter { get; set; } = false;
         public bool CompatAutoCompactIniWriteCommand { get; set; } = false;
@@ -1488,6 +1489,7 @@ namespace PEBakery.Core
             CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;
             CompatAllowLetterInLoop = compat.AllowLetterInLoop;
             CompatAllowSetModifyInterface = compat.AllowSetModifyInterface;
+            CompatEnableAllLegacySectionParams = compat.EnableAllLegacySectionParams;
             CompatDisableLegacyExtendedSectionParams = compat.DisableLegacyExtendedSectionParams;
             CompatOverridableLoopCounter = compat.OverridableLoopCounter;
             CompatAutoCompactIniWriteCommand = compat.AutoCompactIniWriteCommand;
