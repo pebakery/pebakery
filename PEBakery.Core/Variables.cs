@@ -633,44 +633,25 @@ namespace PEBakery.Core
 
                     if (_opts.OverridableFixedVariables)
                     { // WinBuilder compatible
-                        if (_localVars.ContainsKey(varName))
-                        {
-                            string localVarValue = _localVars[varName];
+                        if (_localVars.TryGetValue(varName, out string? localVarValue))
                             b.Append(localVarValue);
-                        }
-                        else if (_globalVars.ContainsKey(varName))
-                        {
-                            string varValue = _globalVars[varName];
-                            b.Append(varValue);
-                        }
-                        else if (_fixedVars.ContainsKey(varName))
-                        {
-                            string varValue = _fixedVars[varName];
-                            b.Append(varValue);
-                        }
+                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
+                            b.Append(globalVarValue);
+                        else if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
+                            b.Append(fixedVarValue);
                         else // variable not found
-                        {
                             b.Append("#$p").Append(varName).Append("#$p");
-                        }
                     }
                     else
                     { // PEBakery standard
                         if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
-                        {
                             b.Append(fixedVarValue);
-                        }
                         else if (_localVars.TryGetValue(varName, out string? localVarValue))
-                        {
                             b.Append(localVarValue);
-                        }
                         else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
-                        {
                             b.Append(globalVarValue);
-                        }
                         else // variable not found
-                        {
                             b.Append("#$p").Append(varName).Append("#$p");
-                        }
                     }
 
                     if (x + 1 == matches.Count) // Last iteration
@@ -771,7 +752,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string? GetVariableName(EngineState s, string varName)
         {
-            if (!varName.StartsWith("%") || !varName.EndsWith("%"))
+            if (!varName.StartsWith('%') || !varName.EndsWith('%'))
                 return null;
             if (StringHelper.CountSubStr(varName, "%") != 2)
                 return null;
@@ -780,8 +761,8 @@ namespace PEBakery.Core
         }
 
         public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        public const string VarKeyRegexContainsLegacySectionInParams = @"(#[1-9])";
-        public const string VarKeyRegexContainsLegacySectionOutParams = @"(#[oO][1-9])";
+        public const string VarKeyRegexContainsLegacySectionInParams = @"#([1-9])";
+        public const string VarKeyRegexContainsLegacySectionOutParams = @"#[oO]([1-9])";
         public const string VarKeyRegexContainsPercentSectionInParams = @"%\^SIPARAM_([1-9][0-9_]*)%";
         public const string VarKeyRegexContainsPercentSectionOutParams = @"%\^SOPARAM_([1-9][0-9_]*)%";
         public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
@@ -827,7 +808,7 @@ namespace PEBakery.Core
             Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
-                if (NumberHelper.ParseInt32(secParam[1..], out int paramIdx))
+                if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
                     return paramIdx;
                 else
                     return 0; // Error
@@ -855,7 +836,7 @@ namespace PEBakery.Core
             Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
-                if (NumberHelper.ParseInt32(secParam[2..], out int paramIdx))
+                if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
                     return paramIdx;
                 else
                     return 0; // Error
@@ -1068,14 +1049,21 @@ namespace PEBakery.Core
                 }
                 else if (type == VarKeyType.ReturnValueLegacy) // #r
                 { // s.SectionReturnValue's default value is string.Empty
-                    if (!s.CompatDisableLegacyExtendedSectionParams)
+                    if (s.CompatEnableAllLegacySectionParams)
                     {
-                        s.ReturnValue = string.Empty;
-                        logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
+                        {
+                            s.ReturnValue = string.Empty;
+                            logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
+                        }
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, "ReturnValue [#r] is disabled by the compatibility option"));
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                     }
                 }
                 else if (type == VarKeyType.LoopCounterPercent) // %^LOOP_IDX%
@@ -1122,7 +1110,7 @@ namespace PEBakery.Core
                         LogInfo log = s.Variables.SetValue(VarsType.Global, key, finalValue);
                         logs.Add(log);
 
-                        // Remove local variable if exist
+                        // Remove local variable if it exists
                         if (log.State == LogState.Success)
                             s.Variables.DeleteKey(VarsType.Local, key);
                     }
@@ -1238,7 +1226,7 @@ namespace PEBakery.Core
                         return logs;
                     }
 
-                    // Escape #c (Loop Counter)
+                    // Escape Loop Counter
                     if (0 < s.LoopCmdStateStack.Count)
                     {
                         EngineLoopCmdState peekLoop = s.LoopCmdStateStack.Peek();

@@ -11,4 +11,4 @@ Mandatory=False
 %ExecVar%=T
 
 [SetTrue]
-Set,#r,%ExecVar%
+Set,%^RET%,%ExecVar%

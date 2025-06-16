@@ -420,9 +420,9 @@ namespace PEBakery.Core.Tests
                 case ErrorCheck.Success:
                     foreach (LogInfo log in logs)
                     {
-                        Assert.IsTrue(log.State != LogState.Error);
-                        Assert.IsTrue(log.State != LogState.CriticalError);
-                        Assert.IsTrue(log.State != LogState.Warning);
+                        Assert.AreNotEqual(LogState.Error, log.State);
+                        Assert.AreNotEqual(LogState.CriticalError, log.State);
+                        Assert.AreNotEqual(LogState.Warning, log.State);
                     }
                     break;
                 case ErrorCheck.Warning:
@@ -430,8 +430,8 @@ namespace PEBakery.Core.Tests
                         bool result = false;
                         foreach (LogInfo log in logs)
                         {
-                            Assert.IsTrue(log.State != LogState.Error);
-                            Assert.IsTrue(log.State != LogState.CriticalError);
+                            Assert.AreNotEqual(LogState.Error, log.State);
+                            Assert.AreNotEqual(LogState.CriticalError, log.State);
                             if (log.State == LogState.Warning)
                                 result = true;
                         }
@@ -443,8 +443,8 @@ namespace PEBakery.Core.Tests
                         bool result = false;
                         foreach (LogInfo log in logs)
                         {
-                            Assert.IsTrue(log.State != LogState.Error);
-                            Assert.IsTrue(log.State != LogState.CriticalError);
+                            Assert.AreNotEqual(LogState.Error, log.State);
+                            Assert.AreNotEqual(LogState.CriticalError, log.State);
                             if (log.State == LogState.Overwrite)
                                 result = true;
                         }
@@ -456,7 +456,7 @@ namespace PEBakery.Core.Tests
                         bool result = false;
                         foreach (LogInfo log in logs)
                         {
-                            Assert.IsTrue(log.State != LogState.CriticalError);
+                            Assert.AreNotEqual(LogState.CriticalError, log.State);
                             if (log.State == LogState.Error)
                                 result = true;
                         }

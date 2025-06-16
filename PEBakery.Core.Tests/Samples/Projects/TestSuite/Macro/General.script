@@ -8,7 +8,7 @@ Selected=True
 Mandatory=False
 
 [Variables]
-InlineMacro=Set,#r,#1
+InlineMacro=Set,%^RET%,%^SIPARAM_1%
 SectionMacro=Run,%ScriptFile%,SectionMacroImpl
 CondMacro01=Run,%ScriptFile%,CondMacroImpl01
 CondMacro02=Run,%ScriptFile%,CondMacroImpl02
@@ -16,51 +16,51 @@ PhoenixMacro=Run,%ScriptFile%,PhoenixMacroImpl
 SetLocalParamsMacro=Run,%ScriptFile%,SetLocalParamsMacroImpl
 
 [SectionMacroImpl]
-Set,#r,#1
+Set,%^RET%,%^SIPARAM_1%
 
 [CondMacroImpl01]
-Set,#r,0
-If,#1,Equal,True,Begin
-  Set,#r,T
+Set,%^RET%,0
+If,%^SIPARAM_1%,Equal,True,Begin
+  Set,%^RET%,T
 End
 Else,Begin
-  Set,#r,F
+  Set,%^RET%,F
 End
 
 [CondMacroImpl02]
-Set,#r,0
-If,#1,Equal,True,Set,#r,F
-Else,Set,#r,F
-Set,#r,T
+Set,%^RET%,0
+If,%^SIPARAM_1%,Equal,True,Set,%^RET%,F
+Else,Set,%^RET%,F
+Set,%^RET%,T
 
 [PhoenixMacroImpl]
 System,SetLocal
-Set,#r,F
-If,#1,Equal,"",Exit,"Syntax Error"
-If,#2,Equal,"",Exit,"Syntax Error"
-If,#3,Equal,"",Exit,"Syntax Error"
+Set,%^RET%,F
+If,%^SIPARAM_1%,Equal,"",Exit,"Syntax Error"
+If,%^SIPARAM_2%,Equal,"",Exit,"Syntax Error"
+If,%^SIPARAM_3%,Equal,"",Exit,"Syntax Error"
 GetParam,1,%A%
 GetParam,2,%B%
 GetParam,3,%C%
-If,#1,Equal,True,Begin
-  If,#2,Equal,0,Set,#r,0
-  Else,If,#2,Equal,1,Set,#r,1
-  Else,If,#2,Equal,2,Set,#r,2
-  Else,If,#2,Equal,3,Set,#r,3
+If,%^SIPARAM_1%,Equal,True,Begin
+  If,%^SIPARAM_2%,Equal,0,Set,%^RET%,0
+  Else,If,%^SIPARAM_2%,Equal,1,Set,%^RET%,1
+  Else,If,%^SIPARAM_2%,Equal,2,Set,%^RET%,2
+  Else,If,%^SIPARAM_2%,Equal,3,Set,%^RET%,3
   Else,Exit,"Syntax Error"
   
-  If,#3,Equal,T,Set,#r,A
-  Else,If,#3,Equal,F,Set,#r,B
+  If,%^SIPARAM_3%,Equal,T,Set,%^RET%,A
+  Else,If,%^SIPARAM_3%,Equal,F,Set,%^RET%,B
   // The comment between If and Else had crashed CodeParser.FoldBranchCodeBlock() method in the past. 
   Else,Halt,"Syntax Error"
 End
 Else,Begin
-  If,#3,Equal,T,Set,#r,X
-  Else,If,#3,Equal,F,Set,#r,Y
+  If,%^SIPARAM_3%,Equal,T,Set,%^RET%,X
+  Else,If,%^SIPARAM_3%,Equal,F,Set,%^RET%,Y
   // The bug was reported by @homes32, and investigated and fixed by @ied206.
   Else,Halt,"Syntax Error"
 End
-Set,#r,T
+Set,%^RET%,T
 System,EndLocal
 
 [SetLocalParamsMacroImpl]
@@ -69,32 +69,32 @@ GetParam,1,%A%
 GetParam,2,%B%
 GetParam,3,%C%
 GetParam,4,%D%
-If,%D%,Equal,"A/B/C",Set,#r,"T"
+If,%D%,Equal,"A/B/C",Set,%^RET%,"T"
 System,EndLocal
 
 [Process-InlineMacro]
 AddVariables,%ScriptFile%,Variables
-Set,#r,F
+Set,%^RET%,F
 InlineMacro,T
 
 [Process-SectionMacro]
 AddVariables,%ScriptFile%,Variables
-Set,#r,F
+Set,%^RET%,F
 SectionMacro,T
 
 [Process-CondMacro01]
 AddVariables,%ScriptFile%,Variables
-Set,#r,F
+Set,%^RET%,F
 CondMacro01,True
 
 [Process-CondMacro02]
 AddVariables,%ScriptFile%,Variables
-Set,#r,F
+Set,%^RET%,F
 CondMacro02,True
 
 [Process-PhoenixMacro]
 AddVariables,%ScriptFile%,Variables
-Set,#r,F
+Set,%^RET%,F
 PhoenixMacro,True,3,T
 
 [Process-SetLocalParamsMacro]
@@ -102,5 +102,5 @@ AddVariables,%ScriptFile%,Variables
 Set,%A%,"A"
 Set,%B%,"B"
 Set,%C%,"C"
-Set,#r,"F"
+Set,%^RET%,"F"
 SetLocalParamsMacro,"X","Y","Z","%A%/%B%/%C%"

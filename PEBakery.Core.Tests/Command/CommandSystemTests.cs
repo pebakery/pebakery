@@ -53,25 +53,25 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.EvalScript(treePath, check);
             }
 
-            SingleTemplate(new List<string>
-            {
+            SingleTemplate(
+            [
                 @"System,ErrorOff",
                 @"Error1",
-            });
-            SingleTemplate(new List<string>
-            {
+            ]);
+            SingleTemplate(
+            [
                 @"System,ErrorOff,3",
                 @"Error1",
                 @"Error2",
                 @"Error3",
-            });
-            SingleTemplate(new List<string>
-            {
+            ]);
+            SingleTemplate(
+            [
                 @"System,ErrorOff,2",
                 @"Error1",
                 @"Error2",
                 @"Error3",
-            }, ErrorCheck.RuntimeError);
+            ], ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "ErrorOff.script");
             ScriptTemplate(scPath);
@@ -124,7 +124,6 @@ namespace PEBakery.Core.Tests.Command
                         for (int i = 1; i < paths.Length - 1; i++)
                         {
                             string destTreeDir = Project.PathKeyGenerator(paths, i);
-                            Assert.IsNotNull(destTreeDir);
                             Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreeDir));
                         }
                         Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreePath));
@@ -132,25 +131,25 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank1.script,", new string[] { @"TestSuite\Blank1.script" });
-            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank1.script,Load", new string[] { @"TestSuite\Load\Blank1.script" });
-            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank?.script,Load", new string[]
-            {
+            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank1.script,", [@"TestSuite\Blank1.script"]);
+            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank1.script,Load", [@"TestSuite\Load\Blank1.script"]);
+            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\Blank?.script,Load",
+            [
                 @"TestSuite\Load\Blank1.script",
                 @"TestSuite\Load\Blank2.script"
-            });
-            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\*.script,Load\Tree", new string[]
-            {
+            ]);
+            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\*.script,Load\Tree",
+            [
                 @"TestSuite\Load\Tree\Blank1.script",
                 @"TestSuite\Load\Tree\Blank2.script",
                 @"TestSuite\Load\Tree\Sub\Sub1.script",
                 @"TestSuite\Load\Tree\Sub\Sub2.script",
-            });
-            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\*.script,Load,NOREC", new string[]
-            {
+            ]);
+            Template(@"System,LoadNewScript,%TestBench%\CommandSystem\*.script,Load,NOREC",
+            [
                 @"TestSuite\Load\Blank1.script",
                 @"TestSuite\Load\Blank2.script",
-            });
+            ]);
         }
         #endregion
 
@@ -194,25 +193,25 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            SingleTemplate(new List<string>
-            {
+            SingleTemplate(
+            [
                 @"Set,%Dest%,0",
-                @"Set,#r,A",
+                @"Set,%^RET%,A",
                 @"System,SetLocal",
                 @"Set,%Dest%,1",
-                @"Set,#r,B",
+                @"Set,%^RET%,B",
                 @"System,EndLocal",
-            }, "0", "B");
-            SingleTemplate(new List<string>
-            {
+            ], "0", "B");
+            SingleTemplate(
+            [
                 @"System,SetLocal",
                 @"System,SetLocal",
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.RuntimeError);
-            SingleTemplate(new List<string>
-            {
+            ], null, null, ErrorCheck.RuntimeError);
+            SingleTemplate(
+            [
                 @"System,EndLocal",
-            }, null, null, ErrorCheck.RuntimeError);
+            ], null, null, ErrorCheck.RuntimeError);
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
             ScriptTemplate(scPath, "Process-Simple", "0", "B");

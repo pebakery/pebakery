@@ -52,10 +52,14 @@ namespace PEBakery.Core.Tests.Command
             SetGlobal(s);
             DelGlobal(s);
             SetDelPermanent(s);
-            SetReturnValue(s);
-            DelReturnValue(s);
-            SetLoopCounter(s);
-            DelLoopCounter(s);
+            SetReturnValuePercent(s);
+            SetReturnValueLegacy(s);
+            DelReturnValuePercent(s);
+            DelReturnValueLegacy(s);
+            SetLoopCounterPercent(s);
+            SetLoopCounterLegacy(s);
+            DelLoopCounterPercent(s);
+            DelLoopCounterLegacy(s);
         }
 
         public static void SetLocal(EngineState s)
@@ -140,46 +144,129 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public static void SetReturnValue(EngineState s)
+        public static void SetReturnValuePercent(EngineState s)
+        {
+            const string rawCode = "Set,%^RET%,PEBakery";
+
+            // Turn off compat option
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+        }
+
+        public static void SetReturnValueLegacy(EngineState s)
         {
             const string rawCode = "Set,#r,PEBakery";
 
-            // Turn off compat option
+            s.CompatEnableAllLegacySectionParams = false;
             s.CompatDisableLegacyExtendedSectionParams = false;
             s.ReturnValue = string.Empty;
-            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.ReturnValue.Length);
 
-            // Turn on compat option
+            s.CompatEnableAllLegacySectionParams = false;
             s.CompatDisableLegacyExtendedSectionParams = true;
             s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.IsTrue(s.ReturnValue.Length == 0);
+            Assert.AreEqual(0, s.ReturnValue.Length);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = string.Empty;
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.ReturnValue.Length);
         }
 
-        public static void DelReturnValue(EngineState s)
+        public static void DelReturnValuePercent(EngineState s)
         {
-            const string rawCode = "Set,#r,NIL";
+            const string rawCode = "Set,%^RET%,NIL";
 
-            // Turn off compat option
+            s.CompatEnableAllLegacySectionParams = false;
             s.CompatDisableLegacyExtendedSectionParams = false;
             s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.ReturnValue.Length == 0);
+            Assert.AreEqual(0, s.ReturnValue.Length);
 
-            // Turn on compat option
+            s.CompatEnableAllLegacySectionParams = false;
             s.CompatDisableLegacyExtendedSectionParams = true;
             s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.AreEqual(0, s.ReturnValue.Length);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.AreEqual(0, s.ReturnValue.Length);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.AreEqual(0, s.ReturnValue.Length);
+        }
+
+        public static void DelReturnValueLegacy(EngineState s)
+        {
+            const string rawCode = "Set,#r,NIL";
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = false;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            Assert.AreEqual(0, s.ReturnValue.Length);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatDisableLegacyExtendedSectionParams = true;
+            s.ReturnValue = "PEBakery";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
             Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
         }
 
-        public static void SetLoopCounter(EngineState s)
+        public static void SetLoopCounterPercent(EngineState s)
         {
             s.LoopCmdStateStack.Clear();
 
             // Simulate Loop command
-            const string rawLoopCode = "Set,#c,110";
+            const string rawLoopCode = "Set,%^LOOP_IDX%,110";
 
             s.CompatOverridableLoopCounter = true;
             s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
@@ -194,7 +281,7 @@ namespace PEBakery.Core.Tests.Command
             Assert.AreEqual(100, loop.CounterIndex);
 
             // Simulate LoopLetter command
-            const string rawLoopLetterCode = "Set,#c,Z";
+            const string rawLoopLetterCode = "Set,%^LOOP_IDX%,Z";
 
             s.CompatOverridableLoopCounter = true;
             s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
@@ -226,10 +313,95 @@ namespace PEBakery.Core.Tests.Command
             Assert.AreEqual(0, s.LoopCmdStateStack.Count);
         }
 
-        public static void DelLoopCounter(EngineState s)
+        public static void SetLoopCounterLegacy(EngineState s)
+        {
+            s.LoopCmdStateStack.Clear();
+
+            // Simulate Loop command
+            const string rawLoopCode = "Set,#c,110";
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Success);
+            EngineLoopCmdState loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(110, loop.CounterIndex);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+
+            // Simulate LoopLetter command
+            const string rawLoopLetterCode = "Set,#c,Z";
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Success);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual('Z', loop.CounterLetter);
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual('C', loop.CounterLetter);
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual('C', loop.CounterLetter);
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual('C', loop.CounterLetter);
+
+            // Error 
+            s.LoopCmdStateStack.Clear();
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
+
+            s.LoopCmdStateStack.Clear();
+            EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
+
+            s.LoopCmdStateStack.Clear();
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
+
+            s.LoopCmdStateStack.Clear();
+            EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
+            Assert.AreEqual(0, s.LoopCmdStateStack.Count);
+        }
+
+        public static void DelLoopCounterPercent(EngineState s)
         {
             const string rawCode = "Set,#c,NIL";
 
+            s.CompatEnableAllLegacySectionParams = true;
             s.CompatOverridableLoopCounter = true;
             s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
@@ -243,6 +415,103 @@ namespace PEBakery.Core.Tests.Command
             Assert.AreEqual(0, loop.CounterIndex);
             Assert.AreEqual('C', loop.CounterLetter);
 
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+        }
+
+        public static void DelLoopCounterLegacy(EngineState s)
+        {
+            const string rawCode = "Set,#c,NIL";
+
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            EngineLoopCmdState loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+
+
+            s.CompatEnableAllLegacySectionParams = true;
+            s.CompatOverridableLoopCounter = false;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+
+
+            s.CompatEnableAllLegacySectionParams = false;
+            s.CompatOverridableLoopCounter = true;
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
+
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('C'));
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
+            loop = s.LoopCmdStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
+
+
+            s.CompatEnableAllLegacySectionParams = false;
             s.CompatOverridableLoopCounter = false;
             s.LoopCmdStateStack.Push(new EngineLoopCmdState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);

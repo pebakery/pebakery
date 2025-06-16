@@ -719,11 +719,15 @@ namespace PEBakery.Core
                         if (s.CurSectionOutParams != null)
                         {
                             string param;
-                            if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))
-                                param = value;
+                            if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
+                            {
+                                string varKey = s.CurSectionOutParams[pIdx - 1];
+                                param = s.Variables.Expand(varKey);
+                            }
                             else
-                                param = string.Empty; // Not in entry section -> return string.Empty;
-
+                            {
+                                param = string.Empty;
+                            }
                             b.Append(param);
                         }
                     }

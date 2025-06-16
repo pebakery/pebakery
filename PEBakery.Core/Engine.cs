@@ -108,7 +108,7 @@ namespace PEBakery.Core
             s.Logger.BuildWrite(s, s.Macro.LoadMacroDict(MacroType.Local, sc, false));
 
             // Reset Current Section Parameters
-            s.CurSectionInParams = new Dictionary<int, string>();
+            s.CurSectionInParams = [];
             s.CurSectionOutParams = null;
 
             // Clear Processed Section Hashes
@@ -173,11 +173,10 @@ namespace PEBakery.Core
 
                     // Run Main Section
                     string entrySection = GetEntrySection(s);
-                    if (s.CurrentScript.Sections.ContainsKey(entrySection))
+                    if (s.CurrentScript.Sections.TryGetValue(entrySection, out ScriptSection? mainSection))
                     {
-                        ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        RunSection(s, mainSection, new List<string>(0), new List<string>(0), new EngineLocalState());
+                        RunSection(s, mainSection, new List<string>(0), [], new EngineLocalState());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -336,10 +335,10 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string>? outParams, EngineLocalState ls)
         {
             // Must copy inParams and outParams by value, not reference
-            Dictionary<int, string> inParamDict = new Dictionary<int, string>();
+            Dictionary<int, string> inParamDict = [];
             for (int i = 0; i < inParams.Count; i++)
                 inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
-            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
+            outParams = outParams == null ? [] : [.. outParams];
 
             InternalRunSection(s, section, inParamDict, outParams, ls);
         }
@@ -348,7 +347,7 @@ namespace PEBakery.Core
         {
             // Must copy inParams and outParams by value, not reference
             Dictionary<int, string> inParamDict = new Dictionary<int, string>(inParams);
-            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
+            outParams = outParams == null ? [] : [.. outParams];
 
             InternalRunSection(s, section, inParamDict, outParams, ls);
         }
@@ -423,7 +422,7 @@ namespace PEBakery.Core
                 s.PushLocalState(ls.IsMacro, ls.RefScriptId);
             }
 
-            List<LogInfo>? allLogs = s.TestMode ? new List<LogInfo>() : null;
+            List<LogInfo>? allLogs = s.TestMode ? [] : null;
             foreach (CodeCommand cmd in cmds)
             {
                 // Rollback the section parameters that could have be overwritten in ExecuteCommand().
@@ -476,7 +475,7 @@ namespace PEBakery.Core
         #region ExecuteCommand
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = [];
             EngineLocalState ls = s.PeekLocalState();
 
             // Check CodeType / CodeInfo deprecation
@@ -1247,7 +1246,7 @@ namespace PEBakery.Core
         /// <summary>
         /// The 1-based index of in-params of current section.
         /// </summary>
-        public Dictionary<int, string> CurSectionInParams { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, string> CurSectionInParams { get; set; } = [];
         public List<string>? CurSectionOutParams { get; set; }
         public string ReturnValue { get; set; } = string.Empty;
         /// <summary>
@@ -1268,7 +1267,7 @@ namespace PEBakery.Core
         /// <summary>
         /// Track which lines were already processed
         /// </summary>
-        public HashSet<int> ProcessedLineSet { get; private set; } = new HashSet<int>();
+        public HashSet<int> ProcessedLineSet { get; private set; } = [];
         /// <summary>
         /// Accurate counter of how many section lines of the script was processed. 
         /// </summary>
@@ -1425,7 +1424,7 @@ namespace PEBakery.Core
                         if (runSingle.Equals(project.MainScript) && entrySection.Equals(ScriptSection.Names.Process, StringComparison.Ordinal))
                             goto case EngineMode.RunOne;
 
-                        Scripts = new List<Script>(2) { project.MainScript, runSingle };
+                        Scripts = [project.MainScript, runSingle];
                         TotalScripts = 1;
 
                         CurrentScript = Scripts[0];
@@ -1438,7 +1437,7 @@ namespace PEBakery.Core
                     { // Run only one script
                         if (runSingle == null)
                             throw new ArgumentNullException(nameof(runSingle));
-                        Scripts = new List<Script>(1) { runSingle };
+                        Scripts = [runSingle];
                         TotalScripts = 1;
 
                         CurrentScript = runSingle;

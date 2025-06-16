@@ -232,7 +232,7 @@ namespace PEBakery.Core.Tests.Command
 
                 Assert.IsTrue(File.Exists(destFile));
                 Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
-                Assert.IsTrue(s.ReturnValue.Length == 0);
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal)); // Always set ReturnValue, regardless of DisableLegacyExtendedSectionParams.
             }
             finally
             {

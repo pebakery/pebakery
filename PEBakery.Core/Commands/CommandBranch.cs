@@ -174,11 +174,11 @@ namespace PEBakery.Core.Commands
                 Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exist?
-                if (!sc.Sections.ContainsKey(sectionName))
+                if (!sc.Sections.TryGetValue(sectionName, out ScriptSection? targetSection))
                     throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
                 // Section In Parameter
-                Dictionary<int, string> newInParams = new Dictionary<int, string>();
+                Dictionary<int, string> newInParams = [];
                 for (int i = 0; i < inParams.Count; i++)
                     newInParams[i + 1] = inParams[i];
 
@@ -243,16 +243,13 @@ namespace PEBakery.Core.Commands
                 else
                     logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, ls.Depth));
-
-                // Loop it
-                ScriptSection targetSection = sc.Sections[sectionName];
                 int loopIdx = 1;
                 switch (type)
                 {
                     case CodeType.Loop:
                     case CodeType.LoopEx:
                         for (long i = startIdx; i <= endIdx; i++)
-                        { // Counter Variable is [#c]
+                        { // Counter Variable is [%^LOOP_IDX^] (legacy: [#c])
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{i}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
