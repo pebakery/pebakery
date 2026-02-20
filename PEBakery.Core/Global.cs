@@ -92,6 +92,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields and Properties
+        // Headless mode flag - when true, suppresses all UI dialogs and logs to console instead
+        public static bool HeadlessMode { get; set; } = false;
+
         // Build-time constant
         public static DateTime BuildDate { get; set; }
 
@@ -115,7 +118,17 @@ namespace PEBakery.Core
             }
             set => _logger = value;
         }
-        public static MainViewModel MainViewModel { get; set; } = new MainViewModel();
+        private static MainViewModel? _mainViewModel;
+        public static MainViewModel MainViewModel
+        {
+            get
+            {
+                if (_mainViewModel == null)
+                    _mainViewModel = new MainViewModel();
+                return _mainViewModel;
+            }
+            set => _mainViewModel = value;
+        }
         private static Setting? _setting;
         public static Setting Setting
         {
@@ -202,7 +215,11 @@ namespace PEBakery.Core
                 baseDir = Path.GetFullPath(opts.BaseDir);
                 if (Directory.Exists(baseDir) == false)
                 {
-                    MessageBox.Show($"Directory [{baseDir}] does not exist.\r\nRun [PEBkaery --help] for commnad line help message.", "PEBakery CommandLine Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    string errMsg = $"Directory [{baseDir}] does not exist.\r\nRun [PEBakery --help] for command line help message.";
+                    if (HeadlessMode)
+                        Console.Error.WriteLine($"[ERROR] {errMsg}");
+                    else
+                        MessageBox.Show(errMsg, "PEBakery CommandLine Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     Environment.Exit(1); // Force Shutdown
                 }
                 Environment.CurrentDirectory = BaseDir = baseDir;
@@ -231,8 +248,11 @@ namespace PEBakery.Core
                 catch (SQLiteException e)
                 { // Unable to continue -> raise an error message
                     string msg = $"SQLite Error : {e.Message}\r\n\r\nThe Log database is corrupted and was not able to be repaired.\r\nPlease delete {dbDir}\\PEBakeryLog.db and restart.";
-                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    if (Application.Current != null)
+                    if (HeadlessMode)
+                        Console.Error.WriteLine($"[FATAL] {msg}");
+                    else
+                        MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (!HeadlessMode && Application.Current != null)
                         Application.Current.Shutdown(1);
                     else
                         Environment.Exit(1);
@@ -274,8 +294,11 @@ namespace PEBakery.Core
                 catch (SQLiteException e)
                 { // Unable to continue -> raise an error message
                     string msg = $"SQLite Error : {e.Message}\r\n\r\nThe Cache database is corrupted and was not able to be repaired.\r\nPlease delete {dbDir}\\PEBakeryCache.db and restart.";
-                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    if (Application.Current != null)
+                    if (HeadlessMode)
+                        Console.Error.WriteLine($"[FATAL] {msg}");
+                    else
+                        MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (!HeadlessMode && Application.Current != null)
                         Application.Current.Shutdown(1);
                     else
                         Environment.Exit(1);
@@ -319,8 +342,12 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Unable to load library {e.Message}", "Library Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                if (Application.Current != null)
+                string msg = $"Unable to load library {e.Message}";
+                if (HeadlessMode)
+                    Console.Error.WriteLine($"[FATAL] {msg}");
+                else
+                    MessageBox.Show(msg, "Library Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!HeadlessMode && Application.Current != null)
                     Application.Current.Shutdown(1);
                 else
                     Environment.Exit(1);
@@ -448,13 +475,25 @@ namespace PEBakery.Core
                     s.WriteLine(envInfos);
                 }
 
-                MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-                FileHelper.OpenPath(crashLogFile);
+                if (HeadlessMode)
+                {
+                    Console.Error.WriteLine($"[FATAL] {firstMessage}");
+                    Console.Error.WriteLine(exceptionMessage);
+                    Console.Error.WriteLine($"Crash log written to: {crashLogFile}");
+                }
+                else
+                {
+                    MessageBox.Show(firstMessage, "Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FileHelper.OpenPath(crashLogFile);
+                }
             }
             catch
             {
-                // Even if EnvInfoBuilder throws exception, at least print exception message as MessageBox.
-                MessageBox.Show($"{firstMessage}\r\n\r\n{exceptionMessage}", "Critical Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Even if EnvInfoBuilder throws exception, at least print exception message
+                if (HeadlessMode)
+                    Console.Error.WriteLine($"[FATAL] {firstMessage}\r\n\r\n{exceptionMessage}");
+                else
+                    MessageBox.Show($"{firstMessage}\r\n\r\n{exceptionMessage}", "Critical Unhandled Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion

@@ -896,6 +896,13 @@ namespace PEBakery.Core.WpfControls
         /// <returns>A System.Windows.MessageBoxResult value that specifies which message box button is clicked by the user.</returns>
         public static MessageBoxResult DispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, int timeout)
         {
+            // In headless mode, auto-dismiss and return OK
+            if (Global.HeadlessMode)
+            {
+                Console.WriteLine($"[INFO] [{caption}] {messageBoxText} (auto-dismissed after {timeout}s timeout)");
+                return MessageBoxResult.OK;
+            }
+
             MessageBoxResult result = MessageBoxResult.None;
             if (Application.Current?.Dispatcher != null)
             {

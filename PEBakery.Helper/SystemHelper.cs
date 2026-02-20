@@ -30,6 +30,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 
+// Forward declaration for headless mode check
+// PEBakery.Helper does not reference PEBakery.Core, so we use a delegate pattern
+
 namespace PEBakery.Helper
 {
     #region MemorySnapshot
@@ -186,6 +189,14 @@ namespace PEBakery.Helper
 
         #endregion
 
+        #region Headless Mode Support
+        /// <summary>
+        /// When set to true, MessageBoxDispatcherShow will log to console instead of showing a dialog.
+        /// Set this from the application layer before any MessageBox calls.
+        /// </summary>
+        public static bool HeadlessMode { get; set; } = false;
+        #endregion
+
         #region Auto WPF MessageBox with Owner Window
         public static MessageBoxResult MessageBoxDispatcherShow(string messageBoxText, string caption, MessageBoxButton button)
         {
@@ -204,6 +215,19 @@ namespace PEBakery.Helper
 
         public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
         {
+            // In headless mode, log to console and return OK instead of showing a dialog
+            if (HeadlessMode)
+            {
+                string level = icon switch
+                {
+                    MessageBoxImage.Error => "ERROR",
+                    MessageBoxImage.Warning => "WARN",
+                    _ => "INFO",
+                };
+                Console.WriteLine($"[{level}] [{caption}] {messageBoxText}");
+                return MessageBoxResult.OK;
+            }
+
             MessageBoxResult result = MessageBoxResult.None;
             if (Application.Current?.Dispatcher != null)
             {
@@ -219,6 +243,8 @@ namespace PEBakery.Helper
             }
             else
             {
+                // No dispatcher available and not headless - try showing directly
+                // This may fail on systems without a display
                 result = MessageBox.Show(messageBoxText, caption, button, icon);
             }
             return result;

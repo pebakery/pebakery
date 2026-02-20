@@ -1267,7 +1267,12 @@ namespace PEBakery.Core.Commands
             TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
             s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
 
-            if (info.Timeout == null)
+            if (Global.HeadlessMode)
+            {
+                // In headless mode, log the message and auto-dismiss instead of showing a dialog
+                logs.Add(new LogInfo(LogState.Info, $"[Headless] Message auto-dismissed: {message}", cmd));
+            }
+            else if (info.Timeout == null)
             {
                 SystemHelper.MessageBoxDispatcherShow(s.OwnerWindow, message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
             }
@@ -1357,6 +1362,16 @@ namespace PEBakery.Core.Commands
                             Debug.Assert(initPath != null, $"{nameof(initPath)} != null");
 
                             string selectedPath = initPath;
+
+                            // In headless mode, use the initial path as the selected path without showing a dialog
+                            if (Global.HeadlessMode)
+                            {
+                                logs.Add(new LogInfo(LogState.Info, $"[Headless] UserInput auto-selected default path: [{initPath}]", cmd));
+                                List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
+                                logs.AddRange(varLogs);
+                                break;
+                            }
+
                             const string fallbackFilter = "All Files|*.*";
                             string filter = fallbackFilter;
 
