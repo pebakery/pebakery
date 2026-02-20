@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -142,7 +142,7 @@ namespace PEBakery.Core
                 {
                     if (lastIdx == i)
                         continue;
-                        
+
                     CodeCommand cmd = block[i];
 
                     HashSet<string> inVars = cmd.Info.InVars();

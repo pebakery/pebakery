@@ -1,0 +1,136 @@
+[Main]
+Title=DeepInspect
+Author=ied206
+Description=Test Script for Unit Test of ScriptSection Class
+Credits=ied206
+Level=3
+
+[Interface]
+TextLabel1="Test Script for Unit Test of ScriptSection Class",1,1,13,14,146,18,8,Bold
+
+[HiddenInterface01]
+Image02=noun_1042976_cc.svg,1,5,9,208,88,88
+TextFile01=noun_1042976_cc01.svg,1,6,109,198,200,111
+Button01=Button01,1,8,341,218,128,25,TestSection,0,False
+FileBox01=D:\WinPE_dev\,1,13,19,324,200,20,dir
+Bevel01=Bevel01,1,12,20,103,160,60
+
+[Process]
+Echo,"Test Script for Unit Test of ScriptSection Class"
+Run,%ScriptFile%,KnownCodeSection01
+
+[KnownCodeSection01]
+Echo,"Hello PEBakery!"
+// Require_FileQ: Copy System32 file + mui file
+Require_FileQ,CTFMON.EXE
+Require_FileQ,MSUTB.DLL
+Require_FileQ,MsCtfMonitor.DLL
+Require,File,Regsvr32.exe
+
+[OrphanCodeSection01]
+Echo,"Copying IME Files"
+If,%BuildClass%,Equal,2,Begin
+If,Not,ExistFile,%Target_Sys%\KBDKOR.DLL,FileCopy,%Source_Sys%\KBDKOR.DLL,%Target_Sys%\KBDKOR.DLL
+If,Not,ExistFile,%Target_Sys%\KBDUS.DLL,FileCopy,%Source_Sys%\KBDUS.DLL,%Target_Sys%\KBDUS.DLL
+If,Not,ExistFile,%TargetDir%\Windows\System32\C_949.NLS,FileCopy,%BootSRC%\Windows\System32\C_949.NLS,%TargetDir%\Windows\System32
+If,Not,ExistFile,%TargetDir%\Windows\System32\C_10003.NLS,FileCopy,%BootSRC%\Windows\System32\C_10003.NLS,%TargetDir%\Windows\System32
+End
+If,%BuildClass%,Equal,3,Begin
+If,Not,ExistFile,%Target_Sys%\KBDKOR.DLL,TXTAddLine,%FList%,"\Windows\System32\KBDKOR.DLL",Append
+If,Not,ExistFile,%Target_Sys%\KBDUS.DLL,TXTAddLine,%FList%,"\Windows\System32\KBDUS.DLL",Append
+If,Not,ExistFile,%TargetDir%\Windows\System32\C_949.NLS,TXTAddLine,%FListB%,"\Windows\System32\C_949.NLS",Append
+If,Not,ExistFile,%TargetDir%\Windows\System32\C_10003.NLS,TXTAddLine,%FListB%,"\Windows\System32\C_10003.NLS",Append
+End
+//-
+If,Not,ExistDir,%Target_Win%\IME\%ImeKoreanFolder%\DICTS,DirMake,%Target_Win%\IME\%ImeKoreanFolder%\DICTS
+If,Not,ExistDir,%Target_Sys%\IME\%ImeKoreanFolder%\DICTS,DirMake,%Target_Sys%\IME\%ImeKoreanFolder%\DICTS
+If,Not,ExistDir,%Target_Sys%\IME\SHARED,DirMake,%Target_Sys%\IME\SHARED
+//-
+// Require_FileQ: Copy System32 file + mui file
+Require_FileQ,CTFMON.EXE
+Require_FileQ,MSUTB.DLL
+Require_FileQ,MsCtfMonitor.DLL
+Require,File,Regsvr32.exe
+If,%BuildClass%,Equal,2,Begin
+FileCopy,%Source_Sys%\MSCTFIME.IME,%Target_Sys%\MSCTFIME.IME
+FileCopy,%Source_Win%\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.LEX,%Target_Win%\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.LEX
+FileCopy,%Source_Sys%\IME\%ImeKoreanFolder%\IMKRAPI.DLL,%Target_Sys%\IME\%ImeKoreanFolder%\IMKRAPI.DLL
+FileCopy,%Source_Sys%\IME\%ImeKoreanFolder%\IMKRTIP.DLL,%Target_Sys%\IME\%ImeKoreanFolder%\IMKRTIP.DLL
+FileCopy,%Source_Sys%\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.DLL,%Target_Sys%\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.DLL
+FileCopy,%Source_Sys%\IME\SHARED\IMEAPIS.DLL,%Target_Sys%\IME\SHARED\IMEAPIS.DLL
+FileCopy,%Source_Sys%\IME\SHARED\IMETIP.DLL,%Target_Sys%\IME\SHARED\IMETIP.DLL
+FileCopy,%Source_Sys%\IME\SHARED\IMJKAPI.DLL,%Target_Sys%\IME\SHARED\IMJKAPI.DLL
+FileCopy,%Source_Sys%\IME\SHARED\MSCAND20.DLL,%Target_Sys%\IME\SHARED\MSCAND20.DLL
+End
+If,%BuildClass%,Equal,3,Begin
+TXTAddLine,%FList%,"\Windows\System32\MSCTFIME.IME",Append
+TXTAddLine,%FList%,"\Windows\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.LEX",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\%ImeKoreanFolder%\IMKRAPI.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\%ImeKoreanFolder%\IMKRTIP.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\%ImeKoreanFolder%\DICTS\IMKRHJD.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\SHARED\IMEAPIS.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\SHARED\IMETIP.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\SHARED\IMJKAPI.DLL",Append
+TXTAddLine,%FList%,"\Windows\System32\IME\SHARED\MSCAND20.DLL",Append
+End
+//-
+// Additional dependency for Windows 10
+Run,%ScriptFile%,Process-System32-Win10-v1607
+Run,%ScriptFile%,Process-System32-Win10-v1703
+Run,%ScriptFile%,Process-System32-Win10-v1709
+
+[Variables01]
+# Looks_Like_Interface_Control_But_Not_an_Actual_Interface
+%MDV1%=MD_Description1="",1,1,5,148,125,18,8,Normal
+%MDV2%=MD_Path1="",1,1,115,148,120,18,8,Normal
+%MDV3%=MD_Weight1="",1,1,250,148,40,18,8,Normal
+%MDV4%=MD_Parent1="",1,1,285,148,100,18,8,Normal
+%MDV5%=MD_Return1="",1,1,390,148,100,18,8,Normal
+%MDV6%=MD_Delete1=Delete,1,8,495,146,40,18,DeleteMenu,0,True
+%MDV7%=MD_Edit1=Edit,1,8,540,146,40,18,EditMenu,0,True
+
+[Variables02]
+; Looks_Like_Part_of_Interface_Control_But_Not_an_Actual_Interface
+%MEV0%=0,0,1,558,138,18,18,8,Normal
+%MEV1%=Description,1,0,5,59,100,21,
+%MEV2%=Path,1,0,5,100,100,21,
+%MEV3%=VesaLabel,1,0,115,59,110,21,
+%MEV4%=TextDescription,1,0,115,100,170,21,
+%MEV5%=NBox1,1,2,235,59,50,22,
+%MEV6%=Choice,1,4,310,59,105,21,Options
+%MEV7%=Choice,1,4,425,59,105,21,Options
+%MEV8%=Choice,1,4,310,100,105,21,Options
+%MEV9%=Choice,1,4,425,100,105,21,Options
+
+[Variables03]
+%ProvideFiles%=%GlobalTemplates%\Korean_IME_Fonts
+%FList%=%ProjectTemp%\Korean_IME_FileList.txt
+%FListB%=%ProjectTemp%\Korean_IME_FileListB.txt
+
+[IniSection01]
+Title=IME Support
+Description=Input Method Editor (IME) Support and Language Bar settings.
+Author=Homes32
+Level=4
+Selected=False
+Mandatory=False
+Version=2.0.2.1
+Date=2022-05-30
+
+[Commentary01]
+// ===============================================================================================================================
+// Starting from v19H1, Windows IME depends on `Windows.UI.Core.TextInput` WinRT API.
+// WinRT API is used to draw popup window of IME, and breaks several IME features.
+// - Korean IME: Basic hangul typing works. Hanja conversion, special character input is broken.
+// - Japanese IME: Kana typing crashes ctfmon.
+// ===============================================================================================================================
+
+[Commentary02]
+// Retrieve,FILEVERSION with hal.dll returns 6.2.10240.16384 in Win10PESE, not 10.0.10240 -> Use Call,TargetVersion
+// Call,TargetVersion,,4x
+Vista (6.0) : Not supported
+7     (6.1) : IMEKR8
+8     (6.2) : IMEKR
+8.1   (6.3) : IMEKR
+10   (10.0) : IMEKR
+

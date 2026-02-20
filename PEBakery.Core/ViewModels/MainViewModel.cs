@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -207,6 +207,8 @@ namespace PEBakery.Core.ViewModels
             OnPropertyUpdate(nameof(MainIconGridWidth));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
+            OnPropertyUpdate(nameof(MainIssueAlarmBadgeDiameter));
+            OnPropertyUpdate(nameof(MainIssueAlarmBadgeMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
@@ -218,6 +220,8 @@ namespace PEBakery.Core.ViewModels
         public int MainIconGridWidth => GetAdaptiveSize(54, 44);
         public int MainIconButtonSize => GetAdaptiveSize(48, 36);
         public int MainIconButtonMargin => GetAdaptiveSize(6, 4);
+        public int MainIssueAlarmBadgeDiameter => GetAdaptiveSize(10, 7);
+        public Thickness MainIssueAlarmBadgeMargin => GetAdaptiveSize(new Thickness(0, 2.2, 4, 0), new Thickness(0, 1.5, 5, 0));
         #endregion
 
         #region Color Theme
@@ -235,11 +239,18 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private Color _topPanelReportIssueColor = Colors.OrangeRed;
-        public Color TopPanelReportIssueColor
+        private Color _topPanelLogAlarmButtonColor = Colors.OrangeRed;
+        public Color TopPanelIssueAlarmButtonColor
         {
-            get => _topPanelReportIssueColor;
-            set => SetProperty(ref _topPanelReportIssueColor, value);
+            get => _topPanelLogAlarmButtonColor;
+            set => SetProperty(ref _topPanelLogAlarmButtonColor, value);
+        }
+
+        private Color _topPanelLogAlarmBadgeColor = Colors.OrangeRed;
+        public Color TopPanelIssueAlarmBadgeColor
+        {
+            get => _topPanelLogAlarmBadgeColor;
+            set => SetProperty(ref _topPanelLogAlarmBadgeColor, value);
         }
 
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
@@ -339,10 +350,33 @@ namespace PEBakery.Core.ViewModels
         }
 
         private bool _buildEndedWithIssue = false;
+        /// <summary>
+        /// Build log created error, change the color of LogViewer button.
+        /// </summary>
         public bool BuildEndedWithIssue
         {
             get => _buildEndedWithIssue;
             set => SetProperty(ref _buildEndedWithIssue, value);
+        }
+
+        private bool _systemLogHasIssue = false;
+        /// <summary>
+        /// System log has an error, display red badge over the LogViewer button.
+        /// </summary>
+        public bool SystemLogHasIssue
+        {
+            get => _systemLogHasIssue;
+            set => SetProperty(ref _systemLogHasIssue, value);
+        }
+
+        private bool _enableSystemIssueAlarmBadge = false;
+        /// <summary>
+        /// Enable system issue alarm badge.
+        /// </summary>
+        public bool EnableSystemIssueAlarmBadge
+        {
+            get => _enableSystemIssueAlarmBadge;
+            set => SetProperty(ref _enableSystemIssueAlarmBadge, value);
         }
 
         #region ScriptLogo
@@ -1398,22 +1432,21 @@ namespace PEBakery.Core.ViewModels
                         // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
                         Application.Current?.Dispatcher?.Invoke(() =>
                         {
-                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
+                            using MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _);
+
+                            switch (type)
                             {
-                                switch (type)
-                                {
-                                    case ImageHelper.ImageFormat.Svg:
-                                        DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                                        Rect svgSize = svgDrawing.Bounds;
-                                        ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                                        (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
-                                        break;
-                                    default:
-                                        BitmapImage bitmap;
-                                        ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
-                                        (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
-                                        break;
-                                }
+                                case ImageHelper.ImageFormat.Svg:
+                                    DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                    Rect svgSize = svgDrawing.Bounds;
+                                    ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                    (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
+                                    break;
+                                default:
+                                    BitmapImage bitmap;
+                                    ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
+                                    (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
+                                    break;
                             }
                         });
 
@@ -1566,8 +1599,7 @@ namespace PEBakery.Core.ViewModels
             Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
 
             // Populate MainScript
-            if (projectRoot == null)
-                projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
+            projectRoot ??= PopulateOneTreeItem(project.MainScript, null, null);
 
             foreach (Script sc in scList.Where(x => x.Type != ScriptType.Directory))
             {
@@ -1796,6 +1828,37 @@ namespace PEBakery.Core.ViewModels
                     FileName = filePath,
                 };
                 proc.Start();
+            }
+        }
+        #endregion
+
+        #region Handle SystemLogUpdateEvent (for SystemLogHasIssue)
+        public void SubscribeSystemLogUpdateEvent()
+        {
+            Global.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
+        }
+
+        public void ClearSystemLogUpdateEvent()
+        {
+            Global.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+        }
+
+        public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
+        {
+            if (e.Log is LogModel.SystemLog systemLog)
+            {
+                switch (systemLog.State)
+                {
+                    case LogState.Error:
+                    case LogState.CriticalError:
+                        SystemLogHasIssue = true;
+                        break;
+                }
+            }
+            else if (e.Logs is LogModel.SystemLog[] systemLogs)
+            {
+                if (systemLogs.Any(x => x.State == LogState.Error || x.State == LogState.CriticalError))
+                    SystemLogHasIssue = true;
             }
         }
         #endregion

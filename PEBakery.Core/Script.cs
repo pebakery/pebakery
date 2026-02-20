@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -47,8 +47,8 @@ namespace PEBakery.Core
     #endregion
 
     #region Script
-    [MessagePackObject]
-    public class Script : IEquatable<Script>
+    [MessagePackObject(AllowPrivate = true)]
+    public partial class Script : IEquatable<Script>
     {
         #region Const
         public static class Const

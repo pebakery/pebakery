@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -70,6 +70,9 @@ namespace PEBakery.WPF
             // Init global properties
             Global.Init();
             CommandManager.InvalidateRequerySuggested();
+
+            // Setup SystemLogHasIssue event handler
+            Model.SubscribeSystemLogUpdateEvent();
 
             // Load Projects
             Model.StartLoadingProjects(false, false);
@@ -260,6 +263,9 @@ namespace PEBakery.WPF
             // If last build ended with issue, show build log instead of system log
             int selectedTabIndex = Global.MainViewModel.BuildEndedWithIssue ? 1 : 0;
             Global.MainViewModel.BuildEndedWithIssue = false;
+            
+            // Clear the flag that denotes the system log has an error.
+            Global.MainViewModel.SystemLogHasIssue = false;
 
             LogDialog = new LogWindow(selectedTabIndex) { Owner = this };
             LogDialog.Show();
@@ -368,9 +374,10 @@ namespace PEBakery.WPF
                     Model.SwitchNormalBuildInterface = false;
 
                     TimeSpan t;
+                    Task printStatus;
                     using (CancellationTokenSource ct = new CancellationTokenSource())
                     {
-                        Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
+                        printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
                         // Run
                         int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
@@ -388,10 +395,15 @@ namespace PEBakery.WPF
                         t = s.Elapsed;
 
                         ct.Cancel();
-                        await printStatus;
                     }
 
-                    Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
+                    // Report elapsed time
+                    await printStatus;
+                    string? haltReason = s.RunResultReport();
+                    if (haltReason != null)
+                        Model.StatusBarText = $"{sc.Title} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {haltReason}";
+                    else
+                        Model.StatusBarText = $"{sc.Title} processed in {s.Elapsed:h\\:mm\\:ss}";
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
@@ -998,6 +1010,10 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine != null)
                 await Engine.WorkingEngine.ForceStopWait(false);
 
+            // Clear SystemLogHasIssue event handler
+            Model.ClearSystemLogUpdateEvent();
+
+            // Close all sub-windows.
             if (LogDialog != null && LogWindow.IsRunning())
             {
                 LogDialog.Close();
@@ -1030,7 +1046,7 @@ namespace PEBakery.WPF
             WriteLayoutToSetting();
         }
 
-            private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (sender is not ListBox listBox)
                 return;
@@ -1090,7 +1106,7 @@ namespace PEBakery.WPF
                 double taskbarHeight = System.Windows.SystemParameters.VirtualScreenHeight - System.Windows.SystemParameters.WorkArea.Height;
                 Global.MainViewModel.WindowTop = (int)(System.Windows.SystemParameters.VirtualScreenHeight - taskbarHeight) - Global.MainViewModel.WindowHeight;
             }
-                        
+
             if (Global.MainViewModel.WindowLeft + Global.MainViewModel.WindowWidth / 2 > System.Windows.SystemParameters.VirtualScreenWidth)
             {
                 double taskbarWidth = System.Windows.SystemParameters.VirtualScreenWidth - System.Windows.SystemParameters.WorkArea.Width;

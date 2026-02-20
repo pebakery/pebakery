@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2019-2022 Hajin Jang
+    Copyright (C) 2019-present Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -29,6 +29,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+
+// Forward declaration for headless mode check
+// PEBakery.Helper does not reference PEBakery.Core, so we use a delegate pattern
 
 namespace PEBakery.Helper
 {
@@ -87,12 +90,14 @@ namespace PEBakery.Helper
                 throw new PlatformNotSupportedException();
             }
         }
+        #endregion
 
+        #region Memory-related Functions
         /// <summary>
         /// Query how much system memory is available 
         /// </summary>
-        /// <param name="maxReqMem">Max limit of requested memory which program is going to use</param>
-        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use</param>
+        /// <param name="maxReqMem">Max limit of requested memory which program is going to use. Use <see cref="ulong.MaxValue"/> to ignore it.</param>
+        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use.</param>
         /// <returns></returns>
         public static ulong AvailableSystemMemory(ulong maxReqMem, double usableSysMemPercent)
         {
@@ -168,10 +173,28 @@ namespace PEBakery.Helper
             // Every try failed, fail-safe to 1 threads
             return 1;
         }
+
+        public static int GetProcArchBitness()
+        {
+            return RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X86 or Architecture.Arm => 4,
+                Architecture.X64 or Architecture.Arm64 => 8,
+                _ => IntPtr.Size,
+            };
+        }
         #endregion
 
         #region WOW64 Redirection
 
+        #endregion
+
+        #region Headless Mode Support
+        /// <summary>
+        /// When set to true, MessageBoxDispatcherShow will log to console instead of showing a dialog.
+        /// Set this from the application layer before any MessageBox calls.
+        /// </summary>
+        public static bool HeadlessMode { get; set; } = false;
         #endregion
 
         #region Auto WPF MessageBox with Owner Window
@@ -192,6 +215,19 @@ namespace PEBakery.Helper
 
         public static MessageBoxResult MessageBoxDispatcherShow(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
         {
+            // In headless mode, log to console and return OK instead of showing a dialog
+            if (HeadlessMode)
+            {
+                string level = icon switch
+                {
+                    MessageBoxImage.Error => "ERROR",
+                    MessageBoxImage.Warning => "WARN",
+                    _ => "INFO",
+                };
+                Console.WriteLine($"[{level}] [{caption}] {messageBoxText}");
+                return MessageBoxResult.OK;
+            }
+
             MessageBoxResult result = MessageBoxResult.None;
             if (Application.Current?.Dispatcher != null)
             {
@@ -207,6 +243,8 @@ namespace PEBakery.Helper
             }
             else
             {
+                // No dispatcher available and not headless - try showing directly
+                // This may fail on systems without a display
                 result = MessageBox.Show(messageBoxText, caption, button, icon);
             }
             return result;

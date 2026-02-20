@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2022 Hajin Jang
+	Copyright (C) 2016-present Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -159,4 +159,42 @@ const wchar_t* SysArch::toStr(ArchVal arch)
 	}
 
 	return str;
+}
+
+// List of architectures which can be run on host Windows.
+// More compatible archwa will come after the less compatible ones.
+std::vector<ArchVal> SysArch::getWowCompatibleArch(ArchVal hostArch)
+{
+	std::vector<ArchVal> compatArches;
+
+	compatArches.push_back(hostArch);
+
+	switch (hostArch)
+	{
+	case ArchVal::X86:
+		break;
+	case ArchVal::X64:
+		compatArches.push_back(ArchVal::X86);
+		break;
+	case ArchVal::ARM:
+		break;
+	case ArchVal::ARM64:
+		if (Helper::isWindows11orLater())
+			compatArches.push_back(ArchVal::X64);
+		compatArches.push_back(ArchVal::X86);
+		break;
+	}
+
+	return compatArches;
+}
+
+bool SysArch::isWoWCompatibleArch(ArchVal hostArch, ArchVal procArch)
+{
+	std::vector<ArchVal> arches = getWowCompatibleArch(hostArch);
+	for (ArchVal& arch : arches)
+	{
+		if (arch == procArch)
+			return true;
+	}
+	return false;
 }

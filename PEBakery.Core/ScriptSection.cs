@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2018-2022 Hajin Jang
+    Copyright (C) 2018-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -98,8 +98,8 @@ namespace PEBakery.Core
     #endregion
 
     #region ScriptSection
-    [MessagePackObject]
-    public class ScriptSection : IEquatable<ScriptSection>
+    [MessagePackObject(AllowPrivate = true)]
+    public partial class ScriptSection : IEquatable<ScriptSection>
     {
         #region (Const) Known Section Names
         public static class Names
@@ -445,7 +445,7 @@ namespace PEBakery.Core
             foreach (string line in Lines.Where(x => 0 < x.Length))
             {
                 // Exclude comment lines
-                if (Regex.IsMatch(line, "^(//|#|;).*$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (IniReadWriter.IsLineComment(line))
                     continue;
 
                 totalLineCount += 1;
@@ -455,7 +455,7 @@ namespace PEBakery.Core
                     codeMatchCount += 1;
 
                 // Is this line an interface Control?
-                if (Regex.IsMatch(line, "^([^=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (Regex.IsMatch(line, "^([^%=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
                     ifaceMatchCount += 1;
 
                 // Is this line a var-style line?
@@ -469,14 +469,14 @@ namespace PEBakery.Core
 
             // If more than {threshold}% of sections lines are analyzed as a single type, 
             // Convert the type of this section to a inferred section type.
-            const double threshold = 0.7;
-            
+            const double threshold = 0.75;
+
             // Infer the type of this section, using the line count data.
             // Keep the order, as SimpleIni detection are mostly prone to false-positive error.
             SectionType newType;
             if (totalLineCount == 0)
                 newType = SectionType.Commentary;
-            else if (totalLineCount * threshold <= codeMatchCount) 
+            else if (totalLineCount * threshold <= codeMatchCount)
                 newType = SectionType.Code;
             else if (totalLineCount * threshold <= ifaceMatchCount)
                 newType = SectionType.Interface;

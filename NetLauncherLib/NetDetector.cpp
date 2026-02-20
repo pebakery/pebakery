@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2021 Hajin Jang
+	Copyright (C) 2016-present Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -29,6 +29,7 @@
 // Windows SDK Headers
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shlwapi.h>
 
 // C++ Runtime Headers
 #include <string>
@@ -36,6 +37,9 @@
 #include <vector>
 #include <map>
 #include <regex>
+#ifdef CLI_LIST_TRACE
+#include <iostream>
+#endif
 
 // C Runtime Headers
 #include <cstdint>
@@ -46,6 +50,10 @@
 #include "NetDetector.h"
 #include "SysArch.h"
 #include "Helper.h"
+
+constexpr auto MAX_REG_KEY_LENGTH = 255;
+constexpr auto REG_VALUENAME_BUF_LENGTH = 2048;
+constexpr size_t MAX_PATH_LONG = 32768;
 
 NetFxDetector::NetFxDetector(NetVersion& targetVer) :
 	NetDetector(targetVer)
@@ -162,6 +170,9 @@ DWORD NetFxDetector::getReleaseMinValue()
 		case 0:
 			minValue = 528040;
 			break;
+		case 1:
+			minValue = 533320;
+			break;
 		}
 		break;
 	}
@@ -189,17 +200,17 @@ const std::wstring NetFxDetector::getInstallerUrl()
 NetCoreDetector::NetCoreDetector(NetVersion& targetVer, bool checkDesktopRuntime) :
 	NetDetector(targetVer), _checkDesktopRuntime(checkDesktopRuntime)
 {
-	// NetCoreDetector supports .NET Core 2.1+
+	// NetCoreDetector supports .NET 5+
 	// Desktop runtime have been provided since .NET Core 3.0.
 	if (checkDesktopRuntime)
 	{
-		if (_targetVer < NetVersion(3, 0))
-			NetLaunch::printError(L"The launcher is able to detect .NET Core Desktop Runtime 3.0 or later.", true);
+		if (_targetVer < NetVersion(5, 0))
+			NetLaunch::printError(L"The launcher is able to detect .NET Desktop Runtime 5.0 or later.", true);
 	}
 	else
 	{
-		if (_targetVer < NetVersion(2, 1))
-			NetLaunch::printError(L"The launcher is able to detect .NET Core Runtime 2.1 or later.", true);
+		if (_targetVer < NetVersion(5, 0))
+			NetLaunch::printError(L"The launcher is able to detect .NET Runtime 5.0 or later.", true);
 	}
 }
 
@@ -210,34 +221,13 @@ NetCoreDetector::~NetCoreDetector()
 
 bool NetCoreDetector::isInstalled()
 {
-	// Stage 1) Check registry to make sure a runtime of proper architecture is installed.
-	// Check if the subkey HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\{Arch} exists.
-	// Note) .NET Core SDK creates HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch}:InstallLocation on registry, but runtime does not.
-	// Value example) 5.0.5 / 6.0.0-preview.3.21201.4
-
-	const wchar_t* arch = SysArch::toStr(SysArch::getCpuArch());
-	std::wstring subKeyPath = std::wstring(L"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\") + arch;
-
-	// Check if HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch} exists by opening it.
-	{
-		HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
-		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subKeyPath.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
-			return false;
-		RegCloseKey(hKey);
-	}
-	
-	// Stage 2) Inspect stdout of `dotnet list-runtimes` command.
-
-	// Read list of runtimes from `dotnet` command.
-	std::map<std::string, std::vector<NetVersion>> rtMap = listRuntimes();
-	
 	// Check `Microsoft.NETCore.App` and `Microsoft.WindowsDesktop.App`.
-	auto checkVer = [rtMap](const std::string& key, NetVersion& targetVer) -> bool
+	auto checkVer = [](const std::map<std::wstring, std::vector<NetVersion>>& rtMap, const std::wstring& key, NetVersion& targetVer) -> bool
 	{
 		auto nit = rtMap.find(key);
 		if (nit == rtMap.cend())
 			return false;
-		
+
 		bool success = false;
 		std::vector<NetVersion> versions = nit->second;
 		for (NetVersion& v : versions)
@@ -250,12 +240,23 @@ bool NetCoreDetector::isInstalled()
 		}
 		return success;
 	};
-	
+
+	// https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
+	// The doc posted at 2023-12-31 claims to use `dotnet --list-runtimes` CLI.
+	// However, architecture check is necessary in this launcher...
+
+	// Check registry to make sure a runtime of the proper architecture is installed. 
+	// Value example) 5.0.5 / 6.0.0-preview.3.21201.4
+	std::wstring installLoc;
+	std::map<std::wstring, std::vector<NetVersion>> regRtMap;
+	if (regListRuntimes(installLoc, regRtMap) == false || installLoc.size() == 0)
+		return false;
+
 	bool installed = true;
-	installed &= checkVer("Microsoft.NETCore.App", _targetVer);
+	installed &= checkVer(regRtMap, NET_CORE_ID, _targetVer);
 	if (_checkDesktopRuntime)
-		installed &= checkVer("Microsoft.WindowsDesktop.App", _targetVer);
-	return installed;
+		installed &= checkVer(regRtMap, WINDOWS_DESKTOP_RUNTIME_ID, _targetVer);
+	return installed;	
 }
 
 void NetCoreDetector::downloadRuntime(bool exitAfter)
@@ -270,7 +271,9 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 		woss << L"Desktop ";
 	woss << L"Runtime ";
 	woss << _targetVer.toStr(false);
-	woss << L".";
+	woss << L" (";
+	woss << SysArch::toStr(SysArch::getCpuArch());
+	woss << L").";
 	std::wstring errMsg = woss.str();
 
 	woss.clear();
@@ -280,13 +283,211 @@ void NetCoreDetector::downloadRuntime(bool exitAfter)
 	woss << _targetVer.toStr(false);
 	if (_checkDesktopRuntime)
 		woss << L" Desktop";
-	woss << L" Runtime";
+	woss << L" Runtime (";
+	woss << SysArch::toStr(SysArch::getCpuArch());
+	woss << L")";
 	std::wstring errCap = woss.str();
 
 	NetLaunch::printErrorAndOpenUrl(errMsg, errCap, url, exitAfter);
 }
 
-std::map<std::string, std::vector<NetVersion>> NetCoreDetector::listRuntimes()
+bool NetCoreDetector::regListRuntimes(std::wstring& outInstallLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap)
+{
+	// Stage 1) Check registry to make sure a runtime of proper architecture is installed.
+	// Check if the subkey HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\{Arch} exists.
+	// 
+	// Note) In .NET Core 3.1, the SDK KLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{Arch}:InstallLocation on registry, but runtime does not.
+	//       In .NET 6, the SDK and runtime both creates registry entries.
+	// Value example) 5.0.5 / 6.0.0-preview.3.21201.4
+
+	/*
+	[HKEY_LOCAL_MACHINE\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost]
+	"Version"="7.0.3"
+	"Path"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64]
+	"InstallLocation"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\hostfxr]
+	"Version"="7.0.3"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sdk]
+	"7.0.103"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App]
+	"3.1.32"=dword:00000001
+	"6.0.14"=dword:00000001
+	"7.0.3"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
+	"6.0.14"=dword:00000001
+	"7.0.3"=dword:00000001
+	*/
+
+	/* Starting from 2024, Azure Pipelines dotnet install task does not properly register .NET 6 SDK into the registry hive.
+	
+	[HKEY_LOCAL_MACHINE\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost]
+	"Version"="8.0.0"
+	"Path"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64]
+	"InstallLocation"="C:\\Program Files\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sdk]
+	"8.0.100"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86]
+	"InstallLocation"="C:\\Program Files (x86)\\dotnet\\"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\hostfxr]
+	"Version"="8.0.0"
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx]
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.NETCore.App]
+	"6.0.25"=dword:00000001
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.WindowsDesktop.App]
+	"8.0.0"=dword:00000001
+
+	[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x86\sharedhost]
+	"Version"="8.0.0"
+	*/
+
+	const std::wstring nativeKeyRoot = L"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\";
+	const std::wstring wowKeyRoot = L"SOFTWARE\\WOW6432Node\\dotnet\\Setup\\InstalledVersions\\";
+	const wchar_t* arch = SysArch::toStr(SysArch::getCpuArch());
+
+	auto hKeyDeleter = [](HKEY hKey)
+	{
+		if (hKey != INVALID_HANDLE_VALUE && hKey != NULL)
+			RegCloseKey(hKey);
+	};
+
+	bool success = false;
+
+	// Try reading native reg subkey first, then WOW6432Node subkey.
+	std::vector<std::wstring> subKeyRoots;
+	subKeyRoots.push_back(std::wstring(nativeKeyRoot) + arch);
+	subKeyRoots.push_back(std::wstring(wowKeyRoot) + arch);
+	for (std::wstring& subKeyRoot : subKeyRoots)
+	{
+		// [Stage 1] Check SOFTWARE{\WOW6432Node\}dotnet\Setup\InstalledVersions\{Arch}:InstallLocation value
+		{
+			// Open and setup smart pointer for HKEY handle.
+			HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
+			if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subKeyRoot.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
+				continue;
+			std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(hKeyDeleter)> hKeyPtr(hKey, hKeyDeleter);
+
+			// Read `InstallLocation` value
+			auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
+			std::unique_ptr<wchar_t[], decltype(wstrDeleter)> installLocPtr(new wchar_t[MAX_PATH_LONG], wstrDeleter);
+			wchar_t* installLocBuf = installLocPtr.get();
+			if (installLocBuf == nullptr)
+				continue;
+			installLocBuf[0] = '\0';
+
+			DWORD valueSize = MAX_PATH_LONG;
+			if (RegQueryValueExW(hKeyPtr.get(), L"InstallLocation", NULL, NULL, reinterpret_cast<LPBYTE>(installLocBuf), &valueSize) != ERROR_SUCCESS)
+				continue;
+
+			outInstallLoc = installLocBuf;
+		}
+
+		// [Stage 2] Search for subkeys of SOFTWARE\{WOW6432Node\}dotnet\Setup\InstalledVersions\{Arch}\sharedfx
+		// e.g. Microsoft.NETCore.App, Microsoft.WindowsDesktop.App
+		std::vector<std::wstring> fxIds;
+		{
+			std::wstring subKeyPath = subKeyRoot + L"\\sharedfx";
+
+			// Open and setup smart pointer for HKEY handle
+			HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
+			if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subKeyPath.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
+				continue;
+			std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(hKeyDeleter)> hKeyPtr(hKey, hKeyDeleter);
+
+			// Enumerate subkey - search for Microsoft.NETCore.App, Microsoft.WindowsDesktop.App
+			LSTATUS retCode = ERROR_SUCCESS;
+			for (DWORD rIdx = 0; retCode == ERROR_SUCCESS; rIdx++)
+			{
+				wchar_t keyNameBuf[MAX_REG_KEY_LENGTH] = { 0, };
+				DWORD keyNameLen = MAX_REG_KEY_LENGTH;
+
+				retCode = RegEnumKeyExW(hKeyPtr.get(), rIdx, keyNameBuf, &keyNameLen, NULL, NULL, NULL, NULL);
+				if (retCode != ERROR_SUCCESS)
+					break;
+
+				fxIds.push_back(keyNameBuf);
+			}
+		}
+
+		// [Stage 3] Retrieve installed versions from SOFTWARE\{WOW6432Node\}dotnet\Setup\InstalledVersions\{Arch}\sharedfx\{fxId}
+		// Ex: 3.1.13, 6.0.14
+		for (std::wstring fxId : fxIds)
+		{
+			std::wstring subKeyPath = subKeyRoot + L"\\sharedfx\\" + fxId;
+
+			// Open and setup smart pointer for HKEY handle
+			HKEY hKey = static_cast<HKEY>(INVALID_HANDLE_VALUE);
+			if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subKeyPath.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
+				continue;
+			std::unique_ptr<std::remove_pointer<HKEY>::type, decltype(hKeyDeleter)> hKeyPtr(hKey, hKeyDeleter);
+
+			// Enumerate valuenames in subkey
+			LSTATUS retCode = ERROR_SUCCESS;
+			for (DWORD rIdx = 0; retCode == ERROR_SUCCESS; rIdx++)
+			{
+				wchar_t valueNameBuf[REG_VALUENAME_BUF_LENGTH] = { 0, };
+				DWORD valueNameLen = REG_VALUENAME_BUF_LENGTH;
+
+				retCode = RegEnumValueW(hKeyPtr.get(), rIdx, valueNameBuf, &valueNameLen, NULL, NULL, NULL, NULL);
+				if (retCode != ERROR_SUCCESS)
+					break;
+
+				// Parse version
+				NetVersion ver;
+				if (NetVersion::parse(valueNameBuf, ver) == false)
+					continue;
+
+				auto it = outRtMap.find(fxId);
+				if (it == outRtMap.end())
+				{ // key is new 
+					std::vector<NetVersion> versions;
+					versions.push_back(ver);
+					outRtMap[fxId] = versions;
+				}
+				else
+				{
+					std::vector<NetVersion>& versions = it->second;
+					versions.push_back(ver);
+				}
+
+				// If one or more values are found, then the function has succeeded.
+				success = true;
+			}
+		}
+	}
+
+	return success;
+}
+
+bool NetCoreDetector::cliListRuntimes(std::wstring installLoc, std::map<std::wstring, std::vector<NetVersion>>& outRtMap)
 {
 	/*
 	> dotnet list-runtimes
@@ -296,63 +497,85 @@ std::map<std::string, std::vector<NetVersion>> NetCoreDetector::listRuntimes()
 	Microsoft.NETCore.App 6.0.0-preview.3.21201.4 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
 	Microsoft.WindowsDesktop.App 6.0.0-preview.3.21201.3 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
 	*/
-	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN
-	std::map<std::string, std::vector<NetVersion>> rtMap;
+	// https://docs.microsoft.com/ko-kr/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSD
+	std::wstring appName = installLoc + L"dotnet.exe";
+	std::wstring cmdLine = L"\"" + installLoc + L"dotnet.exe\" --list-runtimes";
 
-	WCHAR dotnet[32] = L"dotnet --list-runtimes"; // lpCommandLine must not be a const wchar_t.
+#ifdef CLI_LIST_TRACE
+	std::wcerr << L"appName(" << appName << L") cmdLine(" << cmdLine << L")" << std::endl;
+#endif
 
-	// Setup pipes
-	SECURITY_ATTRIBUTES saAttr;
-	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	saAttr.bInheritHandle = TRUE;
-	saAttr.lpSecurityDescriptor = NULL;
-	HANDLE hChildStdInRd = NULL;
-	HANDLE hChildStdInWr = NULL;
-	HANDLE hChildStdOutRd = NULL;
-	HANDLE hChildStdOutWr = NULL;
-	if (!CreatePipe(&hChildStdOutRd, &hChildStdOutWr, &saAttr, 0))
-		return rtMap;
-	if (!SetHandleInformation(hChildStdOutRd, HANDLE_FLAG_INHERIT, 0))
-		return rtMap;
-	if (!CreatePipe(&hChildStdInRd, &hChildStdInWr, &saAttr, 0))
-		return rtMap;
-	if (!SetHandleInformation(hChildStdInWr, HANDLE_FLAG_INHERIT, 0))
-		return rtMap;
-
-	PROCESS_INFORMATION pi;
-	STARTUPINFO si;
-	memset(&pi, 0, sizeof(PROCESS_INFORMATION));
-	memset(&si, 0, sizeof(STARTUPINFO));
-
-	si.cb = sizeof(STARTUPINFO);
-	si.hStdInput = hChildStdInRd;
-	si.hStdOutput = hChildStdOutWr;
-	si.hStdError = hChildStdOutWr;
-	si.dwFlags |= STARTF_USESTDHANDLES;
-
-	BOOL ret = CreateProcessW(NULL, dotnet, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
-
-	// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
-	if (ret == FALSE)
-		return rtMap;
-
-	// Close unnecessary handles to the child process and its primary thread
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
-	// Close unnecessary handles to the stdin and stdout pipe.
-	CloseHandle(hChildStdOutWr);
-	CloseHandle(hChildStdInRd);
-	CloseHandle(hChildStdInWr);
-
-	// Read from child stdout read pipe
 	std::string rtiStr;
 	{
+		// Setup pipes
+		SECURITY_ATTRIBUTES saAttr;
+		memset(&saAttr, 0, sizeof(SECURITY_ATTRIBUTES));
+		saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		saAttr.bInheritHandle = TRUE;
+		saAttr.lpSecurityDescriptor = NULL;
+
+		HANDLE hChildStdInRd = NULL;
+		HANDLE hChildStdInWr = NULL;
+		HANDLE hChildStdOutRd = NULL;
+		HANDLE hChildStdOutWr = NULL;
+		
+		if (!CreatePipe(&hChildStdOutRd, &hChildStdOutWr, &saAttr, 0))
+			return false;
+		if (!SetHandleInformation(hChildStdOutRd, HANDLE_FLAG_INHERIT, 0))
+			return false;
+		if (!CreatePipe(&hChildStdInRd, &hChildStdInWr, &saAttr, 0))
+			return false;
+		if (!SetHandleInformation(hChildStdInWr, HANDLE_FLAG_INHERIT, 0))
+			return false;
+
+		PROCESS_INFORMATION pi;
+		STARTUPINFO si;
+		memset(&pi, 0, sizeof(PROCESS_INFORMATION));
+		memset(&si, 0, sizeof(STARTUPINFO));
+
+		si.cb = sizeof(STARTUPINFO);
+		si.hStdInput = hChildStdInRd;
+		si.hStdOutput = hChildStdOutWr;
+		si.hStdError = hChildStdOutWr;
+		si.dwFlags |= STARTF_USESTDHANDLES;
+
+		BOOL ret = CreateProcessW(appName.c_str(), const_cast<LPWSTR>(cmdLine.c_str()), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+		// .NET Core Runtime or SDK is not installed, so dotnet.exe is not callable.
+		if (ret == FALSE)
+		{
+#ifdef CLI_LIST_TRACE
+			std::wcerr << L"CreateProcessW failed" << std::endl;
+#endif
+
+			CloseHandle(hChildStdOutRd);
+			CloseHandle(hChildStdOutWr);
+			CloseHandle(hChildStdInRd);
+			CloseHandle(hChildStdInWr);
+
+			return false;
+		}
+
+		// Close unnecessary handles to the child process and its primary thread
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+
+		// Close unnecessary handles to the stdin and stdout pipe.
+		CloseHandle(hChildStdOutWr);
+		CloseHandle(hChildStdInRd);
+		CloseHandle(hChildStdInWr);
+
+		// Read from child stdout read pipe
 		std::ostringstream oss;
 		readFromPipe(oss, hChildStdOutRd);
-		CloseHandle(hChildStdOutRd);
 		rtiStr = oss.str();
+
+		CloseHandle(hChildStdOutRd);
 	}
+
+#ifdef CLI_LIST_TRACE
+	std::cerr << "[stdout pipe]" << std::endl << rtiStr << std::endl;
+#endif
 
 	// Build rtMap
 	const char* rtiPtr = rtiStr.c_str();
@@ -367,13 +590,14 @@ std::map<std::string, std::vector<NetVersion>> NetCoreDetector::listRuntimes()
 		NetVersion ver;
 		if (parseRuntimeInfoLine(line, key, ver) == false)
 			continue;
+		std::wstring wkey = Helper::to_wstr(key);
 
-		auto it = rtMap.find(key);
-		if (it == rtMap.end())
-		{ // key is new 
+		auto it = outRtMap.find(wkey);
+		if (it == outRtMap.end())
+		{ // key is a new one.
 			std::vector<NetVersion> versions;
 			versions.push_back(ver);
-			rtMap[key] = versions;
+			outRtMap[wkey] = versions;
 		}
 		else
 		{
@@ -382,7 +606,28 @@ std::map<std::string, std::vector<NetVersion>> NetCoreDetector::listRuntimes()
 		}
 	}
 	
-	return rtMap;
+	return true;
+}
+
+bool NetCoreDetector::findDotnetLocationFromPath(std::wstring& outInstallLoc)
+{
+	constexpr size_t MAX_PATH_LONG = 32768;
+
+	auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
+	std::unique_ptr<wchar_t[], decltype(wstrDeleter)> pathPtr(new wchar_t[MAX_PATH_LONG], wstrDeleter);
+	wchar_t* buffer = pathPtr.get();
+
+	wchar_t* lpFilePart = nullptr;
+	DWORD pathLen = SearchPathW(nullptr, L"dotnet", L".exe", MAX_PATH_LONG, buffer, &lpFilePart);
+	if (pathLen == 0)
+		return false; // dotnet.exe is not searchable from the PATH
+
+	// trim "dotnet.exe" part and leave only directory (include trailing '\')
+	if (lpFilePart == nullptr || lpFilePart < buffer)
+		return false;
+	size_t exeDirLen = lpFilePart - buffer;
+	outInstallLoc.append(buffer, exeDirLen);
+	return true;
 }
 
 void NetCoreDetector::readFromPipe(std::ostringstream& destStream, HANDLE hSrcPipe)
@@ -409,7 +654,7 @@ bool NetCoreDetector::parseRuntimeInfoLine(const std::string& line, std::string&
 {
 	// Ex)
 	/*
-	> dotnet list-runtimes
+	> dotnet --list-runtimes
 	Microsoft.AspNetCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.AspNetCore.App 6.0.0-preview.3.21201.13 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 	Microsoft.NETCore.App 5.0.5 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
@@ -467,9 +712,13 @@ const std::wstring NetCoreDetector::getInstallerUrl()
 	// [Preview]
 	// Ex) .NET Runtime:      https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-6.0.0-preview.3-windows-x64-installer
 	// Ex) Desktop Runtime:   https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-6.0.0-preview.3-windows-arm64-installer
+
 	std::wstring verStr = _targetVer.toStr(false);
 	std::wostringstream woss;
-	woss << L"https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-";
+	if (5 <= _targetVer.getMajor())
+		woss << L"https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-";
+	else
+		woss << L"https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-";
 	if (_checkDesktopRuntime)
 		woss << L"desktop-";
 	woss << verStr;

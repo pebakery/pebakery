@@ -1,5 +1,5 @@
 ﻿/*
-	Copyright (C) 2016-2022 Hajin Jang
+	Copyright (C) 2016-present Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -44,10 +44,10 @@
 #include "NetVersion.h"
 #include "NetDetector.h"
 #include "PEParser.h"
-#include "BuildMode.h"
+#include "BuildVars.h"
 
 // Prototypes
-void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring& dllPath);
+bool GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring& dllPath);
 bool LaunchPEBakeryExe(const std::wstring& baseDir, const std::wstring& exePath, const wchar_t* cmdParams);
 bool LaunchPEBakeryDll(const std::wstring& baseDir, const std::wstring& dllPath, const wchar_t* cmdParams);
 
@@ -59,35 +59,40 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
+	// [Stage 01] Check .NET installation.
 #if BUILD_MODE == BUILD_NETFX
 	// Check if required version of .NET Framework is installed.
-	NetVersion fxVer = NetVersion(4, 7, 2);
+	NetVersion fxVer = NetVersion(NETFX_TARGET_VER_MAJOR, NETFX_TARGET_VER_MINOR, NETFX_TARGET_VER_PATCH);
 	NetFxDetector fxDetector = NetFxDetector(fxVer);
 	if (!fxDetector.isInstalled())
 		fxDetector.downloadRuntime(true);
 #elif BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
 	// Check if required version of .NET Core is installed.
 	// It is reported that .NET runtime somtetimes break minor-level forward compatibility.
-	NetVersion coreVer = NetVersion(6, 0, 12);
+	NetVersion coreVer = NetVersion(NETCORE_TARGET_VER_MAJOR, NETCORE_TARGET_VER_MINOR, NETCORE_TARGET_VER_PATCH);
 	NetCoreDetector coreDetector = NetCoreDetector(coreVer, true);
 	if (!coreDetector.isInstalled())
 		coreDetector.downloadRuntime(true);
 #endif
 
+	// [Stage 02] Check and run PEBakery.
 	// Get absolute path of PEBakery.exe.
 	std::wstring baseDir;
 	std::wstring pebExePath;
 	std::wstring pebDllPath;
-	GetPEBakeryPath(baseDir, pebExePath, pebDllPath);
+	if (GetPEBakeryPath(baseDir, pebExePath, pebDllPath) == false)
+		NetLaunch::printError(L"Failed to retrieve PEBakery path.", true);
 
-	// Run PEBakery
+	// Parse Argument linces
 	bool launched = false;
 	bool archMatch = true;
 	wchar_t* cmdParams = NetLaunch::getCmdParams(GetCommandLineW());
 
+	// [Stage 03] Check and run PEBakery binary.
 #if BUILD_MODE == BUILD_NETFX || BUILD_MODE == BUILD_NETCORE_SELF_CONTAINED
+	// Run if PEBakery.exe exists.
 	if (PathFileExistsW(pebExePath.c_str()))
-	{ // Run if PEBakery.exe exists.
+	{
 		// Do not check if PEBakery.exe matches the current processor architecture.
 		// Ex) x86 build is compatible with x64 and arm64 machine.
 		// Also, linking PEParser increases file size of the PEBakeryLauncher.exe.
@@ -95,16 +100,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 #elif BUILD_MODE == BUILD_NETCORE_RT_DEPENDENT
+	// Run if PEBakery.exe exists -> then try running PEBakery.dll
 	if (PathFileExistsW(pebExePath.c_str()))
-	{ // Run if PEBakery.exe exists -> then try running PEBakery.dll
+	{
 		// Parse a header of the PEBakery.exe.
-		PEParser parser = PEParser();
+		PEParser parser;
 		if (parser.parseFile(pebExePath.c_str()) == false)
 			NetLaunch::printError(L"PEBakery.exe is corrupted.", true);
 
 		// Check and run native PE exe file.
 		if (parser.isNet())
-			NetLaunch::printError(L"PEBakery.exe is corrupted.", true);
+			NetLaunch::printError(L"PEBakery.exe is not a .NET PE Executable.", true);
 
 		// Check if PEBakery.exe matches the current processor architecture.
 		// If not, launch PEBakery.dll.
@@ -133,7 +139,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 // Constants
 constexpr size_t MAX_PATH_LONG = 32768;
 
-void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring& dllPath)
+bool GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring& dllPath)
 {
 	auto wstrDeleter = [](wchar_t* ptr) { delete[] ptr; };
 	std::unique_ptr<wchar_t[], decltype(wstrDeleter)> absPathPtr(new wchar_t[MAX_PATH_LONG], wstrDeleter);
@@ -142,7 +148,10 @@ void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring&
 	// Get absolute path of PEBakeryLauncher.exe
 	DWORD absPathLen = GetModuleFileNameW(NULL, buffer, MAX_PATH_LONG);
 	if (absPathLen == 0)
+	{
 		NetLaunch::printError(L"Unable to query absolute path of PEBakeryLauncher.exe", true);
+		return false;
+	}
 	buffer[MAX_PATH_LONG - 1] = '\0'; // NULL guard for Windows XP
 
 	// Build baseDir
@@ -150,7 +159,7 @@ void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring&
 	if (lastDirSepPos == NULL)
 	{
 		NetLaunch::printError(L"Unable to find base directory.", true);
-		return;
+		return false;
 	}
 	lastDirSepPos[0] = '\0';
 	baseDir = std::wstring(buffer);
@@ -158,6 +167,8 @@ void GetPEBakeryPath(std::wstring& baseDir, std::wstring& exePath, std::wstring&
 	// Build pebakeryPath
 	exePath = baseDir + L"\\Binary\\PEBakery.exe";
 	dllPath = baseDir + L"\\Binary\\PEBakery.dll";
+
+	return true;
 }
 
 bool LaunchPEBakeryExe(const std::wstring& baseDir, const std::wstring& exePath, const wchar_t* cmdParams)

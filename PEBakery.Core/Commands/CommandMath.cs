@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2022 Hajin Jang
+    Copyright (C) 2016-present Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,7 +29,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -630,7 +629,7 @@ namespace PEBakery.Core.Commands
                             dest = $"0x{codePoint:X2}";
                         else
                             dest = $"0x{codePoint:X4}";
-                        
+
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest));
                     }
                     break;

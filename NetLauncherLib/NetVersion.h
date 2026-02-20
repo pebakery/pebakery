@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2021 Hajin Jang
+	Copyright (C) 2016-present Hajin Jang
 	Licensed under MIT License.
 
 	MIT License
@@ -56,6 +56,7 @@ public:
 	std::wstring toStr(bool onlyMajorMinor = false) const;
 	bool isEqual(const NetVersion& rhs, bool onlyMajorMinor = false) const;
 	bool isCompatible(const NetVersion& rhs) const;
+	void clear();
 
 	// Static Functions
 	static bool parse(const std::string& str, NetVersion& ver);
