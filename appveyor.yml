@@ -1,0 +1,30 @@
+version: 1.0.{build}
+branches:
+  only:
+  - master
+  - develop
+image: Visual Studio 2022
+configuration: Release
+platform: Any CPU
+environment:
+  DOTNET_ROOT: '%USERPROFILE%\.dotnet'
+  DOTNET_MULTILEVEL_LOOKUP: 0
+  PATH: '%USERPROFILE%\.dotnet;%PATH%'
+install:
+- ps: |
+    $ErrorActionPreference = 'Stop'
+    $dotnetInstall = Join-Path $env:TEMP 'dotnet-install.ps1'
+    Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $dotnetInstall
+    & $dotnetInstall -Channel '10.0' -InstallDir $env:DOTNET_ROOT
+    dotnet --info
+build: off
+test: off
+build_script:
+- pwsh: .\BinaryPublish.ps1 -nightly -noclean
+artifacts:
+- path: Publish/PEBakery-nightly-rt.7z
+  name: nightly-rt
+- path: Publish/PEBakery-nightly-sc_x64.7z
+  name: nightly-sc_x64
+- path: Publish/PEBakery-nightly-sc_arm64.7z
+  name: nightly-sc_arm64
