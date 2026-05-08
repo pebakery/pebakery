@@ -79,6 +79,11 @@ namespace PEBakery.Core
             Ex) Set,#c,Override
         10. Set is modifying interface control
             Is Set command overwriting current interface's control?
+        11. Reference of new percent-style parameters
+            - %^SPARAM%, %^SPARAM_COUNT% (Section In Parameter)
+            - %^SOPARAM%, %^SOPARAM_COUNT% (Section Out Parameter)
+            - %^RET% (Return Value)
+            - %^LOOP_IDX% (Loop Index)
         */
         #endregion
 
@@ -109,40 +114,37 @@ namespace PEBakery.Core
         #region CheckScript
         public (List<LogInfo>, Result) CheckScript()
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = [];
 
             // Deep inspect unknown sections to figure out hidden code sections.
             _sc.DeepInspectSections();
 
             // Codes
-            if (_sc.Sections.ContainsKey(ScriptSection.Names.Process))
-                logs.AddRange(CheckCodeSection(_sc.Sections[ScriptSection.Names.Process]));
+            if (_sc.Sections.TryGetValue(ScriptSection.Names.Process, out ScriptSection? codeSect))
+                logs.AddRange(CheckCodeSection(codeSect));
 
             // UICtrls - [Interface]
-            List<string> processedInterfaces = new List<string>();
-            if (_sc.Sections.ContainsKey(ScriptSection.Names.Interface))
+            List<string> processedInterfaces = [];
+            if (_sc.Sections.TryGetValue(ScriptSection.Names.Interface, out ScriptSection? ifaceSect))
             {
                 processedInterfaces.Add(ScriptSection.Names.Interface);
-                logs.AddRange(CheckInterfaceSection(_sc.Sections[ScriptSection.Names.Interface]));
+                logs.AddRange(CheckInterfaceSection(ifaceSect));
             }
             // UICtrls - Interface=
-            if (_sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
+            if (_sc.MainInfo.TryGetValue(ScriptSection.Names.Interface, out string? altInterfaceSectName))
             {
-                string ifaceSection = _sc.MainInfo[ScriptSection.Names.Interface];
-                processedInterfaces.Add(ifaceSection);
-                if (_sc.Sections.ContainsKey(ifaceSection))
-                    logs.AddRange(CheckInterfaceSection(_sc.Sections[ifaceSection]));
+                processedInterfaces.Add(altInterfaceSectName);
+                if (_sc.Sections.TryGetValue(altInterfaceSectName, out ScriptSection? altInterfaceSect))
+                    logs.AddRange(CheckInterfaceSection(altInterfaceSect));
                 else
-                    logs.Add(new LogInfo(LogState.Error, $"Section [{ifaceSection}] does not exist (Interface={ifaceSection})"));
+                    logs.Add(new LogInfo(LogState.Error, $"Section [{altInterfaceSectName}] does not exist (Interface={altInterfaceSectName})"));
             }
             // UICtrls - InterfaceList= (Stage 1)
-            if (_sc.MainInfo.ContainsKey(Script.Const.InterfaceList))
+            if (_sc.MainInfo.TryGetValue(Script.Const.InterfaceList, out string? ifaceSectNameList))
             {
-                // Check if InterfaceList contains proper sections
-                string interfaceList = _sc.MainInfo[Script.Const.InterfaceList];
                 try
                 {
-                    string? remainder = interfaceList;
+                    string? remainder = ifaceSectNameList;
                     while (remainder != null)
                     {
                         string next;
@@ -150,7 +152,7 @@ namespace PEBakery.Core
 
                         // Does this section exist?
                         if (!_sc.Sections.ContainsKey(next))
-                            logs.Add(new LogInfo(LogState.Error, $"Section [{next}] does not exist (InterfaceList={interfaceList})"));
+                            logs.Add(new LogInfo(LogState.Error, $"Section [{next}] does not exist (InterfaceList={ifaceSectNameList})"));
                     }
                 }
                 catch (InvalidCommandException e)
@@ -163,8 +165,8 @@ namespace PEBakery.Core
             foreach (string ifaceSection in _sc.GetInterfaceSectionNames(false)
                 .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase)))
             {
-                if (_sc.Sections.ContainsKey(ifaceSection))
-                    logs.AddRange(CheckInterfaceSection(_sc.Sections[ifaceSection]));
+                if (_sc.Sections.TryGetValue(ifaceSection, out ScriptSection? altInterfaceSect))
+                    logs.AddRange(CheckInterfaceSection(altInterfaceSect));
             }
 
             // Check more deep-inspected code sections
@@ -191,7 +193,7 @@ namespace PEBakery.Core
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
-                return new List<LogInfo>();
+                return [];
             _visitedSections.Add(section.Name);
 
             if (section.Lines == null)
@@ -202,7 +204,7 @@ namespace PEBakery.Core
                 if (0 < lineIdx)
                     msg += $" (Line {lineIdx})";
 
-                return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
+                return [new LogInfo(LogState.Error, msg)];
             }
 
             CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
@@ -375,16 +377,16 @@ namespace PEBakery.Core
 
                 if (targetCodeSection != null)
                 {
-                    if (_sc.Sections.ContainsKey(targetCodeSection))
-                        logs.AddRange(CheckCodeSection(_sc.Sections[targetCodeSection], cmd.RawCode, cmd.LineIdx));
+                    if (_sc.Sections.TryGetValue(targetCodeSection, out ScriptSection? codeSect))
+                        logs.AddRange(CheckCodeSection(codeSect, cmd.RawCode, cmd.LineIdx));
                     else
                         logs.Add(new LogInfo(LogState.Error, $"Section [{targetCodeSection}] does not exist", cmd));
                 }
 
                 if (targetInterfaceSection != null)
                 {
-                    if (_sc.Sections.ContainsKey(targetInterfaceSection))
-                        logs.AddRange(CheckInterfaceSection(_sc.Sections[targetInterfaceSection], cmd.RawCode, cmd.LineIdx));
+                    if (_sc.Sections.TryGetValue(targetInterfaceSection, out ScriptSection? ifaceSect))
+                        logs.AddRange(CheckInterfaceSection(ifaceSect, cmd.RawCode, cmd.LineIdx));
                     else
                         logs.Add(new LogInfo(LogState.Error, $"Interface section [{targetInterfaceSection}] does not exist", cmd));
                 }
@@ -397,7 +399,7 @@ namespace PEBakery.Core
         {
             // If this section was already visited, return.
             if (_visitedSections.Contains(section.Name))
-                return new List<LogInfo>();
+                return [];
             _visitedSections.Add(section.Name);
 
             // Force parsing of code, bypassing caching by section.GetUICtrls()
@@ -410,7 +412,7 @@ namespace PEBakery.Core
                 if (0 < lineIdx)
                     msg += $" (Line {lineIdx})";
 
-                return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
+                return [new LogInfo(LogState.Error, msg)];
             }
 
             (List<UIControl> uiCtrls, List<LogInfo> logs) = UIParser.ParseStatements(lines, section);
@@ -424,8 +426,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? codeSect)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(codeSect, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
@@ -441,8 +443,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? codeSect)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(codeSect, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
@@ -465,7 +467,7 @@ namespace PEBakery.Core
                                 string url = StringEscaper.Unescape(info.Url);
                                 if (!StringEscaper.IsUrlValid(url))
                                 {
-                                    if (url.IndexOf("://", StringComparison.Ordinal) != -1)
+                                    if (url.Contains("://", StringComparison.Ordinal))
                                         logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                     else
                                         logs.Add(new LogInfo(LogState.Warning, "URL does not have a scheme. Did you omit \"http(s)://\"?", uiCtrl));
@@ -498,8 +500,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? value)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(value, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
@@ -514,7 +516,7 @@ namespace PEBakery.Core
                             string url = StringEscaper.Unescape(info.Url);
                             if (!StringEscaper.IsUrlValid(url))
                             {
-                                if (url.IndexOf("://", StringComparison.Ordinal) != -1)
+                                if (url.Contains("://", StringComparison.Ordinal))
                                     logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                 else
                                     logs.Add(new LogInfo(LogState.Warning, "URL does not have a scheme. Did you omit \"http(s)://\"?", uiCtrl));
@@ -527,8 +529,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? codeSect)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(codeSect, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
@@ -560,8 +562,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? codeSect)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(codeSect, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
@@ -592,8 +594,8 @@ namespace PEBakery.Core
 
                             if (info.SectionName != null)
                             {
-                                if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(CheckCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
+                                if (_sc.Sections.TryGetValue(info.SectionName, out ScriptSection? codeSect)) // Only if section exists
+                                    logs.AddRange(CheckCodeSection(codeSect, uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }

@@ -40,24 +40,26 @@ namespace PEBakery.Core
         private readonly string _compatFile;
 
         // Script Tree
-        public bool AsteriskBugDirLink = false;
+        public bool AsteriskBugDirLink { get; set; } = false;
         // Command
-        public bool AsteriskBugDirCopy = false;
-        public bool FileRenameCanMoveDir = false;
-        public bool AllowLetterInLoop = false;
-        public bool LegacyBranchCondition = false;
-        public bool LegacyRegWrite = false;
-        public bool AllowSetModifyInterface = false;
-        public bool LegacyInterfaceCommand = false;
-        public bool LegacySectionParamCommand = false;
-        public bool AutoCompactIniWriteCommand = false;
+        public bool AsteriskBugDirCopy { get; set; } = false;
+        public bool FileRenameCanMoveDir { get; set; } = false;
+        public bool AllowLetterInLoop { get; set; } = false;
+        public bool LegacyBranchCondition { get; set; } = false;
+        public bool LegacyRegWrite { get; set; } = false;
+        public bool AllowSetModifyInterface { get; set; } = false;
+        public bool LegacyInterfaceCommand { get; set; } = false;
+        public bool LegacySectionParamCommand { get; set; } = false;
+        public bool AutoCompactIniWriteCommand { get; set; } = false;
         // Script Interface
-        public bool IgnoreWidthOfWebLabel = false;
+        public bool IgnoreWidthOfWebLabel { get; set; } = false;
         // Variable
-        public bool OverridableFixedVariables = false;
-        public bool OverridableLoopCounter = false;
-        public bool EnableEnvironmentVariables = false;
-        public bool DisableExtendedSectionParams = false;
+        public bool OverridableFixedVariables { get; set; } = false;
+        public bool OverridableLoopCounter { get; set; } = false;
+        public bool EnableEnvironmentVariables { get; set; } = false;
+        public bool EnableAllLegacySectionParams { get; set; } = false;
+        public bool DisableLegacyExtendedSectionParams { get; set; } = false;
+        private const string DisableLegacyExtendedSectionParamsOldName = "DisableExtendedSectionParams";
         #endregion
 
         #region Constructor
@@ -116,7 +118,8 @@ namespace PEBakery.Core
             OverridableFixedVariables = false;
             OverridableLoopCounter = false;
             EnableEnvironmentVariables = false;
-            DisableExtendedSectionParams = false;
+            EnableAllLegacySectionParams = true; // Breaking change, so do not set default to false 
+            DisableLegacyExtendedSectionParams = false;
         }
         #endregion
 
@@ -131,7 +134,7 @@ namespace PEBakery.Core
                 return;
 
             IniKey[] keys =
-            {
+            [
                 new IniKey(SectionName, nameof(AsteriskBugDirLink)), // Boolean
                 new IniKey(SectionName, nameof(AsteriskBugDirCopy)), // Boolean
                 new IniKey(SectionName, nameof(FileRenameCanMoveDir)), // Boolean
@@ -146,8 +149,9 @@ namespace PEBakery.Core
                 new IniKey(SectionName, nameof(OverridableFixedVariables)), // Boolean
                 new IniKey(SectionName, nameof(OverridableLoopCounter)), // Boolean
                 new IniKey(SectionName, nameof(EnableEnvironmentVariables)), // Boolean
-                new IniKey(SectionName, nameof(DisableExtendedSectionParams)), // Boolean
-            };
+                new IniKey(SectionName, nameof(EnableAllLegacySectionParams)), // Boolean
+                new IniKey(SectionName, nameof(DisableLegacyExtendedSectionParams)), // Boolean
+            ];
 
             keys = IniReadWriter.ReadKeys(_compatFile, keys);
             Dictionary<string, string?> keyDict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -176,13 +180,15 @@ namespace PEBakery.Core
             OverridableFixedVariables = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableFixedVariables), OverridableFixedVariables);
             OverridableLoopCounter = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableLoopCounter), OverridableLoopCounter);
             EnableEnvironmentVariables = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(EnableEnvironmentVariables), EnableEnvironmentVariables);
-            DisableExtendedSectionParams = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(DisableExtendedSectionParams), DisableExtendedSectionParams);
+            EnableAllLegacySectionParams = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(EnableAllLegacySectionParams), EnableAllLegacySectionParams);
+            DisableLegacyExtendedSectionParams = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(DisableLegacyExtendedSectionParams), 
+                [DisableLegacyExtendedSectionParamsOldName], DisableLegacyExtendedSectionParams);
         }
 
         public void WriteToFile()
         {
             IniKey[] keys =
-            {
+            [
                 new IniKey(SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(SectionName, nameof(FileRenameCanMoveDir), FileRenameCanMoveDir.ToString()), // Boolean
@@ -197,8 +203,9 @@ namespace PEBakery.Core
                 new IniKey(SectionName, nameof(OverridableFixedVariables), OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(SectionName, nameof(OverridableLoopCounter), OverridableLoopCounter.ToString()), // Boolean
                 new IniKey(SectionName, nameof(EnableEnvironmentVariables), EnableEnvironmentVariables.ToString()), // Boolean
-                new IniKey(SectionName, nameof(DisableExtendedSectionParams), DisableExtendedSectionParams.ToString()), // Boolean
-            };
+                new IniKey(SectionName, nameof(EnableAllLegacySectionParams), EnableAllLegacySectionParams.ToString()), // Boolean
+                new IniKey(SectionName, nameof(DisableLegacyExtendedSectionParams), DisableLegacyExtendedSectionParams.ToString()), // Boolean
+            ];
             IniReadWriter.WriteKeys(_compatFile, keys);
         }
         #endregion
@@ -224,7 +231,8 @@ namespace PEBakery.Core
             dest.OverridableFixedVariables = OverridableFixedVariables;
             dest.OverridableLoopCounter = OverridableLoopCounter;
             dest.EnableEnvironmentVariables = EnableEnvironmentVariables;
-            dest.DisableExtendedSectionParams = DisableExtendedSectionParams;
+            dest.EnableAllLegacySectionParams = EnableAllLegacySectionParams;
+            dest.DisableLegacyExtendedSectionParams = DisableLegacyExtendedSectionParams;
         }
         #endregion
 
@@ -258,7 +266,8 @@ namespace PEBakery.Core
                 [nameof(OverridableFixedVariables)] = OverridableFixedVariables != other.OverridableFixedVariables,
                 [nameof(OverridableLoopCounter)] = OverridableLoopCounter != other.OverridableLoopCounter,
                 [nameof(EnableEnvironmentVariables)] = EnableEnvironmentVariables != other.EnableEnvironmentVariables,
-                [nameof(DisableExtendedSectionParams)] = DisableExtendedSectionParams != other.DisableExtendedSectionParams,
+                [nameof(EnableAllLegacySectionParams)] = EnableAllLegacySectionParams != other.EnableAllLegacySectionParams,
+                [nameof(DisableLegacyExtendedSectionParams)] = DisableLegacyExtendedSectionParams != other.DisableLegacyExtendedSectionParams,
             };
         }
         #endregion

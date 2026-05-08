@@ -67,7 +67,7 @@ namespace PEBakery.Core.Commands
                 case true:
                     {
                         // Check if interface contains VarKey
-                        List<LogInfo> logs = new List<LogInfo>();
+                        List<LogInfo> logs = [];
 
                         if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
                             goto case false;

@@ -11,33 +11,33 @@ Mandatory=False
 %A%=1
 %B%=2
 %C%=3
-InlineMacro=Set,#r,T
+InlineMacro=Set,%^RET%,T
 
 [TestMacro]
 SectionMacro=Run,%ScriptFile%,SectionMacroImpl
-InlineMacro=Set,#r,#1
+InlineMacro=Set,%^RET%,%^SIPARAM_1%
 
 [SectionMacroImpl]
-Set,#r,#1
+Set,%^RET%,%^SIPARAM_1%
 
 [Process-SectionMacro-Global]
 AddVariables,%ScriptFile%,TestMacro,GLOBAL
-Set,#r,F
+Set,%^RET%,F
 SectionMacro,T
 
 [Process-SectionMacro-Local]
 AddVariables,%ScriptFile%,TestMacro
-Set,#r,F
+Set,%^RET%,F
 SectionMacro,T
 
 [Process-InlineMacro-Global]
 AddVariables,%ScriptFile%,TestMacro,GLOBAL
-Set,#r,F
+Set,%^RET%,F
 InlineMacro,T
 
 [Process-InlineMacro-Local]
 AddVariables,%ScriptFile%,TestMacro
-Set,#r,F
+Set,%^RET%,F
 InlineMacro,T
 
 [Process-GetParam00]
@@ -60,67 +60,67 @@ Run,%ScriptFile%,GetParam,18,""
 
 [GetParam]
 Set,%Dest%,F
-Set,%Index%,#1
+Set,%Index%,%^SIPARAM_1%
 Run,%ScriptFile%,ReadParam,P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16
-If,%Result%,Equal,#2,Set,%Dest%,T
+If,%Result%,Equal,%^SIPARAM_2%,Set,%Dest%,T
 
 [ReadParam]
 GetParam,%Index%,%Result%
 
 [Process-Exit01]
-Set,#r,T
-Exit,"##r must be T"
-Set,#r,F
+Set,%^RET%,T
+Exit,"%%^RET%% must be T"
+Set,%^RET%,F
 
 [Process-Exit02]
 System,SetLocal
-Set,#r,T
-Exit,"##r must be T"
-Set,#r,F
+Set,%^RET%,T
+Exit,"%%^RET%% must be T"
+Set,%^RET%,F
 
 [Process-Return01]
-Set,#r,INIT
+Set,%^RET%,INIT
 Run,%ScriptFile%,"Process-SubReturn-NoValue"
 Set,%Dest%,"%Dest%T"
 
 [Process-Return02]
-Set,#r,INIT
+Set,%^RET%,INIT
 Run,%ScriptFile%,"Process-SubReturn-NoValue",True
 Set,%Dest%,"%Dest%T"
 
 [Process-Return03]
-Set,#r,INIT
+Set,%^RET%,INIT
 Run,%ScriptFile%,"Process-SubReturn-WithValue"
 Set,%Dest%,"%Dest%T"
 
 [Process-Return04]
-Set,#r,INIT
+Set,%^RET%,INIT
 Run,%ScriptFile%,"Process-SubReturn-WithValue",True
 Set,%Dest%,"%Dest%T"
 
 [Process-SubReturn-NoValue]
 Set,%Dest%,T
-Set,#r,SUB
+Set,%^RET%,SUB
 Return
 Set,%Dest%,F
 
 [Process-SubReturn-WithValue]
 Set,%Dest%,T
-Set,#r,SUB
-Return,#1
+Set,%^RET%,SUB
+Return,%^SIPARAM_1%
 Set,%Dest%,F
 
 [Process-Halt-Simple]
-Set,#r,T
+Set,%^RET%,T
 Halt
-Set,#r,F
+Set,%^RET%,F
 
 [Process-Halt-InIf]
 Set,%i%,True
 If,%i%,Equal,True,Begin
-  Set,#r,T
+  Set,%^RET%,T
   Halt
-  Set,#r,F
+  Set,%^RET%,F
 End
 
 [Process-Halt-InWhile]
@@ -128,5 +128,5 @@ Set,%i%,0
 While,%i%,Smaller,4,Begin
   If,%i%,Equal,2,Halt
   Math,Add,%i%,%i%,1
-  Set,#r,"#rA"
+  Set,%^RET%,"%^RET%A"
  End

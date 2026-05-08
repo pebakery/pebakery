@@ -917,7 +917,7 @@ namespace PEBakery.Core
                 b.Append("InParams = { ");
                 foreach (var kv in inParams)
                 {
-                    b.Append($"#{kv.Key}:[{kv.Value}]");
+                    b.Append($"%^SPARAM_{kv.Key}:[{kv.Value}]");
                     if (cnt + 1 < inParams.Count)
                         b.Append(", ");
                     cnt++;
@@ -931,13 +931,13 @@ namespace PEBakery.Core
             }
 
             // Write Section Out Parameters
-            if (outParams != null && 0 < outParams.Count && !s.CompatDisableExtendedSectionParams)
+            if (outParams != null && 0 < outParams.Count)
             {
                 StringBuilder b = new StringBuilder();
                 b.Append("OutParams = { ");
                 for (int i = 0; i < outParams.Count; i++)
                 {
-                    b.Append($"#o{i}:[{outParams[i]}]");
+                    b.Append($"%^SOPARAM_{i}%:[{outParams[i]}]");
                     if (i + 1 < outParams.Count)
                         b.Append(", ");
                 }

@@ -35,8 +35,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-#nullable enable
-
 namespace PEBakery.Core
 {
     public static class StringEscaper
@@ -103,7 +101,7 @@ namespace PEBakery.Core
             // Windows Reserved Characters
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
             // Exclude backslash, because this function will receive 
-            char[] invalidChars = Path.GetInvalidFileNameChars().Where(x => x != '\\').ToArray();
+            char[] invalidChars = [.. Path.GetInvalidFileNameChars().Where(x => x != '\\')];
 
             // Ex) "C:\Program Files"
             Match m = Regex.Match(path, "^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -318,7 +316,7 @@ namespace PEBakery.Core
 
         public static List<string> Unescape(IEnumerable<string> strs, bool escapePercent = false)
         {
-            return strs.Select(str => Unescape(str, escapePercent)).ToList();
+            return [.. strs.Select(str => Unescape(str, escapePercent))];
         }
 
         public static string QuoteUnescape(string str, bool escapePercent = false)
@@ -366,7 +364,7 @@ namespace PEBakery.Core
         public static string Escape(string str, bool fullEscape = false, bool escapePercent = false)
         {
             // Escape # first
-            if (str.IndexOf('#') != -1)
+            if (str.Contains('#'))
             {
                 int idx = 0;
                 StringBuilder b = new StringBuilder();
@@ -399,7 +397,7 @@ namespace PEBakery.Core
 
         public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            return strs.Select(str => Escape(str, fullEscape, escapePercent)).ToList();
+            return [.. strs.Select(str => Escape(str, fullEscape, escapePercent))];
         }
 
         public static string EscapePercent(string str)
@@ -409,7 +407,7 @@ namespace PEBakery.Core
 
         public static List<string> EscapePercent(IEnumerable<string> strs)
         {
-            return strs.Select(EscapePercent).ToList();
+            return [.. strs.Select(EscapePercent)];
         }
 
         public static string DoubleQuote(string str)
@@ -433,7 +431,7 @@ namespace PEBakery.Core
 
         public static List<string> QuoteEscape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            return strs.Select(str => QuoteEscape(str, fullEscape, escapePercent)).ToList();
+            return [.. strs.Select(str => QuoteEscape(str, fullEscape, escapePercent))];
         }
         #endregion
 
@@ -451,7 +449,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
         {
-            return strs.Select(str => s.Variables.Expand(ExpandSectionParams(s, str))).ToList();
+            return [.. strs.Select(str => s.Variables.Expand(ExpandSectionParams(s, str)))];
         }
 
         public static string ExpandVariables(Variables vars, string str)
@@ -461,13 +459,31 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(Variables vars, IEnumerable<string> strs)
         {
-            return strs.Select(vars.Expand).ToList();
+            return [.. strs.Select(vars.Expand)];
+        }
+
+        public static string ExpandSectionParams(EngineState s, string str)
+        {
+            string expandedStr = str;
+            if (s.CompatEnableAllLegacySectionParams)
+                expandedStr = ExpandLegacySharpSectionParams(s, expandedStr);
+            expandedStr = ExpandPercentPatternSectionParams(s, expandedStr);
+            return expandedStr;
+        }
+
+        public static List<string> ExpandSectionParams(EngineState s, IEnumerable<string> strs)
+        {
+            List<string> expandedStrs = [.. strs];
+            if (s.CompatEnableAllLegacySectionParams)
+                expandedStrs = ExpandLegacySharpSectionParams(s, strs);
+            expandedStrs = ExpandPercentPatternSectionParams(s, expandedStrs);
+            return expandedStrs;
         }
 
         /// <summary>
-        /// Expand #1, #2, #3, etc...
+        /// Expand old legacy-sharp section parameters, such as #1, #2, #3, etc...
         /// </summary>
-        public static string ExpandSectionParams(EngineState s, string str)
+        public static string ExpandLegacySharpSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
             Regex inRegex = new Regex(@"(?<!#)(#[1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -493,9 +509,9 @@ namespace PEBakery.Core
                     }
 
                     string param;
-                    if (s.CurSectionInParams.ContainsKey(pIdx))
+                    if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))
                     {
-                        param = s.CurSectionInParams[pIdx];
+                        param = value;
                     }
                     else
                     {
@@ -516,9 +532,9 @@ namespace PEBakery.Core
                 matches = inRegex.Matches(str);
             }
 
-            if (!s.CompatDisableExtendedSectionParams)
+            if (!s.CompatDisableLegacyExtendedSectionParams)
             {
-                // Escape #o1, #o2, ... (Section Out Parameter)
+                // Expand #o1, #o2, ... (Section Out Parameter)
                 if (s.CurSectionOutParams != null)
                 {
                     Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -566,20 +582,20 @@ namespace PEBakery.Core
                     }
                 }
 
-                // Escape #a (Section In Params Count)
-                if (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1)
+                // Expand #a (Section In Params Count)
+                if (str.Contains("#a", StringComparison.OrdinalIgnoreCase))
                     str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[aA])", s.CurSectionInParamsCount.ToString());
 
-                // Escape #oa (Section Out Params Count)
-                if (str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1)
+                // Expand #oa (Section Out Params Count)
+                if (str.Contains("#oa", StringComparison.OrdinalIgnoreCase))
                     str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[oO][aA])", s.CurSectionInParamsCount.ToString());
 
-                // Escape #r (Return Value)
-                if (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1)
+                // Expand #r (Return Value)
+                if (str.Contains("#r", StringComparison.OrdinalIgnoreCase))
                     str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.ReturnValue);
             }
 
-            // Escape #c (Loop Counter)
+            // Expand #c (Loop Counter)
             if (0 < s.LoopCmdStateStack.Count)
             {
                 EngineLoopCmdState loop = s.LoopCmdStateStack.Peek();
@@ -597,13 +613,153 @@ namespace PEBakery.Core
             return str;
         }
 
-        public static List<string> ExpandSectionParams(EngineState s, IEnumerable<string> strs)
+        /// <summary>
+        /// Expand old legacy-sharp section parameters, such as #1, #2, #3, etc...
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="strs"></param>
+        /// <returns></returns>
+        public static List<string> ExpandLegacySharpSectionParams(EngineState s, IEnumerable<string> strs)
         {
-            return strs.Select(str => ExpandSectionParams(s, str)).ToList();
+            return [.. strs.Select(str => ExpandLegacySharpSectionParams(s, str))];
+        }
+
+        /// <summary>
+        /// Expand new percent-style section parameters.
+        /// </summary>
+        /// <remarks>
+        /// %^RET%: #r
+        /// %^SIPARAM_<NUMBERS>%, %^SIPARAM_<NUMBERS>%: #1 ~ #9
+        /// %^SIPARAM_COUNT%, %^SIPARAM_COUNT%: #a
+        /// %^SOPARAM_<NUMBERS>%: #o1 ~ #o9
+        /// %^SOPARAM_COUNT%: #oa
+        /// %^LOOP_IDX%: #c
+        /// </remarks>
+        public static string ExpandPercentPatternSectionParams(EngineState s, string str)
+        {
+            // Expand #1 into its value
+            Regex paramRegex = new Regex(@"%\^([A-Za-z0-9_]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Regex pSectVarRegex = new Regex(@"^(S(?:I|O)PARAM)_([1-9][0-9]*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            StringBuilder b = new StringBuilder();
+
+            int lastCopiedIdx = 0;
+            MatchCollection matches = paramRegex.Matches(str);
+            if (matches.Count == 0)
+                return str;
+
+            for (int x = 0; x < matches.Count; x++)
+            {
+                string paramNameStr = matches[x].Groups[1].ToString();
+                lastCopiedIdx = matches[x].Index + matches[x].Length;
+
+                if (x == 0)
+                {
+                    b.Append(str[..matches[0].Index]);
+                }
+                else
+                {
+                    int startOffset = matches[x - 1].Index + matches[x - 1].Length;
+                    int endOffset = matches[x].Index - startOffset;
+                    b.Append(str.AsSpan(startOffset, endOffset));
+                }
+
+                if (paramNameStr.Equals("RET", StringComparison.OrdinalIgnoreCase))
+                { // Expand Return Value
+                    b.Append(s.ReturnValue);
+                    continue;
+                }
+                else if (paramNameStr.Equals("SIPARAM_COUNT", StringComparison.OrdinalIgnoreCase))
+                { // Expand Section In Params Count
+                    b.Append(s.CurSectionInParamsCount);
+                    continue;
+                }
+                else if (paramNameStr.Equals("SOPARAM_COUNT", StringComparison.OrdinalIgnoreCase))
+                { // Expand Section Out Params Count
+                    b.Append(s.CurSectionOutParamsCount);
+                    continue;
+                }
+                else if (paramNameStr.Equals("LOOP_IDX", StringComparison.OrdinalIgnoreCase))
+                { // Expand Loop Counter
+                    if (0 < s.LoopCmdStateStack.Count)
+                    {
+                        EngineLoopCmdState loop = s.LoopCmdStateStack.Peek();
+                        switch (loop.State)
+                        {
+                            case LoopCmdState.OnIndex:
+                                b.Append(loop.CounterIndex);
+                                break;
+                            case LoopCmdState.OnDriveLetter:
+                                b.Append(loop.CounterLetter);
+                                break;
+                        }
+                        continue;
+                    }
+                }
+                else
+                {
+                    Match pSectMatch = pSectVarRegex.Match(paramNameStr);
+                    string pKind = pSectMatch.Groups[1].Value;
+                    string pIdxStr = pSectMatch.Groups[2].Value;
+
+                    if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
+                        throw new InternalException($"{nameof(ExpandPercentPatternSectionParams)} failure");
+
+                    if (pKind.Equals("SIPARAM", StringComparison.OrdinalIgnoreCase))
+                    { // Expand Section In Parameter
+                        string param;
+                        if (s.CurSectionInParams.TryGetValue(pIdx, out string? value))
+                            param = value;
+                        else
+                            param = string.Empty; // Not in entry section -> return string.Empty;
+                        
+                        b.Append(param);
+                    }
+                    else if (pKind.Equals("SOPARAM", StringComparison.OrdinalIgnoreCase))
+                    { // Expand Section Out Parameter
+                        if (s.CurSectionOutParams != null)
+                        {
+                            string param;
+                            if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
+                            {
+                                string varKey = s.CurSectionOutParams[pIdx - 1];
+                                param = s.Variables.Expand(varKey);
+                            }
+                            else
+                            {
+                                param = string.Empty;
+                            }
+                            b.Append(param);
+                        }
+                    }
+                }
+            }
+
+            b.Append(str.AsSpan(lastCopiedIdx..));
+            str = b.ToString();
+
+            return str;
+        }
+
+        /// <summary>
+        /// Expand new percent-style section parameters, such as #1, #2, #3, etc...
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="strs"></param>
+        /// <returns></returns>
+        public static List<string> ExpandPercentPatternSectionParams(EngineState s, IEnumerable<string> strs)
+        {
+            return [.. strs.Select(str => ExpandPercentPatternSectionParams(s, str))];
         }
         #endregion
 
         #region Preprocess
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="str"></param>
+        /// <param name="escapePercent"></param>
+        /// <returns></returns>
         public static string Preprocess(EngineState s, string str, bool escapePercent = true)
         {
             return Unescape(ExpandVariables(s, str), escapePercent);
@@ -631,7 +787,7 @@ namespace PEBakery.Core
             int idx = startIdx;
             string key;
             bool duplicate;
-            string[] keyArr = keys.ToArray();
+            string[] keyArr = [.. keys];
             do
             {
                 duplicate = false;
@@ -655,7 +811,7 @@ namespace PEBakery.Core
             int idx = 0;
             string key;
             bool duplicate;
-            string[] keyArr = keys.ToArray();
+            string[] keyArr = [.. keys];
             do
             {
                 idx++;
@@ -737,7 +893,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
 
-            string[] list = multiStrs.ToArray();
+            string[] list = [.. multiStrs];
             for (int i = 0; i < list.Length; i++)
             {
                 byte[] bin = Encoding.Unicode.GetBytes(list[i]);
@@ -754,7 +910,7 @@ namespace PEBakery.Core
             // RegRead,HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink,Batang,%A%
             // MSMINCHO.TTC,MS PMincho#$zMINGLIU.TTC,PMingLiU#$zSIMSUN.TTC,SimSun#$zMALGUN.TTF,Malgun Gothic#$zYUGOTHM.TTC,Yu Gothic UI#$zMSJH.TTC,Microsoft JhengHei UI#$zMSYH.TTC,Microsoft YaHei UI#$zSEGUISYM.TTF,Segoe UI Symbol
 
-            string[] list = multiStrs.ToArray();
+            string[] list = [.. multiStrs];
 
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < list.Length; i++)
@@ -771,7 +927,7 @@ namespace PEBakery.Core
             // RegRead,HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink,Batang,%A%
             // MSMINCHO.TTC,MS PMincho#$zMINGLIU.TTC,PMingLiU#$zSIMSUN.TTC,SimSun#$zMALGUN.TTF,Malgun Gothic#$zYUGOTHM.TTC,Yu Gothic UI#$zMSJH.TTC,Microsoft JhengHei UI#$zMSYH.TTC,Microsoft YaHei UI#$zSEGUISYM.TTF,Segoe UI Symbol
 
-            List<string> list = new List<string>();
+            List<string> list = [];
 
             string? next = packStr;
             while (next != null)

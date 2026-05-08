@@ -147,14 +147,11 @@ namespace PEBakery.Core.Commands
                     }
 
                     // PEBakery extension -> Report exit code via #r
-                    if (!s.CompatDisableExtendedSectionParams)
-                    {
-                        s.ReturnValue = statusCode.ToString();
-                        if (statusCode < 100)
-                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
-                        else
-                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [#r]"));
-                    }
+                    s.ReturnValue = statusCode.ToString();
+                    if (statusCode < 100)
+                        logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [%^RET%]"));
+                    else
+                        logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [%^RET%]"));
                 }
                 else
                 { // Validate downloaded file with hash
@@ -221,14 +218,11 @@ namespace PEBakery.Core.Commands
                     }
 
                     // PEBakery extension -> Report exit code via #r
-                    if (!s.CompatDisableExtendedSectionParams)
-                    {
-                        s.ReturnValue = statusCode.ToString();
-                        if (statusCode < 100)
-                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
-                        else
-                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [#r]"));
-                    }
+                    s.ReturnValue = statusCode.ToString();
+                    if (statusCode < 100)
+                        logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [%^RET%]"));
+                    else
+                        logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] into [%^RET%]"));
                 }
             }
             finally

@@ -30,6 +30,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -52,17 +53,17 @@ namespace PEBakery.Core.Tests
 
             // Overload of IEnumerable<string>
             string[] srcStrs =
-            {
+            [
                 "Comma [,]",
                 "Space [ ]",
                 "DoubleQuote [\"]"
-            };
+            ];
             string[] comps =
-            {
+            [
                "Comma#$s[#$c]",
                "Space#$s[#$s]",
                "DoubleQuote#$s[#$q]",
-            };
+            ];
             EscapeArrayTemplate(srcStrs, true, false, comps);
 
             // #$x issue
@@ -92,13 +93,13 @@ namespace PEBakery.Core.Tests
             // SampleString
             QuoteEscapeTemplate(SampleString, false, false, "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"");
 
-            string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            string[] expects = new string[]
-            {
+            string[] srcs = ["Comma [,]", "Space [ ]", "DoubleQuote [\"]"];
+            string[] expects =
+            [
                "\"Comma [,]\"",
                "\"Space [ ]\"",
                "\"DoubleQuote [#$q]\"",
-            };
+            ];
             QuoteEscapeArrayTemplate(srcs, false, false, expects);
         }
 
@@ -126,18 +127,18 @@ namespace PEBakery.Core.Tests
             UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]", true, SampleString);
             UnescapeTemplate("Incomplete#$", false, "Incomplete#$");
 
-            string[] srcs = new string[]
-            {
+            string[] srcs =
+            [
                "Comma#$s[#$c]",
                "Space#$s[#$s]",
                "DoubleQuote#$s[#$q]",
-            };
-            string[] expects = new string[]
-            {
+            ];
+            string[] expects =
+            [
                 "Comma [,]",
                 "Space [ ]",
                 "DoubleQuote [\"]",
-            };
+            ];
             UnescapeArrayTemplate(srcs, false, expects);
         }
 
@@ -161,18 +162,18 @@ namespace PEBakery.Core.Tests
         {
             QuoteUnescapeTemplate("\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"", false, SampleString);
 
-            string[] srcs = new string[]
-            {
+            string[] srcs =
+            [
                "\"Comma [#$c]\"",
                "\"Space [ ]\"",
                "\"DoubleQuote [#$q]\"",
-            };
-            string[] expects = new string[]
-            {
+            ];
+            string[] expects =
+            [
                 "Comma [,]",
                 "Space [ ]",
                 "DoubleQuote [\"]",
-            };
+            ];
             QuoteUnescapeArrayTemplate(srcs, false, expects);
         }
 
@@ -203,12 +204,12 @@ namespace PEBakery.Core.Tests
             EscapeThenUnescapeTemplate(SampleString, true, true);
             EscapeThenUnescapeTemplate("Hello#$xWorld", false, false);
 
-            string[] srcs = new string[]
-            {
+            string[] srcs =
+            [
                "\"Comma [#$c]\"",
                "\"Space [ ]\"",
                "\"DoubleQuote [#$q]\"",
-            };
+            ];
             EscapeThenUnescapeArrayTemplate(srcs, false, false);
             EscapeThenUnescapeArrayTemplate(srcs, true, false);
             EscapeThenUnescapeArrayTemplate(srcs, false, true);
@@ -248,6 +249,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_1()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 1);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -262,6 +264,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_2()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 1);
 
             Variables.SetVariable(s, "#1", "World");
@@ -275,6 +278,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_3()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 1);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -288,6 +292,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_4()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -301,26 +306,27 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_5()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
             string[] srcs =
-            {
+            [
                 "A_%A%",
                 "B_%B%",
                 "C_#1",
                 "D_#2"
-            };
+            ];
             List<string> dests = StringEscaper.ExpandSectionParams(s, srcs);
             string[] comps =
-            {
+            [
                 "A_%A%",
                 "B_%B%",
                 "C_",
                 "D_WPF"
-            };
+            ];
 
             for (int i = 0; i < dests.Count; i++)
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
@@ -329,6 +335,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_6()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -346,6 +353,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandSectionParams_7()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 1);
             s.ReturnValue = "TEST";
 
@@ -353,6 +361,84 @@ namespace PEBakery.Core.Tests
             string dest = StringEscaper.ExpandSectionParams(s, src);
             const string expected = "##1 ##a ##r TEST";
             Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
+        }
+        #endregion
+
+        #region ExpandPercentPatternSectionParams
+        [TestMethod]
+        public void ExpandPercentPatternSectionParams()
+        {
+            ExpandPercentPatternSectionParams_1();
+            ExpandPercentPatternSectionParams_2();
+            ExpandPercentPatternSectionParams_3();
+            ExpandPercentPatternSectionParams_4();
+        }
+
+        public static void ExpandPercentPatternSectionParams_1()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
+            s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            s.CurSectionInParams[1] = "World";
+
+            const string src = "%A% #1 %^SIPARAM_1%";
+            string dest = StringEscaper.ExpandPercentPatternSectionParams(s, src);
+            const string comp = "%A% #1 World";
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public static void ExpandPercentPatternSectionParams_2()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 2);
+
+            s.CurSectionInParams[1] = "One";
+            s.CurSectionInParams[2] = "Two";
+
+            const string src = "[%^SIPARAM_1%]|[%^SIPARAM_2%]|[%^SIPARAM_3%]|%^SIPARAM_COUNT%";
+            string dest = StringEscaper.ExpandPercentPatternSectionParams(s, src);
+            const string comp = "[One]|[Two]|[]|2";
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public static void ExpandPercentPatternSectionParams_3()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            s.CurSectionOutParams = ["%DestOne%", "%DestTwo%"];
+            s.Variables.SetValue(VarsType.Local, "DestOne", "One");
+            s.Variables.SetValue(VarsType.Local, "DestTwo", "Two");
+
+            const string src = "[%^SOPARAM_1%]|[%^SOPARAM_2%]|[%^SOPARAM_3%]|%^SOPARAM_COUNT%";
+            string dest = StringEscaper.ExpandPercentPatternSectionParams(s, src);
+            const string comp = "[One]|[Two]|[]|2";
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public static void ExpandPercentPatternSectionParams_4()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            s.ReturnValue = "Done";
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState(42));
+
+            const string indexSrc = "%^RET%|%^LOOP_IDX%";
+            string indexDest = StringEscaper.ExpandPercentPatternSectionParams(s, indexSrc);
+            const string indexComp = "Done|42";
+            Assert.IsTrue(indexDest.Equals(indexComp, StringComparison.Ordinal));
+
+            s.LoopCmdStateStack.Clear();
+            s.LoopCmdStateStack.Push(new EngineLoopCmdState('Z'));
+
+            const string letterSrc = "%^LOOP_IDX%";
+            string letterDest = StringEscaper.ExpandPercentPatternSectionParams(s, letterSrc);
+            const string letterComp = "Z";
+            Assert.IsTrue(letterDest.Equals(letterComp, StringComparison.Ordinal));
+
+            s.LoopCmdStateStack.Clear();
+
+            const string noLoopSrc = "%^LOOP_IDX%";
+            string noLoopDest = StringEscaper.ExpandPercentPatternSectionParams(s, noLoopSrc);
+            Assert.IsTrue(string.Empty.Equals(noLoopDest, StringComparison.Ordinal));
         }
         #endregion
 
@@ -366,11 +452,13 @@ namespace PEBakery.Core.Tests
             ExpandVariables_4();
             ExpandVariables_5();
             ExpandVariables_6();
+            ExpandVariables_7();
         }
 
         public static void ExpandVariables_1()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             s.CurSectionInParams[1] = "World";
@@ -384,6 +472,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandVariables_2()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             s.CurSectionInParams[1] = "World";
 
             const string src = "%A% #1";
@@ -395,6 +484,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandVariables_3()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 1);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -408,6 +498,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandVariables_4()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -421,26 +512,27 @@ namespace PEBakery.Core.Tests
         public static void ExpandVariables_5()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             s.CurSectionInParams[2] = "WPF";
 
             string[] srcs =
-            {
+            [
                 "A_%A%",
                 "B_%B%",
                 "C_#1",
                 "D_#2"
-            };
+            ];
             List<string> dests = StringEscaper.ExpandVariables(s, srcs);
             string[] comps =
-            {
+            [
                 "A_#$pA#$p",
                 "B_C#",
                 "C_",
                 "D_WPF"
-            };
+            ];
 
             for (int i = 0; i < dests.Count; i++)
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
@@ -449,6 +541,7 @@ namespace PEBakery.Core.Tests
         public static void ExpandVariables_6()
         {
             EngineState s = EngineTests.CreateEngineState();
+            s.CompatEnableAllLegacySectionParams = true;
             EngineTests.PushDepthInfo(s, 2);
 
             // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
@@ -463,115 +556,253 @@ namespace PEBakery.Core.Tests
 
             Assert.Fail();
         }
+
+        public static void ExpandVariables_7()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            Variables.SetVariable(s, "%^SIPARAM_1%", "World");
+
+            const string src = "%A% %^SIPARAM_1% #1";
+            string dest = StringEscaper.ExpandVariables(s, src);
+            const string comp = "Hello World #1";
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
         #endregion
 
         #region Preprocess
         [TestMethod]
         public void Preprocess()
         {
-            Preprocess_1();
-            Preprocess_2();
-            Preprocess_3();
-            Preprocess_4();
-            Preprocess_5();
-            Preprocess_6();
-        }
-
-        public static void Preprocess_1()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            Variables.SetVariable(s, "#1", "World");
-
-            const string src = "%A% #1";
-            string dest = StringEscaper.Preprocess(s, src);
-            const string comp = "Hello World";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Preprocess_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            Variables.SetVariable(s, "#1", "World");
-
-            const string src = "%A% #1";
-            string dest = StringEscaper.Preprocess(s, src);
-            const string comp = "%A% World";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Preprocess_3()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.PushDepthInfo(s, 1);
-
-            s.Variables.SetValue(VarsType.Local, "A", "Hello");
-
-            const string src = "%A% #1";
-            string dest = StringEscaper.Preprocess(s, src);
-            const string comp = "Hello #1";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Preprocess_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.PushDepthInfo(s, 2);
-
-            s.Variables.SetValue(VarsType.Local, "A", "Hello");
-
-            const string src = "%A% #1";
-            string dest = StringEscaper.Preprocess(s, src);
-            const string comp = "Hello ";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public static void Preprocess_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.PushDepthInfo(s, 2);
-
-            s.Variables.SetValue(VarsType.Local, "B", "C#");
-            Variables.SetVariable(s, "#2", "WPF");
-
-            string[] srcs =
+            static EngineState SingleTemplate(string src, string expected, Action<EngineState>? setEnvAction)
             {
+                EngineState s = EngineTests.CreateEngineState();
+                setEnvAction?.Invoke(s);
+
+                string dest = StringEscaper.Preprocess(s, src);
+                Assert.IsTrue(expected.Equals(dest, StringComparison.Ordinal));
+
+                return s;
+            }
+
+            static EngineState MultiTemplate(string[] srcs, string[] expecteds, Action<EngineState>? setEnvAction)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                setEnvAction?.Invoke(s);
+
+                List<string> dests = StringEscaper.Preprocess(s, srcs);
+
+                for (int i = 0; i < dests.Count; i++)
+                    Assert.IsTrue(dests[i].Equals(expecteds[i], StringComparison.Ordinal));
+
+                return s;
+            }
+
+
+            SingleTemplate("%A% #1", "Hello World", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+                Variables.SetVariable(s, "#1", "World");
+            });
+
+            SingleTemplate("%A% #1", "Hello #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+                Variables.SetVariable(s, "#1", "World");
+            });
+
+            SingleTemplate("%A% %^SIPARAM_1%", "Hello World", s =>
+            {
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+                Variables.SetVariable(s, "%^SIPARAM_1%", "World");
+            });
+
+
+            SingleTemplate("%A% #1", "%A% World", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                Variables.SetVariable(s, "#1", "World");
+            });
+
+            SingleTemplate("%A% #1", "%A% #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                Variables.SetVariable(s, "#1", "World");
+            });
+
+            SingleTemplate("%A% %^SIPARAM_1%", "%A% World", s =>
+            {
+                Variables.SetVariable(s, "%^SIPARAM_1%", "World");
+            });
+
+            
+            SingleTemplate("%A% #1", "Hello #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                EngineTests.PushDepthInfo(s, 1);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% #1", "Hello #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                EngineTests.PushDepthInfo(s, 1);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% %^SIPARAM_1%", "Hello ", s =>
+            {
+                EngineTests.PushDepthInfo(s, 1);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+
+            SingleTemplate("%A% #1", "Hello ", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% #1", "Hello #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% %^SIPARAM_1%", "Hello ", s =>
+            {
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+
+            SingleTemplate("%A% #1", "Hello ", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% #1", "Hello #1", s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+            SingleTemplate("%A% %^SIPARAM_1%", "Hello ", s =>
+            {
+                EngineTests.PushDepthInfo(s, 2);
+                s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            });
+
+
+            MultiTemplate([
                 "A_%A%",
                 "B_%B%",
                 "C_#1",
                 "D_#2"
-            };
-            List<string> dests = StringEscaper.Preprocess(s, srcs);
-            string[] comps =
-            {
+            ], [
                 "A_%A%",
                 "B_C#",
                 "C_",
                 "D_WPF"
-            };
+            ], s =>
+            {
+                s.CompatEnableAllLegacySectionParams = true;
+                EngineTests.PushDepthInfo(s, 2);
 
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
-        }
+                s.Variables.SetValue(VarsType.Local, "B", "C#");
+                Variables.SetVariable(s, "#2", "WPF");
+            });
 
-        public static void Preprocess_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.PushDepthInfo(s, 2);
+            MultiTemplate([
+                "A_%A%",
+                "B_%B%",
+                "C_#1",
+                "D_#2"
+            ], [
+                "A_%A%",
+                "B_C#",
+                "C_#1",
+                "D_#2"
+            ], s =>
+            {
+                s.CompatEnableAllLegacySectionParams = false;
+                EngineTests.PushDepthInfo(s, 2);
 
-            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
-            s.Variables.SetValue(VarsType.Local, "A", "%B%");
-            s.Variables.SetValue(VarsType.Local, "B", "%C%");
-            s.Variables.SetValue(VarsType.Local, "C", "%A%");
-            Variables.SetVariable(s, "#1", "#2");
-            Variables.SetVariable(s, "#2", "#3");
-            Variables.SetVariable(s, "#3", "#1");
+                s.Variables.SetValue(VarsType.Local, "B", "C#");
+                Variables.SetVariable(s, "#2", "WPF");
+            });
 
-            const string src = "%A% #1";
-            try { StringEscaper.Preprocess(s, src); }
-            catch (InvalidOperationException) { return; }
+            MultiTemplate([
+                "A_%A%",
+                "B_%B%",
+                "C_%^SIPARAM_1%",
+                "D_%^SIPARAM_2%"
+            ], [
+                "A_%A%",
+                "B_C#",
+                "C_",
+                "D_WPF"
+            ], s =>
+            {
+                EngineTests.PushDepthInfo(s, 2);
 
-            Assert.Fail();
+                s.Variables.SetValue(VarsType.Local, "B", "C#");
+                Variables.SetVariable(s, "%^SIPARAM_2%", "WPF");
+            });
+
+
+            // Circular Reference Tests
+            do
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                s.CompatEnableAllLegacySectionParams = true;
+                EngineTests.PushDepthInfo(s, 2);
+
+                // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
+                s.Variables.SetValue(VarsType.Local, "A", "%B%");
+                s.Variables.SetValue(VarsType.Local, "B", "%C%");
+                s.Variables.SetValue(VarsType.Local, "C", "%A%");
+                Variables.SetVariable(s, "#1", "#2");
+                Variables.SetVariable(s, "#2", "#3");
+                Variables.SetVariable(s, "#3", "#1");
+
+                const string src = "%A% #1";
+                try { StringEscaper.Preprocess(s, src); }
+                catch (InvalidOperationException) { break; }
+
+                Assert.Fail();
+            }
+            while (false);
+
+            do
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                s.CompatEnableAllLegacySectionParams = false;
+                EngineTests.PushDepthInfo(s, 2);
+
+                // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
+                s.Variables.SetValue(VarsType.Local, "A", "%B%");
+                s.Variables.SetValue(VarsType.Local, "B", "%C%");
+                s.Variables.SetValue(VarsType.Local, "C", "%A%");
+                Variables.SetVariable(s, "%^SIPARAM_1%", "#2");
+                Variables.SetVariable(s, "%^SIPARAM_2%", "#3");
+                Variables.SetVariable(s, "%^SIPARAM_3%", "#1");
+
+                const string src = "%A% #1";
+                try { StringEscaper.Preprocess(s, src); }
+                catch (InvalidOperationException) { break; }
+
+                Assert.Fail();
+            }
+            while (false);
         }
         #endregion
 
@@ -726,7 +957,7 @@ namespace PEBakery.Core.Tests
 
         public static void PackRegBinary_2()
         {
-            byte[] src = new byte[] { 0x43, 0x00, 0x3A, 0x00, 0x5C, 0x00 };
+            byte[] src = [0x43, 0x00, 0x3A, 0x00, 0x5C, 0x00];
             string dest = StringEscaper.PackRegBinary(src);
             string comp = "43,00,3A,00,5C,00";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -744,7 +975,7 @@ namespace PEBakery.Core.Tests
         {
             string src = "43,00,3A,00,5C,00";
             Assert.IsTrue(StringEscaper.UnpackRegBinary(src, out byte[] dest));
-            byte[] comp = new byte[] { 0x43, 0x00, 0x3A, 0x00, 0x5C, 0x00 };
+            byte[] comp = [0x43, 0x00, 0x3A, 0x00, 0x5C, 0x00];
             for (int i = 0; i < dest.Length; i++)
                 Assert.IsTrue(dest[i] == comp[i]);
         }
@@ -759,12 +990,12 @@ namespace PEBakery.Core.Tests
 
         public static void PackRegMultiBinary_1()
         {
-            string[] src = new string[]
-            {
+            string[] src =
+            [
                 "C:\\",
                 "Hello",
                 "World",
-            };
+            ];
             string dest = StringEscaper.PackRegMultiBinary(src);
             string comp = "43,00,3A,00,5C,00,00,00,48,00,65,00,6C,00,6C,00,6F,00,00,00,57,00,6F,00,72,00,6C,00,64,00";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -776,11 +1007,11 @@ namespace PEBakery.Core.Tests
         public void PackRegMultiString()
         {
             string[] src =
-            {
+            [
                 "C:\\",
                 "Hello",
                 "World",
-            };
+            ];
             string dest = StringEscaper.PackRegMultiString(src);
             const string comp = "C:\\#$zHello#$zWorld";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -794,11 +1025,11 @@ namespace PEBakery.Core.Tests
             const string src = "C:\\#$zHello#$zWorld";
             List<string> dests = StringEscaper.UnpackRegMultiString(src);
             string[] comps =
-            {
+            [
                 "C:\\",
                 "Hello",
                 "World",
-            };
+            ];
 
             for (int i = 0; i < dests.Count; i++)
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));

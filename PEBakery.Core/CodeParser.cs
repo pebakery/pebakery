@@ -2548,7 +2548,8 @@ namespace PEBakery.Core
                         {
                             case Variables.VarKeyType.Variable:
                                 break;
-                            case Variables.VarKeyType.SectionInParams:
+                            case Variables.VarKeyType.SectionInParamsPercent:
+                            case Variables.VarKeyType.SectionInParamsLegacy:
                                 throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
                             default:
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
@@ -2568,8 +2569,9 @@ namespace PEBakery.Core
                         {
                             case Variables.VarKeyType.Variable:
                                 break;
-                            case Variables.VarKeyType.SectionInParams:
-                                throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
+                            case Variables.VarKeyType.SectionInParamsPercent:
+                            case Variables.VarKeyType.SectionInParamsLegacy:
+                                throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in PackParam", rawCode);
                             default:
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
                         }
@@ -2583,8 +2585,9 @@ namespace PEBakery.Core
                                 case Variables.VarKeyType.Variable:
                                     varCount = args[2];
                                     break;
-                                case Variables.VarKeyType.SectionInParams:
-                                    throw new InvalidCommandException($"Section parameter [{args[2]}] cannot be used in GetParam", rawCode);
+                                case Variables.VarKeyType.SectionInParamsPercent:
+                                case Variables.VarKeyType.SectionInParamsLegacy:
+                                    throw new InvalidCommandException($"Section parameter [{args[2]}] cannot be used in PackParam", rawCode);
                                 default:
                                     throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
                             }
@@ -4545,8 +4548,8 @@ namespace PEBakery.Core
         public static bool StringContainsVariable(string str)
         {
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
-            bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
-            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
+            bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
             bool sectionInParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
             bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
@@ -4568,11 +4571,11 @@ namespace PEBakery.Core
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 
-            matches = Regex.Matches(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            matches = Regex.Matches(str, Variables.VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 
-            matches = Regex.Matches(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
+            matches = Regex.Matches(str, Variables.VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 

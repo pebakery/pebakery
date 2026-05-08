@@ -10,31 +10,31 @@ Mandatory=False
 [Process-Simple]
 Set,%Dest%,0
 Run,%ScriptFile%,Simple-Depth1
-Echo,#r
+Echo,%^RET%
 
 [Simple-Depth1]
 System,SetLocal
 Set,%Dest%,1
-Set,#r,A
+Set,%^RET%,A
 Run,%ScriptFile%,Simple-Depth2,B
 System,EndLocal
 
 [Simple-Depth2]
 System,SetLocal
-Set,%Dest%,#1
-Set,#r,#1
+Set,%Dest%,%^SIPARAM_1%
+Set,%^RET%,%^SIPARAM_1%
 System,EndLocal
 
 [Process-Branch]
 Set,%Dest%,0
 Run,%ScriptFile%,Branch-Depth1,True
-Echo,#r
+Echo,%^RET%
 
 [Branch-Depth1]
 System,SetLocal
-If,#1,Equal,True,Begin
+If,%^SIPARAM_1%,Equal,True,Begin
   Set,%Dest%,1
-  Set,#r,A
+  Set,%^RET%,A
   Run,%ScriptFile%,Branch-Depth2,False,B
 End
 Else,Begin
@@ -44,24 +44,24 @@ System,EndLocal
 
 [Branch-Depth2]
 System,SetLocal
-If,#1,Equal,True,Begin
+If,%^SIPARAM_1%,Equal,True,Begin
   Echo,"Do Nothing"
 End
 Else,Begin
-  Set,%Dest%,#2
-  Set,#r,#2
+  Set,%Dest%,%^SIPARAM_2%
+  Set,%^RET%,%^SIPARAM_2%
 End
 System,EndLocal
 
 [Process-ImplicitEnd]
 Set,%Dest%,0
 Run,%ScriptFile%,ImplicitEnd-Depth1,True
-Echo,#r
+Echo,%^RET%
 
 [ImplicitEnd-Depth1]
-If,#1,Equal,True,Begin
+If,%^SIPARAM_1%,Equal,True,Begin
   System,SetLocal
   Set,%Dest%,1
-  Set,#r,A
+  Set,%^RET%,A
 End
 Set,%Dest%,-1

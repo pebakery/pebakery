@@ -633,47 +633,25 @@ namespace PEBakery.Core
 
                     if (_opts.OverridableFixedVariables)
                     { // WinBuilder compatible
-                        if (_localVars.ContainsKey(varName))
-                        {
-                            string varValue = _localVars[varName];
-                            b.Append(varValue);
-                        }
-                        else if (_globalVars.ContainsKey(varName))
-                        {
-                            string varValue = _globalVars[varName];
-                            b.Append(varValue);
-                        }
-                        else if (_fixedVars.ContainsKey(varName))
-                        {
-                            string varValue = _fixedVars[varName];
-                            b.Append(varValue);
-                        }
+                        if (_localVars.TryGetValue(varName, out string? localVarValue))
+                            b.Append(localVarValue);
+                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
+                            b.Append(globalVarValue);
+                        else if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
+                            b.Append(fixedVarValue);
                         else // variable not found
-                        {
                             b.Append("#$p").Append(varName).Append("#$p");
-                        }
                     }
                     else
                     { // PEBakery standard
-                        if (_fixedVars.ContainsKey(varName))
-                        {
-                            string varValue = _fixedVars[varName];
-                            b.Append(varValue);
-                        }
-                        else if (_localVars.ContainsKey(varName))
-                        {
-                            string varValue = _localVars[varName];
-                            b.Append(varValue);
-                        }
-                        else if (_globalVars.ContainsKey(varName))
-                        {
-                            string varValue = _globalVars[varName];
-                            b.Append(varValue);
-                        }
+                        if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
+                            b.Append(fixedVarValue);
+                        else if (_localVars.TryGetValue(varName, out string? localVarValue))
+                            b.Append(localVarValue);
+                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
+                            b.Append(globalVarValue);
                         else // variable not found
-                        {
                             b.Append("#$p").Append(varName).Append("#$p");
-                        }
                     }
 
                     if (x + 1 == matches.Count) // Last iteration
@@ -774,7 +752,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string? GetVariableName(EngineState s, string varName)
         {
-            if (!varName.StartsWith("%") || !varName.EndsWith("%"))
+            if (!varName.StartsWith('%') || !varName.EndsWith('%'))
                 return null;
             if (StringHelper.CountSubStr(varName, "%") != 2)
                 return null;
@@ -783,30 +761,65 @@ namespace PEBakery.Core
         }
 
         public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        public const string VarKeyRegexContainsSectionInParams = @"(#[1-9])";
-        public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9])";
+        public const string VarKeyRegexContainsLegacySectionInParams = @"#([1-9])";
+        public const string VarKeyRegexContainsLegacySectionOutParams = @"#[oO]([1-9])";
+        public const string VarKeyRegexContainsPercentSectionInParams = @"%\^SIPARAM_([1-9][0-9_]*)%";
+        public const string VarKeyRegexContainsPercentSectionOutParams = @"%\^SOPARAM_([1-9][0-9_]*)%";
         public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
-        public const string VarKeyRegexSectionInParams = @"^" + VarKeyRegexContainsSectionInParams + @"$";
-        public const string VarKeyRegexSectionOutParams = @"^" + VarKeyRegexContainsSectionOutParams + @"$";
-        public enum VarKeyType { None, Variable, SectionInParams, SectionOutParams, ReturnValue, LoopCounter }
+        public const string VarKeyRegexLegacySectionInParams = @"^" + VarKeyRegexContainsLegacySectionInParams + @"$";
+        public const string VarKeyRegexLegacySectionOutParams = @"^" + VarKeyRegexContainsLegacySectionOutParams + @"$";
+        public const string VarKeyRegexPercentSectionInParams = @"^" + VarKeyRegexContainsPercentSectionInParams + @"$";
+        public const string VarKeyRegexPercentSectionOutParams = @"^" + VarKeyRegexContainsPercentSectionOutParams + @"$";
+        public enum VarKeyType
+        {
+            None,
+            Variable,
+            SectionInParamsPercent, SectionInParamsLegacy,
+            SectionOutParamsPercent, SectionOutParamsLegacy,
+            ReturnValuePercent, ReturnValueLegacy,
+            LoopCounterPercent, LoopCounterLegacy
+        }
+
         public static VarKeyType DetectType(string key)
         {
             if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            if (Regex.Match(key, VarKeyRegexSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
-                return VarKeyType.SectionInParams;
-            if (Regex.Match(key, VarKeyRegexSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #o1, #o2, #o3, ...
-                return VarKeyType.SectionOutParams;
+            if (Regex.Match(key, VarKeyRegexPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %^SIPARAM_1%, %^SIPARAM_1%, ...
+                return VarKeyType.SectionInParamsPercent;
+            if (Regex.Match(key, VarKeyRegexLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
+                return VarKeyType.SectionInParamsLegacy;
+            if (Regex.Match(key, VarKeyRegexPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %^SOPARAM_1%, %^SOPARAM_2%, %^SOPARAM_3% ...
+                return VarKeyType.SectionOutParamsPercent;
+            if (Regex.Match(key, VarKeyRegexLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #o1, #o2, #o3, ...
+                return VarKeyType.SectionOutParamsLegacy;
+            if (key.Equals("%^RET%", StringComparison.OrdinalIgnoreCase)) // Return Value
+                return VarKeyType.ReturnValuePercent;
             if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Return Value
-                return VarKeyType.ReturnValue;
+                return VarKeyType.ReturnValueLegacy;
+            if (key.Equals("%^LOOP_IDX%", StringComparison.OrdinalIgnoreCase)) // Loop Counter
+                return VarKeyType.LoopCounterPercent;
             if (key.Equals("#c", StringComparison.OrdinalIgnoreCase)) // Loop Counter
-                return VarKeyType.LoopCounter;
+                return VarKeyType.LoopCounterLegacy;
             return VarKeyType.None;
         }
 
-        public static int GetSectionInParamIndex(string secParam)
+        public static int GetPercentSectionInParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (match.Success)
+            {
+                if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
+                    return paramIdx;
+                else
+                    return 0; // Error
+            }
+
+            return 0; // Error
+        }
+
+        public static int GetLegacySectionInParamIndex(string secParam)
+        {
+            Match match = Regex.Match(secParam, VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam[1..], out int paramIdx))
@@ -818,9 +831,23 @@ namespace PEBakery.Core
             return 0; // Error
         }
 
-        public static int GetSectionOutParamIndex(string secParam)
+        public static int GetPercentSectionOutParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (match.Success)
+            {
+                if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
+                    return paramIdx;
+                else
+                    return 0; // Error
+            }
+
+            return 0; // Error
+        }
+
+        public static int GetLegacySectionOutParamIndex(string secParam)
+        {
+            Match match = Regex.Match(secParam, VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam[2..], out int paramIdx))
@@ -832,12 +859,12 @@ namespace PEBakery.Core
             return 0; // Error
         }
 
-        public static string? GetSectionOutParamVarKey(EngineState s, string secParam)
+        public static string? GetPercentSectionOutParamVarKey(EngineState s, string secParam)
         {
             if (s.CurSectionOutParams == null)
                 return null;
 
-            int soIdx = GetSectionOutParamIndex(secParam);
+            int soIdx = GetPercentSectionOutParamIndex(secParam);
             if (soIdx == 0)
                 return null; // Error
             if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count < soIdx)
@@ -846,47 +873,73 @@ namespace PEBakery.Core
             return s.CurSectionOutParams[soIdx - 1]; // %Dest%
         }
 
-        public static LogInfo SetSectionInParam(EngineState s, string key, string value)
+        public static string? GetLegacySectionOutParamVarKey(EngineState s, string secParam)
         {
-            int pIdx = GetSectionInParamIndex(key);
-            return SetSectionInParam(s, pIdx, value);
+            if (s.CurSectionOutParams == null)
+                return null;
+
+            int soIdx = GetLegacySectionOutParamIndex(secParam);
+            if (soIdx == 0)
+                return null; // Error
+            if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count < soIdx)
+                return null;
+
+            return s.CurSectionOutParams[soIdx - 1]; // %Dest%
         }
 
-        public static LogInfo SetSectionInParam(EngineState s, int pIdx, string value)
+        public static LogInfo SetPercentSectionInParam(EngineState s, string key, string value)
+        {
+            int pIdx = GetPercentSectionInParamIndex(key);
+            return SetSectionInParamInternal(s, pIdx, value, $"%^SIPARAM_{pIdx}%");
+        }
+
+        public static LogInfo SetLegacySectionInParam(EngineState s, string key, string value)
+        {
+            int pIdx = GetLegacySectionInParamIndex(key);
+            return SetSectionInParamInternal(s, pIdx, value, $"#{pIdx}");
+        }
+
+        private static LogInfo SetSectionInParamInternal(EngineState s, int pIdx, string value, string symbol)
         {
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section parameter's index [{pIdx}] must be a positive integer");
-            if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
+            if (value.Contains($"#{pIdx}", StringComparison.Ordinal))
                 return new LogInfo(LogState.Error, "Section parameter cannot have a circular reference");
 
             s.CurSectionInParams[pIdx] = value;
-            return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
+            return new LogInfo(LogState.Success, $"Section parameter [{symbol}] set to [{value}]");
         }
 
-        public static LogInfo SetSectionOutParam(EngineState s, string key, string value)
+        public static LogInfo SetPercentSectionOutParam(EngineState s, string key, string value)
         {
-            int pIdx = GetSectionOutParamIndex(key);
-            return SetSectionOutParam(s, pIdx, value);
+            int pIdx = GetPercentSectionOutParamIndex(key);
+            return SetSectionOutParamInternal(s, pIdx, value, $"%^SOPARAM_{pIdx}%");
         }
 
-        public static LogInfo SetSectionOutParam(EngineState s, int pIdx, string value)
+        public static LogInfo SetLegacySectionOutParam(EngineState s, string key, string value)
         {
+            int pIdx = GetLegacySectionOutParamIndex(key);
+            return SetSectionOutParamInternal(s, pIdx, value, $"#o{pIdx}");
+        }
+
+        private static LogInfo SetSectionOutParamInternal(EngineState s, int pIdx, string value, string symbol)
+        { // [%^SOPARAM_{pIdx}%]
             // pIdx starts from 1 
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section out parameter's index [{pIdx}] must be a positive integer");
-            if (value.IndexOf($"#o{pIdx}", StringComparison.OrdinalIgnoreCase) != -1)
+            if (value.Contains($"#o{pIdx}", StringComparison.OrdinalIgnoreCase))
                 return new LogInfo(LogState.Error, "Section out parameter cannot have a circular reference");
             if (s.CurSectionOutParams == null || s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count <= pIdx - 1)
-                return new LogInfo(LogState.Error, $"[#o{pIdx}] is not referencing any variables");
+                return new LogInfo(LogState.Error, $"[{symbol}] is not referencing any variables");
 
             // Write to varKey
             string varKey = s.CurSectionOutParams[pIdx - 1]; // %Dest%
             string? key = GetVariableName(s, varKey); // %D%
             if (key == null) // This must not happen, must check before calling this method
-                return new LogInfo(LogState.CriticalError, $"[#o{pIdx}] is referencing invalid variable");
+                return new LogInfo(LogState.CriticalError, $"[{symbol}] is referencing invalid variable");
 
             s.Variables.SetValue(VarsType.Local, key, value);
-            return new LogInfo(LogState.Success, $"[{varKey}], reference of [#o{pIdx}], set to [{value}]");
+            return new LogInfo(LogState.Success, $"[{varKey}], reference of [{symbol}], set to [{value}]");
         }
 
         /// <summary>
@@ -940,11 +993,8 @@ namespace PEBakery.Core
 
                             // https://github.com/pebakery/pebakery/issues/88
                             // Delete variable line from memory-cached MainScript
-                            if (s.Project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
-                            {
-                                ScriptSection varSect = s.Project.MainScript.Sections[ScriptSection.Names.Variables];
-                                varSect.DeleteIniKey($"%{key}%");
-                            }
+                            if (s.Project.MainScript.Sections.TryGetValue(ScriptSection.Names.Variables, out ScriptSection? mainVarSect))
+                                mainVarSect.DeleteIniKey($"%{key}%");
                         }
                         else
                         {
@@ -963,32 +1013,69 @@ namespace PEBakery.Core
                             logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }
                 }
-                else if (type == VarKeyType.SectionInParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionInParamsPercent) // %^SIPARAM_1%, %SIPARAM_2%, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    logs.Add(SetSectionInParam(s, varKey, finalValue));
+                    logs.Add(SetPercentSectionInParam(s, varKey, finalValue));
                 }
-                else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
+                else if (type == VarKeyType.SectionInParamsLegacy) // #1, #2, #3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    if (!s.CompatDisableExtendedSectionParams)
-                        logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    if (s.CompatEnableAllLegacySectionParams)
+                        logs.Add(SetLegacySectionInParam(s, varKey, finalValue));
                     else
-                        logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                 }
-                else if (type == VarKeyType.ReturnValue) // #r
+                else if (type == VarKeyType.SectionOutParamsPercent) // %SOPARAM_1%, %SOPARAM_2%, %SOPARAM_3%, ...
+                { // WB082 does not remove section parameter, just set to string "NIL"
+                    logs.Add(SetPercentSectionOutParam(s, varKey, finalValue));
+                }
+                else if (type == VarKeyType.SectionOutParamsLegacy) // #o1, #o2, #o3, ...
+                { // WB082 does not remove section parameter, just set to string "NIL"
+                    if (s.CompatEnableAllLegacySectionParams)
+                    {
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
+                            logs.Add(SetLegacySectionOutParam(s, varKey, finalValue));
+                        else
+                            logs.Add(new LogInfo(LogState.Warning, "Legacy section out parameters are disabled by the compatibility option"));
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
+                    }
+                }
+                else if (type == VarKeyType.ReturnValuePercent) // %^RET^%
+                {
+                    s.ReturnValue = string.Empty;
+                    logs.Add(new LogInfo(LogState.Success, "ReturnValue [%^RET%] deleted"));
+                }
+                else if (type == VarKeyType.ReturnValueLegacy) // #r
                 { // s.SectionReturnValue's default value is string.Empty
-                    if (!s.CompatDisableExtendedSectionParams)
+                    if (s.CompatEnableAllLegacySectionParams)
                     {
-                        s.ReturnValue = string.Empty;
-                        logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
+                        {
+                            s.ReturnValue = string.Empty;
+                            logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
+                        }
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, "ReturnValue [#r] is disabled by the compatibility option"));
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                     }
                 }
-                else if (type == VarKeyType.LoopCounter)
-                { // #c
-                    logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be deleted"));
+                else if (type == VarKeyType.LoopCounterPercent) // %^LOOP_IDX%
+                {
+                    logs.Add(new LogInfo(LogState.Warning, "LoopCounter [%^LOOP_IDX%] cannot be deleted"));
+                }
+                else if (type == VarKeyType.LoopCounterLegacy) // #c
+                {
+                    if (s.CompatEnableAllLegacySectionParams)
+                        logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be deleted"));
+                    else
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                 }
                 else
                 {
@@ -1023,7 +1110,7 @@ namespace PEBakery.Core
                         LogInfo log = s.Variables.SetValue(VarsType.Global, key, finalValue);
                         logs.Add(log);
 
-                        // Remove local variable if exist
+                        // Remove local variable if it exists
                         if (log.State == LogState.Success)
                             s.Variables.DeleteKey(VarsType.Local, key);
                     }
@@ -1041,16 +1128,14 @@ namespace PEBakery.Core
 
                             // https://github.com/pebakery/pebakery/issues/88
                             // Update memory-cached MainScript's Variables section 
-                            if (s.Project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
+                            if (s.Project.MainScript.Sections.TryGetValue(ScriptSection.Names.Variables, out ScriptSection? mainVarSect))
                             {
-                                ScriptSection varSect = s.Project.MainScript.Sections[ScriptSection.Names.Variables];
-                                varSect.UpdateIniKey($"%{key}%", finalValue);
+                                mainVarSect.UpdateIniKey($"%{key}%", finalValue);
                             }
                             else
                             { // Create temp ScriptSection instance
                                 ScriptSection varSect = new ScriptSection(
-                                    s.Project.MainScript, ScriptSection.Names.Variables, SectionType.Variables,
-                                    new string[] { $"%{key}%={finalValue}" }, 0);
+                                    s.Project.MainScript, ScriptSection.Names.Variables, SectionType.Variables, [$"%{key}%={finalValue}"], 0);
                                 s.Project.MainScript.Sections[ScriptSection.Names.Variables] = varSect;
                             }
 
@@ -1067,38 +1152,81 @@ namespace PEBakery.Core
                         logs.Add(s.Variables.SetValue(VarsType.Local, key, finalValue));
                     }
                 }
-                else if (type == VarKeyType.SectionInParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionInParamsPercent) // %^SIPARAM_1%, %SIPARAM_2%, ...
                 {
-                    logs.Add(SetSectionInParam(s, varKey, finalValue));
+                    logs.Add(SetPercentSectionInParam(s, varKey, finalValue));
                 }
-                else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
+                else if (type == VarKeyType.SectionInParamsLegacy) // #1, #2, #3, ...
                 {
-                    if (!s.CompatDisableExtendedSectionParams)
-                        logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    if (s.CompatEnableAllLegacySectionParams)
+                        logs.Add(SetLegacySectionInParam(s, varKey, finalValue));
                     else
-                        logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                 }
-                else if (type == VarKeyType.ReturnValue) // #r
+                else if (type == VarKeyType.SectionOutParamsPercent) // %SOPARAM_1%, %SOPARAM_2%, %SOPARAM_3%, ...
                 {
-                    if (!s.CompatDisableExtendedSectionParams)
+                    logs.Add(SetPercentSectionOutParam(s, varKey, finalValue));
+                }
+                else if (type == VarKeyType.SectionOutParamsLegacy) // #o1, #o2, #o3, ...
+                {
+                    if (s.CompatEnableAllLegacySectionParams)
                     {
-                        s.ReturnValue = finalValue;
-                        logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
+                            logs.Add(SetLegacySectionOutParam(s, varKey, finalValue));
+                        else
+                            logs.Add(new LogInfo(LogState.Warning, "Legacy section out parameters are disabled by the compatibility option"));
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
                     }
                 }
-                else if (type == VarKeyType.LoopCounter)
-                { // #c
+                else if (type == VarKeyType.ReturnValuePercent) // %^RET^%
+                {
+                    s.ReturnValue = finalValue;
+                    logs.Add(new LogInfo(LogState.Success, $"ReturnValue [%^RET%] set to [{finalValue}]"));
+                }
+                else if (type == VarKeyType.ReturnValueLegacy) // #r
+                {
+                    if (s.CompatEnableAllLegacySectionParams)
+                    {
+                        if (!s.CompatDisableLegacyExtendedSectionParams)
+                        {
+                            s.ReturnValue = finalValue;
+                            logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
+                        }
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
+                    }
+                }
+                else if (type == VarKeyType.LoopCounterPercent || // %^LOOP_IDX%
+                        type == VarKeyType.LoopCounterLegacy) // #c
+                {
+                    string symbol = "%^LOOP_IDX%";
+                    if (type == VarKeyType.LoopCounterLegacy)
+                    {
+                        symbol = "#c";
+
+                        if (!s.CompatEnableAllLegacySectionParams)
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, "Legacy section parameters are not enabled by the compatibility option"));
+                            return logs;
+                        }
+                    }
+
                     if (!s.CompatOverridableLoopCounter)
                     {
-                        logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be overriden"));
+                        logs.Add(new LogInfo(LogState.Warning, $"LoopCounter [{symbol}] cannot be overriden"));
                         return logs;
                     }
 
-                    // Escape #c (Loop Counter)
+                    // Escape Loop Counter
                     if (0 < s.LoopCmdStateStack.Count)
                     {
                         EngineLoopCmdState peekLoop = s.LoopCmdStateStack.Peek();
@@ -1116,7 +1244,7 @@ namespace PEBakery.Core
                                 s.LoopCmdStateStack.Pop();
                                 s.LoopCmdStateStack.Push(idxLoop);
 
-                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{ctr}]"));
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [{symbol}] set to [{ctr}]"));
                                 break;
                             case LoopCmdState.OnDriveLetter:
                                 if (!(finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0])))
@@ -1131,13 +1259,13 @@ namespace PEBakery.Core
                                 s.LoopCmdStateStack.Pop();
                                 s.LoopCmdStateStack.Push(charLoop);
 
-                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{charLoop.CounterLetter}]"));
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [{symbol}] set to [{charLoop.CounterLetter}]"));
                                 break;
                         }
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
+                        logs.Add(new LogInfo(LogState.Error, $"Loop is not running, unable to update LoopCounter [{symbol}]"));
                         return logs;
                     }
                 }
@@ -1158,24 +1286,42 @@ namespace PEBakery.Core
         /// <returns>Return null at error</returns>
         public static bool? ContainsKey(EngineState s, string varKey)
         {
-            if (varKey == null)
-                throw new ArgumentNullException(nameof(varKey));
+            ArgumentNullException.ThrowIfNull(varKey);
 
             VarKeyType type = DetectType(varKey);
             switch (type)
             {
                 case VarKeyType.Variable:
-                    string? key = TrimPercentMark(varKey);
-                    return key != null && s.Variables.ContainsKey(key);
-                case VarKeyType.SectionInParams:
-                    int siIdx = GetSectionInParamIndex(varKey);
-                    return siIdx != 0 && s.CurSectionInParams.ContainsKey(siIdx);
-                case VarKeyType.SectionOutParams:
-                    if (GetSectionOutParamVarKey(s, varKey) is not string newVarKey)
-                        return null;
-                    varKey = newVarKey;
-                    goto case VarKeyType.Variable;
-                case VarKeyType.ReturnValue:
+                    {
+                        string? key = TrimPercentMark(varKey);
+                        return key != null && s.Variables.ContainsKey(key);
+                    }
+                case VarKeyType.SectionInParamsPercent:
+                    {
+                        int siIdx = GetPercentSectionInParamIndex(varKey);
+                        return siIdx != 0 && s.CurSectionInParams.ContainsKey(siIdx);
+                    }
+                case VarKeyType.SectionInParamsLegacy:
+                    {
+                        int siIdx = GetLegacySectionInParamIndex(varKey);
+                        return siIdx != 0 && s.CurSectionInParams.ContainsKey(siIdx);
+                    }
+                case VarKeyType.SectionOutParamsPercent:
+                    {
+                        if (GetPercentSectionOutParamVarKey(s, varKey) is not string newVarKey)
+                            return null;
+                        varKey = newVarKey;
+                        goto case VarKeyType.Variable;
+                    }
+                case VarKeyType.SectionOutParamsLegacy:
+                    {
+                        if (GetLegacySectionOutParamVarKey(s, varKey) is not string newVarKey)
+                            return null;
+                        varKey = newVarKey;
+                        goto case VarKeyType.Variable;
+                    }
+                case VarKeyType.ReturnValuePercent:
+                case VarKeyType.ReturnValueLegacy:
                     return true;
                 default:
                     return null;

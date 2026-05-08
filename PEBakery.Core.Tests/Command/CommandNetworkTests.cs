@@ -228,11 +228,11 @@ namespace PEBakery.Core.Tests.Command
 
                 string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
                 string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\"";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success, new CompatOption { DisableExtendedSectionParams = true });
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success, new CompatOption { DisableLegacyExtendedSectionParams = true });
 
                 Assert.IsTrue(File.Exists(destFile));
                 Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
-                Assert.IsTrue(s.ReturnValue.Length == 0);
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal)); // Always set ReturnValue, regardless of DisableLegacyExtendedSectionParams.
             }
             finally
             {
