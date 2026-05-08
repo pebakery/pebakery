@@ -16,6 +16,33 @@ param (
     [switch]$noclean = $false
 )
 
+function Get-WindowsDesktopRuntimeVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$MajorVersion
+    )
+
+    try {
+        return dotnet --list-runtimes 2>$null |
+            ForEach-Object {
+                if ($_ -match '^Microsoft\.WindowsDesktop\.App\s+(\d+)\.(\d+)\.(\d+)(?:[-+][^\s]+)?\s+\[') {
+                    [PSCustomObject]@{
+                        Major = [int]$Matches[1]
+                        Minor = [int]$Matches[2]
+                        Patch = [int]$Matches[3]
+                        Version = [version]"$($Matches[1]).$($Matches[2]).$($Matches[3])"
+                    }
+                }
+            } |
+            Where-Object { $_ -and $_.Major -eq $MajorVersion } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+    }
+    catch {
+        return $null
+    }
+}
+
 # Is CI Mode?
 if ($nightly) {
     $BinaryName = "nightly"
@@ -103,7 +130,7 @@ $PublishDir = "${BaseDir}\Publish"
 $ToolDir = "${PublishDir}\_tools"
 # Unfortunately, 7zip does not provide arm64 build of 7za.exe yet. (v21.07)
 $SevenZipExe = "${ToolDir}\7za_x64.exe"
-# Detect installed .NET runtime version (from NetDetectorCli.vcxproj)
+# Fallback detector for environments where dotnet runtime listing is unavailable.
 $NetDetectorExe = "${ToolDir}\NetDetectorCli_x64.exe"
 # UPX minimizes release size, but many antiviruses definitely hate it.
 # $UpxExe = "${ToolDir}\upx_x64.exe"
@@ -152,10 +179,21 @@ dotnet --info
 # reg export HKLM\SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions TMP2.reg
 # Get-Content TMP2.reg
 # Write-Output ""
-$NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
-$NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
+$NetVerMinor = $null
+$NetVerPatch = $null
+
+$DetectedRuntime = Get-WindowsDesktopRuntimeVersion -MajorVersion $NetVerMajor
+if ($null -ne $DetectedRuntime) {
+    $NetVerMinor = $DetectedRuntime.Minor
+    $NetVerPatch = $DetectedRuntime.Patch
+} elseif (Test-Path -Path $NetDetectorExe) {
+    Write-Output ".NET runtime detection via dotnet CLI failed. Falling back to NetDetectorCli."
+    $NetVerMinor = & "$NetDetectorExe" --req-major $NetVerMajor --res-minor --win-desktop
+    $NetVerPatch = & "$NetDetectorExe" --req-major $NetVerMajor --res-patch --win-desktop
+}
+
 if ($null -eq $NetVerMinor -or $null -eq $NetVerPatch) {
-    Write-Output ".NET SDK version detection error! Using fallback version value."
+    Write-Output ".NET runtime version detection error! Using fallback version value."
 }
 if ($null -eq $NetVerMinor) { $NetVerMinor = $FallbackNetVerMinor }
 if ($null -eq $NetVerPatch) { $NetVerPatch = $FallbackNetVerPatch }
