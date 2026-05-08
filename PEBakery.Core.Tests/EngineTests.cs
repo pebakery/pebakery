@@ -30,6 +30,7 @@ using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -489,20 +490,25 @@ namespace PEBakery.Core.Tests
 
     public class STATestMethodAttribute : TestMethodAttribute
     {
-        public override TestResult[] Execute(ITestMethod testMethod)
+        public STATestMethodAttribute([CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+            : base(callerFilePath, callerLineNumber)
+        {
+        }
+
+        public override async Task<TestResult[]> ExecuteAsync(ITestMethod testMethod)
         {
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
-                return new TestResult[] { testMethod.Invoke(null) };
+                return new[] { await testMethod.InvokeAsync(null) };
 
-            TestResult[] result = Array.Empty<TestResult>();
+            Task<TestResult>? resultTask = null;
             Thread thread = new Thread(() =>
             {
-                result = new TestResult[] { testMethod.Invoke(null) };
+                resultTask = testMethod.InvokeAsync(null);
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
             thread.Join();
-            return result;
+            return new[] { await resultTask! };
         }
     }
 }

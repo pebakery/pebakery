@@ -26,7 +26,8 @@
 */
 
 using PEBakery.Helper;
-using SevenZip;
+using SharpSevenZip;
+using SharpSevenZip.EventArguments;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -54,8 +55,8 @@ namespace PEBakery.Core.Commands
             // Parse arguments / parameters
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
-            SevenZip.OutArchiveFormat outFormat = ArchiveFile.ToSevenZipOutFormat(info.Format);
-            SevenZip.CompressionLevel compLevel = SevenZip.CompressionLevel.Normal;
+            SharpSevenZip.OutArchiveFormat outFormat = ArchiveFile.ToSevenZipOutFormat(info.Format);
+            SharpSevenZip.CompressionLevel compLevel = SharpSevenZip.CompressionLevel.Normal;
             if (info.CompressLevel is CompressLevel level)
             {
                 try
@@ -86,11 +87,11 @@ namespace PEBakery.Core.Commands
             // If parent directory of destArchive does not exist, create it
             Directory.CreateDirectory(FileHelper.GetDirNameEx(destArchive));
 
-            // Prepare SevenZipSharp compressor
+            // Prepare SharpSevenZip compressor
             string tempDir = FileHelper.GetTempDir();
             try
             {
-                SevenZipCompressor compressor = new SevenZipCompressor(tempDir)
+                SharpSevenZipCompressor compressor = new SharpSevenZipCompressor(tempDir)
                 {
                     ArchiveFormat = outFormat,
                     CompressionMode = appendMode ? CompressionMode.Append : CompressionMode.Create,
@@ -246,17 +247,17 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            SevenZipExtractor? extractor = null;
+            SharpSevenZipExtractor? extractor = null;
             try
             {
                 if (info.Password == null)
                 {
-                    extractor = new SevenZipExtractor(srcArchive);
+                    extractor = new SharpSevenZipExtractor(srcArchive);
                 }
                 else
                 {
                     string password = StringEscaper.Preprocess(s, info.Password);
-                    extractor = new SevenZipExtractor(srcArchive, password);
+                    extractor = new SharpSevenZipExtractor(srcArchive, password);
                 }
 
                 extractor.Extracting += ReportDecompressProgress;
@@ -328,7 +329,7 @@ namespace PEBakery.Core.Commands
 
             if (singleFile == null)
             { // No singleFile operand, extract all
-                using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
+                using (SharpSevenZipExtractor extractor = new SharpSevenZipExtractor(srcCab))
                 {
                     if (extractor.Format != InArchiveFormat.Cab)
                         return LogInfo.LogErrorMessage(logs, "Expand command must be used with cabinet archive");
@@ -371,7 +372,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                 }
 
-                using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
+                using (SharpSevenZipExtractor extractor = new SharpSevenZipExtractor(srcCab))
                 {
                     if (extractor.Format != InArchiveFormat.Cab)
                         return LogInfo.LogErrorMessage(logs, "The Expand command only supports cabinet (.cab) archives");
@@ -498,7 +499,7 @@ namespace PEBakery.Core.Commands
                     FileInfo fi = new FileInfo(srcCab);
                     bool reportProgress = 1024 * 1024 <= fi.Length;
 
-                    using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
+                    using (SharpSevenZipExtractor extractor = new SharpSevenZipExtractor(srcCab))
                     {
                         if (extractor.Format != InArchiveFormat.Cab)
                             return LogInfo.LogErrorMessage(logs, $"[{srcCab}] is not a cabinet archive");

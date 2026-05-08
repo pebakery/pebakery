@@ -315,7 +315,7 @@ namespace PEBakery.Core
                 });
                 Joveler.Compression.XZ.XZInit.GlobalInit(xzPath!);
                 ManagedWimLib.Wim.GlobalInit(wimlibPath!);
-                SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath!);
+                SharpSevenZip.SharpSevenZipBase.SetLibraryPath(sevenZipPath!);
             }
             catch (Exception e)
             {

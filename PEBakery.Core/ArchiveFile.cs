@@ -51,23 +51,23 @@ namespace PEBakery.Core
     #region ArchiveFile
     public static class ArchiveFile
     {
-        #region SevenZipSharp
-        public static SevenZip.CompressionLevel ToSevenZipLevel(CompressLevel level)
+        #region SharpSevenZip
+        public static SharpSevenZip.CompressionLevel ToSevenZipLevel(CompressLevel level)
         {
-            SevenZip.CompressionLevel compLevel;
+            SharpSevenZip.CompressionLevel compLevel;
             switch (level)
             {
                 case CompressLevel.Store:
-                    compLevel = SevenZip.CompressionLevel.None;
+                    compLevel = SharpSevenZip.CompressionLevel.None;
                     break;
                 case CompressLevel.Fastest:
-                    compLevel = SevenZip.CompressionLevel.Fast;
+                    compLevel = SharpSevenZip.CompressionLevel.Fast;
                     break;
                 case CompressLevel.Normal:
-                    compLevel = SevenZip.CompressionLevel.Normal;
+                    compLevel = SharpSevenZip.CompressionLevel.Normal;
                     break;
                 case CompressLevel.Best:
-                    compLevel = SevenZip.CompressionLevel.Ultra;
+                    compLevel = SharpSevenZip.CompressionLevel.Ultra;
                     break;
                 default:
                     throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{level}]");
@@ -75,16 +75,16 @@ namespace PEBakery.Core
             return compLevel;
         }
 
-        public static SevenZip.OutArchiveFormat ToSevenZipOutFormat(ArchiveCompressFormat format)
+        public static SharpSevenZip.OutArchiveFormat ToSevenZipOutFormat(ArchiveCompressFormat format)
         {
-            SevenZip.OutArchiveFormat outFormat;
+            SharpSevenZip.OutArchiveFormat outFormat;
             switch (format)
             {
                 case ArchiveCompressFormat.Zip:
-                    outFormat = SevenZip.OutArchiveFormat.Zip;
+                    outFormat = SharpSevenZip.OutArchiveFormat.Zip;
                     break;
                 case ArchiveCompressFormat.SevenZip:
-                    outFormat = SevenZip.OutArchiveFormat.SevenZip;
+                    outFormat = SharpSevenZip.OutArchiveFormat.SevenZip;
                     break;
                 default:
                     throw new ArgumentException($"Invalid ArchiveHelper.ArchiveFormat [{format}]");
