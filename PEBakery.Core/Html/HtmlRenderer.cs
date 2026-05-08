@@ -272,10 +272,10 @@ namespace PEBakery.Core.Html
             return templateStr ?? string.Empty;
         }
 
-        public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+        public ValueTask<string?> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
         {
-            string templateBody = Load(context, callerSpan, templatePath);
-            return new ValueTask<string>(templateBody);
+            string? templateBody = Load(context, callerSpan, templatePath);
+            return new ValueTask<string?>(templateBody);
         }
     }
 }

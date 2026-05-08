@@ -622,13 +622,13 @@ namespace PEBakery.Core.Tests.Command
                         using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool found = false;
-                            int ExistCallback(DirEntry dentry, object userData)
+                            int ExistCallback(DirEntry dentry, object? userData)
                             {
                                 found = true;
                                 return Wim.IterateCallbackSuccess;
                             }
 
-                            wim.IterateDirTree(1, expected, IterateDirTreeFlags.None, ExistCallback, null);
+                            wim.IterateDirTree(1, expected!, IterateDirTreeFlags.None, ExistCallback, null);
                             Assert.IsTrue(found);
                         }
                     }
@@ -677,8 +677,8 @@ namespace PEBakery.Core.Tests.Command
                         using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool deleted = false;
-                            int DeletedCallback(DirEntry dentry, object userData) => Wim.IterateCallbackSuccess;
-                            try { wim.IterateDirTree(1, expected, IterateDirTreeFlags.None, DeletedCallback, null); }
+                            int DeletedCallback(DirEntry dentry, object? userData) => Wim.IterateCallbackSuccess;
+                            try { wim.IterateDirTree(1, expected!, IterateDirTreeFlags.None, DeletedCallback, null); }
                             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist) { deleted = true; }
 
                             Assert.IsTrue(deleted);
@@ -730,17 +730,17 @@ namespace PEBakery.Core.Tests.Command
                         using (Wim wim = Wim.OpenWim(destWim, OpenFlags.None))
                         {
                             bool found = false;
-                            int ExistCallback(DirEntry dentry, object userData)
+                            int ExistCallback(DirEntry dentry, object? userData)
                             {
                                 found = true;
                                 return Wim.IterateCallbackSuccess;
                             }
-                            wim.IterateDirTree(1, newName, IterateDirTreeFlags.None, ExistCallback, null);
+                            wim.IterateDirTree(1, newName!, IterateDirTreeFlags.None, ExistCallback, null);
                             Assert.IsTrue(found);
 
                             bool deleted = false;
-                            int DeleteCallback(DirEntry dentry, object userData) => Wim.IterateCallbackSuccess;
-                            try { wim.IterateDirTree(1, originalName, IterateDirTreeFlags.None, DeleteCallback, null); }
+                            int DeleteCallback(DirEntry dentry, object? userData) => Wim.IterateCallbackSuccess;
+                            try { wim.IterateDirTree(1, originalName!, IterateDirTreeFlags.None, DeleteCallback, null); }
                             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PathDoesNotExist) { deleted = true; }
                             Assert.IsTrue(deleted);
                         }
@@ -793,7 +793,7 @@ namespace PEBakery.Core.Tests.Command
                             foreach ((string f, bool exist) in compFiles)
                             {
                                 bool found = false;
-                                int WimCallback(DirEntry dentry, object userData)
+                                int WimCallback(DirEntry dentry, object? userData)
                                 {
                                     found = true;
                                     return Wim.IterateCallbackSuccess;
@@ -1224,11 +1224,11 @@ namespace PEBakery.Core.Tests.Command
             {
                 List<Tuple<string, bool>> entries = new List<Tuple<string, bool>>();
 
-                int IterateCallback(DirEntry dentry, object userData)
+                int IterateCallback(DirEntry dentry, object? userData)
                 {
-                    string path = dentry.FullPath;
+                    string? path = dentry.FullPath;
                     bool isDir = (dentry.Attributes & FileAttributes.Directory) != 0;
-                    entries.Add(new Tuple<string, bool>(path, isDir));
+                    entries.Add(new Tuple<string, bool>(path!, isDir));
 
                     return Wim.IterateCallbackSuccess;
                 }

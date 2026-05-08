@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.ViewModels;
@@ -158,42 +157,24 @@ namespace PEBakery.Core.Tests
 
                 WebRoot = Path.Combine(EngineTests.BaseDir, "WebServer");
 
-                IWebHost host;
                 int loopCount = 10;
                 bool boundSuccess = true;
                 do
                 {
                     ServerPort = GetAvailableTcpPort();
 
-                    host = new WebHostBuilder()
-                        .UseKestrel()
-                        .UseWebRoot(WebRoot)
-                        .Configure(conf =>
-                        {
-                            // Set up custom content types - associating file extension to MIME type
-                            FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
-                            {
-                                Mappings =
-                                {
-                                    [".script"] = "text/plain",
-                                    [".deleted"] = "text/plain",
-                                }
-                            };
+                    WebApplication webApp = WebApplicationFactory.CreateHost(WebRoot, ServerPort);
 
-                            conf.UseStaticFiles(new StaticFileOptions
-                            {
-                                // ServeUnknownFileTypes = true,
-                                // DefaultContentType = "text/plain",
-                                ContentTypeProvider = provider,
-                            });
-                            conf.UseDefaultFiles();
-                            conf.UseDirectoryBrowser();
-                        })
-                        .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
-                        .Build();
-
-                    // Check if the server was successfully bound to a port                    
-                    _fileServerTask = host.RunAsync(_fileServerCancel.Token);
+                    // Check if the server was successfully bound to a port
+                    webApp.StartAsync().Wait();
+                    CancellationToken ct = _fileServerCancel.Token;
+                    _fileServerTask = Task.Run(async () =>
+                    {
+                        var tcs = new TaskCompletionSource();
+                        using (ct.Register(() => tcs.TrySetResult()))
+                            await tcs.Task;
+                        await webApp.StopAsync();
+                    });
                     if (_fileServerTask.Exception is Exception e)
                     {
                         Console.WriteLine($"Binding to TCP {ServerPort} failed, trying again: {e.Message}");
@@ -247,5 +228,42 @@ namespace PEBakery.Core.Tests
             return port;
         }
         #endregion
+    }
+}
+
+internal static class WebApplicationFactory
+{
+    public static WebApplication CreateHost(string webRoot, int port)
+    {
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            WebRootPath = webRoot,
+        });
+        builder.Environment.WebRootPath = webRoot;
+        builder.WebHost.UseSetting("urls", $"http://127.0.0.1:{port}");
+        WebApplication app = builder.Build();
+
+        // Set up custom content types - associating file extension to MIME type
+        FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider
+        {
+            Mappings =
+            {
+                [".script"] = "text/plain",
+                [".deleted"] = "text/plain",
+            }
+        };
+
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot),
+            ContentTypeProvider = provider,
+        });
+        app.UseDefaultFiles();
+        app.UseDirectoryBrowser(new DirectoryBrowserOptions
+        {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot),
+        });
+
+        return app;
     }
 }

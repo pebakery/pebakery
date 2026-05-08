@@ -37,13 +37,13 @@
 
 // Default .NET Core Target version
 #ifndef NETCORE_TARGET_VER_MAJOR
-	#define NETCORE_TARGET_VER_MAJOR	8
+	#define NETCORE_TARGET_VER_MAJOR	10
 #endif
 #ifndef NETCORE_TARGET_VER_MINOR
 	#define NETCORE_TARGET_VER_MINOR	0
 #endif
 #ifndef NETCORE_TARGET_VER_PATCH
-	#define NETCORE_TARGET_VER_PATCH	12
+	#define NETCORE_TARGET_VER_PATCH	7
 #endif
 
 // Default .NET Framework Target version

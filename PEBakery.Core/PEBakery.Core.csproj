@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWPF>true</UseWPF>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -20,6 +20,7 @@
     <SignAssembly>false</SignAssembly>
     <TrimMode>copyused</TrimMode>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702;CA2235</NoWarn>
@@ -71,7 +72,6 @@
     <PackageReference Include="Scriban" Version="7.1.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="SharpSevenZip" Version="2.0.45" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="Timestamp" Version="1.0.2" />
     <PackageReference Include="UACHelper" Version="1.3.0.5" />
   </ItemGroup>

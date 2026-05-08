@@ -55,7 +55,7 @@ $runModes = @(
 
 # Fallback .NET SDK version
 $FallbackNetVerMinor = 0
-$FallbackNetVerPatch = 25
+$FallbackNetVerPatch = 7
 
 # -----------------------------------------------------------------------------
 # Find MSBuild location
@@ -139,7 +139,7 @@ if ($noclean -eq $false) {
 # .NET runtime-dependent binary is not forward compatible with older version of .NET runtime.
 # Ex) A binary published with .NET 6.0.4 may not run on .NET 6.0.3 or earlier.
 # So query the installed .NET runtime version of the build system, and bake it into the Launcher.
-$NetVerMajor = 6
+$NetVerMajor = 10
 Write-Output ""
 Write-Host "[*] Query Installed .NET ${NetVerMajor} version" -ForegroundColor Yellow
 dotnet --info
@@ -251,11 +251,13 @@ foreach ($runMode in $runModes)
     # Handle native binaries
     # -------------------------------------------------------------------------
     if ($isRuntimeDependent -eq $true) {
-        # PEBakery does not support win-arm, linux, and macOS.
-        Remove-Item "${DestBinDir}\runtimes\linux*" -Recurse
-        Remove-Item "${DestBinDir}\runtimes\alpine*" -Recurse
-        Remove-Item "${DestBinDir}\runtimes\osx*" -Recurse
-        Remove-Item "${DestBinDir}\runtimes\win-arm" -Recurse
+        # PEBakery does not support non-Windows or win-arm runtimes.
+        Remove-Item "${DestBinDir}\runtimes\linux*"       -Recurse -ErrorAction SilentlyContinue
+        Remove-Item "${DestBinDir}\runtimes\alpine*"      -Recurse -ErrorAction SilentlyContinue
+        Remove-Item "${DestBinDir}\runtimes\osx*"         -Recurse -ErrorAction SilentlyContinue
+        Remove-Item "${DestBinDir}\runtimes\browser*"     -Recurse -ErrorAction SilentlyContinue
+        Remove-Item "${DestBinDir}\runtimes\maccatalyst*" -Recurse -ErrorAction SilentlyContinue
+        Remove-Item "${DestBinDir}\runtimes\win-arm"      -Recurse -ErrorAction SilentlyContinue
     } else {
         # Flatten the location of native libraries
         Copy-Item "${DestBinDir}\runtimes\${PublishRuntimeId}\native\*" -Destination "${DestBinDir}"

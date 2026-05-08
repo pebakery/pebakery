@@ -56,7 +56,7 @@ namespace Benchmark
                 using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     buffer = new byte[fs.Length];
-                    fs.Read(buffer, 0, buffer.Length);
+                    fs.ReadExactly(buffer, 0, buffer.Length);
                 }
                 _srcFileBytesDict[method] = buffer;
             }

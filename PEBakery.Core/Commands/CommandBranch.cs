@@ -1038,7 +1038,7 @@ namespace PEBakery.Core.Commands
                                     using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                                     {
                                         bool isFile = false;
-                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        int WimExistFileCallback(DirEntry dentry, object? userData)
                                         {
                                             if ((dentry.Attributes & FileAttributes.Directory) == 0)
                                                 isFile = true;
@@ -1118,7 +1118,7 @@ namespace PEBakery.Core.Commands
                                     using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                                     {
                                         bool isDir = false;
-                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        int WimExistFileCallback(DirEntry dentry, object? userData)
                                         {
                                             if ((dentry.Attributes & FileAttributes.Directory) != 0)
                                                 isDir = true;
@@ -1197,7 +1197,7 @@ namespace PEBakery.Core.Commands
                                 {
                                     using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.None))
                                     {
-                                        string dest = wim.GetImageProperty(imageIndex, key);
+                                        string? dest = wim.GetImageProperty(imageIndex, key);
                                         if (dest != null)
                                         {
                                             match = true;

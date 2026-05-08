@@ -91,7 +91,7 @@ namespace PEBakery.Core.Commands
                         if (2 + bomLen <= fs.Length)
                         {
                             fs.Position = fs.Length - 2;
-                            fs.Read(lastChar, 0, 2);
+                            fs.ReadExactly(lastChar, 0, 2);
                             if (lastChar[0] != '\r' || lastChar[1] != '\n')
                                 newLineExist = false;
                         }
@@ -179,7 +179,7 @@ namespace PEBakery.Core.Commands
                         if (2 + bomLen <= fs.Length)
                         {
                             fs.Position = fs.Length - 2;
-                            fs.Read(lastChar, 0, 2);
+                            fs.ReadExactly(lastChar, 0, 2);
                             if (lastChar[0] != '\r' || lastChar[1] != '\n')
                                 newLineExist = false;
                         }

@@ -258,7 +258,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimMessageResult WimgApiMountCallback(WimMessageType msgType, object msg, object userData)
+        private static WimMessageResult WimgApiMountCallback(WimMessageType msgType, object msg, object? userData)
         { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
             Debug.Assert(Engine.WorkingEngine != null);
             EngineState s = Engine.WorkingEngine.State;
@@ -288,7 +288,7 @@ namespace PEBakery.Core.Commands
             return WimMessageResult.Success;
         }
 
-        private static WimMessageResult WimgApiUnmountCallback(WimMessageType msgType, object msg, object userData)
+        private static WimMessageResult WimgApiUnmountCallback(WimMessageType msgType, object msg, object? userData)
         { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
             Debug.Assert(Engine.WorkingEngine != null);
             EngineState s = Engine.WorkingEngine.State;
@@ -369,7 +369,7 @@ namespace PEBakery.Core.Commands
                     if (!(0 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [0] or [1] ~ [{wi.ImageCount}]");
 
-                    string dest;
+                    string? dest;
                     if (imageIndex == 0)
                     { // Generic wim file information
                         if (key.Equals("ImageCount", StringComparison.OrdinalIgnoreCase))
@@ -497,7 +497,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static CallbackStatus WimApplyExtractProgress(ProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimApplyExtractProgress(ProgressMsg msg, object? info, object? progctx)
         {
             if (progctx is not EngineState s)
                 return CallbackStatus.Continue;
@@ -511,7 +511,8 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.ExtractFileStructure:
                     {
-                        ExtractProgress m = (ExtractProgress)info;
+                        if (info is not ExtractProgress m)
+                            break;
 
                         if (0 < m.EndFileCount)
                         {
@@ -523,7 +524,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.ExtractStreams:
                     {
-                        ExtractProgress m = (ExtractProgress)info;
+                        if (info is not ExtractProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -535,7 +537,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.ExtractMetadata:
                     {
-                        ExtractProgress m = (ExtractProgress)info;
+                        if (info is not ExtractProgress m)
+                            break;
 
                         if (0 < m.EndFileCount)
                         {
@@ -547,7 +550,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CalcIntegrity:
                     {
-                        IntegrityProgress m = (IntegrityProgress)info;
+                        if (info is not IntegrityProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -879,7 +883,7 @@ namespace PEBakery.Core.Commands
                         {
                             Wim.ResetErrorFile();
                             wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractGlobFlags);
-                            logs.AddRange(Wim.GetErrors().Select(x => new LogInfo(info.NoWarnFlag ? LogState.Ignore : LogState.Warning, x)));
+                            logs.AddRange((Wim.GetErrors() ?? Enumerable.Empty<string>()).Select(x => new LogInfo(info.NoWarnFlag ? LogState.Ignore : LogState.Warning, x)));
 
                             wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
                         }
@@ -974,7 +978,7 @@ namespace PEBakery.Core.Commands
                 {
                     wim.RegisterCallback(WimWriteProgress, s);
 
-                    wim.AddImage(srcDir, imageName, null, addFlags);
+                    wim.AddImage(srcDir, imageName, null!, addFlags);
                     if (info.ImageDesc != null)
                     {
                         string imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
@@ -1059,7 +1063,7 @@ namespace PEBakery.Core.Commands
                         return LogInfo.LogErrorMessage(logs, $"Image name [{imageName}] is already in use");
 
                     // Add Image
-                    wim.AddImage(srcDir, imageName, null, addFlags);
+                    wim.AddImage(srcDir, imageName, null!, addFlags);
                     if (info.ImageDesc != null)
                     {
                         string imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
@@ -1110,7 +1114,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static CallbackStatus WimWriteProgress(ProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimWriteProgress(ProgressMsg msg, object? info, object? progctx)
         {
             if (progctx is not EngineState s)
                 return CallbackStatus.Continue;
@@ -1124,14 +1128,16 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.ScanBegin:
                     {
-                        ScanProgress m = (ScanProgress)info;
+                        if (info is not ScanProgress m)
+                            break;
 
                         s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Scanning {m.Source}...";
                     }
                     break;
                 case ProgressMsg.WriteStreams:
                     {
-                        WriteStreamsProgress m = (WriteStreamsProgress)info;
+                        if (info is not WriteStreamsProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1143,7 +1149,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CalcIntegrity:
                     {
-                        IntegrityProgress m = (IntegrityProgress)info;
+                        if (info is not IntegrityProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1220,7 +1227,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static CallbackStatus WimDeleteProgress(ProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimDeleteProgress(ProgressMsg msg, object? info, object? progctx)
         {
             if (progctx is not EngineState s)
                 return CallbackStatus.Continue;
@@ -1230,7 +1237,8 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.WriteStreams:
                     {
-                        WriteStreamsProgress m = (WriteStreamsProgress)info;
+                        if (info is not WriteStreamsProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1242,7 +1250,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CalcIntegrity:
                     {
-                        IntegrityProgress m = (IntegrityProgress)info;
+                        if (info is not IntegrityProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1600,7 +1609,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static CallbackStatus WimPathProgress(ProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimPathProgress(ProgressMsg msg, object? info, object? progctx)
         {
             if (progctx is not EngineState s)
                 return CallbackStatus.Continue;
@@ -1615,7 +1624,8 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.UpdateEndCommand:
                     {
-                        UpdateProgress m = (UpdateProgress)info;
+                        if (info is not UpdateProgress m)
+                            break;
 
                         UpdateCommand upCmd = m.Command;
                         string str;
@@ -1642,7 +1652,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.WriteStreams:
                     {
-                        WriteStreamsProgress m = (WriteStreamsProgress)info;
+                        if (info is not WriteStreamsProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1654,7 +1665,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CalcIntegrity:
                     {
-                        IntegrityProgress m = (IntegrityProgress)info;
+                        if (info is not IntegrityProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1841,7 +1853,7 @@ namespace PEBakery.Core.Commands
                                 WimInfo dwi = destWim.GetWimInfo();
                                 destWimCount = dwi.ImageCount;
 
-                                srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
+                                srcWim.ExportImage(imageIndex, destWim, imageName!, imageDesc!, exportFlags);
 
                                 destWim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
                             }
@@ -1880,7 +1892,7 @@ namespace PEBakery.Core.Commands
                             {
                                 destWim.RegisterCallback(WimSimpleWriteProgress, s);
 
-                                srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
+                                srcWim.ExportImage(imageIndex, destWim, imageName!, imageDesc!, exportFlags);
 
                                 destWim.Write(destWimPath, Wim.AllImages, writeFlags, (uint)Environment.ProcessorCount);
                             }
@@ -1905,7 +1917,7 @@ namespace PEBakery.Core.Commands
         #endregion
 
         #region WimLib - WimSimpleWriteProgress
-        private static CallbackStatus WimSimpleWriteProgress(ProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimSimpleWriteProgress(ProgressMsg msg, object? info, object? progctx)
         {
             if (progctx is not EngineState s)
                 return CallbackStatus.Continue;
@@ -1915,7 +1927,8 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.WriteStreams:
                     {
-                        WriteStreamsProgress m = (WriteStreamsProgress)info;
+                        if (info is not WriteStreamsProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1927,7 +1940,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CalcIntegrity:
                     {
-                        IntegrityProgress m = (IntegrityProgress)info;
+                        if (info is not IntegrityProgress m)
+                            break;
 
                         if (0 < m.TotalBytes)
                         {

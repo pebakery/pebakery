@@ -775,7 +775,7 @@ namespace PEBakery.Core.Tests.Command
                 object? intObj = key.GetValue("Integer");
                 Assert.IsNotNull(intObj);
                 int dword = (int)intObj;
-                Assert.AreEqual(dword, 1225);
+                Assert.AreEqual(1225, dword);
 
                 object? strObj = key.GetValue("String") as string;
                 Assert.IsNotNull(strObj);

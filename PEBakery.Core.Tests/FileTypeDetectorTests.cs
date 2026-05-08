@@ -90,7 +90,7 @@ namespace PEBakery.Core.Tests
                 using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
                 {
                     buffer = new byte[fs.Length];
-                    fs.Read(buffer, 0, buffer.Length);
+                    fs.ReadExactly(buffer, 0, buffer.Length);
                 }
                 ret = Global.FileTypeDetector.FileType(buffer);
                 Assert.IsTrue(ret.Equals(expected, StringComparison.Ordinal));
@@ -121,7 +121,7 @@ namespace PEBakery.Core.Tests
                 using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
                 {
                     buffer = new byte[fs.Length];
-                    fs.Read(buffer, 0, buffer.Length);
+                    fs.ReadExactly(buffer, 0, buffer.Length);
                 }
                 ret = Global.FileTypeDetector.MimeType(buffer);
                 Assert.IsTrue(ret.Equals(expected, StringComparison.Ordinal));
@@ -152,7 +152,7 @@ namespace PEBakery.Core.Tests
                 using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
                 {
                     buffer = new byte[fs.Length];
-                    fs.Read(buffer, 0, buffer.Length);
+                    fs.ReadExactly(buffer, 0, buffer.Length);
                 }
                 ret = Global.FileTypeDetector.IsText(buffer);
                 Assert.AreEqual(expected, ret);

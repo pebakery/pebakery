@@ -69,7 +69,7 @@ namespace Benchmark
                 byte[] bytes = new byte[fileSize];
                 using (FileStream fs = new FileStream(srcFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    fs.Read(bytes, 0, bytes.Length);
+                    fs.ReadExactly(bytes, 0, bytes.Length);
                 }
                 SrcFiles[srcFileName] = bytes;
             }
