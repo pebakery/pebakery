@@ -69,7 +69,8 @@ namespace PEBakery.Core
         public Dictionary<string, CodeCommand> LocalDict { get; private set; }
             = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
 
-        public const string MacroNameRegex = @"^([a-zA-Z0-9_]+)$";
+        public static readonly Regex MacroNameRegex =
+            new Regex(@"^([a-zA-Z0-9_]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         #endregion
 
         #region Constructor
@@ -129,7 +130,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+                        if (MacroNameRegex.IsMatch(kv.Key))
                         { // Macro Name Validation
                             CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
                             GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
@@ -156,7 +157,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+                        if (MacroNameRegex.IsMatch(kv.Key))
                         { // Macro Name Validation
                             CodeParser parser = new CodeParser(permaSection, Global.Setting, permaSection.Project.Compat);
                             GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
@@ -229,7 +230,7 @@ namespace PEBakery.Core
                 try
                 {
                     // Macro Name Validation
-                    if (!Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+                    if (!MacroNameRegex.IsMatch(kv.Key))
                     {
                         logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                         continue;
@@ -307,7 +308,7 @@ namespace PEBakery.Core
         public LogInfo SetMacro(string macroName, string? macroCommand, ScriptSection section, bool global, bool permanent)
         {
             // Macro Name Validation
-            if (!Regex.Match(macroName, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+            if (!MacroNameRegex.IsMatch(macroName))
                 return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
 
             if (macroCommand != null)

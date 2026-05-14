@@ -224,6 +224,16 @@ namespace PEBakery.Core
         private CodeCommand[]? _cachedCmds;
         [IgnoreMember]
         private readonly object _parseLock = new object();
+
+        // Static Regex
+        private static readonly Regex _DeepInspectCodeRegex =
+            new Regex(@"^(([A-Za-z0-9_]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex _DeepInspectInterfaceCtrlRegex =
+            new Regex(@"^([^%=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _DeepInspectVarRegex =
+            new Regex(@"^(%[^=\r\n]+%)=(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _DeepInspectIniRegex =
+            new Regex(@"^([^=\r\n]+)=(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         #endregion
 
         #region Constructor
@@ -486,19 +496,19 @@ namespace PEBakery.Core
                 totalLineCount += 1;
 
                 // Is this line a code?
-                if (Regex.IsMatch(line, "^(([A-Za-z0-9_]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase))
+                if (_DeepInspectCodeRegex.IsMatch(line))
                     codeMatchCount += 1;
 
                 // Is this line an interface Control?
-                if (Regex.IsMatch(line, "^([^%=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectInterfaceCtrlRegex.IsMatch(line))
                     ifaceMatchCount += 1;
 
                 // Is this line a var-style line?
-                if (Regex.IsMatch(line, "^(%[^=\r\n]+%)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectVarRegex.IsMatch(line))
                     varMatchCount += 1;
 
                 // Is this line a simple ini-style line?
-                if (Regex.IsMatch(line, "^([^=\r\n]+)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectIniRegex.IsMatch(line))
                     iniMatchCount += 1;
             }
 

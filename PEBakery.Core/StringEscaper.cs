@@ -50,6 +50,28 @@ namespace PEBakery.Core
         };
 
         private static readonly char[] WildcardCharacters = new char[] { '*', '?' };
+
+        // Static RegEx:
+        private static readonly Regex _SectionInParamRegex =
+            new Regex(@"(?<!#)(#[1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _SectionOutParamRegex =
+            new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _SectionInParamCountRegex =
+            new Regex(@"(?<!#)(#[aA])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _SectionOutParamCountRegex =
+            new Regex(@"(?<!#)(#[oO][aA])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _ReturnValueRegex =
+            new Regex(@"(?<!#)(#[rR])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _LoopCounterRegex =
+            new Regex(@"(?<!#)(#[cC])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _PercentPatternParamRegex =
+            new Regex(@"%\^([A-Za-z0-9_]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _SectVarNameRegex =
+            new Regex(@"^(S(?:I|O)PARAM)_([1-9][0-9]*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex _IsPathValidRootRegex =
+            new Regex("^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _IsFilterValidRegex =
+            new Regex(@"^([^\|\r\n]+)\|([^\|\r\n]+)+(\|([^\|\r\n]+)\|([^\|\r\n]+))*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         #endregion
 
         #region PathSecurityCheck
@@ -104,7 +126,7 @@ namespace PEBakery.Core
             char[] invalidChars = [.. Path.GetInvalidFileNameChars().Where(x => x != '\\')];
 
             // Ex) "C:\Program Files"
-            Match m = Regex.Match(path, "^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match m = _IsPathValidRootRegex.Match(path);
             if (m.Success)
             {
                 for (int i = 0; i < path.Length; i++)
@@ -187,8 +209,8 @@ namespace PEBakery.Core
 
             // Valid format = [<DisplayText>|<wildcard1>;<wildcard2>;...] | [<DisplayText>|<wildcard1>;<wildcard2>;...]
             //                           Txt Files     | *.txt;*.log   | All Files   | *.*
-            const string filterRegex = @"^([^\|\r\n]+)\|([^\|\r\n]+)+(\|([^\|\r\n]+)\|([^\|\r\n]+))*$";
-            return Regex.IsMatch(filter, filterRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            //                         @"^([^\|\r\n]+)\|([^\|\r\n]+)+(\|([^\|\r\n]+)\|([^\|\r\n]+))*$";
+            return _IsFilterValidRegex.IsMatch(filter);
         }
 
         /// <summary>
@@ -486,8 +508,7 @@ namespace PEBakery.Core
         public static string ExpandLegacySharpSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex inRegex = new Regex(@"(?<!#)(#[1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            MatchCollection matches = inRegex.Matches(str);
+            MatchCollection matches = _SectionInParamRegex.Matches(str);
             while (0 < matches.Count)
             {
                 StringBuilder b = new StringBuilder();
@@ -529,7 +550,7 @@ namespace PEBakery.Core
                 }
                 str = b.ToString();
 
-                matches = inRegex.Matches(str);
+                matches = _SectionInParamRegex.Matches(str);
             }
 
             if (!s.CompatDisableLegacyExtendedSectionParams)
@@ -537,8 +558,7 @@ namespace PEBakery.Core
                 // Expand #o1, #o2, ... (Section Out Parameter)
                 if (s.CurSectionOutParams != null)
                 {
-                    Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-                    matches = outRegex.Matches(str);
+                    matches = _SectionOutParamRegex.Matches(str);
                     while (0 < matches.Count)
                     {
                         StringBuilder b = new StringBuilder();
@@ -578,21 +598,21 @@ namespace PEBakery.Core
                         }
                         str = b.ToString();
 
-                        matches = inRegex.Matches(str);
+                        matches = _SectionOutParamRegex.Matches(str);
                     }
                 }
 
                 // Expand #a (Section In Params Count)
                 if (str.Contains("#a", StringComparison.OrdinalIgnoreCase))
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[aA])", s.CurSectionInParamsCount.ToString());
+                    str = StringHelper.ReplaceRegex(str, _SectionInParamCountRegex, s.CurSectionInParamsCount.ToString());
 
                 // Expand #oa (Section Out Params Count)
                 if (str.Contains("#oa", StringComparison.OrdinalIgnoreCase))
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[oO][aA])", s.CurSectionInParamsCount.ToString());
+                    str = StringHelper.ReplaceRegex(str, _SectionOutParamCountRegex, s.CurSectionInParamsCount.ToString());
 
                 // Expand #r (Return Value)
                 if (str.Contains("#r", StringComparison.OrdinalIgnoreCase))
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.ReturnValue);
+                    str = StringHelper.ReplaceRegex(str, _ReturnValueRegex, s.ReturnValue);
             }
 
             // Expand #c (Loop Counter)
@@ -602,10 +622,10 @@ namespace PEBakery.Core
                 switch (loop.State)
                 {
                     case LoopCmdState.OnIndex:
-                        str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterIndex.ToString());
+                        str = StringHelper.ReplaceRegex(str, _LoopCounterRegex, loop.CounterIndex.ToString());
                         break;
                     case LoopCmdState.OnDriveLetter:
-                        str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterLetter.ToString());
+                        str = StringHelper.ReplaceRegex(str, _LoopCounterRegex, loop.CounterLetter.ToString());
                         break;
                 }
             }
@@ -638,12 +658,10 @@ namespace PEBakery.Core
         public static string ExpandPercentPatternSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex paramRegex = new Regex(@"%\^([A-Za-z0-9_]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            Regex pSectVarRegex = new Regex(@"^(S(?:I|O)PARAM)_([1-9][0-9]*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
             StringBuilder b = new StringBuilder();
 
             int lastCopiedIdx = 0;
-            MatchCollection matches = paramRegex.Matches(str);
+            MatchCollection matches = _PercentPatternParamRegex.Matches(str);
             if (matches.Count == 0)
                 return str;
 
@@ -697,7 +715,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    Match pSectMatch = pSectVarRegex.Match(paramNameStr);
+                    Match pSectMatch = _SectVarNameRegex.Match(paramNameStr);
                     string pKind = pSectMatch.Groups[1].Value;
                     string pIdxStr = pSectMatch.Groups[2].Value;
 

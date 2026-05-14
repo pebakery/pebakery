@@ -605,6 +605,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Expand
+        private static readonly Regex ExpandVarRegex =
+            new Regex(@"%([^ %]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public string Expand(string str)
         {
             int iteration = 0;
@@ -615,7 +618,8 @@ namespace PEBakery.Core
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 StringBuilder b = new StringBuilder();
-                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+                matches = ExpandVarRegex.Matches(str);
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
@@ -770,6 +774,28 @@ namespace PEBakery.Core
         public const string VarKeyRegexLegacySectionOutParams = @"^" + VarKeyRegexContainsLegacySectionOutParams + @"$";
         public const string VarKeyRegexPercentSectionInParams = @"^" + VarKeyRegexContainsPercentSectionInParams + @"$";
         public const string VarKeyRegexPercentSectionOutParams = @"^" + VarKeyRegexContainsPercentSectionOutParams + @"$";
+        
+        public static readonly Regex ContainsVariableRegex =
+            new Regex(VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex ContainsLegacySectionInParamsRegex =
+            new Regex(VarKeyRegexLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex ContainsLegacySectionOutParamsRegex =
+            new Regex(VarKeyRegexLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex ContainsPercentSectionInParamsRegex =
+            new Regex(VarKeyRegexPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex ContainsPercentSectionOutParamsRegex =
+            new Regex(VarKeyRegexPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex VariableRegex =
+            new Regex(VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex LegacySectionInParamsRegex =
+            new Regex(VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex LegacySectionOutParamsRegex =
+            new Regex(VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex PercentSectionInParamsRegex =
+            new Regex(VarKeyRegexPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        public static readonly Regex PercentSectionOutParamsRegex =
+            new Regex(VarKeyRegexPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public enum VarKeyType
         {
             None,
@@ -779,18 +805,18 @@ namespace PEBakery.Core
             ReturnValuePercent, ReturnValueLegacy,
             LoopCounterPercent, LoopCounterLegacy
         }
-
+                 
         public static VarKeyType DetectType(string key)
         {
-            if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
+            if (VariableRegex.IsMatch(key)) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            if (Regex.Match(key, VarKeyRegexPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %^SIPARAM_1%, %^SIPARAM_1%, ...
+            if (PercentSectionInParamsRegex.IsMatch(key)) // Ex) %^SIPARAM_1%, %^SIPARAM_1%, ...
                 return VarKeyType.SectionInParamsPercent;
-            if (Regex.Match(key, VarKeyRegexLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
+            if (LegacySectionInParamsRegex.IsMatch(key)) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionInParamsLegacy;
-            if (Regex.Match(key, VarKeyRegexPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %^SOPARAM_1%, %^SOPARAM_2%, %^SOPARAM_3% ...
+            if (PercentSectionOutParamsRegex.IsMatch(key)) // Ex) %^SOPARAM_1%, %^SOPARAM_2%, %^SOPARAM_3% ...
                 return VarKeyType.SectionOutParamsPercent;
-            if (Regex.Match(key, VarKeyRegexLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #o1, #o2, #o3, ...
+            if (LegacySectionOutParamsRegex.IsMatch(key)) // Ex) #o1, #o2, #o3, ...
                 return VarKeyType.SectionOutParamsLegacy;
             if (key.Equals("%^RET%", StringComparison.OrdinalIgnoreCase)) // Return Value
                 return VarKeyType.ReturnValuePercent;
@@ -805,7 +831,7 @@ namespace PEBakery.Core
 
         public static int GetPercentSectionInParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = ContainsPercentSectionInParamsRegex.Match(secParam);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
@@ -819,7 +845,7 @@ namespace PEBakery.Core
 
         public static int GetLegacySectionInParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = ContainsLegacySectionInParamsRegex.Match(secParam);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam[1..], out int paramIdx))
@@ -833,7 +859,7 @@ namespace PEBakery.Core
 
         public static int GetPercentSectionOutParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsPercentSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = ContainsPercentSectionOutParamsRegex.Match(secParam);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(match.Groups[1].Value, out int paramIdx))
@@ -847,7 +873,7 @@ namespace PEBakery.Core
 
         public static int GetLegacySectionOutParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match match = ContainsLegacySectionOutParamsRegex.Match(secParam);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam[2..], out int paramIdx))
@@ -1099,7 +1125,7 @@ namespace PEBakery.Core
                     {
                         if (s.Variables.Exists(VarsType.Fixed, key))
                         {
-                            logs.Add(new LogInfo(LogState.Warning, $"Fixed variable [{varKey}] cannot be overriden"));
+                            logs.Add(new LogInfo(LogState.Warning, $"Fixed variable [{varKey}] cannot be overridden"));
                             return logs;
                         }
                     }
@@ -1222,7 +1248,7 @@ namespace PEBakery.Core
 
                     if (!s.CompatOverridableLoopCounter)
                     {
-                        logs.Add(new LogInfo(LogState.Warning, $"LoopCounter [{symbol}] cannot be overriden"));
+                        logs.Add(new LogInfo(LogState.Warning, $"LoopCounter [{symbol}] cannot be overridden"));
                         return logs;
                     }
 
