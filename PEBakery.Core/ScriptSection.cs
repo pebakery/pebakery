@@ -218,6 +218,12 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Section [{Name}] is not an ini-type section");
             }
         }
+
+        // Parsed command cache
+        [IgnoreMember]
+        private CodeCommand[]? _cachedCmds;
+        [IgnoreMember]
+        private readonly object _parseLock = new object();
         #endregion
 
         #region Constructor
@@ -294,6 +300,7 @@ namespace PEBakery.Core
         {
             _lines = null;
             _iniDict = null;
+            InvalidateParsedCache();
         }
 
         /// <summary>
@@ -346,6 +353,7 @@ namespace PEBakery.Core
                 _lines[^1] = $"{key}={value}";
             }
 
+            InvalidateParsedCache();
             return true;
         }
 
@@ -383,7 +391,34 @@ namespace PEBakery.Core
                 _lines = newLines.ToArray();
             }
 
+            InvalidateParsedCache();
             return true;
+        }
+        #endregion
+
+        #region Parsed Command Cache
+        /// <summary>
+        /// Returns parsed CodeCommands for this section, caching the result so repeated calls
+        /// (e.g. a macro invoked hundreds of times) do not re-parse the same lines every time.
+        /// </summary>
+        public CodeCommand[] GetOrParseCmds(Setting setting, CompatOption compat)
+        {
+            if (_cachedCmds != null) return _cachedCmds;
+            lock (_parseLock)
+            {
+                if (_cachedCmds != null) return _cachedCmds;
+                CodeParser parser = new CodeParser(this, setting, compat);
+                (_cachedCmds, _) = parser.ParseStatements();
+                return _cachedCmds;
+            }
+        }
+
+        /// <summary>
+        /// Discards the cached parsed commands. Call whenever _lines is changed.
+        /// </summary>
+        private void InvalidateParsedCache()
+        {
+            _cachedCmds = null;
         }
         #endregion
 
@@ -440,7 +475,7 @@ namespace PEBakery.Core
             int totalLineCount = 0;
 
             // Check the type of a line using regexes.
-            // Even though regex does have some errors, regexes are used for its simplexity and speed advantage.
+            // Even though regex does have some errors, regexes are used for its simplicity and speed advantage.
             // TODO: How many times running a precise parsers like CodeParser/UIParser/IniReadWriter are slower than regexes?
             foreach (string line in Lines.Where(x => 0 < x.Length))
             {
