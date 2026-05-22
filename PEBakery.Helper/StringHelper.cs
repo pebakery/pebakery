@@ -49,12 +49,15 @@ namespace PEBakery.Helper
         #endregion
 
         #region Is{Hex|Alphabet|...}
+        private static readonly Regex _IsHexRegex =
+           new Regex(@"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public static bool IsHex(string str)
         {
             if (str.Length % 2 == 1)
                 return false;
 
-            return Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            return _IsHexRegex.IsMatch(str);
         }
 
         public static bool IsUpperAlphabet(string str)
@@ -238,6 +241,37 @@ namespace PEBakery.Helper
             if (ignoreCase)
                 opts |= RegexOptions.IgnoreCase;
             MatchCollection matches = Regex.Matches(str, regex, opts);
+            if (matches.Count == 0)
+                return str;
+
+            StringBuilder b = new StringBuilder();
+            for (int x = 0; x < matches.Count; x++)
+            {
+                if (x == 0)
+                {
+                    b.Append(str[..matches[0].Index]);
+                }
+                else
+                {
+                    int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                    int endOffset = matches[x].Index - startOffset;
+                    b.Append(str.AsSpan(startOffset, endOffset));
+                }
+
+                b.Append(newValue);
+
+                if (x + 1 == matches.Count)
+                {
+                    int startOffset = matches[x].Index + matches[x].Value.Length;
+                    b.Append(str[startOffset..]);
+                }
+            }
+            return b.ToString();
+        }
+
+        public static string ReplaceRegex(string str, Regex regex, string newValue)
+        {
+            MatchCollection matches = regex.Matches(str);
             if (matches.Count == 0)
                 return str;
 

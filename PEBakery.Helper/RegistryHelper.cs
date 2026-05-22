@@ -269,8 +269,8 @@ namespace PEBakery.Helper
 
         public static uint? ValueKindToWBInt(RegistryValueKind valueType)
         {
-            if (ValueKindWBIntDict.ContainsKey(valueType))
-                return ValueKindWBIntDict[valueType];    
+            if (ValueKindWBIntDict.TryGetValue(valueType, out uint wbInt))
+                return wbInt;
             return null;
         }
 

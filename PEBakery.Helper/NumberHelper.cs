@@ -33,6 +33,15 @@ namespace PEBakery.Helper
 {
     public static class NumberHelper
     {
+        #region Static
+        private static readonly Regex _Base10IntegerRegex =
+            new Regex(@"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _Base16IntegerRegex =
+            new Regex(@"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _RealNumberRegex =
+            new Regex(@"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        #endregion
+
         #region IsStringHexInteger
         public enum StringNumberType
         {
@@ -362,7 +371,7 @@ namespace PEBakery.Helper
                 return ParseStringToNumberType.String;
 
             // base 10 integer - Z
-            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (_Base10IntegerRegex.IsMatch(str))
             {
                 if (long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -370,7 +379,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // base 16 integer - Z
-            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (_Base16IntegerRegex.IsMatch(str))
             {
                 if (long.TryParse(str.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -379,7 +388,7 @@ namespace PEBakery.Helper
             }
 
             // real number - R
-            if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (_RealNumberRegex.IsMatch(str))
             {
                 if (decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out real))
                     return ParseStringToNumberType.Decimal;
