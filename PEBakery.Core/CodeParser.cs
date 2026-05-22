@@ -40,6 +40,14 @@ namespace PEBakery.Core
         #region Fields and Properties
         private readonly ScriptSection _section;
         private readonly Options _opts;
+
+        private static readonly Regex _NumericRegex =
+            new Regex(@"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _AlphaNumericUnderscoreRegex = 
+            new Regex(@"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _AlphaUnderscoreRegex =
+            new Regex(@"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         #endregion
 
         #region Options
@@ -357,7 +365,7 @@ namespace PEBakery.Core
             macroType = null;
 
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaNumericUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Invalid CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
             bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
@@ -2712,7 +2720,7 @@ namespace PEBakery.Core
         public static RegMultiType ParseRegMultiType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as RegMultiType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) ||
@@ -2728,7 +2736,7 @@ namespace PEBakery.Core
         #region ParseInterfaceElement
         public static InterfaceElement ParseInterfaceElement(string str)
         {
-            if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(str))
                 throw new InvalidCommandException($"Wrong InterfaceElement [{str}], Only alphabet and underscore can be used");
 
             bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) ||
@@ -2810,7 +2818,7 @@ namespace PEBakery.Core
         public static UserInputType ParseUserInputType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as UserInputType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) ||
@@ -3142,7 +3150,7 @@ namespace PEBakery.Core
         public static StrFormatType ParseStrFormatType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as StrFormatType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out StrFormatType type) ||
@@ -3575,7 +3583,7 @@ namespace PEBakery.Core
         public static MathType ParseMathType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as MathType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out MathType type) ||
@@ -3958,7 +3966,7 @@ namespace PEBakery.Core
         public static ListType ParseListType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as ListType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out ListType type) ||
@@ -4238,7 +4246,7 @@ namespace PEBakery.Core
         public static SystemType ParseSystemType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as SystemType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) ||
@@ -4289,7 +4297,7 @@ namespace PEBakery.Core
         public static DebugType ParseDebugType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!_AlphaUnderscoreRegex.IsMatch(typeStr))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as DebugType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out DebugType type) ||
@@ -4426,7 +4434,7 @@ namespace PEBakery.Core
                 }
                 else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
                 {
-                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                    Match m = _NumericRegex.Match(args[cIdx + 2]);
                     if (m.Success)
                     {
                         embIdx = cIdx + 4;
@@ -4547,9 +4555,9 @@ namespace PEBakery.Core
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
         public static bool StringContainsVariable(string str)
         {
-            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
-            bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
-            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
+            MatchCollection matches = Variables.ContainsVariableRegex.Matches(str); // ABC%Joveler%
+            bool sectionInParamMatch = Variables.ContainsLegacySectionInParamsRegex.IsMatch(str); // #1
+            bool sectionOutParamMatch = Variables.ContainsLegacySectionOutParamsRegex.IsMatch(str); // #o1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
             bool sectionInParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
             bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
@@ -4567,15 +4575,15 @@ namespace PEBakery.Core
         {
             HashSet<string> refSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
+            MatchCollection matches = Variables.ContainsVariableRegex.Matches(str); // ABC%Joveler%
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 
-            matches = Regex.Matches(str, Variables.VarKeyRegexContainsLegacySectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            matches = Variables.ContainsLegacySectionInParamsRegex.Matches(str); // #1
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 
-            matches = Regex.Matches(str, Variables.VarKeyRegexContainsLegacySectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #o1
+            matches = Variables.ContainsLegacySectionOutParamsRegex.Matches(str); // #o1
             if (0 < matches.Count)
                 refSet.Add(matches[0].Value);
 

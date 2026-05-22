@@ -218,6 +218,22 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Section [{Name}] is not an ini-type section");
             }
         }
+
+        // Parsed command cache
+        [IgnoreMember]
+        private CodeCommand[]? _cachedCmds;
+        [IgnoreMember]
+        private readonly object _parseLock = new object();
+
+        // Static Regex
+        private static readonly Regex _DeepInspectCodeRegex =
+            new Regex(@"^(([A-Za-z0-9_]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex _DeepInspectInterfaceCtrlRegex =
+            new Regex(@"^([^%=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _DeepInspectVarRegex =
+            new Regex(@"^(%[^=\r\n]+%)=(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _DeepInspectIniRegex =
+            new Regex(@"^([^=\r\n]+)=(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         #endregion
 
         #region Constructor
@@ -294,6 +310,7 @@ namespace PEBakery.Core
         {
             _lines = null;
             _iniDict = null;
+            InvalidateParsedCache();
         }
 
         /// <summary>
@@ -346,6 +363,7 @@ namespace PEBakery.Core
                 _lines[^1] = $"{key}={value}";
             }
 
+            InvalidateParsedCache();
             return true;
         }
 
@@ -383,7 +401,34 @@ namespace PEBakery.Core
                 _lines = newLines.ToArray();
             }
 
+            InvalidateParsedCache();
             return true;
+        }
+        #endregion
+
+        #region Parsed Command Cache
+        /// <summary>
+        /// Returns parsed CodeCommands for this section, caching the result so repeated calls
+        /// (e.g. a macro invoked hundreds of times) do not re-parse the same lines every time.
+        /// </summary>
+        public CodeCommand[] GetOrParseCmds(Setting setting, CompatOption compat)
+        {
+            if (_cachedCmds != null) return _cachedCmds;
+            lock (_parseLock)
+            {
+                if (_cachedCmds != null) return _cachedCmds;
+                CodeParser parser = new CodeParser(this, setting, compat);
+                (_cachedCmds, _) = parser.ParseStatements();
+                return _cachedCmds;
+            }
+        }
+
+        /// <summary>
+        /// Discards the cached parsed commands. Call whenever _lines is changed.
+        /// </summary>
+        private void InvalidateParsedCache()
+        {
+            _cachedCmds = null;
         }
         #endregion
 
@@ -440,7 +485,7 @@ namespace PEBakery.Core
             int totalLineCount = 0;
 
             // Check the type of a line using regexes.
-            // Even though regex does have some errors, regexes are used for its simplexity and speed advantage.
+            // Even though regex does have some errors, regexes are used for its simplicity and speed advantage.
             // TODO: How many times running a precise parsers like CodeParser/UIParser/IniReadWriter are slower than regexes?
             foreach (string line in Lines.Where(x => 0 < x.Length))
             {
@@ -451,19 +496,19 @@ namespace PEBakery.Core
                 totalLineCount += 1;
 
                 // Is this line a code?
-                if (Regex.IsMatch(line, "^(([A-Za-z0-9_]+[ ]*(,.+)*)|End|Break|Continue)$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase))
+                if (_DeepInspectCodeRegex.IsMatch(line))
                     codeMatchCount += 1;
 
                 // Is this line an interface Control?
-                if (Regex.IsMatch(line, "^([^%=\r\n]+)=(.*,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectInterfaceCtrlRegex.IsMatch(line))
                     ifaceMatchCount += 1;
 
                 // Is this line a var-style line?
-                if (Regex.IsMatch(line, "^(%[^=\r\n]+%)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectVarRegex.IsMatch(line))
                     varMatchCount += 1;
 
                 // Is this line a simple ini-style line?
-                if (Regex.IsMatch(line, "^([^=\r\n]+)=(.*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled))
+                if (_DeepInspectIniRegex.IsMatch(line))
                     iniMatchCount += 1;
             }
 

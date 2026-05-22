@@ -60,7 +60,7 @@ namespace PEBakery.Core
     * All bytes are ordered in little endian.
     * CodecWBZip[1] (Type 1 and 2) is equal to ZLBArchive v2 format.
     * WB082 only understands Type 1 and 2.
-    * Type 3 is a PEBakery externsion.
+    * Type 3 is a PEBakery extension.
 
     [1] This binary format was originally described by extensive blackbox testing, without breaking WB082 EULA.
         It was later revealed that this format was defined by ZLBArchive v2.
@@ -110,7 +110,7 @@ namespace PEBakery.Core
         WB082 did not use encryption feature, so this field is always 0.
     [3] Location of body field is used when ZLBArchive2 stores multiple files into one archive.
         WB082 always stored/compressed single file, so this field is always 0.
-    [4] Compress level field is not required to be valid for decompressison.
+    [4] Compress level field is not required to be valid for decompression.
 
     [ArchiveFooter]
     Not compressed, 36Byte (0x24)
@@ -152,6 +152,10 @@ namespace PEBakery.Core
 
         public const double CompReportFactor = 0.8;
         public const double Base64ReportFactor = 0.2;
+
+        private static readonly Regex _FileIndexRegex =
+            new Regex(@"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant); 
+
         #endregion
 
         #region EncodeMode Methods
@@ -1018,7 +1022,7 @@ namespace PEBakery.Core
         /// </returns>
         private static (int rawSize, int encodedSize) ParseFileIndex(string fileIndex)
         {
-            Match m = Regex.Match(fileIndex, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Match m = _FileIndexRegex.Match(fileIndex);
             if (!m.Success)
                 return (-1, -1);
 

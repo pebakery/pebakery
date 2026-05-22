@@ -42,6 +42,11 @@ namespace PEBakery.Core.Commands
         private const long MB = 1024L * 1024L;
         private const long KB = 1024L;
 
+        private static readonly Regex _DriveLetterRegex =
+            new Regex(@"^([a-zA-Z]:)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex _NumericRegex =
+            new Regex(@"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public static List<LogInfo> StrFormat(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -235,7 +240,7 @@ namespace PEBakery.Core.Commands
                         string dirPath = StringEscaper.Preprocess(s, subInfo.DirPath).Trim();
                         string fileName = StringEscaper.Preprocess(s, subInfo.FileName).Trim();
 
-                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+                        if (_DriveLetterRegex.IsMatch(dirPath))
                             dirPath += @"\";
 
                         string destStr = Path.Combine(dirPath, fileName);
@@ -479,7 +484,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
-                        Match m = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                        Match m = _NumericRegex.Match(srcStr);
                         var destStr = m.Success ? srcStr[..m.Index] : srcStr;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
