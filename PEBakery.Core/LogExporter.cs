@@ -169,8 +169,8 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Errors>");
 
-                            int[] scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                            int[] refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
+                            List<int> scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
+                            List<int> refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                             LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
                                 .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
                                 .ToArray();
@@ -208,8 +208,8 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Warnings>");
 
-                            int[] scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                            int[] refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
+                            List<int> scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
+                            List<int> refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                             LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
                                 .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
                                 .ToArray();
@@ -442,8 +442,8 @@ namespace PEBakery.Core
                                 targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == target).ToArray();
                             if (0 < targetLogs.Length)
                             {
-                                int[] scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToArray();
-                                int[] refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToArray();
+                                List<int> scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
+                                List<int> refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                                 LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
                                     .ToArray();
