@@ -169,6 +169,9 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Errors>");
 
+                            // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
+                            // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
+                            // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                             List<int> scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                             List<int> refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                             LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
@@ -208,6 +211,9 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Warnings>");
 
+                            // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
+                            // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
+                            // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                             List<int> scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                             List<int> refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                             LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
@@ -442,6 +448,9 @@ namespace PEBakery.Core
                                 targetLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == target).ToArray();
                             if (0 < targetLogs.Length)
                             {
+                                // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
+                                // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
+                                // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                                 List<int> scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                                 List<int> refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
                                 LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
