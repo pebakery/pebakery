@@ -942,6 +942,8 @@ namespace PEBakery.WPF
 
         /// <summary>
         /// Used to ensure pressing 'Space' to toggle TreeView's checkbox.
+        /// Indeterminate (null) is a derived state set automatically by the tree;
+        /// keyboard toggling skips it and simply flips between true and false.
         /// </summary>
         private void MainTreeView_KeyDown(object sender, KeyEventArgs e)
         {

@@ -117,31 +117,114 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Enabled CheckBox
-        public bool Checked
+        /// <summary>
+        /// Tri-state checkbox value.
+        ///   true  = checked (all selectable descendants checked)
+        ///   false = unchecked
+        ///   null  = indeterminate (directory with a mix of checked/unchecked children)
+        ///
+        /// For directory nodes the value is always DERIVED from children so the
+        /// UI stays consistent without any extra bookkeeping.
+        /// For script/link nodes it is read from _sc.Selected.
+        /// </summary>
+        public bool? Checked
         {
             get
             {
-                switch (_sc.Selected)
-                {
-                    case SelectedState.True:
-                        return true;
-                    default:
-                        return false;
-                }
+                if (_sc.Type == ScriptType.Directory)
+                    return GetDirectoryCheckedState();
+
+                // Mandatory scripts are always checked regardless of _sc.Selected,
+                // which may be SelectedState.None (not user-selectable).
+                return _sc.Mandatory || _sc.Selected == SelectedState.True;
             }
             set
             {
-                Task.Run(() =>
+                // For directory nodes we cannot trust the value WPF sends here.
+                // With IsThreeState="False", when IsChecked is null (indeterminate)
+                // WPF has no real null state internally, so it evaluates null=false.
+                // This causes a click on an indeterminate directory to call
+                // SetChecked(false) again instead of checking all children.
+                // We need to derive the toggle direction from the current computed state 
+                // instead, the same way the keyboard handler does.
+                //
+                // For regular scripts the value sent by WPF is never indeterminate so we can use it as-is.
+                bool targetValue;
+
+                if (_sc.Type == ScriptType.Directory)
                 {
-                    SetChecked(value, true);
-                });
+                    targetValue = (Checked != true);
+                }
+                else
+                {
+                    targetValue = value ?? false;
+                }
+                Task.Run(() => SetChecked(targetValue, true));
+            }
+        }
+
+        /// <summary>
+        /// Derives the tri-state for a directory node by inspecting its children.
+        /// Returns null (indeterminate) when children have mixed selection.
+        /// </summary>
+        private bool? GetDirectoryCheckedState()
+        {
+            // Only children that can actually be selected (or directories containing them) participate in the vote.
+            List<ProjectTreeItemModel> voters = Children
+                .Where(c => c.IsSelectableVoter)
+                .ToList();
+
+            if (voters.Count == 0)
+                return false;
+
+            bool anyChecked = voters.Any(c => c.Checked == true);
+            bool anyUnchecked = voters.Any(c => c.Checked == false);
+            bool anyIndeterminate = voters.Any(c => c.Checked == null);
+
+            if (anyIndeterminate || (anyChecked && anyUnchecked))
+                return null;  // indeterminate
+            return anyChecked; // all true = true, all false = false
+        }
+
+        /// <summary>
+        /// Determines if this item can participate in determining a directory's tri-state.
+        /// Regular scripts vote if they are mandatory (always selected) or selectable.
+        /// Directories vote if they contain at least one voting descendant.
+        /// </summary>
+        public bool IsSelectableVoter
+        {
+            get
+            {
+                if (_sc.Type != ScriptType.Directory)
+                    return _sc.Mandatory || _sc.Selected != SelectedState.None;
+
+                // A directory is only a voter if it contains at least one voter.
+                // This prevents a deadlock when a subfolder that contains only non-selectable
+                // scripts is present under a parent folder.
+                //
+                // Details: 
+                //  If a subfolder contains only a non-selectable script(s), it inherently evaluates to false
+                //  because it has nothing inside it to check. When its parent folder checks its children,
+                //  it sees regular scripts turning true, but that subfolder returning false.
+                //  This forces the parent folder to remain indeterminate (null). Because the parent is stuck at null,
+                //  clicking it keeps triggering targetValue = (Checked != true) to evaluate to true.
+                //  The result is that it constantly tells its children to turn on, never realizing it's allowed to turn them off.
+                //
+                // Note: .Any() short-circuits, making this highly efficient.
+                return Children.Any(c => c.IsSelectableVoter);
             }
         }
 
         public void SetChecked(bool value, bool first)
         {
-            if (_sc.Mandatory || _sc.Selected == SelectedState.None)
-                return;
+            // Directory nodes have _sc.Selected == SelectedState.None, so they must
+            // bypass the guard below as their job is purely to propagate to children.
+            // Their own Checked value is computed live from children, not stored.
+            if (_sc.Type != ScriptType.Directory)
+            {
+                if (_sc.Mandatory || _sc.Selected == SelectedState.None)
+                    return;
+            }
 
             if (first && Global.MainViewModel != null)
             {
@@ -149,22 +232,24 @@ namespace PEBakery.Core.ViewModels
                 Global.MainViewModel.EnableTreeItems = false;
             }
 
-            if (value)
+            // Only write _sc.Selected for scripts.
+            if (_sc.Type != ScriptType.Directory)
             {
-                _sc.Selected = SelectedState.True;
-
-                // Run 'Disable' directive
-                DisableScripts(ProjectRoot, _sc);
-            }
-            else
-            {
-                _sc.Selected = SelectedState.False;
+                if (value)
+                {
+                    _sc.Selected = SelectedState.True;
+                    DisableScripts(ProjectRoot, _sc);
+                }
+                else
+                {
+                    _sc.Selected = SelectedState.False;
+                }
             }
 
             // Do not propagate in main script
             if (!_sc.IsMainScript)
             {
-                // Set also child scripts (Top-down propagation)
+                // Set child scripts (Top-down propagation)
                 if (0 < Children.Count)
                 {
                     foreach (ProjectTreeItemModel child in Children)
@@ -177,7 +262,7 @@ namespace PEBakery.Core.ViewModels
 
             OnPropertyUpdate(nameof(Checked));
 
-            // No meaning on using try-finally, if any exception is thrown, the program just dies.
+			// No point in using try-finally, if any exception is thrown, the program just dies.
             if (first && Global.MainViewModel != null)
             {
                 Global.MainViewModel.EnableTreeItems = true;
@@ -186,31 +271,37 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
+        /// <summary>
+        /// Bottom-up propagation: after a node changes, notify every ancestor
+        /// directory to re-evaluate its computed Checked value.
+        /// Directory nodes no longer need their _sc.Selected written here because
+        /// their Checked getter derives the value live from children.
+        /// </summary>
         public void ParentCheckedPropagation()
-        { // Bottom-up propagation of Checked property
+        {
             if (Parent == null)
                 return;
 
-            bool setParentChecked = false;
-            foreach (ProjectTreeItemModel sibling in Parent.Children)
-            { // Siblings
-                if (sibling.Checked)
-                    setParentChecked = true;
-            }
-
-            Parent.SetParentChecked(setParentChecked);
+            Parent.OnPropertyUpdate(nameof(Checked));
+            Parent.ParentCheckedPropagation();
         }
 
+        /// <summary>
+        /// Called when a sibling's state changes and the parent directory needs
+        /// to reflect the change. The directory's Checked is computed, so we only
+        /// need to update _sc.Selected for the build engine and then notify.
+        /// </summary>
         public void SetParentChecked(bool value)
         {
             if (Parent == null)
                 return;
 
+            // Keep _sc.Selected in sync for the build engine (directory scripts
+            // still need a Selected state so they appear correctly in build trees).
             if (!_sc.Mandatory && _sc.Selected != SelectedState.None)
-            {
                 _sc.Selected = value ? SelectedState.True : SelectedState.False;
-            }
 
+            // Raise PropertyChanged — the getter will derive the tri-state from children.
             OnPropertyUpdate(nameof(Checked));
             ParentCheckedPropagation();
         }
