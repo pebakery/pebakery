@@ -146,13 +146,14 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>(32);
 
             string mainScriptPath = Path.Combine(ProjectDir, Names.MainScriptFile);
-            AllScripts = new List<Script>();
+            Script?[] loadedScripts = new Script?[spis.Count];
 
             // Load scripts from disk or cache
             bool cacheValid = true;
-            object listLock = new object();
-            Parallel.ForEach(spis, spi =>
+            object logLock = new object();
+            Parallel.For(0, spis.Count, i =>
             {
+                ScriptParseInfo spi = spis[i];
                 Debug.Assert(spi.RealPath != null, "spi.RealPath is null");
                 Debug.Assert(spi.TreePath != null, "spi.TreePath is null");
                 Debug.Assert(!spi.IsDir, $"{nameof(Project)}.{nameof(Load)} must not handle directory script instance");
@@ -184,19 +185,25 @@ namespace PEBakery.Core
                         Debug.Assert(sc != null);
                     }
 
-                    lock (listLock)
-                    {
-                        AllScripts.Add(sc);
-                    }
-
+                    loadedScripts[i] = sc;
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 catch (Exception e)
                 {
-                    logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
+                    lock (logLock)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
+                    }
                     progress?.Report((cached, null));
                 }
             });
+
+            AllScripts = new List<Script>(spis.Count);
+            foreach (Script? sc in loadedScripts)
+            {
+                if (sc != null)
+                    AllScripts.Add(sc);
+            }
 
             // mainScriptIdx
             ResultReport report = SetMainScriptIndex();
