@@ -176,7 +176,19 @@ namespace PEBakery.Ini
         /// <returns>Instance of iniKeys which contain </returns>
         private static IniKey[] InternalReadKeys(string filePath, IniKey[] iniKeys)
         {
-            List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
+            bool[] processedKeys = new bool[iniKeys.Length];
+            int processedKeyCount = 0;
+            Dictionary<string, List<int>> targetSectionDict = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < iniKeys.Length; i++)
+            {
+                string section = iniKeys[i].Section;
+                if (!targetSectionDict.TryGetValue(section, out List<int>? indexes))
+                {
+                    indexes = new List<int>();
+                    targetSectionDict[section] = indexes;
+                }
+                indexes.Add(i);
+            }
 
             Encoding encoding = SmarterDetectEncoding(filePath, iniKeys);
             using (StreamReader reader = new StreamReader(filePath, encoding, true))
@@ -184,35 +196,36 @@ namespace PEBakery.Ini
                 string? rawLine;
                 bool inTargetSection = false;
                 string? currentSection = null;
+                List<int>? currentSectionIndexes = null;
 
                 while ((rawLine = reader.ReadLine()) != null)
                 { // Read text line by line
-                    if (processedKeyIdxs.Count == iniKeys.Length) // Work Done
+                    if (processedKeyCount == iniKeys.Length) // Work Done
                         break;
 
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim(); // Remove whitespace
                     if (IsLineComment(line)) // Ignore comment
                         continue;
 
-                    if (inTargetSection && currentSection != null)
+                    if (inTargetSection && currentSection != null && currentSectionIndexes != null)
                     {
                         int idx = line.IndexOf('=');
                         if (idx != -1 && idx != 0) // there is key, and key name is not empty
                         {
                             ReadOnlySpan<char> keyName = line[..idx].Trim();
-                            for (int i = 0; i < iniKeys.Length; i++)
+                            foreach (int i in currentSectionIndexes)
                             {
-                                if (processedKeyIdxs.Contains(i))
+                                if (processedKeys[i])
                                     continue;
 
                                 // Only if <section, key> is same, copy value;
                                 IniKey iniKey = iniKeys[i];
-                                if (currentSection.Equals(iniKey.Section, StringComparison.OrdinalIgnoreCase) &&
-                                    keyName.Equals(iniKey.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                if (keyName.Equals(iniKey.Key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     iniKey.Value = line[(idx + 1)..].Trim().ToString();
                                     iniKeys[i] = iniKey;
-                                    processedKeyIdxs.Add(i);
+                                    processedKeys[i] = true;
+                                    processedKeyCount++;
                                 }
                             }
                         }
@@ -224,17 +237,12 @@ namespace PEBakery.Ini
                                 // Only sections contained in iniKeys will be targeted
                                 inTargetSection = false;
                                 currentSection = null;
-                                for (int i = 0; i < iniKeys.Length; i++)
+                                currentSectionIndexes = null;
+                                if (targetSectionDict.TryGetValue(foundSection.ToString(), out List<int>? indexes))
                                 {
-                                    if (processedKeyIdxs.Contains(i))
-                                        continue;
-
-                                    if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        inTargetSection = true;
-                                        currentSection = foundSection.ToString();
-                                        break; // for shorter O(n)
-                                    }
+                                    inTargetSection = true;
+                                    currentSection = foundSection.ToString();
+                                    currentSectionIndexes = indexes;
                                 }
                             }
                         }
@@ -245,17 +253,11 @@ namespace PEBakery.Ini
                         if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
                         {
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < iniKeys.Length; i++)
+                            if (targetSectionDict.TryGetValue(foundSection.ToString(), out List<int>? indexes))
                             {
-                                if (processedKeyIdxs.Contains(i))
-                                    continue;
-
-                                if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    inTargetSection = true;
-                                    currentSection = foundSection.ToString();
-                                    break; // for shorter O(n)
-                                }
+                                inTargetSection = true;
+                                currentSection = foundSection.ToString();
+                                currentSectionIndexes = indexes;
                             }
                         }
                     }

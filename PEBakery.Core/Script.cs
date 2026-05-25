@@ -407,18 +407,16 @@ namespace PEBakery.Core
                         sectionIdx = idx;
                         currentSection = sectionName.ToString();
                         type = DetectSectionType(currentSection, false);
-                        if (ScriptSection.LoadSectionAtScriptLoadTime(type))
-                            loadSection = true;
+                        loadSection = ScriptSection.LoadSectionAtScriptLoadTime(type);
                         inSection = true;
                     }
                     else if (inSection && loadSection)
                     { // line of section
                         lines.Add(line.ToString());
                     }
-
-                    if (r.Peek() == -1) // End of .script
-                        FinalizeSection();
                 }
+
+                FinalizeSection();
             }
 
             _fullyParsed = true;

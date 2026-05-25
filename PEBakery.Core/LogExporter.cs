@@ -182,13 +182,16 @@ namespace PEBakery.Core
                             // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
                             // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
                             // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
-                            List<int> scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
-                            List<int> refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
+                            HashSet<int> scLogIds = new HashSet<int>(errors.Select(x => x.ScriptId));
+                            HashSet<int> refScLogIds = new HashSet<int>(errors.Select(x => x.RefScriptId));
                             List<LogModel.Script> scLogs = scripts.Where(x => scLogIds.Contains(x.Id)).ToList();
-                            List<LogModel.Script> scOriginLogs = scripts.Where(x => scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)).ToList();
+                            Dictionary<int, LogModel.Script> scOriginLogs = scripts
+                                .Where(x => scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id))
+                                .ToDictionary(x => x.Id);
+                            ILookup<int, LogModel.BuildLog> errorLogsByScript = errors.ToLookup(x => x.ScriptId);
                             foreach (LogModel.Script scLog in scLogs)
                             {
-                                LogModel.BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
+                                LogModel.BuildLog[] eLogs = errorLogsByScript[scLog.Id].ToArray();
                                 if (eLogs.Length == 1)
                                     _w.WriteLine($"- [{eLogs.Length}] Error in script [{scLog.Name}] ({scLog.TreePath})");
                                 else
@@ -220,15 +223,18 @@ namespace PEBakery.Core
                             // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
                             // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
                             // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
-                            List<int> scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
-                            List<int> refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
+                            HashSet<int> scLogIds = new HashSet<int>(warns.Select(x => x.ScriptId));
+                            HashSet<int> refScLogIds = new HashSet<int>(warns.Select(x => x.RefScriptId));
                             List<LogModel.Script> scLogs = scripts.Where(x => scLogIds.Contains(x.Id)).ToList();
-                            List<LogModel.Script> scOriginLogs = scripts.Where(x => refScLogIds.Contains(x.Id)).ToList();
+                            Dictionary<int, LogModel.Script> scOriginLogs = scripts
+                                .Where(x => refScLogIds.Contains(x.Id))
+                                .ToDictionary(x => x.Id);
                             // .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
+                            ILookup<int, LogModel.BuildLog> warnLogsByScript = warns.ToLookup(x => x.ScriptId);
 
                             foreach (LogModel.Script scLog in scLogs)
                             {
-                                LogModel.BuildLog[] wLogs = warns.Where(x => x.ScriptId == scLog.Id).ToArray();
+                                LogModel.BuildLog[] wLogs = warnLogsByScript[scLog.Id].ToArray();
                                 Debug.Assert(0 < wLogs.Length);
 
                                 if (wLogs.Length == 1)
@@ -450,14 +456,14 @@ namespace PEBakery.Core
                                 // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
                                 // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
                                 // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
-                                List<int> scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
-                                List<int> refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
+                                HashSet<int> scLogIds = new HashSet<int>(targetLogs.Select(x => x.ScriptId));
+                                HashSet<int> refScLogIds = new HashSet<int>(targetLogs.Select(x => x.RefScriptId));
                                 List<LogModel.Script> scLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
                                     .ToList();
-                                List<LogModel.Script> scOriginLogs = _db.Table<LogModel.Script>()
+                                Dictionary<int, LogModel.Script> scOriginLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
-                                    .ToList();
+                                    .ToDictionary(x => x.Id);
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
@@ -683,12 +689,11 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportScriptOriginText
-        private static string? ExportRefScriptText(LogModel.BuildLog bLog, List<LogModel.Script> scLogs)
+        private static string? ExportRefScriptText(LogModel.BuildLog bLog, IReadOnlyDictionary<int, LogModel.Script> scLogs)
         {
             if (bLog.RefScriptId != 0)
             { // Referenced script
-                LogModel.Script? refScLog = scLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
-                if (refScLog == null)
+                if (!scLogs.TryGetValue(bLog.RefScriptId, out LogModel.Script? refScLog))
                     return "|-> Referenced an unknown script";
 
                 string path = refScLog.TreePath;

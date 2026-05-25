@@ -33,7 +33,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core
@@ -497,7 +496,6 @@ namespace PEBakery.Core
                 return linkRealPath;
             }
 
-            int loadCount = 0;
             bool isCacheValid = true;
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Parallel.ForEach(linkSources, sc =>
@@ -562,15 +560,6 @@ namespace PEBakery.Core
                     int idx = _allProjectScripts.IndexOf(sc);
                     removeIdxs.Add(idx);
                     progress?.Report((cached, null));
-                }
-
-                if (scriptCache == null)
-                {
-                    // Loading a project without a script cache generates a lot of Gen 2 heap object
-                    // TODO: Remove this part of code?
-                    int thisCount = Interlocked.Increment(ref loadCount);
-                    if (thisCount % Project.LoadGCInterval == 0)
-                        GC.Collect();
                 }
             });
 

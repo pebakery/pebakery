@@ -187,11 +187,6 @@ namespace PEBakery.Core
                     lock (listLock)
                     {
                         AllScripts.Add(sc);
-
-                        // Loading a project without script cache generates a lot of Gen 2 heap object
-                        // TODO: Remove this part of code?
-                        if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
-                            GC.Collect();
                     }
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
