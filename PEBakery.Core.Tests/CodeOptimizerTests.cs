@@ -69,6 +69,24 @@ namespace PEBakery.Core.Tests
                 IsOptimizedCommand(cmds[0], CodeType.IniReadOp, 2);
                 IsSingleCommand(cmds[1], CodeType.IniRead);
             }
+            // Chained dependency should break every dependent command
+            {
+                string[] lines = new string[]
+                {
+                    "IniRead,%SrcFile%,Section,Key,%D1%",
+                    // -- Should be separated --
+                    "IniRead,%SrcFile%,%D1%,Key,%D2%",
+                    // -- Should be separated --
+                    "IniRead,%SrcFile%,%D2%,Key,%D3%",
+                };
+                CodeCommand[] cmds = EngineTests.ParseLines(lines, out List<LogInfo> errorLogs);
+                Assert.IsTrue(errorLogs.Count == 0);
+                Assert.AreEqual(3, cmds.Length);
+
+                IsSingleCommand(cmds[0], CodeType.IniRead);
+                IsSingleCommand(cmds[1], CodeType.IniRead);
+                IsSingleCommand(cmds[2], CodeType.IniRead);
+            }
         }
 
         [TestMethod]

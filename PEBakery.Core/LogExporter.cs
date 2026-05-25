@@ -117,6 +117,16 @@ namespace PEBakery.Core
                 case LogExportFormat.Text:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
+                        LogModel.BuildLog[] buildLogs = _db.Table<LogModel.BuildLog>()
+                            .Where(x => x.BuildId == buildId)
+                            .ToArray();
+                        LogModel.Script[] scripts = _db.Table<LogModel.Script>()
+                            .Where(x => x.BuildId == buildId)
+                            .ToArray();
+                        LogModel.Variable[] variables = _db.Table<LogModel.Variable>()
+                            .Where(x => x.BuildId == buildId)
+                            .ToArray();
+
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
                         _w.WriteLine($"Built    by PEBakery {dbBuild.PEBakeryVersion}");
                         _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
@@ -142,7 +152,7 @@ namespace PEBakery.Core
                         _w.WriteLine("<Log Statistics>");
                         foreach (LogState state in Enum.GetValues<LogState>().Where(x => x != LogState.None))
                         {
-                            int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
+                            int count = buildLogs.Count(x => x.State == state);
 
                             bool addLogState = true;
                             switch (state)
@@ -164,7 +174,7 @@ namespace PEBakery.Core
                         _w.WriteLine();
 
                         // Show ErrorLogs
-                        LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && (x.State == LogState.Error || x.State == LogState.CriticalError)).ToArray();
+                        LogModel.BuildLog[] errors = buildLogs.Where(x => x.State == LogState.Error || x.State == LogState.CriticalError).ToArray();
                         if (0 < errors.Length)
                         {
                             _w.WriteLine("<Errors>");
@@ -174,12 +184,8 @@ namespace PEBakery.Core
                             // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                             List<int> scLogIds = errors.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                             List<int> refScLogIds = errors.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
-                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
-                                .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
-                                .ToArray();
-                            LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
-                                .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
-                                .ToArray();
+                            List<LogModel.Script> scLogs = scripts.Where(x => scLogIds.Contains(x.Id)).ToList();
+                            List<LogModel.Script> scOriginLogs = scripts.Where(x => scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)).ToList();
                             foreach (LogModel.Script scLog in scLogs)
                             {
                                 LogModel.BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
@@ -206,7 +212,7 @@ namespace PEBakery.Core
                         }
 
                         // Show WarnLogs
-                        LogModel.BuildLog[] warns = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
+                        LogModel.BuildLog[] warns = buildLogs.Where(x => x.State == LogState.Warning).ToArray();
                         if (0 < warns.Length)
                         {
                             _w.WriteLine("<Warnings>");
@@ -216,13 +222,9 @@ namespace PEBakery.Core
                             // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                             List<int> scLogIds = warns.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                             List<int> refScLogIds = warns.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
-                            LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
-                                .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
-                                .ToArray();
-                            LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
-                                .Where(x => x.BuildId == buildId && refScLogIds.Contains(x.Id))
-                                // .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
-                                .ToArray();
+                            List<LogModel.Script> scLogs = scripts.Where(x => scLogIds.Contains(x.Id)).ToList();
+                            List<LogModel.Script> scOriginLogs = scripts.Where(x => refScLogIds.Contains(x.Id)).ToList();
+                            // .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
 
                             foreach (LogModel.Script scLog in scLogs)
                             {
@@ -250,11 +252,6 @@ namespace PEBakery.Core
 
                             _w.WriteLine();
                         }
-
-                        // Script
-                        LogModel.Script[] scripts = _db.Table<LogModel.Script>()
-                            .Where(x => x.BuildId == buildId)
-                            .ToArray();
 
                         // Script - Processed Scripts
                         LogModel.Script[] processedScripts = scripts
@@ -340,8 +337,8 @@ namespace PEBakery.Core
                         foreach (VarsType varsType in typeList)
                         {
                             _w.WriteLine($"- {varsType} Variables");
-                            var vars = _db.Table<LogModel.Variable>()
-                                .Where(x => x.BuildId == buildId && x.Type == varsType)
+                            var vars = variables
+                                .Where(x => x.Type == varsType)
                                 .OrderBy(x => x.Key);
                             foreach (LogModel.Variable log in vars)
                                 _w.WriteLine($"%{log.Key}% = {log.Value}");
@@ -352,22 +349,24 @@ namespace PEBakery.Core
                         // Code Logs
                         _w.WriteLine("<Code Logs>");
                         {
+                            ILookup<int, LogModel.BuildLog> codeLogsByScript = buildLogs
+                                .Where(x => opts.IncludeComments || (x.Flags & LogModel.BuildLogFlag.Comment) != LogModel.BuildLogFlag.Comment)
+                                .Where(x => opts.IncludeMacros || (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro)
+                                .OrderBy(x => x.Id)
+                                .ToLookup(x => x.ScriptId);
+                            ILookup<int, LogModel.Variable> localVarsByScript = variables
+                                .Where(x => x.Type == VarsType.Local)
+                                .OrderBy(x => x.Key)
+                                .ToLookup(x => x.ScriptId);
+
                             foreach (LogModel.Script scLog in processedScripts)
                             {
                                 // Log codes
-                                var cLogs = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id);
-                                if (!opts.IncludeComments)
-                                    cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Comment) != LogModel.BuildLogFlag.Comment);
-                                if (!opts.IncludeMacros)
-                                    cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
-                                cLogs = cLogs.OrderBy(x => x.Id);
-                                foreach (LogModel.BuildLog log in cLogs)
+                                foreach (LogModel.BuildLog log in codeLogsByScript[scLog.Id])
                                     _w.WriteLine(log.Export(LogExportFormat.Text, true, opts.ShowLogFlags));
 
                                 // Log local variables
-                                var vLogs = _db.Table<LogModel.Variable>()
-                                    .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
-                                    .OrderBy(x => x.Key);
+                                IEnumerable<LogModel.Variable> vLogs = localVarsByScript[scLog.Id];
                                 if (vLogs.Any())
                                 {
                                     _w.WriteLine($"- Local Variables of Script [{scLog.Name}]");
@@ -453,12 +452,12 @@ namespace PEBakery.Core
                                 // `SQLite.SQLiteException: no such table: op_implicit` because sqlite-net v1.9.172 does not support the C# 14 span overload (praeclarum/sqlite-net#1295)
                                 List<int> scLogIds = targetLogs.Select(x => x.ScriptId).OrderBy(x => x).Distinct().ToList();
                                 List<int> refScLogIds = targetLogs.Select(x => x.RefScriptId).OrderBy(x => x).Distinct().ToList();
-                                LogModel.Script[] scLogs = _db.Table<LogModel.Script>()
+                                List<LogModel.Script> scLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && scLogIds.Contains(x.Id))
-                                    .ToArray();
-                                LogModel.Script[] scOriginLogs = _db.Table<LogModel.Script>()
+                                    .ToList();
+                                List<LogModel.Script> scOriginLogs = _db.Table<LogModel.Script>()
                                     .Where(x => x.BuildId == buildId && (scLogIds.Contains(x.Id) || refScLogIds.Contains(x.Id)))
-                                    .ToArray();
+                                    .ToList();
 
                                 foreach (LogModel.Script scLog in scLogs)
                                 {
@@ -684,7 +683,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportScriptOriginText
-        private static string? ExportRefScriptText(LogModel.BuildLog bLog, LogModel.Script[] scLogs)
+        private static string? ExportRefScriptText(LogModel.BuildLog bLog, List<LogModel.Script> scLogs)
         {
             if (bLog.RefScriptId != 0)
             { // Referenced script

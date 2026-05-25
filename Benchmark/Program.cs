@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using CommandLine;
 using Joveler.Compression.LZ4;
@@ -41,6 +42,9 @@ namespace Benchmark
 
     [Verb("core", HelpText = "Benchmark core parser, optimizer, IO, and export paths")]
     public class CoreBenchOptions : ParamOptions { }
+
+    [Verb("core-long", HelpText = "Benchmark core paths with a longer, more stable job")]
+    public class CoreLongBenchOptions : ParamOptions { }
     #endregion
 
     #region Program
@@ -137,17 +141,19 @@ namespace Benchmark
             });
 
             argParser.ParseArguments<AllBenchOptions,
-                EncDetectBenchOptions, DecompMgcBenchOptions, CoreBenchOptions>(args)
+                EncDetectBenchOptions, DecompMgcBenchOptions, CoreBenchOptions, CoreLongBenchOptions>(args)
                 .WithParsed<AllBenchOptions>(x => opts = x)
                 .WithParsed<EncDetectBenchOptions>(x => opts = x)
                 .WithParsed<DecompMgcBenchOptions>(x => opts = x)
                 .WithParsed<CoreBenchOptions>(x => opts = x)
+                .WithParsed<CoreLongBenchOptions>(x => opts = x)
                 .WithNotParsed(PrintErrorAndExit);
             Debug.Assert(opts != null, $"{nameof(opts)} != null");
 
             bool encDetectBench = false;
             bool decompMgcBench = false;
             bool coreBench = false;
+            bool coreLongBench = false;
             switch (opts)
             {
                 case EncDetectBenchOptions _:
@@ -161,6 +167,10 @@ namespace Benchmark
                 case CoreBenchOptions _:
                     Console.WriteLine("[*] Core");
                     coreBench = true;
+                    break;
+                case CoreLongBenchOptions _:
+                    Console.WriteLine("[*] CoreLong");
+                    coreLongBench = true;
                     break;
                 case AllBenchOptions _:
                     Console.WriteLine("[*] All");
@@ -181,13 +191,18 @@ namespace Benchmark
             if (encDetectBench)
                 BenchmarkRunner.Run<EncDetectBench>(config);
             if (coreBench)
-            {
-                BenchmarkRunner.Run<CodePipelineBench>(config);
-                BenchmarkRunner.Run<VariablesBench>(config);
-                BenchmarkRunner.Run<ProjectLoadBench>(config);
-                BenchmarkRunner.Run<IniBulkBench>(config);
-                BenchmarkRunner.Run<LogExportBench>(config);
-            }
+                RunCoreBenchmarks(DefaultConfig.Instance.AddJob(Job.ShortRun));
+            if (coreLongBench)
+                RunCoreBenchmarks(DefaultConfig.Instance.AddJob(Job.MediumRun));
+        }
+
+        private static void RunCoreBenchmarks(IConfig config)
+        {
+            BenchmarkRunner.Run<CodePipelineBench>(config);
+            BenchmarkRunner.Run<VariablesBench>(config);
+            BenchmarkRunner.Run<ProjectLoadBench>(config);
+            BenchmarkRunner.Run<IniBulkBench>(config);
+            BenchmarkRunner.Run<LogExportBench>(config);
         }
         #endregion
     }

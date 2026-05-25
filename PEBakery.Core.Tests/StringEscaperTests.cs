@@ -569,6 +569,37 @@ namespace PEBakery.Core.Tests
             const string comp = "Hello World #1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
+
+        [TestMethod]
+        [TestCategory(nameof(StringEscaper))]
+        public void ExpandVariables_PercentPatternEdgeCases()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            s.Variables.SetValue(VarsType.Local, "A", "Hello");
+            s.Variables.SetValue(VarsType.Local, "B", "%A%");
+
+            (string Src, string Comp)[] cases =
+            [
+                ("No variables here", "No variables here"),
+                ("%", "%"),
+                ("%%", "%%"),
+                ("% %", "% %"),
+                ("%A", "%A"),
+                ("A%", "A%"),
+                ("%A B%", "%A B%"),
+                ("100% done", "100% done"),
+                ("%%A%", "%Hello"),
+                ("%A%%Missing%", "Hello#$pMissing#$p"),
+                ("%B%", "Hello"),
+            ];
+
+            foreach ((string src, string comp) in cases)
+            {
+                string dest = StringEscaper.ExpandVariables(s, src);
+                Assert.AreEqual(comp, dest);
+            }
+        }
         #endregion
 
         #region Preprocess

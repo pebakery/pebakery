@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using PEBakery.Core;
 using PEBakery.Ini;
 using System;
@@ -136,7 +135,6 @@ namespace Benchmark
     }
 
     [MemoryDiagnoser]
-    [ShortRunJob]
     public class CodePipelineBench
     {
         private ScriptSection _section = null!;
@@ -181,7 +179,6 @@ namespace Benchmark
     }
 
     [MemoryDiagnoser]
-    [ShortRunJob]
     public class VariablesBench
     {
         private Variables _variables = null!;
@@ -215,13 +212,36 @@ namespace Benchmark
     }
 
     [MemoryDiagnoser]
-    [ShortRunJob]
     public class ProjectLoadBench
     {
+        private ProjectCollection _preparedProjects = null!;
+
         [GlobalSetup]
         public void GlobalSetup()
         {
             CoreBenchFixture.EnsureInitialized();
+        }
+
+        [IterationSetup(Target = nameof(LoadPrepared))]
+        public void PrepareProjectCollection()
+        {
+            _preparedProjects = new ProjectCollection(CoreBenchFixture.BaseDir);
+            _preparedProjects.PrepareLoad();
+        }
+
+        [Benchmark]
+        public int PrepareOnly()
+        {
+            ProjectCollection projects = new ProjectCollection(CoreBenchFixture.BaseDir);
+            (int scriptCount, int linkCount) = projects.PrepareLoad();
+            return scriptCount + linkCount;
+        }
+
+        [Benchmark]
+        public int LoadPrepared()
+        {
+            _preparedProjects.Load(null, null);
+            return _preparedProjects.Count;
         }
 
         [Benchmark]
@@ -235,12 +255,13 @@ namespace Benchmark
     }
 
     [MemoryDiagnoser]
-    [ShortRunJob]
     public class IniBulkBench
     {
+        private const int WriteOperationsPerInvoke = 8;
+
         private IniKey[] _readKeys = Array.Empty<IniKey>();
         private IniKey[] _writeKeys = Array.Empty<IniKey>();
-        private string _workingFile = string.Empty;
+        private string[] _workingFiles = Array.Empty<string>();
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -253,24 +274,32 @@ namespace Benchmark
             _writeKeys = Enumerable.Range(0, 256)
                 .Select(i => new IniKey($"Section{i % 64}", $"Key{i % 16}", $"Updated-{i}"))
                 .ToArray();
-            _workingFile = Path.Combine(CoreBenchFixture.BaseDir, "Bulk.Working.ini");
+            _workingFiles = Enumerable.Range(0, WriteOperationsPerInvoke)
+                .Select(i => Path.Combine(CoreBenchFixture.BaseDir, $"Bulk.Working.{i}.ini"))
+                .ToArray();
         }
 
         [IterationSetup(Target = nameof(WriteKeys))]
         public void ResetWriteFile()
         {
-            File.Copy(CoreBenchFixture.IniTemplate, _workingFile, true);
+            foreach (string workingFile in _workingFiles)
+                File.Copy(CoreBenchFixture.IniTemplate, workingFile, true);
         }
 
         [Benchmark]
         public IniKey[] ReadKeys() => IniReadWriter.ReadKeys(CoreBenchFixture.IniTemplate, _readKeys);
 
-        [Benchmark]
-        public bool WriteKeys() => IniReadWriter.WriteKeys(_workingFile, _writeKeys);
+        [Benchmark(OperationsPerInvoke = WriteOperationsPerInvoke)]
+        public bool WriteKeys()
+        {
+            bool result = true;
+            foreach (string workingFile in _workingFiles)
+                result &= IniReadWriter.WriteKeys(workingFile, _writeKeys);
+            return result;
+        }
     }
 
     [MemoryDiagnoser]
-    [ShortRunJob]
     public class LogExportBench
     {
         private Logger _logger = null!;
