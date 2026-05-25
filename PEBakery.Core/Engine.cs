@@ -779,6 +779,72 @@ namespace PEBakery.Core
                         logs.AddRange(CommandInterface.AddInterface(s, cmd));
                         break;
                     #endregion
+                    #region 11 JSON
+                    case CodeType.JSONRead:
+                        logs.AddRange(CommandJson.JSONRead(s, cmd));
+                        break;
+                    case CodeType.JSONWrite:
+                        logs.AddRange(CommandJson.JSONWrite(s, cmd));
+                        break;
+                    case CodeType.JSONDelete:
+                        logs.AddRange(CommandJson.JSONDelete(s, cmd));
+                        break;
+                    case CodeType.JSONPretty:
+                    case CodeType.JSONCompact:
+                    case CodeType.JSONFormat:
+                        logs.AddRange(CommandJson.JSONFormat(s, cmd));
+                        break;
+                    case CodeType.JSONQuery:
+                        logs.AddRange(CommandJson.JSONQuery(s, cmd));
+                        break;
+                    case CodeType.JSONValidate:
+                        logs.AddRange(CommandJson.JSONValidate(s, cmd));
+                        break;
+                    case CodeType.JSONType:
+                        logs.AddRange(CommandJson.JSONType(s, cmd));
+                        break;
+                    case CodeType.JSONCount:
+                        logs.AddRange(CommandJson.JSONCount(s, cmd));
+                        break;
+                    case CodeType.JSONReadArray:
+                        logs.AddRange(CommandJson.JSONReadArray(s, cmd));
+                        break;
+                    case CodeType.JSONReadKeys:
+                        logs.AddRange(CommandJson.JSONReadKeys(s, cmd));
+                        break;
+                    #endregion
+                    #region 12 XML
+                    case CodeType.XMLRead:
+                        logs.AddRange(CommandXml.XMLRead(s, cmd));
+                        break;
+                    case CodeType.XMLUpdate:
+                        logs.AddRange(CommandXml.XMLUpdate(s, cmd));
+                        break;
+                    case CodeType.XMLAdd:
+                        logs.AddRange(CommandXml.XMLAdd(s, cmd));
+                        break;
+                    case CodeType.XMLDelete:
+                        logs.AddRange(CommandXml.XMLDelete(s, cmd));
+                        break;
+                    case CodeType.XMLRename:
+                        logs.AddRange(CommandXml.XMLRename(s, cmd));
+                        break;
+                    case CodeType.XMLQuery:
+                        logs.AddRange(CommandXml.XMLQuery(s, cmd));
+                        break;
+                    case CodeType.XMLFormat:
+                        logs.AddRange(CommandXml.XMLFormat(s, cmd));
+                        break;
+                    case CodeType.XMLValidate:
+                        logs.AddRange(CommandXml.XMLValidate(s, cmd));
+                        break;
+                    case CodeType.XMLCount:
+                        logs.AddRange(CommandXml.XMLCount(s, cmd));
+                        break;
+                    case CodeType.XMLReadList:
+                        logs.AddRange(CommandXml.XMLReadList(s, cmd));
+                        break;
+                    #endregion
                     #region 20 String
                     case CodeType.StrFormat:
                         logs.AddRange(CommandString.StrFormat(s, cmd));

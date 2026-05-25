@@ -70,6 +70,12 @@ namespace PEBakery.Core
         Visible = 1000, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
         VisibleOp = 1080, ReadInterfaceOp, WriteInterfaceOp,
         Retrieve = 1099, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
+        // 11 JSON
+        JSONRead = 1100, JSONWrite, JSONDelete, JSONPretty, JSONCompact,
+        JSONQuery, JSONFormat, JSONValidate, JSONType, JSONCount, JSONReadArray, JSONReadKeys,
+        // 12 XML
+        XMLRead = 1120, XMLUpdate, XMLAdd, XMLDelete, XMLRename,
+        XMLQuery, XMLFormat, XMLValidate, XMLCount, XMLReadList,
         // 20 String
         StrFormat = 2000,
         // 21 Math
@@ -2732,6 +2738,328 @@ namespace PEBakery.Core
             return $"{Type},{SubInfo}";
         }
     }
+
+    #region CodeInfo 11 - JSON
+    public enum JsonFormatMode
+    {
+        Pretty,
+        Compact,
+    }
+
+    public enum JsonQueryOutputMode
+    {
+        Raw,
+        Json,
+        Compact,
+    }
+
+    public class CodeInfo_JSONRead : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string Path { get; private set; }
+        public bool NoErr { get; private set; }
+
+        public CodeInfo_JSONRead(string fileName, string path, bool noErr)
+        {
+            FileName = fileName;
+            Path = path;
+            NoErr = noErr;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, Path);
+        public override HashSet<string> OutVars() => CreateOutVars("#r");
+    }
+
+    public class CodeInfo_JSONWrite : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string Path { get; private set; }
+        public string Value { get; private set; }
+
+        public CodeInfo_JSONWrite(string fileName, string path, string value)
+        {
+            FileName = fileName;
+            Path = path;
+            Value = value;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, Path, Value);
+    }
+
+    public class CodeInfo_JSONDelete : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string Path { get; private set; }
+
+        public CodeInfo_JSONDelete(string fileName, string path)
+        {
+            FileName = fileName;
+            Path = path;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, Path);
+    }
+
+    public class CodeInfo_JSONFormat : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public JsonFormatMode Mode { get; private set; }
+        public bool SortKeys { get; private set; }
+
+        public CodeInfo_JSONFormat(string fileName, JsonFormatMode mode, bool sortKeys)
+        {
+            FileName = fileName;
+            Mode = mode;
+            SortKeys = sortKeys;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName);
+    }
+
+    public class CodeInfo_JSONQuery : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string Filter { get; private set; }
+        public string DestVar { get; private set; }
+        public JsonQueryOutputMode OutputMode { get; private set; }
+
+        public CodeInfo_JSONQuery(string fileName, string filter, string destVar, JsonQueryOutputMode outputMode)
+        {
+            FileName = fileName;
+            Filter = filter;
+            DestVar = destVar;
+            OutputMode = outputMode;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, Filter);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+
+    public class CodeInfo_JSONValidate : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string DestVar { get; private set; }
+        public bool NoErr { get; private set; }
+
+        public CodeInfo_JSONValidate(string fileName, string destVar, bool noErr)
+        {
+            FileName = fileName;
+            DestVar = destVar;
+            NoErr = noErr;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+
+    public class CodeInfo_JSONPathDest : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string Path { get; private set; }
+        public string DestVar { get; private set; }
+        public string? Delim { get; private set; }
+
+        public CodeInfo_JSONPathDest(string fileName, string path, string destVar, string? delim = null)
+        {
+            FileName = fileName;
+            Path = path;
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, Path, Delim);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+    #endregion
+
+    #region CodeInfo 12 - XML
+    public enum XmlAddOperation
+    {
+        Insert,
+        Append,
+        Subnode,
+    }
+
+    public enum XmlAddType
+    {
+        Elem,
+        Text,
+        Attr,
+    }
+
+    public enum XmlQueryOutputMode
+    {
+        Text,
+        Xml,
+    }
+
+    public enum XmlFormatMode
+    {
+        Pretty,
+        Compact,
+    }
+
+    public class CodeInfo_XMLRead : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public bool NoErr { get; private set; }
+
+        public CodeInfo_XMLRead(string fileName, string xPath, bool noErr)
+        {
+            FileName = fileName;
+            XPath = xPath;
+            NoErr = noErr;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath);
+        public override HashSet<string> OutVars() => CreateOutVars("#r");
+    }
+
+    public class CodeInfo_XMLUpdate : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public string Value { get; private set; }
+        public bool NoErr { get; private set; }
+
+        public CodeInfo_XMLUpdate(string fileName, string xPath, string value, bool noErr)
+        {
+            FileName = fileName;
+            XPath = xPath;
+            Value = value;
+            NoErr = noErr;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath, Value);
+        public override HashSet<string> OutVars() => CreateOutVars("#r");
+    }
+
+    public class CodeInfo_XMLAdd : CodeInfo
+    {
+        public XmlAddOperation Operation { get; private set; }
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public XmlAddType Type { get; private set; }
+        public string Name { get; private set; }
+        public string Value { get; private set; }
+
+        public CodeInfo_XMLAdd(XmlAddOperation operation, string fileName, string xPath, XmlAddType type, string name, string value)
+        {
+            Operation = operation;
+            FileName = fileName;
+            XPath = xPath;
+            Type = type;
+            Name = name;
+            Value = value;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath, Name, Value);
+    }
+
+    public class CodeInfo_XMLPath : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+
+        public CodeInfo_XMLPath(string fileName, string xPath)
+        {
+            FileName = fileName;
+            XPath = xPath;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath);
+    }
+
+    public class CodeInfo_XMLRename : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public string Value { get; private set; }
+
+        public CodeInfo_XMLRename(string fileName, string xPath, string value)
+        {
+            FileName = fileName;
+            XPath = xPath;
+            Value = value;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath, Value);
+    }
+
+    public class CodeInfo_XMLQuery : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public string DestVar { get; private set; }
+        public XmlQueryOutputMode OutputMode { get; private set; }
+
+        public CodeInfo_XMLQuery(string fileName, string xPath, string destVar, XmlQueryOutputMode outputMode)
+        {
+            FileName = fileName;
+            XPath = xPath;
+            DestVar = destVar;
+            OutputMode = outputMode;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+
+    public class CodeInfo_XMLFormat : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public XmlFormatMode Mode { get; private set; }
+
+        public CodeInfo_XMLFormat(string fileName, XmlFormatMode mode)
+        {
+            FileName = fileName;
+            Mode = mode;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName);
+    }
+
+    public class CodeInfo_XMLValidate : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string DestVar { get; private set; }
+        public string? SchemaFile { get; private set; }
+        public string? DtdFile { get; private set; }
+        public bool NoErr { get; private set; }
+
+        public CodeInfo_XMLValidate(string fileName, string destVar, string? schemaFile, string? dtdFile, bool noErr)
+        {
+            FileName = fileName;
+            DestVar = destVar;
+            SchemaFile = schemaFile;
+            DtdFile = dtdFile;
+            NoErr = noErr;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, SchemaFile, DtdFile);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+
+    public class CodeInfo_XMLPathDest : CodeInfo
+    {
+        public string FileName { get; private set; }
+        public string XPath { get; private set; }
+        public string DestVar { get; private set; }
+        public string? Delim { get; private set; }
+
+        public CodeInfo_XMLPathDest(string fileName, string xPath, string destVar, string? delim = null)
+        {
+            FileName = fileName;
+            XPath = xPath;
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(FileName, XPath, Delim);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+    }
+    #endregion
 
     #region UserInputType, UserInputInfo
     public enum UserInputType

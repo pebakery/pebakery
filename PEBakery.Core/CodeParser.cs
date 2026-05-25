@@ -2201,6 +2201,230 @@ namespace PEBakery.Core
                         throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
                     }
                 #endregion
+                #region 11 JSON
+                case CodeType.JSONRead:
+                    { // JSONRead,<JSONFile>,<Path>,[NOERR]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
+                        return new CodeInfo_JSONRead(args[0], args[1], noErr);
+                    }
+                case CodeType.JSONWrite:
+                    { // JSONWrite,<JSONFile>,<Path>,<Value>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_JSONWrite(args[0], args[1], args[2]);
+                    }
+                case CodeType.JSONDelete:
+                    { // JSONDelete,<JSONFile>,<Path>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_JSONDelete(args[0], args[1]);
+                    }
+                case CodeType.JSONPretty:
+                case CodeType.JSONCompact:
+                    { // JSONPretty,<JSONFile> / JSONCompact,<JSONFile>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        JsonFormatMode mode = type == CodeType.JSONPretty ? JsonFormatMode.Pretty : JsonFormatMode.Compact;
+                        return new CodeInfo_JSONFormat(args[0], mode, false);
+                    }
+                case CodeType.JSONQuery:
+                    { // JSONQuery,<JSONFile>,<Filter>,<%DestVar%>[,Raw|Json|Compact]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        JsonQueryOutputMode outputMode = JsonQueryOutputMode.Raw;
+                        if (args.Count == maxArgCount)
+                            outputMode = ParseEnumArg<JsonQueryOutputMode>(args[3], nameof(JsonQueryOutputMode), rawCode);
+                        return new CodeInfo_JSONQuery(args[0], args[1], args[2], outputMode);
+                    }
+                case CodeType.JSONFormat:
+                    { // JSONFormat,<JSONFile>,<Pretty|Compact>[,SortKeys]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        JsonFormatMode mode = ParseEnumArg<JsonFormatMode>(args[1], nameof(JsonFormatMode), rawCode);
+                        bool sortKeys = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            if (args[i].Equals("SortKeys", StringComparison.OrdinalIgnoreCase))
+                                sortKeys = true;
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{args[i]}]", rawCode);
+                        }
+                        return new CodeInfo_JSONFormat(args[0], mode, sortKeys);
+                    }
+                case CodeType.JSONValidate:
+                    { // JSONValidate,<JSONFile>,<%DestVar%>[,NOERR]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[1], rawCode);
+                        bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
+                        return new CodeInfo_JSONValidate(args[0], args[1], noErr);
+                    }
+                case CodeType.JSONType:
+                case CodeType.JSONCount:
+                    { // JSONType|JSONCount,<JSONFile>,<Path>,<%DestVar%>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        return new CodeInfo_JSONPathDest(args[0], args[1], args[2]);
+                    }
+                case CodeType.JSONReadArray:
+                case CodeType.JSONReadKeys:
+                    { // JSONReadArray|JSONReadKeys,<JSONFile>,<Path>,<%DestVar%>[,Delim=<Str>]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        string? delim = ParseOptionalDelim(args, minArgCount, rawCode);
+                        return new CodeInfo_JSONPathDest(args[0], args[1], args[2], delim);
+                    }
+                #endregion
+                #region 12 XML
+                case CodeType.XMLRead:
+                    { // XMLRead,<XMLFile>,<XPath>,[NOERR]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
+                        return new CodeInfo_XMLRead(args[0], args[1], noErr);
+                    }
+                case CodeType.XMLUpdate:
+                    { // XMLUpdate,<XMLFile>,<XPath>,<Value>,[NOERR]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
+                        return new CodeInfo_XMLUpdate(args[0], args[1], args[2], noErr);
+                    }
+                case CodeType.XMLAdd:
+                    { // XMLAdd,<Operation>,<XMLFile>,<XPath>,<Type>,<Name>[,<Value>]
+                        const int minArgCount = 5;
+                        const int maxArgCount = 6;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        XmlAddOperation operation = ParseEnumArg<XmlAddOperation>(args[0], nameof(XmlAddOperation), rawCode);
+                        XmlAddType addType = ParseEnumArg<XmlAddType>(args[3], nameof(XmlAddType), rawCode);
+                        string value = args.Count == maxArgCount ? args[5] : string.Empty;
+                        return new CodeInfo_XMLAdd(operation, args[1], args[2], addType, args[4], value);
+                    }
+                case CodeType.XMLDelete:
+                    { // XMLDelete,<XMLFile>,<XPath>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_XMLPath(args[0], args[1]);
+                    }
+                case CodeType.XMLRename:
+                    { // XMLRename,<XMLFile>,<XPath>,<Value>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_XMLRename(args[0], args[1], args[2]);
+                    }
+                case CodeType.XMLQuery:
+                    { // XMLQuery,<XMLFile>,<XPath>,<%DestVar%>[,Text|Xml]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        XmlQueryOutputMode outputMode = XmlQueryOutputMode.Text;
+                        if (args.Count == maxArgCount)
+                            outputMode = ParseEnumArg<XmlQueryOutputMode>(args[3], nameof(XmlQueryOutputMode), rawCode);
+                        return new CodeInfo_XMLQuery(args[0], args[1], args[2], outputMode);
+                    }
+                case CodeType.XMLFormat:
+                    { // XMLFormat,<XMLFile>[,Pretty|Compact]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        XmlFormatMode mode = args.Count == maxArgCount ? ParseEnumArg<XmlFormatMode>(args[1], nameof(XmlFormatMode), rawCode) : XmlFormatMode.Pretty;
+                        return new CodeInfo_XMLFormat(args[0], mode);
+                    }
+                case CodeType.XMLValidate:
+                    { // XMLValidate,<XMLFile>,<%DestVar%>[,Schema=<XsdFile>|Dtd=<DtdFile>|NOERR]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[1], rawCode);
+                        string? schemaFile = null;
+                        string? dtdFile = null;
+                        bool noErr = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            const string schemaKey = "Schema=";
+                            const string dtdKey = "Dtd=";
+                            if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                                noErr = true;
+                            else if (arg.StartsWith(schemaKey, StringComparison.OrdinalIgnoreCase))
+                                schemaFile = arg[schemaKey.Length..];
+                            else if (arg.StartsWith(dtdKey, StringComparison.OrdinalIgnoreCase))
+                                dtdFile = arg[dtdKey.Length..];
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+                        if (schemaFile != null && dtdFile != null)
+                            throw new InvalidCommandException("Arguments <Schema> and <Dtd> cannot be used together", rawCode);
+                        return new CodeInfo_XMLValidate(args[0], args[1], schemaFile, dtdFile, noErr);
+                    }
+                case CodeType.XMLCount:
+                    { // XMLCount,<XMLFile>,<XPath>,<%DestVar%>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        return new CodeInfo_XMLPathDest(args[0], args[1], args[2]);
+                    }
+                case CodeType.XMLReadList:
+                    { // XMLReadList,<XMLFile>,<XPath>,<%DestVar%>[,Delim=<Str>]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        CheckDestVar(args[2], rawCode);
+                        string? delim = ParseOptionalDelim(args, minArgCount, rawCode);
+                        return new CodeInfo_XMLPathDest(args[0], args[1], args[2], delim);
+                    }
+                #endregion
                 #region 20 String
                 case CodeType.StrFormat:
                     return ParseCodeInfoStrFormat(rawCode, args);
@@ -2689,6 +2913,61 @@ namespace PEBakery.Core
             if (max == -1) // Unlimited argument count
                 return op.Count < min;
             return op.Count < min || max < op.Count;
+        }
+
+        private static void CheckDestVar(string destVar, string rawCode)
+        {
+            if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
+                throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+        }
+
+        private static bool ParseOptionalNoErr(List<string> args, int startIdx, string rawCode)
+        {
+            bool noErr = false;
+            for (int i = startIdx; i < args.Count; i++)
+            {
+                if (args[i].Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (noErr)
+                        throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                    noErr = true;
+                }
+                else
+                {
+                    throw new InvalidCommandException($"Invalid optional argument or flag [{args[i]}]", rawCode);
+                }
+            }
+            return noErr;
+        }
+
+        private static string? ParseOptionalDelim(List<string> args, int startIdx, string rawCode)
+        {
+            string? delim = null;
+            const string delimKey = "Delim=";
+            for (int i = startIdx; i < args.Count; i++)
+            {
+                string arg = args[i];
+                if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (delim != null)
+                        throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                    delim = arg[delimKey.Length..];
+                }
+                else
+                {
+                    throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                }
+            }
+            return delim;
+        }
+
+        private static T ParseEnumArg<T>(string arg, string typeName, string rawCode) where T : struct, Enum
+        {
+            bool invalid = !Enum.TryParse(arg, true, out T value) ||
+                           !Enum.IsDefined(typeof(T), value);
+            if (invalid)
+                throw new InvalidCommandException($"Invalid {typeName} [{arg}]", rawCode);
+            return value;
         }
         #endregion
 
