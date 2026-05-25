@@ -385,6 +385,10 @@ namespace PEBakery.Core
 
         public static string Escape(string str, bool fullEscape = false, bool escapePercent = false)
         {
+            if (!escapePercent && str.IndexOfAny(['#', '"', '\t', '\r', '\n']) == -1 &&
+                (!fullEscape || str.IndexOfAny([',', ' ']) == -1))
+                return str;
+
             // Escape # first
             if (str.Contains('#'))
             {
@@ -507,6 +511,9 @@ namespace PEBakery.Core
         /// </summary>
         public static string ExpandLegacySharpSectionParams(EngineState s, string str)
         {
+            if (str.IndexOf('#') == -1)
+                return str;
+
             // Expand #1 into its value
             MatchCollection matches = _SectionInParamRegex.Matches(str);
             while (0 < matches.Count)
@@ -657,6 +664,9 @@ namespace PEBakery.Core
         /// </remarks>
         public static string ExpandPercentPatternSectionParams(EngineState s, string str)
         {
+            if (str.IndexOf("%^", StringComparison.Ordinal) == -1)
+                return str;
+
             // Expand #1 into its value
             StringBuilder b = new StringBuilder();
 

@@ -605,73 +605,96 @@ namespace PEBakery.Core
         #endregion
 
         #region Expand
-        private static readonly Regex ExpandVarRegex =
-            new Regex(@"%([^ %]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
         public string Expand(string str)
         {
+            if (!str.Contains('%'))
+                return str;
+
             int iteration = 0;
 
-            MatchCollection matches;
             do
             {
-                // Expand variable's name into value
-                // Ex) 123%BaseDir%456%OS%789
-                StringBuilder b = new StringBuilder();
+                bool expanded = TryExpandOnce(str, out string expandedStr);
+                if (!expanded)
+                    return str;
 
-                matches = ExpandVarRegex.Matches(str);
-                for (int x = 0; x < matches.Count; x++)
-                {
-                    string varName = matches[x].Groups[1].Value;
-
-                    if (x == 0)
-                    {
-                        b.Append(str[..matches[0].Index]);
-                    }
-                    else
-                    {
-                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
-                        int endOffset = matches[x].Index - startOffset;
-                        b.Append(str.AsSpan(startOffset, endOffset));
-                    }
-
-                    if (_opts.OverridableFixedVariables)
-                    { // WinBuilder compatible
-                        if (_localVars.TryGetValue(varName, out string? localVarValue))
-                            b.Append(localVarValue);
-                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
-                            b.Append(globalVarValue);
-                        else if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
-                            b.Append(fixedVarValue);
-                        else // variable not found
-                            b.Append("#$p").Append(varName).Append("#$p");
-                    }
-                    else
-                    { // PEBakery standard
-                        if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
-                            b.Append(fixedVarValue);
-                        else if (_localVars.TryGetValue(varName, out string? localVarValue))
-                            b.Append(localVarValue);
-                        else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
-                            b.Append(globalVarValue);
-                        else // variable not found
-                            b.Append("#$p").Append(varName).Append("#$p");
-                    }
-
-                    if (x + 1 == matches.Count) // Last iteration
-                        b.Append(str[(matches[x].Index + matches[x].Value.Length)..]);
-                }
-
-                if (0 < matches.Count) // Copy it only if variable exists
-                    str = b.ToString();
+                str = expandedStr;
 
                 iteration++;
                 if (32 < iteration)
                     throw new InvalidOperationException($"Circular reference by [{str}]");
             }
-            while (0 < matches.Count);
+            while (0 <= str.IndexOf('%'));
 
             return str;
+        }
+
+        private bool TryExpandOnce(string str, out string expanded)
+        {
+            StringBuilder? b = null;
+            int lastCopiedIdx = 0;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (str[i] != '%')
+                    continue;
+
+                int nameStart = i + 1;
+                if (str.Length <= nameStart)
+                    continue;
+
+                int nameEnd = nameStart;
+                while (nameEnd < str.Length && str[nameEnd] != '%' && str[nameEnd] != ' ')
+                    nameEnd++;
+
+                if (nameEnd == nameStart || str.Length <= nameEnd || str[nameEnd] != '%')
+                    continue;
+
+                b ??= new StringBuilder(str.Length);
+                b.Append(str.AsSpan(lastCopiedIdx, i - lastCopiedIdx));
+
+                string varName = str.Substring(nameStart, nameEnd - nameStart);
+                AppendExpandedVariable(b, varName);
+
+                i = nameEnd;
+                lastCopiedIdx = nameEnd + 1;
+            }
+
+            if (b == null)
+            {
+                expanded = str;
+                return false;
+            }
+
+            b.Append(str.AsSpan(lastCopiedIdx));
+            expanded = b.ToString();
+            return true;
+        }
+
+        private void AppendExpandedVariable(StringBuilder b, string varName)
+        {
+            if (_opts.OverridableFixedVariables)
+            { // WinBuilder compatible
+                if (_localVars.TryGetValue(varName, out string? localVarValue))
+                    b.Append(localVarValue);
+                else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
+                    b.Append(globalVarValue);
+                else if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
+                    b.Append(fixedVarValue);
+                else // variable not found
+                    b.Append("#$p").Append(varName).Append("#$p");
+            }
+            else
+            { // PEBakery standard
+                if (_fixedVars.TryGetValue(varName, out string? fixedVarValue))
+                    b.Append(fixedVarValue);
+                else if (_localVars.TryGetValue(varName, out string? localVarValue))
+                    b.Append(localVarValue);
+                else if (_globalVars.TryGetValue(varName, out string? globalVarValue))
+                    b.Append(globalVarValue);
+                else // variable not found
+                    b.Append("#$p").Append(varName).Append("#$p");
+            }
         }
         #endregion
 

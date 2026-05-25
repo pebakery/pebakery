@@ -38,6 +38,9 @@ namespace Benchmark
 
     [Verb("decomp-mgc", HelpText = "Benchmark magic.mgc decompression")]
     public class DecompMgcBenchOptions : ParamOptions { }
+
+    [Verb("core", HelpText = "Benchmark core parser, optimizer, IO, and export paths")]
+    public class CoreBenchOptions : ParamOptions { }
     #endregion
 
     #region Program
@@ -122,6 +125,7 @@ namespace Benchmark
         #endregion
 
         #region Main
+        [STAThread]
         public static void Main(string[] args)
         {
             ParamOptions? opts = null;
@@ -133,15 +137,17 @@ namespace Benchmark
             });
 
             argParser.ParseArguments<AllBenchOptions,
-                EncDetectBenchOptions, DecompMgcBenchOptions>(args)
+                EncDetectBenchOptions, DecompMgcBenchOptions, CoreBenchOptions>(args)
                 .WithParsed<AllBenchOptions>(x => opts = x)
                 .WithParsed<EncDetectBenchOptions>(x => opts = x)
                 .WithParsed<DecompMgcBenchOptions>(x => opts = x)
+                .WithParsed<CoreBenchOptions>(x => opts = x)
                 .WithNotParsed(PrintErrorAndExit);
             Debug.Assert(opts != null, $"{nameof(opts)} != null");
 
             bool encDetectBench = false;
             bool decompMgcBench = false;
+            bool coreBench = false;
             switch (opts)
             {
                 case EncDetectBenchOptions _:
@@ -152,10 +158,15 @@ namespace Benchmark
                     Console.WriteLine("[*] DecompMgc");
                     decompMgcBench = true;
                     break;
+                case CoreBenchOptions _:
+                    Console.WriteLine("[*] Core");
+                    coreBench = true;
+                    break;
                 case AllBenchOptions _:
                     Console.WriteLine("[*] All");
                     encDetectBench = true;
                     decompMgcBench = true;
+                    coreBench = true;
                     break;
                 default:
                     Console.WriteLine("Please specify proper benchmarks.");
@@ -169,6 +180,14 @@ namespace Benchmark
                 BenchmarkRunner.Run<DecompMgcBench>(config);
             if (encDetectBench)
                 BenchmarkRunner.Run<EncDetectBench>(config);
+            if (coreBench)
+            {
+                BenchmarkRunner.Run<CodePipelineBench>(config);
+                BenchmarkRunner.Run<VariablesBench>(config);
+                BenchmarkRunner.Run<ProjectLoadBench>(config);
+                BenchmarkRunner.Run<IniBulkBench>(config);
+                BenchmarkRunner.Run<LogExportBench>(config);
+            }
         }
         #endregion
     }

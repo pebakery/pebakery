@@ -78,7 +78,12 @@ namespace PEBakery.Core
             }
         }
 
-        private static CodeType[] WimCodeTypeOp { get; } = new CodeType[] { CodeType.WimPathAdd, CodeType.WimPathDelete, CodeType.WimPathRename };
+        private static HashSet<CodeType> WimCodeTypeOp { get; } = new HashSet<CodeType>
+        {
+            CodeType.WimPathAdd,
+            CodeType.WimPathDelete,
+            CodeType.WimPathRename,
+        };
         private static List<OptRange> GroupOptimizableCommands(List<CodeCommand> block)
         {
             List<OptRange> optimizableGroups = new List<OptRange>();
@@ -131,12 +136,14 @@ namespace PEBakery.Core
         private static List<OptRange> VariableDependencyAnalysis(List<CodeCommand> block, List<OptRange> optimizableRange)
         {
             List<OptRange> optimizedGroups = new List<OptRange>();
+            Dictionary<CodeInfo, HashSet<string>> inVarsCache = new Dictionary<CodeInfo, HashSet<string>>();
+            Dictionary<CodeInfo, HashSet<string>> outVarsCache = new Dictionary<CodeInfo, HashSet<string>>();
 
             foreach (OptRange optRange in optimizableRange)
             {
                 CodeCommand lastCmd = block[optRange.Begin];
 
-                HashSet<string> blockOutVars = lastCmd.Info.OutVars();
+                HashSet<string> blockOutVars = new HashSet<string>(GetOutVars(lastCmd.Info, outVarsCache), StringComparer.OrdinalIgnoreCase);
                 int lastIdx = optRange.Begin;
                 for (int i = optRange.Begin; i < optRange.End; i++)
                 {
@@ -145,14 +152,15 @@ namespace PEBakery.Core
 
                     CodeCommand cmd = block[i];
 
-                    HashSet<string> inVars = cmd.Info.InVars();
-                    HashSet<string> outVars = cmd.Info.OutVars();
+                    HashSet<string> inVars = GetInVars(cmd.Info, inVarsCache);
+                    HashSet<string> outVars = GetOutVars(cmd.Info, outVarsCache);
 
-                    if (inVars.Intersect(blockOutVars).Any())
+                    if (inVars.Overlaps(blockOutVars))
                     { // Dependency exists between commands
                         optimizedGroups.Add(new OptRange(optRange.CodeType, lastIdx, i));
                         lastIdx = i;
                         blockOutVars.Clear();
+                        blockOutVars.UnionWith(outVars);
                     }
                     else
                     { // No dependency
@@ -169,6 +177,26 @@ namespace PEBakery.Core
             return optimizedGroups;
         }
 
+        private static HashSet<string> GetInVars(CodeInfo info, Dictionary<CodeInfo, HashSet<string>> cache)
+        {
+            if (!cache.TryGetValue(info, out HashSet<string>? vars))
+            {
+                vars = info.InVars();
+                cache[info] = vars;
+            }
+            return vars;
+        }
+
+        private static HashSet<string> GetOutVars(CodeInfo info, Dictionary<CodeInfo, HashSet<string>> cache)
+        {
+            if (!cache.TryGetValue(info, out HashSet<string>? vars))
+            {
+                vars = info.OutVars();
+                cache[info] = vars;
+            }
+            return vars;
+        }
+
         private static List<CodeCommand> PackCommands(List<CodeCommand> block, List<OptRange> optimizedRange)
         {
             if (optimizedRange.Count == 0)
@@ -177,16 +205,28 @@ namespace PEBakery.Core
             List<CodeCommand> optBlock = new List<CodeCommand>();
 
             int i = 0;
+            int rangeIdx = 0;
             while (i < block.Count)
             {
                 CodeCommand cmd = block[i];
 
-                if (OptRange.IsIndexInRanges(optimizedRange, i, out OptRange? detectedRange) && detectedRange != null)
+                while (rangeIdx < optimizedRange.Count && optimizedRange[rangeIdx].End <= i)
+                    rangeIdx++;
+
+                if (rangeIdx < optimizedRange.Count && optimizedRange[rangeIdx].Begin == i)
                 {
-                    List<CodeCommand> cmdsToOpt = block.Skip(detectedRange.Begin).Take(detectedRange.Count).Where(x => x.Type != CodeType.Comment).ToList();
+                    OptRange detectedRange = optimizedRange[rangeIdx];
+                    List<CodeCommand> cmdsToOpt = new List<CodeCommand>(detectedRange.Count);
+                    for (int x = detectedRange.Begin; x < detectedRange.End; x++)
+                    {
+                        if (block[x].Type != CodeType.Comment)
+                            cmdsToOpt.Add(block[x]);
+                    }
+
                     CodeCommand opCmd = PackCommand(detectedRange.CodeType, cmdsToOpt);
                     optBlock.Add(opCmd);
                     i += detectedRange.Count;
+                    rangeIdx++;
                 }
                 else
                 {
