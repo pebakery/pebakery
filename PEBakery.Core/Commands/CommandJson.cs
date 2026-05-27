@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
 
             string value = JsonNodeToRawString(node);
             s.ReturnValue = value;
-            logs.Add(new LogInfo(LogState.Success, $"Read JSON path [{path}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Read JSON path [{path}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -64,10 +64,10 @@ namespace PEBakery.Core.Commands
 
             JsonNode valueNode = ParseJsonValue(value);
             if (!SetJsonNode(ref root, path, valueNode))
-                return LogInfo.LogErrorMessage(logs, $"Unable to write JSON path [{path}] in [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"Unable to write JSON value [{value}] to path [{path}] in [{fileName}]");
 
             WriteJson(fileName, root, JsonCompactOptions);
-            logs.Add(new LogInfo(LogState.Success, $"Wrote JSON path [{path}] to [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Wrote JSON value [{value}] to path [{path}] in [{fileName}]", cmd));
             return logs;
         }
 
@@ -131,7 +131,7 @@ namespace PEBakery.Core.Commands
                 _ => JsonNodeToRawString(node),
             };
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
-            logs.Add(new LogInfo(LogState.Success, $"Queried JSON filter [{filter}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] using filter [{filter}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -228,7 +228,7 @@ namespace PEBakery.Core.Commands
 
             string value = string.Join(delim, arr.Select(x => x == null ? string.Empty : JsonNodeToRawString(x)));
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
-            logs.Add(new LogInfo(LogState.Success, $"Read JSON array [{path}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Read JSON array [{path}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
 

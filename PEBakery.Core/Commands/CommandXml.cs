@@ -43,7 +43,7 @@ namespace PEBakery.Core.Commands
 
             string value = XmlObjectToText(nodes[0]);
             s.ReturnValue = value;
-            logs.Add(new LogInfo(LogState.Success, $"Read XML XPath [{xPath}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Read XML XPath [{xPath}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -76,7 +76,7 @@ namespace PEBakery.Core.Commands
 
             SaveXml(fileName, doc, XmlFormatMode.Pretty);
             s.ReturnValue = "0";
-            logs.Add(new LogInfo(LogState.Success, $"Updated XML XPath [{xPath}] in [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Updated XML XPath [{xPath}] with value [{value}] in [{fileName}]", cmd));
             return logs;
         }
 
@@ -101,7 +101,7 @@ namespace PEBakery.Core.Commands
                 AddXmlNode(node, info.Operation, info.Type, name, value);
 
             SaveXml(fileName, doc, XmlFormatMode.Pretty);
-            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] at [{xPath}] in [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] at [{xPath}] with value [{value}] in [{fileName}]", cmd));
             return logs;
         }
 
@@ -171,7 +171,7 @@ namespace PEBakery.Core.Commands
                 ? string.Concat(nodes.Select(XmlObjectToXml))
                 : string.Join("|", nodes.Select(XmlObjectToText));
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
-            logs.Add(new LogInfo(LogState.Success, $"Queried XML XPath [{xPath}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Queried XML XPath [{xPath}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
 
