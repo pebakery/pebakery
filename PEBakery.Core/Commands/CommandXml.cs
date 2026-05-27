@@ -67,7 +67,7 @@ namespace PEBakery.Core.Commands
             {
                 s.ReturnValue = "-99999999";
                 if (!info.NoErr)
-                    logs.Add(new LogInfo(LogState.Error, $"XML XPath [{xPath}] did not match [{fileName}]", cmd));
+                    logs.Add(new LogInfo(LogState.Error, $"XML XPath [{xPath}] did not find a match in [{fileName}]", cmd));
                 return logs;
             }
 
@@ -95,7 +95,7 @@ namespace PEBakery.Core.Commands
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
-                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not match [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             foreach (object node in nodes)
                 AddXmlNode(node, info.Operation, info.Type, name, value);
@@ -118,7 +118,7 @@ namespace PEBakery.Core.Commands
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
-                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not match [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             foreach (object node in nodes)
                 RemoveXmlObject(node);
@@ -142,7 +142,7 @@ namespace PEBakery.Core.Commands
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
-                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not match [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             foreach (object node in nodes)
                 RenameXmlObject(node, value);
@@ -165,7 +165,7 @@ namespace PEBakery.Core.Commands
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
-                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not match [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             string value = info.OutputMode == XmlQueryOutputMode.Xml
                 ? string.Concat(nodes.Select(XmlObjectToXml))

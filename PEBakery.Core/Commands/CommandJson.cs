@@ -122,7 +122,7 @@ namespace PEBakery.Core.Commands
 
             JsonNode? node = SelectJsonNode(root, filter);
             if (node == null)
-                return LogInfo.LogErrorMessage(logs, $"JSON filter [{filter}] did not match [{fileName}]");
+                return LogInfo.LogErrorMessage(logs, $"JSON filter [{filter}] did not find a match in [{fileName}]");
 
             string value = info.OutputMode switch
             {
