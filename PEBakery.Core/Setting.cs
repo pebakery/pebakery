@@ -126,6 +126,12 @@ namespace PEBakery.Core
             public int MainWindowHeight { get; set; }
             public int MainTreeViewWidth { get; set; }
 
+            // Main tree view state (not shown in SettingsWindow)
+            /// <summary>RealPath of the script that was selected when the program last closed.</summary>
+            public string MainTreeSelectedScript { get; set; } = string.Empty;
+            /// <summary>Pipe '|' separated list of RealPaths for expanded tree nodes.</summary>
+            public string MainTreeExpandedNodes { get; set; } = string.Empty;
+
             public InterfaceSetting()
             {
                 Default();
@@ -147,6 +153,8 @@ namespace PEBakery.Core
                 MainWindowWidth = 900;
                 MainWindowHeight = 720;
                 MainTreeViewWidth = 200;
+                MainTreeSelectedScript = string.Empty;
+                MainTreeExpandedNodes = string.Empty;
             }
         }
 
@@ -697,6 +705,8 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth)), // Integer (600 -)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight)), // Integer (480 -)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth)), // Integer (100 - 300)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeSelectedScript)), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeExpandedNodes)),  // String
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
@@ -818,6 +828,8 @@ namespace PEBakery.Core
                 Interface.MainWindowWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth, 600, screenArea.Width);
                 Interface.MainWindowHeight = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight, 480, screenArea.Height);
                 Interface.MainTreeViewWidth = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth, 100, 300);
+                Interface.MainTreeSelectedScript = SettingDictParser.ParseString(ifaceDict, nameof(Interface.MainTreeSelectedScript), Interface.MainTreeSelectedScript);
+                Interface.MainTreeExpandedNodes  = SettingDictParser.ParseString(ifaceDict, nameof(Interface.MainTreeExpandedNodes),  Interface.MainTreeExpandedNodes);
             }
 
             // Theme
@@ -913,6 +925,8 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowWidth), Interface.MainWindowWidth.ToString()), // Integer
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainWindowHeight), Interface.MainWindowHeight.ToString()), // Integer
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeViewWidth), Interface.MainTreeViewWidth.ToString()), // Integer
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeSelectedScript), Interface.MainTreeSelectedScript), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.MainTreeExpandedNodes),  Interface.MainTreeExpandedNodes),  // String
                 // Theme
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color

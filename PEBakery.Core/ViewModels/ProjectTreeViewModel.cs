@@ -26,6 +26,7 @@
 */
 
 using MahApps.Metro.IconPacks;
+using PEBakery.Core;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
@@ -38,6 +39,62 @@ using System.Windows.Input;
 
 namespace PEBakery.Core.ViewModels
 {
+    #region TreeViewState
+    /// <summary>
+    /// A lightweight snapshot of the main tree view's visual state. Expanded nodes + paths
+    /// are stored as "Level|RealPath" composite keys. '~' is the list separator.
+	///
+    /// The Level component distinguishes directory nodes that share the same RealPath
+    /// but appear at different positions in the tree (ex. a folder that contains
+    ///	scripts at both Level=1 and Level=7 appears as two separate nodes).
+	///
+	/// Used to save and restore the tree across project/script refreshes and application restarts.
+    /// </summary>
+    public class TreeViewState
+    {
+        /// <summary>RealPath of the selected script, or null if nothing is selected.</summary>
+        public string? SelectedScriptRealPath { get; set; }
+
+        /// <summary>
+        /// "Level|RealPath" composite keys for every node whose IsExpanded was true.
+        /// Using a composite key prevents a folder that appears at multiple levels from
+        /// being incorrectly expanded at every level when only one was saved.
+        /// </summary>
+        public HashSet<string> ExpandedKeys { get; set; } =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private static string MakeKey(Script sc) => $"{sc.Level}|{sc.RealPath}";
+
+        public void SaveToSetting(Setting.InterfaceSetting iface)
+        {
+            iface.MainTreeSelectedScript = SelectedScriptRealPath ?? string.Empty;
+            iface.MainTreeExpandedNodes  = string.Join("~", ExpandedKeys);
+        }
+
+        /// <summary>
+        /// Builds a TreeViewState from previously saved interface settings.
+		/// Returns null when no tree state has been saved yet (first run)
+        /// so the caller can fall back to the default behaviour.
+        /// </summary>
+        public static TreeViewState? LoadFromSetting(Setting.InterfaceSetting iface)
+        {
+            bool hasSelected = !string.IsNullOrEmpty(iface.MainTreeSelectedScript);
+            bool hasExpanded = !string.IsNullOrEmpty(iface.MainTreeExpandedNodes);
+
+            if (!hasSelected && !hasExpanded)
+                return null; // First run — nothing saved yet.
+
+            return new TreeViewState
+            {
+                SelectedScriptRealPath = hasSelected ? iface.MainTreeSelectedScript : null,
+                ExpandedKeys = new HashSet<string>(
+                    iface.MainTreeExpandedNodes.Split('~', StringSplitOptions.RemoveEmptyEntries),
+                    StringComparer.OrdinalIgnoreCase)
+            };
+        }
+    }
+    #endregion
+
     #region ProjectTreeViewModel
     public class ProjectTreeItemModel : ViewModelBase
     {
@@ -65,6 +122,34 @@ namespace PEBakery.Core.ViewModels
             {
                 _isExpanded = value;
                 OnPropertyUpdate(nameof(IsExpanded));
+            }
+        }
+
+        /// <summary>
+        /// Bound TwoWay to TreeViewItem.IsSelected via the ItemContainerStyle.
+        /// Setting this to true causes WPF (via BringIntoViewBehavior) to scroll
+        /// the item into view.  Always bounce false->true to guarantee the transition
+        /// even when the same item is re-selected after a tree rebuild.
+        /// </summary>
+        private bool _isSelected = false;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        /// <summary>
+        /// Walks up the Parent chain and sets IsExpanded = true on every ancestor.
+        /// Must be called before requesting a BringIntoView scroll so that WPF's
+        /// virtualizing panel can realize the target item's container.
+        /// </summary>
+        public void ExpandAncestors()
+        {
+            ProjectTreeItemModel? ancestor = Parent;
+            while (ancestor != null)
+            {
+                ancestor.IsExpanded = true;
+                ancestor = ancestor.Parent;
             }
         }
 
