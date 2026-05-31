@@ -1492,9 +1492,9 @@ namespace PEBakery.WPF
                 if (value == null)
                     return;
 
-                OnPropertyUpdate(nameof(UICtrlNumberBoxValue));
                 OnPropertyUpdate(nameof(UICtrlNumberBoxMin));
                 OnPropertyUpdate(nameof(UICtrlNumberBoxMax));
+                OnPropertyUpdate(nameof(UICtrlNumberBoxValue)); // Must be evauated after min/max so CoerceValue gets the correct range.
                 OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
             }
         }

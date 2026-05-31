@@ -431,12 +431,12 @@ namespace PEBakery.Core
 
             NumberBox box = new NumberBox
             {
-                Value = info.Value,
                 FontSize = CalcFontPointScale(),
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
                 IncrementUnit = info.Tick,
+                Value = info.Value, // must be initialized after min/max or CoerceValue won't see the correct range.
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 

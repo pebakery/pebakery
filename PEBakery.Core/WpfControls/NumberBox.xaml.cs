@@ -57,7 +57,7 @@ namespace PEBakery.Core.WpfControls
         }
 
         public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(NumberBox),
-            new FrameworkPropertyMetadata(DefaultMinimum));
+            new FrameworkPropertyMetadata(DefaultMinimum, OnConstraintChanged));
 
         private const decimal DefaultMaximum = ushort.MaxValue;
         public decimal Maximum
@@ -67,7 +67,7 @@ namespace PEBakery.Core.WpfControls
         }
 
         public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(NumberBox),
-            new FrameworkPropertyMetadata(DefaultMaximum));
+            new FrameworkPropertyMetadata(DefaultMaximum, OnConstraintChanged));
 
         private const decimal DefaultIncrementUnit = 1;
         public decimal IncrementUnit
@@ -97,6 +97,13 @@ namespace PEBakery.Core.WpfControls
             if (element is NumberBox control)
                 return LimitDecimalValue(control, (decimal)value);
             return value;
+        }
+
+        private static void OnConstraintChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            // Re-run CoerceValue so Value is always within the current [Minimum, Maximum],
+            // range regardless of which order the properties were assigned.
+            d.CoerceValue(ValueProperty);
         }
 
         private static void OnValueChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
@@ -136,13 +143,31 @@ namespace PEBakery.Core.WpfControls
         #region TextBlock Events
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Aloow only [0-9]+ 
-            bool check = true;
-            foreach (char ch in e.Text)
-                check &= char.IsDigit(ch);
+            TextBox textBox = (TextBox)sender;
 
-            if (e.Text.Length == 0)
-                check = false;
+            // Determine the full text that would result from accepting this input,
+            // also take into account any selected text that would be overwritten.
+            string proposedValue = textBox.Text
+                .Remove(textBox.SelectionStart, textBox.SelectionLength)
+                .Insert(textBox.SelectionStart, e.Text);
+
+            // Allow an optional leading '-' (only when Minimum < 0),
+            // followed by zero or more digits. Also allow a single '-' as a transient
+            // state while the user is still typing the rest of the number.
+            bool check = proposedValue.Length > 0;
+            if (check)
+            {
+                int i = 0;
+                if (proposedValue[0] == '-')
+                {
+                    if (Minimum >= 0)   // negative values are impossible in this situation so reject the '-'
+                        check = false;
+                    else
+                        i = 1;          // '-' is valid; make sure the rest are digits
+                }
+                for (; check && i < proposedValue.Length; i++)
+                    check = char.IsDigit(proposedValue[i]);
+            }
 
             e.Handled = !check;
 

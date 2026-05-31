@@ -674,7 +674,8 @@
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
                                         <ccc:NumberBox Grid.Row="0" Grid.Column="1"
-                                                          Minimum="0"
+                                                          Minimum="{Binding UICtrlNumberBoxMin}"
+                                                          Maximum="{Binding UICtrlNumberBoxMax}"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -682,7 +683,7 @@
                                                    Margin="0, 0, 5, 0"
                                                    Text="Min" />
                                         <ccc:NumberBox Grid.Row="1" Grid.Column="1"
-                                                          Minimum="0"
+                                                          Minimum="-2147483648"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -690,7 +691,7 @@
                                                    Margin="0, 0, 5, 0"
                                                    Text="Max" />
                                         <ccc:NumberBox Grid.Row="2" Grid.Column="1"
-                                                          Minimum="0"
+                                                          Minimum="-2147483648"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
