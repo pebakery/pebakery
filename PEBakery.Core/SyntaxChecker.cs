@@ -80,7 +80,7 @@ namespace PEBakery.Core
         10. Set is modifying interface control
             Is Set command overwriting current interface's control?
         11. Reference of new percent-style parameters
-            - %^SPARAM%, %^SPARAM_COUNT% (Section In Parameter)
+            - %^SIPARAM%, %^SIPARAM_COUNT% (Section In Parameter)
             - %^SOPARAM%, %^SOPARAM_COUNT% (Section Out Parameter)
             - %^RET% (Return Value)
             - %^LOOP_IDX% (Loop Index)

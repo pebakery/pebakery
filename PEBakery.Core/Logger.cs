@@ -917,7 +917,7 @@ namespace PEBakery.Core
                 b.Append("InParams = { ");
                 foreach (var kv in inParams)
                 {
-                    b.Append($"%^SPARAM_{kv.Key}:[{kv.Value}]");
+                    b.Append($"%^SIPARAM_{kv.Key}%:[{kv.Value}]");
                     if (cnt + 1 < inParams.Count)
                         b.Append(", ");
                     cnt++;
