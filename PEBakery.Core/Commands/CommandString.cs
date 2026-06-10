@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace PEBakery.Core.Commands
@@ -583,19 +584,19 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(idxStr, out int idx))
                             return LogInfo.LogErrorMessage(logs, $"[{idxStr}] is not a valid integer");
 
-                        char[] delim = delimStr.ToCharArray();
+                        string[] delim = [delimStr];   // treat the delimiter as a whole string in order to support multi-char delimiters
 
                         List<LogInfo> varLogs;
                         if (idx == 0)
                         {
-                            int delimCount = srcStr.Split(delim).Length;
+                            int delimCount = srcStr.Split(delim, StringSplitOptions.None).Length;
                             logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}] is split to [{delimCount}] strings."));
                             varLogs = Variables.SetVariable(s, subInfo.DestVar, delimCount.ToString());
                             logs.AddRange(varLogs);
                         }
                         else
                         {
-                            string[] slices = srcStr.Split(delim);
+                            string[] slices = srcStr.Split(delim, StringSplitOptions.None);
                             if (idx - 1 < slices.Length)
                             {
                                 string destStr = slices[idx - 1];

@@ -608,6 +608,13 @@ namespace PEBakery.Core.Tests.Command
             DestSuccessTemplate(s, @"StrFormat,Split,A/B/C/D/E/F,/,0,%Dest%", "6");
             DestSuccessTemplate(s, @"StrFormat,Split,A/B/C/D/E/F,/,2,%Dest%", "B");
             DestSuccessTemplate(s, @"StrFormat,Split,A/B/C/D/E/F,/,5,%Dest%", "E");
+
+            DestSuccessTemplate(s, @"StrFormat,Split,""800 x 600"","" x "",1,%Dest%", "800"); // leading/trailing spaces must be quoted in the delimiter
+            DestSuccessTemplate(s, @"StrFormat,Split,800 x 600,"" x "",2,%Dest%", "600");     // or GetNextArgument() will strip them
+            DestSuccessTemplate(s, @"StrFormat,Split,800||600,||,2,%Dest%", "600");
+            DestSuccessTemplate(s, @"StrFormat,Split,FoolishBar,lish,1,%Dest%", "Foo");
+            DestSuccessTemplate(s, @"StrFormat,Split,FoolishBar,lish,2,%Dest%", "Bar");
+
             InitDestSuccessTemplate(s, @"StrFormat,Split,A/B/C/D/E/F,/,7,%Dest%", string.Empty, string.Empty);
         }
         #endregion
