@@ -2203,14 +2203,14 @@ namespace PEBakery.Core
                 #endregion
                 #region 11 JSON
                 case CodeType.JSONRead:
-                    { // JSONRead,<JSONFile>,<Path>,[NOERR]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
+                    { // JSONRead,<JSONFile>,<Path>,<%DestVar%>,[NOERR]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
-                        return new CodeInfo_JSONRead(args[0], args[1], noErr);
+                        return new CodeInfo_JSONRead(args[0], args[1], args[2], noErr);
                     }
                 case CodeType.JSONWrite:
                     { // JSONWrite,<JSONFile>,<Path>,<Value>
@@ -2228,45 +2228,66 @@ namespace PEBakery.Core
 
                         return new CodeInfo_JSONDelete(args[0], args[1]);
                     }
-                case CodeType.JSONPretty:
-                case CodeType.JSONCompact:
-                    { // JSONPretty,<JSONFile> / JSONCompact,<JSONFile>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        JsonFormatMode mode = type == CodeType.JSONPretty ? JsonFormatMode.Pretty : JsonFormatMode.Compact;
-                        return new CodeInfo_JSONFormat(args[0], mode, false);
-                    }
                 case CodeType.JSONQuery:
-                    { // JSONQuery,<JSONFile>,<Filter>,<%DestVar%>[,Raw|Json|Compact]
+                    { // JSONQuery,<JSONFile>,<Filter>,<%DestVar%>[,Raw|Json|Compact][,NOERR]
                         const int minArgCount = 3;
-                        const int maxArgCount = 4;
+                        const int maxArgCount = 5; 
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         CheckDestVar(args[2], rawCode);
+
                         JsonQueryOutputMode outputMode = JsonQueryOutputMode.Raw;
-                        if (args.Count == maxArgCount)
-                            outputMode = ParseEnumArg<JsonQueryOutputMode>(args[3], nameof(JsonQueryOutputMode), rawCode);
-                        return new CodeInfo_JSONQuery(args[0], args[1], args[2], outputMode);
+                        bool noErr = false;
+
+                        // Parse optional arguments starting from index 3
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                noErr = true;
+                            }
+                            else if (Enum.TryParse<JsonQueryOutputMode>(arg, true, out var parsedMode))
+                            {
+                                outputMode = parsedMode;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_JSONQuery(args[0], args[1], args[2], outputMode, noErr);
                     }
                 case CodeType.JSONFormat:
-                    { // JSONFormat,<JSONFile>,<Pretty|Compact>[,SortKeys]
-                        const int minArgCount = 2;
+                    { // JSONFormat,<JSONFile>[,<Pretty|Compact>][,SortKeys]
+                        const int minArgCount = 1;
                         const int maxArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        JsonFormatMode mode = ParseEnumArg<JsonFormatMode>(args[1], nameof(JsonFormatMode), rawCode);
+                        JsonFormatMode mode = JsonFormatMode.Pretty;
                         bool sortKeys = false;
-                        for (int i = minArgCount; i < args.Count; i++)
+
+                        // Parse optional arguments starting from index 1
+                        for (int i = 1; i < args.Count; i++)
                         {
-                            if (args[i].Equals("SortKeys", StringComparison.OrdinalIgnoreCase))
+                            string arg = args[i];
+                            if (arg.Equals("SortKeys", StringComparison.OrdinalIgnoreCase))
+                            {
                                 sortKeys = true;
+                            }
+                            else if (Enum.TryParse<JsonFormatMode>(arg, true, out var parsedMode))
+                            {
+                                mode = parsedMode;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{args[i]}]", rawCode);
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
                         }
+
                         return new CodeInfo_JSONFormat(args[0], mode, sortKeys);
                     }
                 case CodeType.JSONValidate:
@@ -2305,14 +2326,14 @@ namespace PEBakery.Core
                 #endregion
                 #region 12 XML
                 case CodeType.XMLRead:
-                    { // XMLRead,<XMLFile>,<XPath>,[NOERR]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
+                    { // XMLRead,<XMLFile>,<XPath>,<%DestVar%>,[NOERR]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
-                        return new CodeInfo_XMLRead(args[0], args[1], noErr);
+                        return new CodeInfo_XMLRead(args[0], args[1], args[2], noErr);
                     }
                 case CodeType.XMLUpdate:
                     { // XMLUpdate,<XMLFile>,<XPath>,<Value>,[NOERR]
@@ -2353,17 +2374,36 @@ namespace PEBakery.Core
                         return new CodeInfo_XMLRename(args[0], args[1], args[2]);
                     }
                 case CodeType.XMLQuery:
-                    { // XMLQuery,<XMLFile>,<XPath>,<%DestVar%>[,Text|Xml]
+                    { // XMLQuery,<XMLFile>,<XPath>,<%DestVar%>[,Text|Xml][,NOERR]
                         const int minArgCount = 3;
-                        const int maxArgCount = 4;
+                        const int maxArgCount = 5;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         CheckDestVar(args[2], rawCode);
+
                         XmlQueryOutputMode outputMode = XmlQueryOutputMode.Text;
-                        if (args.Count == maxArgCount)
-                            outputMode = ParseEnumArg<XmlQueryOutputMode>(args[3], nameof(XmlQueryOutputMode), rawCode);
-                        return new CodeInfo_XMLQuery(args[0], args[1], args[2], outputMode);
+                        bool noErr = false;
+
+                        // Parse optional arguments starting from index 3
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                noErr = true;
+                            }
+                            else if (Enum.TryParse<XmlQueryOutputMode>(arg, true, out var parsedMode))
+                            {
+                                outputMode = parsedMode;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_XMLQuery(args[0], args[1], args[2], outputMode, noErr);
                     }
                 case CodeType.XMLFormat:
                     { // XMLFormat,<XMLFile>[,Pretty|Compact]

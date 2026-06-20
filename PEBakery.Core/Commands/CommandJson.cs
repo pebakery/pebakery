@@ -29,21 +29,24 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadJson(logs, fileName, info.NoErr, out JsonNode? root))
             {
-                s.ReturnValue = string.Empty;
+                s.ReturnValue = "1";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
             }
 
             JsonNode? node = SelectJsonNode(root, path);
             if (node == null)
             {
-                if (!info.NoErr)
-                    logs.Add(new LogInfo(LogState.Error, $"JSON path [{path}] does not exist in [{fileName}]", cmd));
-                s.ReturnValue = string.Empty;
+                s.ReturnValue = "2";
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"JSON path [{path}] does not exist in [{fileName}]", cmd));
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
             }
 
             string value = JsonNodeToRawString(node);
-            s.ReturnValue = value;
+            s.ReturnValue = "0";
+            logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Read JSON path [{path}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
@@ -117,12 +120,22 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string filter = NormalizeJsonFilter(StringEscaper.Preprocess(s, info.Filter));
 
-            if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
+            if (!TryLoadJson(logs, fileName, info.NoErr, out JsonNode? root))
+            {
+                s.ReturnValue = "1";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
+            }
 
             JsonNode? node = SelectJsonNode(root, filter);
             if (node == null)
-                return LogInfo.LogErrorMessage(logs, $"JSON filter [{filter}] did not find a match in [{fileName}]");
+            {
+                s.ReturnValue = "2";
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"JSON filter [{filter}] did not find a match in [{fileName}]", cmd));
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
+                return logs;
+            }
 
             string value = info.OutputMode switch
             {
@@ -130,6 +143,7 @@ namespace PEBakery.Core.Commands
                 JsonQueryOutputMode.Compact => node.ToJsonString(JsonCompactOptions),
                 _ => JsonNodeToRawString(node),
             };
+            s.ReturnValue = "0";
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] using filter [{filter}] from [{fileName}]", cmd));
             return logs;
@@ -150,8 +164,8 @@ namespace PEBakery.Core.Commands
             catch (Exception e) when (e is IOException || e is JsonException || e is UnauthorizedAccessException)
             {
                 valid = false;
-                if (!info.NoErr)
-                    logs.Add(new LogInfo(LogState.Error, $"JSON validation failed for [{fileName}]: {Logger.LogExceptionMessage(e)}", cmd));
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"JSON validation failed for [{fileName}]: {Logger.LogExceptionMessage(e)}", cmd));
             }
 
             logs.AddRange(SetDestVariable(s, info.DestVar, valid ? "True" : "False"));
@@ -257,14 +271,14 @@ namespace PEBakery.Core.Commands
             root = null;
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, errorMsg));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, errorMsg));
                 return false;
             }
             if (!File.Exists(fileName))
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, $"JSON file [{fileName}] does not exist"));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"JSON file [{fileName}] does not exist"));
                 return false;
             }
 
@@ -273,16 +287,16 @@ namespace PEBakery.Core.Commands
                 root = JsonNode.Parse(File.ReadAllText(fileName, Encoding.UTF8));
                 if (root == null)
                 {
-                    if (!noErr)
-                        logs.Add(new LogInfo(LogState.Error, $"JSON file [{fileName}] is empty"));
+                    LogState state = noErr ? LogState.Ignore : LogState.Error;
+                    logs.Add(new LogInfo(state, $"JSON file [{fileName}] is empty"));
                     return false;
                 }
                 return true;
             }
             catch (Exception e) when (e is IOException || e is JsonException || e is UnauthorizedAccessException)
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, $"Unable to read JSON file [{fileName}]: {Logger.LogExceptionMessage(e)}"));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"Unable to read JSON file [{fileName}]: {Logger.LogExceptionMessage(e)}"));
                 return false;
             }
         }

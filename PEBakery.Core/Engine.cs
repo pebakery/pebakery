@@ -789,8 +789,6 @@ namespace PEBakery.Core
                     case CodeType.JSONDelete:
                         logs.AddRange(CommandJson.JSONDelete(s, cmd));
                         break;
-                    case CodeType.JSONPretty:
-                    case CodeType.JSONCompact:
                     case CodeType.JSONFormat:
                         logs.AddRange(CommandJson.JSONFormat(s, cmd));
                         break;

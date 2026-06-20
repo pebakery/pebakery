@@ -35,28 +35,28 @@ namespace PEBakery.Core.Tests.Command
 </configuration>");
 
                 string themePath = "/configuration/userSettings/App.Properties.Settings/setting[@name='Theme']/value";
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{themePath}", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("Light", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{themePath},%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("Light", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},{themePath},Dark", CodeType.XMLUpdate, ErrorCheck.Success);
                 Assert.AreEqual("0", s.ReturnValue);
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{themePath}", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("Dark", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{themePath},%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("Dark", s.Variables["Value"]);
 
                 string settingsPath = "/configuration/userSettings/App.Properties.Settings";
                 EngineTests.Eval(s, $@"XMLAdd,Subnode,{xmlFile},{settingsPath},elem,setting", CodeType.XMLAdd, ErrorCheck.Success);
                 EngineTests.Eval(s, $@"XMLAdd,Insert,{xmlFile},{settingsPath}/setting[not(@name)],attr,name,Language", CodeType.XMLAdd, ErrorCheck.Success);
                 EngineTests.Eval(s, $@"XMLAdd,Subnode,{xmlFile},{settingsPath}/setting[@name='Language'],elem,value,ko-KR", CodeType.XMLAdd, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[@name='Language']/value", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("ko-KR", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[@name='Language']/value,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("ko-KR", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"XMLRename,{xmlFile},{settingsPath}/setting[@name='Language']/value,lang", CodeType.XMLRename, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[@name='Language']/lang", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("ko-KR", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[@name='Language']/lang,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("ko-KR", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"XMLDelete,{xmlFile},{settingsPath}/setting[@name='Language']/@name", CodeType.XMLDelete, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[not(@name)]/lang", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("ko-KR", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},{settingsPath}/setting[not(@name)]/lang,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("ko-KR", s.Variables["Value"]);
             }
             finally
             {
@@ -74,8 +74,8 @@ namespace PEBakery.Core.Tests.Command
                 string xmlFile = Path.Combine(tempDir, "wireless.xml");
                 File.WriteAllText(xmlFile, @"<wlan xmlns=""urn:test""><SSIDConfig><SSID><name>WiFi</name></SSID></SSIDConfig><items><item>A</item><item>B</item></items></wlan>");
 
-                EngineTests.Eval(s, $@"XMLRead,{xmlFile},//_:SSIDConfig/_:SSID/_:name/text()", CodeType.XMLRead, ErrorCheck.Success);
-                Assert.AreEqual("WiFi", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},//_:SSIDConfig/_:SSID/_:name/text(),%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("WiFi", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"XMLQuery,{xmlFile},//_:items/_:item,%Items%", CodeType.XMLQuery, ErrorCheck.Success);
                 Assert.AreEqual("A|B", s.Variables["Items"]);

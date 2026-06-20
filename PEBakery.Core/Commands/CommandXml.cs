@@ -28,21 +28,24 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadXml(logs, fileName, info.NoErr, out XDocument? doc, out XmlNamespaceManager? nsMgr))
             {
-                s.ReturnValue = string.Empty;
+                s.ReturnValue = "1";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
             }
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
             {
-                if (!info.NoErr)
-                    logs.Add(new LogInfo(LogState.Error, $"XML XPath [{xPath}] did not match [{fileName}]", cmd));
-                s.ReturnValue = string.Empty;
+                s.ReturnValue = "2";
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"XML XPath [{xPath}] did not match [{fileName}]", cmd));
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
             }
 
             string value = XmlObjectToText(nodes[0]);
-            s.ReturnValue = value;
+            s.ReturnValue = "0";
+            logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Read XML XPath [{xPath}] with value [{value}] from [{fileName}]", cmd));
             return logs;
         }
@@ -58,16 +61,16 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadXml(logs, fileName, info.NoErr, out XDocument? doc, out XmlNamespaceManager? nsMgr))
             {
-                s.ReturnValue = "3";
+                s.ReturnValue = "1";
                 return logs;
             }
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
             {
-                s.ReturnValue = "-99999999";
-                if (!info.NoErr)
-                    logs.Add(new LogInfo(LogState.Error, $"XML XPath [{xPath}] did not find a match in [{fileName}]", cmd));
+                s.ReturnValue = "2";
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"XML XPath [{xPath}] did not find a match in [{fileName}]", cmd));
                 return logs;
             }
 
@@ -160,16 +163,27 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string xPath = StringEscaper.Preprocess(s, info.XPath);
 
-            if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
+            if (!TryLoadXml(logs, fileName, info.NoErr, out XDocument? doc, out XmlNamespaceManager? nsMgr))
+            {
+                s.ReturnValue = "1";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
+            }
 
             List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
             if (nodes.Count == 0)
-                return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
+            {
+                s.ReturnValue = "2";
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"XML XPath [{xPath}] did not find a match in [{fileName}]", cmd));
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
+                return logs;
+            }
 
             string value = info.OutputMode == XmlQueryOutputMode.Xml
                 ? string.Concat(nodes.Select(XmlObjectToXml))
                 : string.Join("|", nodes.Select(XmlObjectToText));
+            s.ReturnValue = "0";
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Queried XML XPath [{xPath}] with value [{value}] from [{fileName}]", cmd));
             return logs;
@@ -201,10 +215,14 @@ namespace PEBakery.Core.Commands
             bool valid = ValidateXml(fileName, schemaFile, dtdFile, out string error);
             logs.AddRange(SetDestVariable(s, info.DestVar, valid ? "True" : "False"));
             if (valid)
+            { 
                 logs.Add(new LogInfo(LogState.Success, $"XML file [{fileName}] is valid", cmd));
-            else if (!info.NoErr)
-                logs.Add(new LogInfo(LogState.Error, $"XML validation failed for [{fileName}]: {error}", cmd));
-
+            }
+            else
+            {
+                LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"XML validation failed for [{fileName}]: {error}", cmd));
+            }
             return logs;
         }
 
@@ -250,14 +268,14 @@ namespace PEBakery.Core.Commands
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, errorMsg));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, errorMsg));
                 return false;
             }
             if (!File.Exists(fileName))
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, $"XML file [{fileName}] does not exist"));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"XML file [{fileName}] does not exist"));
                 return false;
             }
 
@@ -269,8 +287,8 @@ namespace PEBakery.Core.Commands
             }
             catch (Exception e) when (e is IOException || e is XmlException || e is UnauthorizedAccessException)
             {
-                if (!noErr)
-                    logs.Add(new LogInfo(LogState.Error, $"Unable to read XML file [{fileName}]: {Logger.LogExceptionMessage(e)}"));
+                LogState state = noErr ? LogState.Ignore : LogState.Error;
+                logs.Add(new LogInfo(state, $"Unable to read XML file [{fileName}]: {Logger.LogExceptionMessage(e)}"));
                 return false;
             }
         }

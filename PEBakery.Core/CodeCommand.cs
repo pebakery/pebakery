@@ -71,7 +71,7 @@ namespace PEBakery.Core
         VisibleOp = 1080, ReadInterfaceOp, WriteInterfaceOp,
         Retrieve = 1099, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 11 JSON
-        JSONRead = 1100, JSONWrite, JSONDelete, JSONPretty, JSONCompact,
+        JSONRead = 1100, JSONWrite, JSONDelete,
         JSONQuery, JSONFormat, JSONValidate, JSONType, JSONCount, JSONReadArray, JSONReadKeys,
         // 12 XML
         XMLRead = 1120, XMLUpdate, XMLAdd, XMLDelete, XMLRename,
@@ -2738,6 +2738,59 @@ namespace PEBakery.Core
             return $"{Type},{SubInfo}";
         }
     }
+    #endregion
+
+    #region UserInputType, UserInputInfo
+    public enum UserInputType
+    {
+        DirPath,
+        FilePath,
+    }
+
+    public abstract class UserInputInfo : CodeInfo
+    {
+    }
+
+    public class UserInputInfo_DirFile : UserInputInfo
+    {
+        // UserInput,File,<InitPath>,<%DestVar%>[,Title=<Str>][,Filter=<Str>]
+        // UserInput,Dir,<InitPath>,<%DestVar%>[,Title=<Str>]
+        public string InitPath { get; private set; }
+        public string DestVar { get; private set; }
+        public string? Title { get; private set; } // Optional
+        public string? Filter { get; private set; } // Optional
+
+        public UserInputInfo_DirFile(string initPath, string destVar, string? title, string? filter)
+        {
+            InitPath = initPath;
+            DestVar = destVar;
+            Title = title;
+            Filter = filter;
+        }
+
+        public override HashSet<string> InVars() => CreateInVars(InitPath, Title, Filter);
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(InitPath);
+            b.Append(',');
+            b.Append(DestVar);
+            if (Title != null)
+            {
+                b.Append(',');
+                b.Append($"Title={Title}");
+            }
+            if (Filter != null)
+            {
+                b.Append(',');
+                b.Append($"Filter={Filter}");
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
 
     #region CodeInfo 11 - JSON
     public enum JsonFormatMode
@@ -2757,17 +2810,19 @@ namespace PEBakery.Core
     {
         public string FileName { get; private set; }
         public string Path { get; private set; }
+        public string DestVar { get; private set; }
         public bool NoErr { get; private set; }
 
-        public CodeInfo_JSONRead(string fileName, string path, bool noErr)
+        public CodeInfo_JSONRead(string fileName, string path, string destVar, bool noErr)
         {
             FileName = fileName;
             Path = path;
+            DestVar = destVar;
             NoErr = noErr;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Path);
-        public override HashSet<string> OutVars() => CreateOutVars("#r");
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
     }
 
     public class CodeInfo_JSONWrite : CodeInfo
@@ -2822,13 +2877,15 @@ namespace PEBakery.Core
         public string Filter { get; private set; }
         public string DestVar { get; private set; }
         public JsonQueryOutputMode OutputMode { get; private set; }
+        public bool NoErr { get; private set; }
 
-        public CodeInfo_JSONQuery(string fileName, string filter, string destVar, JsonQueryOutputMode outputMode)
+        public CodeInfo_JSONQuery(string fileName, string filter, string destVar, JsonQueryOutputMode outputMode, bool noErr)
         {
             FileName = fileName;
             Filter = filter;
             DestVar = destVar;
             OutputMode = outputMode;
+            NoErr = noErr;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Filter);
@@ -2903,17 +2960,19 @@ namespace PEBakery.Core
     {
         public string FileName { get; private set; }
         public string XPath { get; private set; }
+        public string DestVar { get; private set; }
         public bool NoErr { get; private set; }
 
-        public CodeInfo_XMLRead(string fileName, string xPath, bool noErr)
+        public CodeInfo_XMLRead(string fileName, string xPath, string destVar, bool noErr)
         {
             FileName = fileName;
             XPath = xPath;
+            DestVar = destVar;
             NoErr = noErr;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, XPath);
-        public override HashSet<string> OutVars() => CreateOutVars("#r");
+        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
     }
 
     public class CodeInfo_XMLUpdate : CodeInfo
@@ -2993,13 +3052,15 @@ namespace PEBakery.Core
         public string XPath { get; private set; }
         public string DestVar { get; private set; }
         public XmlQueryOutputMode OutputMode { get; private set; }
+        public bool NoErr { get; private set; }
 
-        public CodeInfo_XMLQuery(string fileName, string xPath, string destVar, XmlQueryOutputMode outputMode)
+        public CodeInfo_XMLQuery(string fileName, string xPath, string destVar, XmlQueryOutputMode outputMode, bool noErr)
         {
             FileName = fileName;
             XPath = xPath;
             DestVar = destVar;
             OutputMode = outputMode;
+            NoErr = noErr;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, XPath);
@@ -3059,59 +3120,6 @@ namespace PEBakery.Core
         public override HashSet<string> InVars() => CreateInVars(FileName, XPath, Delim);
         public override HashSet<string> OutVars() => CreateOutVars(DestVar);
     }
-    #endregion
-
-    #region UserInputType, UserInputInfo
-    public enum UserInputType
-    {
-        DirPath,
-        FilePath,
-    }
-
-    public abstract class UserInputInfo : CodeInfo
-    {
-    }
-
-    public class UserInputInfo_DirFile : UserInputInfo
-    {
-        // UserInput,File,<InitPath>,<%DestVar%>[,Title=<Str>][,Filter=<Str>]
-        // UserInput,Dir,<InitPath>,<%DestVar%>[,Title=<Str>]
-        public string InitPath { get; private set; }
-        public string DestVar { get; private set; }
-        public string? Title { get; private set; } // Optional
-        public string? Filter { get; private set; } // Optional
-
-        public UserInputInfo_DirFile(string initPath, string destVar, string? title, string? filter)
-        {
-            InitPath = initPath;
-            DestVar = destVar;
-            Title = title;
-            Filter = filter;
-        }
-
-        public override HashSet<string> InVars() => CreateInVars(InitPath, Title, Filter);
-        public override HashSet<string> OutVars() => CreateOutVars(DestVar);
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(InitPath);
-            b.Append(',');
-            b.Append(DestVar);
-            if (Title != null)
-            {
-                b.Append(',');
-                b.Append($"Title={Title}");
-            }
-            if (Filter != null)
-            {
-                b.Append(',');
-                b.Append($"Filter={Filter}");
-            }
-            return b.ToString();
-        }
-    }
-    #endregion
     #endregion
 
     #region StrFormatType, StrFormatInfo

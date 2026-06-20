@@ -26,25 +26,20 @@ namespace PEBakery.Core.Tests.Command
                 File.WriteAllText(jsonFile, @"{""JS_TASKBAR"":{""theme"":""light""},""Microsoft.PowerShell:ExecutionPolicy"":""RemoteSigned"",""Items"":[1,""two""]}");
 
                 EngineTests.Eval(s, $@"JSONWrite,{jsonFile},JS_TASKBAR.theme,dark", CodeType.JSONWrite, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.theme", CodeType.JSONRead, ErrorCheck.Success);
-                Assert.AreEqual("dark", s.ReturnValue);
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.theme,%Value%", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual("dark", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"JSONWrite,{jsonFile},JS_TASKBAR.smallicon,true", CodeType.JSONWrite, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.smallicon", CodeType.JSONRead, ErrorCheck.Success);
-                Assert.AreEqual("true", s.ReturnValue);
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.smallicon,%Value%", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual("true", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"JSONWrite,{jsonFile},Microsoft\.PowerShell:ExecutionPolicy,Bypass", CodeType.JSONWrite, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"JSONRead,{jsonFile},Microsoft\.PowerShell:ExecutionPolicy", CodeType.JSONRead, ErrorCheck.Success);
-                Assert.AreEqual("Bypass", s.ReturnValue);
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},Microsoft\.PowerShell:ExecutionPolicy,%Value%", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual("Bypass", s.Variables["Value"]);
 
                 EngineTests.Eval(s, $@"JSONDelete,{jsonFile},JS_TASKBAR.smallicon", CodeType.JSONDelete, ErrorCheck.Success);
-                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.smallicon,NOERR", CodeType.JSONRead, ErrorCheck.Success);
-                Assert.AreEqual(string.Empty, s.ReturnValue);
-
-                EngineTests.Eval(s, $@"JSONPretty,{jsonFile}", CodeType.JSONPretty, ErrorCheck.Success);
-                StringAssert.Contains(File.ReadAllText(jsonFile), Environment.NewLine);
-                EngineTests.Eval(s, $@"JSONCompact,{jsonFile}", CodeType.JSONCompact, ErrorCheck.Success);
-                Assert.IsFalse(File.ReadAllText(jsonFile).Contains(Environment.NewLine, StringComparison.Ordinal));
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.smallicon,%Value%,NOERR", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual(string.Empty, s.Variables["Value"]);
             }
             finally
             {
