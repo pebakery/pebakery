@@ -2897,12 +2897,14 @@ namespace PEBakery.Core
         public string FileName { get; private set; }
         public string DestVar { get; private set; }
         public bool NoErr { get; private set; }
+        public bool Strict { get; private set; }
 
-        public CodeInfo_JSONValidate(string fileName, string destVar, bool noErr)
+        public CodeInfo_JSONValidate(string fileName, string destVar, bool noErr, bool strict)
         {
             FileName = fileName;
             DestVar = destVar;
             NoErr = noErr;
+            Strict = strict;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName);

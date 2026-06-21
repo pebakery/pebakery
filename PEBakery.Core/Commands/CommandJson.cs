@@ -19,6 +19,17 @@ namespace PEBakery.Core.Commands
         private static readonly JsonSerializerOptions JsonPrettyOptions = new JsonSerializerOptions { WriteIndented = true };
         private static readonly JsonSerializerOptions JsonCompactOptions = new JsonSerializerOptions { WriteIndented = false };
 
+        /// <summary>
+        /// Read options that tolerate JSONC input (// line comments, /* block comments */, trailing commas).
+        /// Comments and trailing commas are silently discarded on any subsequent write/format operation,
+        /// producing standards-compliant JSON output.
+        /// </summary>
+        private static readonly JsonDocumentOptions JsoncReadOptions = new JsonDocumentOptions
+        {
+            CommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+        };
+
         public static List<LogInfo> JSONRead(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -158,8 +169,11 @@ namespace PEBakery.Core.Commands
             bool valid = true;
             try
             {
+                // Validate as Strict standards compliant JSON (default) or allow JSONC extensions
+                JsonDocumentOptions parseOptions = info.Strict ? default : JsoncReadOptions;
+
                 using FileStream fs = File.OpenRead(fileName);
-                using JsonDocument doc = JsonDocument.Parse(fs);
+                using JsonDocument doc = JsonDocument.Parse(fs, parseOptions);
             }
             catch (Exception e) when (e is IOException || e is JsonException || e is UnauthorizedAccessException)
             {
@@ -284,7 +298,8 @@ namespace PEBakery.Core.Commands
 
             try
             {
-                root = JsonNode.Parse(File.ReadAllText(fileName, Encoding.UTF8));
+                root = JsonNode.Parse(File.ReadAllText(fileName, Encoding.UTF8),
+                    nodeOptions: null, documentOptions: JsoncReadOptions);
                 if (root == null)
                 {
                     LogState state = noErr ? LogState.Ignore : LogState.Error;

@@ -2291,15 +2291,35 @@ namespace PEBakery.Core
                         return new CodeInfo_JSONFormat(args[0], mode, sortKeys);
                     }
                 case CodeType.JSONValidate:
-                    { // JSONValidate,<JSONFile>,<%DestVar%>[,NOERR]
+                    { // JSONValidate,<JSONFile>,<%DestVar%>[,Strict][,NOERR]
                         const int minArgCount = 2;
-                        const int maxArgCount = 3;
+                        const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         CheckDestVar(args[1], rawCode);
-                        bool noErr = ParseOptionalNoErr(args, minArgCount, rawCode);
-                        return new CodeInfo_JSONValidate(args[0], args[1], noErr);
+                        bool noErr = false;
+                        bool strict = false; // Allow JSONC extensions by default
+
+                        // Parse optional arguments starting from index 3
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                noErr = true;
+                            }
+                            else if (arg.Equals("Strict", StringComparison.OrdinalIgnoreCase))
+                            {
+                                strict = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_JSONValidate(args[0], args[1], noErr, strict);
                     }
                 case CodeType.JSONType:
                 case CodeType.JSONCount:
