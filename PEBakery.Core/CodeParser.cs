@@ -2229,9 +2229,9 @@ namespace PEBakery.Core
                         return new CodeInfo_JSONDelete(args[0], args[1]);
                     }
                 case CodeType.JSONQuery:
-                    { // JSONQuery,<JSONFile>,<Filter>,<%DestVar%>[,Raw|Json|Compact][,NOERR]
+                    { // JSONQuery,<JSONFile>,<Filter>,<%DestVar%>[,Raw|Json|Compact][,NOERR][Delim=]
                         const int minArgCount = 3;
-                        const int maxArgCount = 5; 
+                        const int maxArgCount = 6; 
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -2239,6 +2239,7 @@ namespace PEBakery.Core
 
                         JsonQueryOutputMode outputMode = JsonQueryOutputMode.Raw;
                         bool noErr = false;
+                        string? delim = null;
 
                         // Parse optional arguments starting from index 3
                         for (int i = minArgCount; i < args.Count; i++)
@@ -2252,13 +2253,17 @@ namespace PEBakery.Core
                             {
                                 outputMode = parsedMode;
                             }
+                            else if (arg.StartsWith("Delim=", StringComparison.OrdinalIgnoreCase))
+                            {
+                                delim = arg.Substring(6); // Extract string after "Delim="
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_JSONQuery(args[0], args[1], args[2], outputMode, noErr);
+                        return new CodeInfo_JSONQuery(args[0], args[1], args[2], outputMode, noErr, delim);
                     }
                 case CodeType.JSONFormat:
                     { // JSONFormat,<JSONFile>[,<Pretty|Compact>][,SortKeys]

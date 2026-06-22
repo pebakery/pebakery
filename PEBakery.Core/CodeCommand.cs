@@ -2878,14 +2878,16 @@ namespace PEBakery.Core
         public string DestVar { get; private set; }
         public JsonQueryOutputMode OutputMode { get; private set; }
         public bool NoErr { get; private set; }
+        public string? Delim { get; private set; }
 
-        public CodeInfo_JSONQuery(string fileName, string filter, string destVar, JsonQueryOutputMode outputMode, bool noErr)
+        public CodeInfo_JSONQuery(string fileName, string filter, string destVar, JsonQueryOutputMode outputMode, bool noErr, string? delim = null)
         {
             FileName = fileName;
             Filter = filter;
             DestVar = destVar;
             OutputMode = outputMode;
             NoErr = noErr;
+            Delim = delim;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, Filter);

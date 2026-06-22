@@ -130,6 +130,7 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string filter = NormalizeJsonFilter(StringEscaper.Preprocess(s, info.Filter));
+            string delim = info.Delim == null ? "|" : StringEscaper.Preprocess(s, info.Delim);
 
             if (!TryLoadJson(logs, fileName, info.NoErr, out JsonNode? root))
             {
@@ -138,8 +139,18 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            JsonNode? node = SelectJsonNode(root, filter);
-            if (node == null)
+            // Decide whether the filter triggers multi-result mode:
+            //   - comma-separated paths  — each path is evaluated independently, results are merged.
+            //   - wildcard segments ([*] or *)  — each wildcard fans out across array elements / object values.
+            // When neither applies single-node behaviour is preserved.
+            List<string> paths = SplitMultiPath(filter);
+            bool isMultiMode = paths.Count > 1 || paths.Any(p => ParseJsonPath(p).Any(part => part.IsWildcard));
+
+            List<JsonNode?> results = [];
+            foreach (string p in paths)
+                results.AddRange(SelectJsonNodes(root, p));
+
+            if (results.Count == 0)
             {
                 s.ReturnValue = "2";
                 LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
@@ -148,15 +159,40 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            string value = info.OutputMode switch
+            string value;
+            if (!isMultiMode)
             {
-                JsonQueryOutputMode.Json => node.ToJsonString(JsonPrettyOptions),
-                JsonQueryOutputMode.Compact => node.ToJsonString(JsonCompactOptions),
-                _ => JsonNodeToRawString(node),
-            };
-            s.ReturnValue = "0";
-            logs.AddRange(SetDestVariable(s, info.DestVar, value));
-            logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] using filter [{filter}] from [{fileName}]", cmd));
+                // Single path without wildcards.
+                JsonNode? node = results[0];
+                if (node == null)
+                {
+                    s.ReturnValue = "2";
+                    LogState state = info.NoErr ? LogState.Ignore : LogState.Error;
+                    logs.Add(new LogInfo(state, $"JSON filter [{filter}] did not find a match in [{fileName}]", cmd));
+                    logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
+                    return logs;
+                }
+                value = info.OutputMode switch
+                {
+                    JsonQueryOutputMode.Json => node.ToJsonString(JsonPrettyOptions),
+                    JsonQueryOutputMode.Compact => node.ToJsonString(JsonCompactOptions),
+                    _ => JsonNodeToRawString(node),
+                };
+                s.ReturnValue = "0";
+                logs.AddRange(SetDestVariable(s, info.DestVar, value));
+                logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] using filter [{filter}] from [{fileName}]", cmd));
+            }
+            else
+            {
+                // Multi-result mode:
+                // - Scalar values are output as raw strings. 
+                // - complex nodes (objects / arrays) fall back to compact JSON to play it safe.
+                value = string.Join(delim, results.Select(n => FormatNodeForJoin(n, info.OutputMode)));
+                s.ReturnValue = "0";
+                logs.AddRange(SetDestVariable(s, info.DestVar, value));
+                logs.Add(new LogInfo(LogState.Success, $"Queried [{results.Count}] JSON value(s) using filter [{filter}] from [{fileName}]", cmd));
+            }
+
             return logs;
         }
 
@@ -169,7 +205,7 @@ namespace PEBakery.Core.Commands
             bool valid = true;
             try
             {
-                // Validate as Strict standards compliant JSON (default) or allow JSONC extensions
+                // Validate as Strict standards compliant JSON (default keyword) or allow JSONC extensions
                 JsonDocumentOptions parseOptions = info.Strict ? default : JsoncReadOptions;
 
                 using FileStream fs = File.OpenRead(fileName);
@@ -353,6 +389,122 @@ namespace PEBakery.Core.Commands
             return node;
         }
 
+        /// <summary>
+        /// Multi-Path version of SelectJsonNode.
+        /// Supports wildcard segments ([*] / *) that fan out into multiple results.
+        /// </summary>
+        private static List<JsonNode?> SelectJsonNodes(JsonNode? root, string path)
+        {
+            if (root == null) return [];
+            if (path.Length == 0) return [root];
+
+            List<JsonNode?> current = [root];
+
+            foreach (JsonPathPart part in ParseJsonPath(path))
+            {
+                List<JsonNode?> next = [];
+                foreach (JsonNode? node in current)
+                    ExpandPart(node, part, next);
+                current = next;
+            }
+
+            return current;
+        }
+
+        /// <summary>
+        /// Evaluates one JsonPathPart against node and appends every match to results.
+        ///   - Named property - navigate into the object key (silently skips when absent).
+        ///   - Numeric index  - selects one array element (skips when out of range).
+        ///   - Wildcard       - fans out: all array elements or all object values.
+        /// </summary>
+        private static void ExpandPart(JsonNode? node, JsonPathPart part, List<JsonNode?> results)
+        {
+            if (node == null) return;
+
+            JsonNode? target = node;
+
+            // Navigate to the named property when specified.
+            if (part.Property != null)
+            {
+                if (target is not JsonObject obj) return;
+                if (!obj.ContainsKey(part.Property)) return; // key absent - no match
+                target = obj[part.Property];
+            }
+
+            // Apply index, wildcard expansion, or accept the resolved node as-is.
+            if (part.IsWildcard)
+            {
+                // [*]  -  all elements of an array
+                // *    -  all values of an object  (or all elements if target happens to be an array)
+                if (target is JsonArray arr)
+                    results.AddRange(arr);
+                else if (target is JsonObject objWild)
+                    foreach (KeyValuePair<string, JsonNode?> kv in objWild)
+                        results.Add(kv.Value);
+                // Wildcard on a scalar or null intentional produces no output.
+            }
+            else if (part.Index != null)
+            {
+                if (target is not JsonArray arr || part.Index.Value < 0 || arr.Count <= part.Index.Value)
+                    return;
+                results.Add(arr[part.Index.Value]);
+            }
+            else
+            {
+                results.Add(target);
+            }
+        }
+
+        /// <summary>
+        /// Splits a top-level comma-separated list of JSON paths while respecting bracket depth,
+        /// so that commas inside […] segments are never treated as path separators.
+        /// </summary>
+        /// <example>
+        /// "name,age"           - ["name", "age"]
+        /// "items[0],items[1]"  - ["items[0]", "items[1]"]
+        /// "items[*].name"      - ["items[*].name"] (single path, no split)
+        /// </example>
+        private static List<string> SplitMultiPath(string filter)
+        {
+            List<string> paths = [];
+            StringBuilder sb = new StringBuilder();
+            int depth = 0;
+
+            foreach (char c in filter)
+            {
+                if (c == '[') depth++;
+                else if (c == ']') depth--;
+                else if (c == ',' && depth == 0)
+                {
+                    string segment = sb.ToString().Trim();
+                    if (segment.Length > 0) paths.Add(segment);
+                    sb.Clear();
+                    continue;
+                }
+                sb.Append(c);
+            }
+
+            string last = sb.ToString().Trim();
+            if (last.Length > 0) paths.Add(last);
+
+            // Guarantee at least one entry (the original string) so we never get an empty list.
+            return paths.Count > 0 ? paths : [filter];
+        }
+
+        /// <summary>
+        /// Formats a single node for inclusion in a delimited multi-result string.
+        /// Scalar values are returned as raw strings (no surrounding quotes).
+        /// Complex nodes (objects and arrays) are serialised as compact JSON 
+        /// because it would be ambiguous to flatten them further.
+        /// </summary>
+        private static string FormatNodeForJoin(JsonNode? node, JsonQueryOutputMode outputMode)
+        {
+            if (node == null) return string.Empty;
+            if (node is JsonValue) return JsonNodeToRawString(node);
+            // Object or array: output as JSON. Pretty-print only when explicitly requested.
+            return node.ToJsonString(outputMode == JsonQueryOutputMode.Json ? JsonPrettyOptions : JsonCompactOptions);
+        }
+
         private static bool SetJsonNode(ref JsonNode? root, string path, JsonNode value)
         {
             List<JsonPathPart> parts = ParseJsonPath(path);
@@ -532,14 +684,24 @@ namespace PEBakery.Core.Commands
         {
             string? property = segment;
             int? index = null;
+            bool isWildcard = false;
 
             int bracketIdx = segment.IndexOf('[', StringComparison.Ordinal);
             if (bracketIdx != -1 && segment.EndsWith("]", StringComparison.Ordinal))
             {
                 property = bracketIdx == 0 ? null : segment[..bracketIdx];
                 string indexStr = segment[(bracketIdx + 1)..^1];
-                if (int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx))
+                if (indexStr == "*")
+                    isWildcard = true;
+                else if (int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx))
                     index = idx;
+                // else: unrecognised bracket content — leave property set, index null
+            }
+            else if (segment == "*")
+            {
+                // Bare wildcard: expands all keys of an object or all elements of an array.
+                property = null;
+                isWildcard = true;
             }
             else if (int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out int numericIndex))
             {
@@ -547,7 +709,7 @@ namespace PEBakery.Core.Commands
                 index = numericIndex;
             }
 
-            return new JsonPathPart(property, index);
+            return new JsonPathPart(property, index, isWildcard);
         }
 
         private static void EnsureJsonArraySize(JsonArray arr, int size)
@@ -628,7 +790,7 @@ namespace PEBakery.Core.Commands
             File.WriteAllText(fileName, root?.ToJsonString(options) ?? "null", Encoding.UTF8);
         }
 
-        private readonly record struct JsonPathPart(string? Property, int? Index);
+        private readonly record struct JsonPathPart(string? Property, int? Index, bool IsWildcard = false);
 
         private static List<LogInfo> SetDestVariable(EngineState s, string destVar, string value)
         {
