@@ -218,12 +218,12 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.Eval(s, $@"JSONQuery,{jsonFile},Items[*].Score,%Value%", CodeType.JSONQuery, ErrorCheck.Success);
                 Assert.AreEqual("10|20|30", s.Variables["Value"]);
 
-                // Some elements are missing the property → those slots produce no output (not empty strings)
+                // Some elements are missing the property - those slots produce no output (not empty strings)
                 File.WriteAllText(jsonFile, @"{""Items"":[{""Name"":""A""},{""Other"":""X""},{""Name"":""B""}]}");
                 EngineTests.Eval(s, $@"JSONQuery,{jsonFile},Items[*].Name,%Value%", CodeType.JSONQuery, ErrorCheck.Success);
                 Assert.AreEqual("A|B", s.Variables["Value"]);
 
-                // Element type mismatch (scalar in array, not an object) → also skipped silently
+                // Element type mismatch (scalar in array, not an object) - also skipped silently
                 File.WriteAllText(jsonFile, @"{""Items"":[{""Name"":""A""},42,{""Name"":""B""}]}");
                 EngineTests.Eval(s, $@"JSONQuery,{jsonFile},Items[*].Name,%Value%", CodeType.JSONQuery, ErrorCheck.Success);
                 Assert.AreEqual("A|B", s.Variables["Value"]);

@@ -104,7 +104,7 @@ namespace PEBakery.Core.Commands
                 AddXmlNode(node, info.Operation, info.Type, name, value);
 
             SaveXml(fileName, doc, XmlFormatMode.Pretty);
-            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] at [{xPath}] with value [{value}] in [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] in [{fileName}] at [{xPath}] with value [{value}]", cmd));
             return logs;
         }
 

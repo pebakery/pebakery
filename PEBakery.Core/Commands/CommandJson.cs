@@ -180,7 +180,7 @@ namespace PEBakery.Core.Commands
                 };
                 s.ReturnValue = "0";
                 logs.AddRange(SetDestVariable(s, info.DestVar, value));
-                logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] using filter [{filter}] from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Queried JSON value [{value}] from [{fileName}] using filter [{filter}] ", cmd));
             }
             else
             {
@@ -190,7 +190,7 @@ namespace PEBakery.Core.Commands
                 value = string.Join(delim, results.Select(n => FormatNodeForJoin(n, info.OutputMode)));
                 s.ReturnValue = "0";
                 logs.AddRange(SetDestVariable(s, info.DestVar, value));
-                logs.Add(new LogInfo(LogState.Success, $"Queried [{results.Count}] JSON value(s) using filter [{filter}] from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Queried [{results.Count}] JSON value(s) from [{fileName}] using filter [{filter}]", cmd));
             }
 
             return logs;
@@ -220,7 +220,7 @@ namespace PEBakery.Core.Commands
 
             logs.AddRange(SetDestVariable(s, info.DestVar, valid ? "True" : "False"));
             if (valid)
-                logs.Add(new LogInfo(LogState.Success, $"JSON file [{fileName}] is valid", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"JSON file [{fileName}] is valid {(info.Strict ? "(Strict)" : "")}", cmd));
             return logs;
         }
 
@@ -796,6 +796,7 @@ namespace PEBakery.Core.Commands
         {
             string escapedValue = StringEscaper.Escape(value, false, true);
             return Variables.SetVariable(s, destVar, escapedValue, false, false, false);
-        }    }
+        }    
+    }
 }
 
