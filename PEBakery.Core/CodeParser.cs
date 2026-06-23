@@ -2399,9 +2399,9 @@ namespace PEBakery.Core
                         return new CodeInfo_XMLRename(args[0], args[1], args[2]);
                     }
                 case CodeType.XMLQuery:
-                    { // XMLQuery,<XMLFile>,<XPath>,<%DestVar%>[,Text|Xml][,NOERR]
+                    { // XMLQuery,<XMLFile>,<XPath>,<%DestVar%>[,Text|Xml][,NOERR][,Delim=<Str>]
                         const int minArgCount = 3;
-                        const int maxArgCount = 5;
+                        const int maxArgCount = 6;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -2409,6 +2409,7 @@ namespace PEBakery.Core
 
                         XmlQueryOutputMode outputMode = XmlQueryOutputMode.Text;
                         bool noErr = false;
+                        string? delim = null;
 
                         // Parse optional arguments starting from index 3
                         for (int i = minArgCount; i < args.Count; i++)
@@ -2422,13 +2423,17 @@ namespace PEBakery.Core
                             {
                                 outputMode = parsedMode;
                             }
+                            else if (arg.StartsWith("Delim=", StringComparison.OrdinalIgnoreCase))
+                            {
+                                delim = arg.Substring(6); // Extract string after "Delim="
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_XMLQuery(args[0], args[1], args[2], outputMode, noErr);
+                        return new CodeInfo_XMLQuery(args[0], args[1], args[2], outputMode, noErr, delim);
                     }
                 case CodeType.XMLFormat:
                     { // XMLFormat,<XMLFile>[,Pretty|Compact]

@@ -180,9 +180,10 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            string delim = info.Delim == null ? "|" : StringEscaper.Preprocess(s, info.Delim);
             string value = info.OutputMode == XmlQueryOutputMode.Xml
                 ? string.Concat(nodes.Select(XmlObjectToXml))
-                : string.Join("|", nodes.Select(XmlObjectToText));
+                : string.Join(delim, nodes.Select(XmlObjectToText));
             s.ReturnValue = "0";
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Queried XML XPath [{xPath}] with value [{value}] from [{fileName}]", cmd));
@@ -215,7 +216,7 @@ namespace PEBakery.Core.Commands
             bool valid = ValidateXml(fileName, schemaFile, dtdFile, out string error);
             logs.AddRange(SetDestVariable(s, info.DestVar, valid ? "True" : "False"));
             if (valid)
-            { 
+            {
                 logs.Add(new LogInfo(LogState.Success, $"XML file [{fileName}] is valid", cmd));
             }
             else
@@ -498,6 +499,7 @@ namespace PEBakery.Core.Commands
         {
             string escapedValue = StringEscaper.Escape(value, false, true);
             return Variables.SetVariable(s, destVar, escapedValue, false, false, false);
-        }    }
+        }
+    }
 }
 

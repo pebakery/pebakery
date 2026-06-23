@@ -3057,14 +3057,16 @@ namespace PEBakery.Core
         public string DestVar { get; private set; }
         public XmlQueryOutputMode OutputMode { get; private set; }
         public bool NoErr { get; private set; }
+        public string? Delim { get; private set; }
 
-        public CodeInfo_XMLQuery(string fileName, string xPath, string destVar, XmlQueryOutputMode outputMode, bool noErr)
+        public CodeInfo_XMLQuery(string fileName, string xPath, string destVar, XmlQueryOutputMode outputMode, bool noErr, string? delim)
         {
             FileName = fileName;
             XPath = xPath;
             DestVar = destVar;
             OutputMode = outputMode;
             NoErr = noErr;
+            Delim = delim;
         }
 
         public override HashSet<string> InVars() => CreateInVars(FileName, XPath);

@@ -80,6 +80,13 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.Eval(s, $@"XMLQuery,{xmlFile},//_:items/_:item,%Items%", CodeType.XMLQuery, ErrorCheck.Success);
                 Assert.AreEqual("A|B", s.Variables["Items"]);
 
+                EngineTests.Eval(s, $@"XMLQuery,{xmlFile},//_:items/_:item,%Items%,Delim=;", CodeType.XMLQuery, ErrorCheck.Success);
+                Assert.AreEqual("A;B", s.Variables["Items"]);
+                Assert.AreEqual("0", s.ReturnValue);
+
+                EngineTests.Eval(s, $@"XMLQuery,{xmlFile},//_:items/_:itemZ,%Items%,Delim=;,NoErr", CodeType.XMLQuery, ErrorCheck.Success);
+                Assert.AreEqual("2", s.ReturnValue); // XPath not found.
+
                 EngineTests.Eval(s, $@"XMLCount,{xmlFile},//_:items/_:item,%Count%", CodeType.XMLCount, ErrorCheck.Success);
                 Assert.AreEqual("2", s.Variables["Count"]);
 
