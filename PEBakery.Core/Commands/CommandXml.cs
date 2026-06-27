@@ -148,7 +148,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             foreach (object node in nodes)
-                RenameXmlObject(node, value);
+                RenameXmlObject(node, value, nsMgr);
 
             SaveXml(fileName, doc, XmlFormatMode.Pretty);
             logs.Add(new LogInfo(LogState.Success, $"Renamed XML XPath [{xPath}] in [{fileName}]", cmd));
@@ -421,11 +421,9 @@ namespace PEBakery.Core.Commands
                 return name; // no prefix, return as-is
 
             string prefix = name[..colon];
-            string localName = name[(colon + 1)..];
-
-            // Look up both the given prefix and PEBakery's '_' default namespace alias
-            string? uri = nsMgr.LookupNamespace(prefix)
-                       ?? (prefix == "_" ? nsMgr.LookupNamespace("_") : null);
+            string localName = name[(colon + 1)..];    
+            
+            string? uri = nsMgr.LookupNamespace(prefix); // Look up the given prefix
 
             return uri != null
                 ? XName.Get(localName, uri)  // properly namespaced
@@ -448,12 +446,13 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        private static void RenameXmlObject(object node, string value)
+        private static void RenameXmlObject(object node, string value, XmlNamespaceManager nsMgr)
         {
             switch (node)
             {
                 case XElement e:
-                    e.Name = XName.Get(value, e.Name.NamespaceName);
+                    XName newElementName = ResolveXName(value, nsMgr);
+                    e.Name = newElementName;
                     break;
                 case XAttribute a:
                     XElement? parent = a.Parent;
@@ -461,7 +460,7 @@ namespace PEBakery.Core.Commands
                     {
                         string attrValue = a.Value;
                         a.Remove();
-                        parent.SetAttributeValue(value, attrValue);
+                        parent.SetAttributeValue(ResolveXName(value, nsMgr), attrValue);
                     }
                     break;
             }
