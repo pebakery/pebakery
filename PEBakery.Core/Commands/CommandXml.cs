@@ -378,7 +378,7 @@ namespace PEBakery.Core.Commands
 
         private static void AddXmlNode(object node, XmlAddOperation operation, XmlAddType type, string name, string value)
         {
-            if (type == XmlAddType.Attr)
+            if (type == XmlAddType.Attribute)
             {
                 if (node is XElement e)
                     e.SetAttributeValue(name, value);

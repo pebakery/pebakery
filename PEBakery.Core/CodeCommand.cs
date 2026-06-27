@@ -2943,9 +2943,11 @@ namespace PEBakery.Core
 
     public enum XmlAddType
     {
-        Elem,
+        Attribute,
+        Attr = Attribute,   // Alias for XMLStarlet syntax compatibility
+        Element,
+        Elem = Element,     // Alias for XMLStarlet syntax compatibility
         Text,
-        Attr,
     }
 
     public enum XmlQueryOutputMode

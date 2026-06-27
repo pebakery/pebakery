@@ -98,6 +98,9 @@ namespace PEBakery.Core.Tests.Command
 
                 EngineTests.Eval(s, $@"XMLFormat,{xmlFile},Compact", CodeType.XMLFormat, ErrorCheck.Success);
                 Assert.IsFalse(File.ReadAllText(xmlFile).Contains(Environment.NewLine, StringComparison.Ordinal));
+
+                EngineTests.Eval(s, $@"XMLAdd,Subnode,{xmlFile},//_:wlan/_:SSIDConfig/_:SSID,Element,key", CodeType.XMLAdd, ErrorCheck.Success); // Full spelling of 'Element' XMLAddType
+                EngineTests.Eval(s, $@"XMLAdd,Insert,{xmlFile},//_:wlan/_:SSIDConfig/_:SSID/key[not(@type)],Attribute,type,WPA2", CodeType.XMLAdd, ErrorCheck.Success); // Full spelling of 'Attribute' XMLAddType
             }
             finally
             {
