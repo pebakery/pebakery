@@ -101,7 +101,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
             foreach (object node in nodes)
-                AddXmlNode(node, info.Operation, info.Type, name, value);
+                AddXmlNode(node, info.Operation, info.Type, name, value, nsMgr);
 
             SaveXml(fileName, doc, XmlFormatMode.Pretty);
             logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] in [{fileName}] at [{xPath}] with value [{value}]", cmd));
@@ -313,10 +313,18 @@ namespace PEBakery.Core.Commands
 
             foreach (XAttribute attr in doc.Descendants().Attributes())
             {
+                // We already handled mapping the default namespace to '_' so this prevents
+                // a 'Prefix "xmlns" is reserved for use by XML' ArgumentException.
+                if (attr.IsNamespaceDeclaration)  
+                    continue;
+
                 if (attr.Name.NamespaceName.Length != 0)
                 {
                     string prefix = attr.Parent?.GetPrefixOfNamespace(attr.Name.Namespace) ?? string.Empty;
-                    if (prefix.Length != 0 && !nsMgr.HasNamespace(prefix))
+                    // Only register non-empty, non-reserved prefixes that haven't been seen yet —
+                    // "xml" and "xmlns" are reserved by the XML Namespaces spec and will throw an
+                    // ArgumentException if passed to AddNamespace.
+                    if (prefix.Length != 0 && prefix != "xml" && prefix != "xmlns" && !nsMgr.HasNamespace(prefix)) 
                         nsMgr.AddNamespace(prefix, attr.Name.NamespaceName);
                 }
             }
@@ -376,16 +384,16 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        private static void AddXmlNode(object node, XmlAddOperation operation, XmlAddType type, string name, string value)
+        private static void AddXmlNode(object node, XmlAddOperation operation, XmlAddType type, string name, string value, XmlNamespaceManager nsMgr)
         {
             if (type == XmlAddType.Attribute)
             {
                 if (node is XElement e)
-                    e.SetAttributeValue(name, value);
+                    e.SetAttributeValue(ResolveXName(name, nsMgr), value);
                 return;
             }
 
-            object newNode = type == XmlAddType.Text ? new XText(value) : new XElement(name, value);
+            object newNode = type == XmlAddType.Text ? new XText(value) : new XElement(ResolveXName(name, nsMgr), value);
             if (operation == XmlAddOperation.Insert)
             {
                 if (node is XElement e)
@@ -404,6 +412,24 @@ namespace PEBakery.Core.Commands
             {
                 elem.Add(newNode);
             }
+        }
+
+        private static XName ResolveXName(string name, XmlNamespaceManager nsMgr)
+        {
+            int colon = name.IndexOf(':');
+            if (colon < 0)
+                return name; // no prefix, return as-is
+
+            string prefix = name[..colon];
+            string localName = name[(colon + 1)..];
+
+            // Look up both the given prefix and PEBakery's '_' default namespace alias
+            string? uri = nsMgr.LookupNamespace(prefix)
+                       ?? (prefix == "_" ? nsMgr.LookupNamespace("_") : null);
+
+            return uri != null
+                ? XName.Get(localName, uri)  // properly namespaced
+                : name;                      // unknown prefix, fall through as-is
         }
 
         private static void RemoveXmlObject(object node)
