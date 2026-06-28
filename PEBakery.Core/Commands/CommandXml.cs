@@ -516,8 +516,15 @@ namespace PEBakery.Core.Commands
 
         private static void SaveXml(string fileName, XDocument doc, XmlFormatMode mode)
         {
-            SaveOptions options = mode == XmlFormatMode.Compact ? SaveOptions.DisableFormatting : SaveOptions.None;
-            File.WriteAllText(fileName, doc.ToString(options), Encoding.UTF8);
+            XmlWriterSettings writerSettings = new XmlWriterSettings
+            {
+                Encoding = new UTF8Encoding(false), // UTF-8 without BOM
+                Indent = mode != XmlFormatMode.Compact,
+                OmitXmlDeclaration = false,
+            };
+
+            using XmlWriter writer = XmlWriter.Create(fileName, writerSettings);
+            doc.Save(writer);
         }
 
         private static List<LogInfo> SetDestVariable(EngineState s, string destVar, string value)
@@ -527,4 +534,3 @@ namespace PEBakery.Core.Commands
         }
     }
 }
-
