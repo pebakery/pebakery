@@ -107,5 +107,156 @@ namespace PEBakery.Core.Tests.Command
                 Directory.Delete(tempDir, true);
             }
         }
+
+        [TestMethod]
+        public void XmlPrefixedNamespace()
+        {
+            // Tests prefixed namespace handling (e.g. oor:) across all XML commands
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "registrymodifications.xcu");
+                File.WriteAllText(xmlFile,
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<oor:items xmlns:oor=\"http://openoffice.org/2001/registry\" " +
+                    "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+                    "  <item oor:path=\"/org.openoffice.Office.Common/Help\">\n" +
+                    "    <prop oor:name=\"ExtendedTip\" oor:op=\"fuse\">\n" +
+                    "      <value>false</value>\n" +
+                    "    </prop>\n" +
+                    "  </item>\n" +
+                    "</oor:items>");
+
+                // XMLRead - basic prefixed namespace XPath
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Help']/prop[@oor:name='ExtendedTip']/value,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("false", s.Variables["Value"]);
+
+                // XMLUpdate - update value via prefixed namespace XPath
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Help']/prop[@oor:name='ExtendedTip']/value,true", CodeType.XMLUpdate, ErrorCheck.Success);
+                Assert.AreEqual("0", s.ReturnValue);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Help']/prop[@oor:name='ExtendedTip']/value,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("true", s.Variables["Value"]);
+
+                // XMLAdd - append a new <item> with namespaced attributes (exercises ResolveXName)
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items,elem,item", CodeType.XMLAdd, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items/item[last()],attr,oor:path,/org.openoffice.Office.Common/Misc", CodeType.XMLAdd, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items/item[last()],elem,prop", CodeType.XMLAdd, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items/item[last()]/prop,attr,oor:name,FirstRun", CodeType.XMLAdd, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items/item[last()]/prop,attr,oor:op,fuse", CodeType.XMLAdd, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},oor:items/item[last()]/prop,elem,value,false", CodeType.XMLAdd, ErrorCheck.Success);
+
+                // Verify the new item was written correctly including namespaced attributes
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']/prop[@oor:name='FirstRun']/value,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("false", s.Variables["Value"]);
+
+                // XMLCount - verify both items exist
+                EngineTests.Eval(s, $@"XMLCount,{xmlFile},oor:items/item,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("2", s.Variables["Count"]);
+
+                // XMLRename - rename a non-namespaced element
+                EngineTests.Eval(s, $@"XMLRename,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']/prop[@oor:name='FirstRun']/value,val", CodeType.XMLRename, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']/prop[@oor:name='FirstRun']/val,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("false", s.Variables["Value"]);
+
+                // XMLRename - rename a namespaced attribute (exercises ResolveXName in RenameXmlObject)
+                EngineTests.Eval(s, $@"XMLRename,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']/prop/@oor:op,oor:type", CodeType.XMLRename, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']/prop/@oor:type,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("fuse", s.Variables["Value"]);
+
+                // XMLDelete - delete by prefixed namespace XPath
+                EngineTests.Eval(s, $@"XMLDelete,{xmlFile},oor:items/item[@oor:path='/org.openoffice.Office.Common/Misc']", CodeType.XMLDelete, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLCount,{xmlFile},oor:items/item,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("1", s.Variables["Count"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void XmlDeclarationPreserved()
+        {
+            // Tests that SaveXml preserves the <?xml?> declaration after any write operation
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "declared.xml");
+                const string declaration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"; // XmlWriter outputs 'utf-8' as lowercase, so we need to test with lowercase.
+                File.WriteAllText(xmlFile,
+                    declaration + "\n" +
+                    "<configuration>\n" +
+                    "  <setting name=\"Theme\">Light</setting>\n" +
+                    "</configuration>");
+
+                // Trigger a save via XMLUpdate
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},/configuration/setting[@name='Theme'],Dark", CodeType.XMLUpdate, ErrorCheck.Success);
+
+                string saved = File.ReadAllText(xmlFile);
+                Assert.IsTrue(saved.StartsWith(declaration, StringComparison.Ordinal),
+                    "XML declaration should be preserved after save");
+                Assert.IsFalse(saved.Contains('\uFEFF'),
+                    "UTF-8 BOM should not be written");
+
+                // Trigger a save via XMLAdd
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},/configuration,elem,setting", CodeType.XMLAdd, ErrorCheck.Success);
+                saved = File.ReadAllText(xmlFile);
+                Assert.IsTrue(saved.StartsWith(declaration, StringComparison.Ordinal),
+                    "XML declaration should be preserved after XMLAdd save");
+
+                // Trigger a save via XMLFormat
+                EngineTests.Eval(s, $@"XMLFormat,{xmlFile},Compact", CodeType.XMLFormat, ErrorCheck.Success);
+                saved = File.ReadAllText(xmlFile);
+                Assert.IsTrue(saved.StartsWith(declaration, StringComparison.Ordinal),
+                    "XML declaration should be preserved after XMLFormat save");
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void XmlNamespaceManagerReservedPrefixes()
+        {
+            // Tests that CreateNamespaceManager doesn't throw on reserved xml/xmlns prefixes
+            // and correctly registers the default namespace as '_'
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                // File with xml:lang (reserved 'xml' prefix on an attribute)
+                string xmlLangFile = Path.Combine(tempDir, "xmllang.xml");
+                File.WriteAllText(xmlLangFile,
+                    "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+                    "  <item xml:lang=\"en\" xsi:nil=\"false\">Hello</item>\n" +
+                    "</root>");
+
+                // Should not throw ArgumentException on reserved 'xml' prefix
+                EngineTests.Eval(s, $@"XMLRead,{xmlLangFile},/root/item,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("Hello", s.Variables["Value"]);
+
+                // File with default namespace (exposed as '_:')
+                string defaultNsFile = Path.Combine(tempDir, "defaultns.xml");
+                File.WriteAllText(defaultNsFile,
+                    "<root xmlns=\"urn:test\" xmlns:ext=\"urn:ext\">\n" +
+                    "  <item ext:type=\"primary\">Value</item>\n" +
+                    "</root>");
+
+                // Default namespace via '_:' prefix
+                EngineTests.Eval(s, $@"XMLRead,{defaultNsFile},/_:root/_:item,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("Value", s.Variables["Value"]);
+
+                // Secondary prefixed namespace alongside default
+                EngineTests.Eval(s, $@"XMLRead,{defaultNsFile},/_:root/_:item/@ext:type,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("primary", s.Variables["Value"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
     }
 }
