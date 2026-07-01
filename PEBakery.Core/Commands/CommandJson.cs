@@ -38,6 +38,9 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string path = NormalizeJsonFilter(StringEscaper.Preprocess(s, info.Path));
 
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONRead does not support wildcard or multi-path filters [{path}]");
+
             if (!TryLoadJson(logs, fileName, info.NoErr, out JsonNode? root))
             {
                 s.ReturnValue = "1";
@@ -240,6 +243,8 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
                 return logs;
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONType does not support wildcard or multi-path filters [{path}]");
 
             JsonNode? node = SelectJsonNode(root, path);
             string typeName = node switch
@@ -266,6 +271,8 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
                 return logs;
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONCount does not support wildcard or multi-path filters [{path}]");
 
             JsonNode? node = SelectJsonNode(root, path);
             int count = node switch
@@ -292,6 +299,8 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
                 return logs;
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONReadArray does not support wildcard or multi-path filters [{path}]");
 
             if (SelectJsonNode(root, path) is not JsonArray arr)
                 return LogInfo.LogErrorMessage(logs, $"JSON path [{path}] is not an array");
@@ -313,6 +322,8 @@ namespace PEBakery.Core.Commands
 
             if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
                 return logs;
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONReadKeys does not support wildcard or multi-path filters [{path}]");
 
             if (SelectJsonNode(root, path) is not JsonObject obj)
                 return LogInfo.LogErrorMessage(logs, $"JSON path [{path}] is not an object");
