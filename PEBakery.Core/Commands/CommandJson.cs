@@ -97,6 +97,12 @@ namespace PEBakery.Core.Commands
                 return logs;
             if (path.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "JSON path cannot be empty");
+            // JSONDelete is destructive so for now we only support a single unambiguous path and
+            // reject comma-separated multi-paths and wildcard ([*] / *) segments explicitly rather
+            // than letting them fall through to DeleteJsonNode, which does not understand wildcards
+            // and would otherwise delete an entire parent property instead of the matched elements.
+            if (IsMultiOrWildcardPath(path))
+                return LogInfo.LogErrorMessage(logs, $"JSONDelete does not support wildcard or multi-path filters [{path}]");
             if (!DeleteJsonNode(root, path))
                 return LogInfo.LogErrorMessage(logs, $"JSON path [{path}] does not exist in [{fileName}]");
 
@@ -489,6 +495,18 @@ namespace PEBakery.Core.Commands
 
             // Guarantee at least one entry (the original string) so we never get an empty list.
             return paths.Count > 0 ? paths : [filter];
+        }
+
+        /// <summary>
+        /// Detects whether a (already-normalized) path would trigger multi-result behavior:
+        /// either multiple comma-separated paths, or a wildcard ([*] / *) segment in any of them.
+        /// Used by destructive single-target operations (e.g. JSONDelete) to reject ambiguous input
+        /// up front instead of silently mis-resolving it.
+        /// </summary>
+        private static bool IsMultiOrWildcardPath(string path)
+        {
+            List<string> paths = SplitMultiPath(path);
+            return paths.Count > 1 || paths.Any(p => ParseJsonPath(p).Any(part => part.IsWildcard));
         }
 
         /// <summary>
