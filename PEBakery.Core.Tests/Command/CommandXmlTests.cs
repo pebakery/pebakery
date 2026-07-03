@@ -258,5 +258,179 @@ namespace PEBakery.Core.Tests.Command
                 Directory.Delete(tempDir, true);
             }
         }
+
+        [TestMethod]
+        public void XmlScalarXPathRejected()
+        {
+            // XPath expressions that evaluate to a scalar (double/bool/string), not a node-set,
+            // must be rejected by XMLUpdate/XMLAdd/XMLDelete/XMLRename instead of silently
+            // "succeeding" without touching the document.
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "scalar.xml");
+                const string original = "<root><book id=\"1\" /><book id=\"2\" /></root>";
+                File.WriteAllText(xmlFile, original);
+
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},count(/root/book),NewValue", CodeType.XMLUpdate, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLDelete,{xmlFile},boolean(/root/book[@id='1'])", CodeType.XMLDelete, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLRename,{xmlFile},string(/root/book[1]/@id),newname", CodeType.XMLRename, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLAdd,Append,{xmlFile},count(/root/book),elem,child", CodeType.XMLAdd, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLDelete,{xmlFile},/root/book[1]=/root/book[2]", CodeType.XMLDelete, ErrorCheck.RuntimeError);
+
+                // None of the rejected calls should have triggered a save - document must be untouched.
+                Assert.AreEqual(original, File.ReadAllText(xmlFile));
+
+                EngineTests.Eval(s, $@"XMLCount,{xmlFile},/root/book,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("2", s.Variables["Count"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void XmlMalformedXPathRejected()
+        {
+            // Invalid XPath syntax must produce a controlled error, not an unhandled
+            // XPathException thrown out of the command.
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "malformed.xml");
+                const string original = "<root><book id=\"1\" /></root>";
+                File.WriteAllText(xmlFile, original);
+
+                EngineTests.Eval(s, $@"XMLDelete,{xmlFile},//book[", CodeType.XMLDelete, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},///bad::axis::,X", CodeType.XMLUpdate, ErrorCheck.RuntimeError);
+
+                Assert.AreEqual(original, File.ReadAllText(xmlFile));
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void XmlDeleteParentAndChildOverlapDoesNotThrow()
+        {
+            // A single XPath match set can contain both an element and its own descendant
+            // (e.g. via a union expression). Removing the parent first must not cause removing
+            // the already-orphaned child to throw an exception.
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "overlap.xml");
+                File.WriteAllText(xmlFile,
+                    "<library>" +
+                    "<book id=\"1\"><author>Jane</author></book>" +
+                    "<book id=\"2\"><author>John</author></book>" +
+                    "</library>");
+
+                EngineTests.Eval(s, $@"XMLDelete,{xmlFile},//book[@id='1'] | //book[@id='1']/author", CodeType.XMLDelete, ErrorCheck.Success);
+
+                EngineTests.Eval(s, $@"XMLCount,{xmlFile},//book,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("1", s.Variables["Count"]);
+
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},//book/@id,%Value%", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("2", s.Variables["Value"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void XmlMultiMatchAppliesToEveryNode()
+        {
+            // XMLDelete/XMLUpdate/XMLRename must apply to every node in a multi-match result,
+            // not just the first one.
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                // Multi-match delete of attributes across sibling elements
+                string deleteFile = Path.Combine(tempDir, "multidelete.xml");
+                File.WriteAllText(deleteFile,
+                    "<library>" +
+                    "<book id=\"1\" available=\"true\" />" +
+                    "<book id=\"2\" available=\"false\" />" +
+                    "<book id=\"3\" available=\"true\" />" +
+                    "</library>");
+
+                EngineTests.Eval(s, $@"XMLDelete,{deleteFile},//book/@available", CodeType.XMLDelete, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLCount,{deleteFile},//book/@available,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("0", s.Variables["Count"]);
+                EngineTests.Eval(s, $@"XMLCount,{deleteFile},//book,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("3", s.Variables["Count"]); // Elements themselves must survive
+
+                // Multi-match update across sibling elements
+                string updateFile = Path.Combine(tempDir, "multiupdate.xml");
+                File.WriteAllText(updateFile,
+                    "<library>" +
+                    "<item status=\"pending\" />" +
+                    "<item status=\"pending\" />" +
+                    "<item status=\"pending\" />" +
+                    "</library>");
+
+                EngineTests.Eval(s, $@"XMLUpdate,{updateFile},//item/@status,done", CodeType.XMLUpdate, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLReadList,{updateFile},//item/@status,%List%,Delim=;", CodeType.XMLReadList, ErrorCheck.Success);
+                Assert.AreEqual("done;done;done", s.Variables["List"]);
+
+                // Multi-match rename across sibling elements
+                string renameFile = Path.Combine(tempDir, "multirename.xml");
+                File.WriteAllText(renameFile, "<library><oldname>A</oldname><oldname>B</oldname></library>");
+
+                EngineTests.Eval(s, $@"XMLRename,{renameFile},//oldname,newname", CodeType.XMLRename, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"XMLCount,{renameFile},//newname,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("2", s.Variables["Count"]);
+                EngineTests.Eval(s, $@"XMLCount,{renameFile},//oldname,%Count%", CodeType.XMLCount, ErrorCheck.Success);
+                Assert.AreEqual("0", s.Variables["Count"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        [TestMethod]
+        public void XmlNoErrDoesNotSuppressMalformedXPath()
+        {
+            // NoErr exists to tolerate a syntactically valid XPath that legitimately matches nothing.
+            // It must NOT suppress genuine usage errors like invalid XPath syntax or a scalar (non-node-set) result
+            // - those should always be ErrorCheck.RuntimeError
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string xmlFile = Path.Combine(tempDir, "noerr.xml");
+                const string original = "<root><book id=\"1\" /><book id=\"2\" /></root>";
+                File.WriteAllText(xmlFile, original);
+
+                // Sanity check: NoErr DOES suppress a legitimately-absent path (returns "2", no Error log).
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},/root/missing,%Value%,NoErr", CodeType.XMLRead, ErrorCheck.Success);
+                Assert.AreEqual("2", s.ReturnValue);
+
+                // But NoErr must NOT suppress malformed XPath syntax...
+                EngineTests.Eval(s, $@"XMLRead,{xmlFile},//book[,%Value%,NoErr", CodeType.XMLRead, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},//book[,X,NoErr", CodeType.XMLUpdate, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"XMLQuery,{xmlFile},//book[,%Value%,NoErr", CodeType.XMLQuery, ErrorCheck.RuntimeError);
+
+                // ...or a scalar (non-node-set) XPath result on a mutating command.
+                EngineTests.Eval(s, $@"XMLUpdate,{xmlFile},count(/root/book),X,NoErr", CodeType.XMLUpdate, ErrorCheck.RuntimeError);
+
+                // Document must remain untouched by any of the above.
+                Assert.AreEqual(original, File.ReadAllText(xmlFile));
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
     }
 }

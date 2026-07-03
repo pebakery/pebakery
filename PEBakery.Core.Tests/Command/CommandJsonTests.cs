@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace PEBakery.Core.Tests.Command
@@ -519,5 +520,198 @@ namespace PEBakery.Core.Tests.Command
             }
         #endregion
         }
+        #region Wildcard / Multi-path Guard — Single-target commands
+        /// <summary>
+        /// JSONDelete is destructive and only supports a single unambiguous path.
+        /// Wildcard segments ([*] / *) and comma-separated multi-paths must be
+        /// rejected up front, and critically, must NOT modify the file on disk
+        /// (regression test for the original bug where "Items[*]" silently
+        /// deleted the entire "Items" property instead of erroring).
+        /// </summary>
+        [TestMethod]
+        public void JsonDeleteRejectsWildcardAndMultiPath()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string jsonFile = Path.Combine(tempDir, "data.json");
+                const string original = @"{""Name"":""App"",""Items"":[{""Name"":""Alice""},{""Name"":""Bob""}]}";
+
+                // Trailing wildcard on the final segment - the original data-loss case.
+                // Before the fix, this deleted the entire "Items" array instead of throwing an error.
+                File.WriteAllText(jsonFile, original);
+                List<LogInfo> logs = EngineTests.Eval(s, $@"JSONDelete,{jsonFile},Items[*]", CodeType.JSONDelete, ErrorCheck.RuntimeError);
+                Assert.IsTrue(logs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+                Assert.AreEqual(original, File.ReadAllText(jsonFile), "File must be unmodified when JSONDelete rejects a wildcard path");
+
+                // Intermediate wildcard segment.
+                File.WriteAllText(jsonFile, original);
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},Items[*].Name", CodeType.JSONDelete, ErrorCheck.RuntimeError);
+                Assert.AreEqual(original, File.ReadAllText(jsonFile));
+
+                // Bare wildcard.
+                File.WriteAllText(jsonFile, original);
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},Items[0].*", CodeType.JSONDelete, ErrorCheck.RuntimeError);
+                Assert.AreEqual(original, File.ReadAllText(jsonFile));
+
+                // Comma-separated multi-path.
+                File.WriteAllText(jsonFile, original);
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},""Name,Items""", CodeType.JSONDelete, ErrorCheck.RuntimeError);
+                Assert.AreEqual(original, File.ReadAllText(jsonFile));
+
+                // Sanity check: an ordinary single-path delete still works after the guard was added.
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},Items[0]", CodeType.JSONDelete, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"JSONReadArray,{jsonFile},Items,%List%", CodeType.JSONReadArray, ErrorCheck.Success);
+                Assert.AreEqual(@"{#$qName#$q:#$qBob#$q}", s.Variables["List"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+        #region Wildcard / Multi-path Guard — JSONRead
+        /// <summary>
+        /// JSONRead does not support wildcard/multi-path filters (use JSONQuery for that).
+        /// Respects NOERR like its other error paths.
+        /// </summary>
+        [TestMethod]
+        public void JsonReadRejectsWildcardAndMultiPath()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string jsonFile = Path.Combine(tempDir, "data.json");
+                File.WriteAllText(jsonFile, @"{""Name"":""App"",""Items"":[""a"",""b""]}");
+
+                // Without NOERR - raises a runtime error.
+                List<LogInfo> logs = EngineTests.Eval(s, $@"JSONRead,{jsonFile},Items[*],%Value%", CodeType.JSONRead, ErrorCheck.RuntimeError);
+                Assert.IsTrue(logs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                // NOERR does NOT suppress this. NOERR means "don't error if the path is
+                // legitimately missing from the file" - it is not a blanket error suppressor.
+                // A wildcard/multi-path filter is an unsupported argument, not a missing
+                // value, so it must still raise a runtime error even with NOERR set.
+                List<LogInfo> noErrLogs = EngineTests.Eval(s, $@"JSONRead,{jsonFile},Items[*],%Value%,NOERR", CodeType.JSONRead, ErrorCheck.RuntimeError);
+                Assert.IsTrue(noErrLogs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                // Multi-path filter is rejected the same way, NOERR or not.
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},""Name,Items"",%Value%", CodeType.JSONRead, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},""Name,Items"",%Value%,NOERR", CodeType.JSONRead, ErrorCheck.RuntimeError);
+
+                // Sanity check: NOERR still works correctly for its actual purpose - a
+                // genuinely missing single path.
+                EngineTests.Eval(s, $@"JSONRead,{jsonFile},Missing,%Value%,NOERR", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual(string.Empty, s.Variables["Value"]);
+                Assert.AreEqual("2", s.ReturnValue);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+        #region Wildcard / Multi-path Guard — JSONType and JSONCount
+        /// <summary>
+        /// JSONType and JSONCount previously ignored wildcards during traversal and
+        /// silently reported the type/count of the wrong (unwildcarded) parent node.
+        /// They must now reject wildcard/multi-path filters outright.
+        /// </summary>
+        [TestMethod]
+        public void JsonTypeAndCountRejectWildcardAndMultiPath()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string jsonFile = Path.Combine(tempDir, "data.json");
+                File.WriteAllText(jsonFile, @"{""Name"":""App"",""Items"":[1,2,3]}");
+
+                List<LogInfo> typeLogs = EngineTests.Eval(s, $@"JSONType,{jsonFile},Items[*],%Type%", CodeType.JSONType, ErrorCheck.RuntimeError);
+                Assert.IsTrue(typeLogs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                List<LogInfo> countLogs = EngineTests.Eval(s, $@"JSONCount,{jsonFile},Items[*],%Count%", CodeType.JSONCount, ErrorCheck.RuntimeError);
+                Assert.IsTrue(countLogs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                EngineTests.Eval(s, $@"JSONType,{jsonFile},""Name,Items"",%Type%", CodeType.JSONType, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"JSONCount,{jsonFile},""Name,Items"",%Count%", CodeType.JSONCount, ErrorCheck.RuntimeError);
+
+                // Sanity check: plain single-path usage is unaffected by the guard.
+                EngineTests.Eval(s, $@"JSONType,{jsonFile},Items,%Type%", CodeType.JSONType, ErrorCheck.Success);
+                Assert.AreEqual("Array", s.Variables["Type"]);
+                EngineTests.Eval(s, $@"JSONCount,{jsonFile},Items,%Count%", CodeType.JSONCount, ErrorCheck.Success);
+                Assert.AreEqual("3", s.Variables["Count"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+        #region Wildcard / Multi-path Guard — JSONReadArray and JSONReadKeys
+        /// <summary>
+        /// JSONReadArray and JSONReadKeys reject wildcard/multi-path filters with a
+        /// clear message rather than resolving to (or failing on) the wrong parent node.
+        /// </summary>
+        [TestMethod]
+        public void JsonReadArrayAndReadKeysRejectWildcardAndMultiPath()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string jsonFile = Path.Combine(tempDir, "data.json");
+                File.WriteAllText(jsonFile, @"{""Groups"":[{""Items"":[1,2]},{""Items"":[3,4]}],""Obj"":{""A"":1,""B"":2}}");
+
+                List<LogInfo> arrLogs = EngineTests.Eval(s, $@"JSONReadArray,{jsonFile},Groups[*].Items,%List%", CodeType.JSONReadArray, ErrorCheck.RuntimeError);
+                Assert.IsTrue(arrLogs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                List<LogInfo> keysLogs = EngineTests.Eval(s, $@"JSONReadKeys,{jsonFile},Obj.*,%Keys%", CodeType.JSONReadKeys, ErrorCheck.RuntimeError);
+                Assert.IsTrue(keysLogs.Exists(l => l.Message.Contains("wildcard or multi-path", StringComparison.OrdinalIgnoreCase)));
+
+                EngineTests.Eval(s, $@"JSONReadArray,{jsonFile},""Obj,Groups"",%List%", CodeType.JSONReadArray, ErrorCheck.RuntimeError);
+                EngineTests.Eval(s, $@"JSONReadKeys,{jsonFile},""Obj,Groups"",%Keys%", CodeType.JSONReadKeys, ErrorCheck.RuntimeError);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+        #region IsMultiOrWildcardPath — false-positive regression checks
+        /// <summary>
+        /// Paths that merely contain bracket/comma-like characters without an actual
+        /// wildcard or top-level comma must NOT be rejected by the new guard. Exercised
+        /// through JSONDelete since it is the strictest (single-path-only) consumer.
+        /// </summary>
+        [TestMethod]
+        public void WildcardGuardDoesNotFalsePositiveOnPlainPaths()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string tempDir = FileHelper.GetTempDir();
+            try
+            {
+                string jsonFile = Path.Combine(tempDir, "data.json");
+
+                // Plain numeric index - not a wildcard.
+                File.WriteAllText(jsonFile, @"{""Items"":[1,2,3]}");
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},Items[1]", CodeType.JSONDelete, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"JSONReadArray,{jsonFile},Items,%List%", CodeType.JSONReadArray, ErrorCheck.Success);
+                Assert.AreEqual("1|3", s.Variables["List"]);
+
+                // Dotted property path with no brackets or commas at all.
+                File.WriteAllText(jsonFile, @"{""A"":{""B"":{""C"":1}}}");
+                EngineTests.Eval(s, $@"JSONDelete,{jsonFile},A.B.C", CodeType.JSONDelete, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"JSONType,{jsonFile},A.B,%Type%", CodeType.JSONType, ErrorCheck.Success);
+                Assert.AreEqual("Object", s.Variables["Type"]);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
     }
 }

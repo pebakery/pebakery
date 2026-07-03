@@ -39,15 +39,18 @@ namespace PEBakery.Core.Commands
             string path = NormalizeJsonFilter(StringEscaper.Preprocess(s, info.Path));
 
             if (IsMultiOrWildcardPath(path))
+            {
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return LogInfo.LogErrorMessage(logs, $"JSONRead does not support wildcard or multi-path filters [{path}]");
-
+            }
+			
             if (!TryLoadJson(logs, fileName, info.NoErr, out JsonNode? root))
             {
                 s.ReturnValue = "1";
                 logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
                 return logs;
             }
-
+			
             JsonNode? node = SelectJsonNode(root, path);
             if (node == null)
             {

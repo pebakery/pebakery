@@ -33,7 +33,12 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathRaw(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+            {
+                s.ReturnValue = "2";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
+                return LogInfo.LogErrorMessage(logs, xPathError!);
+            }
             if (nodes.Count == 0)
             {
                 s.ReturnValue = "2";
@@ -65,7 +70,11 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathNodeSet(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+            {
+                s.ReturnValue = "2";
+                return LogInfo.LogErrorMessage(logs, xPathError!);
+            }
             if (nodes.Count == 0)
             {
                 s.ReturnValue = "2";
@@ -74,12 +83,20 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            foreach (object node in nodes)
-                SetXmlObjectValue(node, value);
+            int updated;
+            try
+            {
+                updated = nodes.Count(node => SetXmlObjectValue(node, value));
+                SaveXml(fileName, doc, XmlFormatMode.Pretty);
+            }
+            catch (Exception e) when (e is IOException || e is XmlException || e is UnauthorizedAccessException)
+            {
+                s.ReturnValue = "1";
+                return LogInfo.LogErrorMessage(logs, $"Unable to update XML XPath [{xPath}] in [{fileName}]: {Logger.LogExceptionMessage(e)}");
+            }
 
-            SaveXml(fileName, doc, XmlFormatMode.Pretty);
             s.ReturnValue = "0";
-            logs.Add(new LogInfo(LogState.Success, $"Updated XML XPath [{xPath}] with value [{value}] in [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Updated [{updated}] node(s) at XML XPath [{xPath}] with value [{value}] in [{fileName}]", cmd));
             return logs;
         }
 
@@ -96,15 +113,23 @@ namespace PEBakery.Core.Commands
             if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
                 return logs;
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathNodeSet(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+                return LogInfo.LogErrorMessage(logs, xPathError!);
             if (nodes.Count == 0)
                 return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
-            foreach (object node in nodes)
-                AddXmlNode(node, info.Operation, info.Type, name, value, nsMgr);
+            int added;
+            try
+            {
+                added = nodes.Count(node => AddXmlNode(node, info.Operation, info.Type, name, value, nsMgr));
+                SaveXml(fileName, doc, XmlFormatMode.Pretty);
+            }
+            catch (Exception e) when (e is IOException || e is XmlException || e is UnauthorizedAccessException)
+            {
+                return LogInfo.LogErrorMessage(logs, $"Unable to add XML node at XPath [{xPath}] in [{fileName}]: {Logger.LogExceptionMessage(e)}");
+            }
 
-            SaveXml(fileName, doc, XmlFormatMode.Pretty);
-            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] in [{fileName}] at [{xPath}] with value [{value}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Added XML [{info.Type}] [{name}] to [{added}] node(s) in [{fileName}] at [{xPath}] with value [{value}]", cmd));
             return logs;
         }
 
@@ -119,15 +144,23 @@ namespace PEBakery.Core.Commands
             if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
                 return logs;
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathNodeSet(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+                return LogInfo.LogErrorMessage(logs, xPathError!);
             if (nodes.Count == 0)
                 return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
-            foreach (object node in nodes)
-                RemoveXmlObject(node);
+            int deleted;
+            try
+            {
+                deleted = nodes.Count(RemoveXmlObject);
+                SaveXml(fileName, doc, XmlFormatMode.Pretty);
+            }
+            catch (Exception e) when (e is IOException || e is XmlException || e is UnauthorizedAccessException || e is InvalidOperationException)
+            {
+                return LogInfo.LogErrorMessage(logs, $"Unable to delete XML XPath [{xPath}] in [{fileName}]: {Logger.LogExceptionMessage(e)}");
+            }
 
-            SaveXml(fileName, doc, XmlFormatMode.Pretty);
-            logs.Add(new LogInfo(LogState.Success, $"Deleted XML XPath [{xPath}] from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{deleted}] node(s) at XML XPath [{xPath}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -143,15 +176,23 @@ namespace PEBakery.Core.Commands
             if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
                 return logs;
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathNodeSet(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+                return LogInfo.LogErrorMessage(logs, xPathError!);
             if (nodes.Count == 0)
                 return LogInfo.LogErrorMessage(logs, $"XML XPath [{xPath}] did not find a match in [{fileName}]");
 
-            foreach (object node in nodes)
-                RenameXmlObject(node, value, nsMgr);
+            int renamed;
+            try
+            {
+                renamed = nodes.Count(node => RenameXmlObject(node, value, nsMgr));
+                SaveXml(fileName, doc, XmlFormatMode.Pretty);
+            }
+            catch (Exception e) when (e is IOException || e is XmlException || e is UnauthorizedAccessException)
+            {
+                return LogInfo.LogErrorMessage(logs, $"Unable to rename XML node at XPath [{xPath}] in [{fileName}]: {Logger.LogExceptionMessage(e)}");
+            }
 
-            SaveXml(fileName, doc, XmlFormatMode.Pretty);
-            logs.Add(new LogInfo(LogState.Success, $"Renamed XML XPath [{xPath}] in [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Renamed [{renamed}] node(s) at XML XPath [{xPath}] in [{fileName}]", cmd));
             return logs;
         }
 
@@ -170,7 +211,12 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<object> nodes = EvaluateXPath(doc, xPath, nsMgr).ToList();
+            if (!TryEvaluateXPathRaw(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+            {
+                s.ReturnValue = "2";
+                logs.AddRange(SetDestVariable(s, info.DestVar, string.Empty));
+                return LogInfo.LogErrorMessage(logs, xPathError!);
+            }
             if (nodes.Count == 0)
             {
                 s.ReturnValue = "2";
@@ -238,7 +284,10 @@ namespace PEBakery.Core.Commands
             if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
                 return logs;
 
-            int count = EvaluateXPath(doc, xPath, nsMgr).Count;
+            if (!TryEvaluateXPathRaw(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+                return LogInfo.LogErrorMessage(logs, xPathError!);
+
+            int count = nodes.Count;
             logs.AddRange(SetDestVariable(s, info.DestVar, count.ToString(CultureInfo.InvariantCulture)));
             logs.Add(new LogInfo(LogState.Success, $"XML XPath [{xPath}] count is [{count}]", cmd));
             return logs;
@@ -256,7 +305,10 @@ namespace PEBakery.Core.Commands
             if (!TryLoadXml(logs, fileName, false, out XDocument? doc, out XmlNamespaceManager? nsMgr))
                 return logs;
 
-            string value = string.Join(delim, EvaluateXPath(doc, xPath, nsMgr).Select(XmlObjectToText));
+            if (!TryEvaluateXPathRaw(doc, xPath, nsMgr, out List<object> nodes, out string? xPathError))
+                return LogInfo.LogErrorMessage(logs, xPathError!);
+
+            string value = string.Join(delim, nodes.Select(XmlObjectToText));
             logs.AddRange(SetDestVariable(s, info.DestVar, value));
             logs.Add(new LogInfo(LogState.Success, $"Read XML list [{xPath}] from [{fileName}]", cmd));
             return logs;
@@ -331,12 +383,52 @@ namespace PEBakery.Core.Commands
             return nsMgr;
         }
 
-        private static List<object> EvaluateXPath(XDocument doc, string xPath, XmlNamespaceManager nsMgr)
+        // Shared evaluation step that turns a malformed XPath (invalid syntax, bad axis, etc.) into
+        // a reportable error instead of an unhandled XPathException. This is a user error,
+        // not "the path legitimately matched nothing" - NoErr only exists to tolerate a valid-but-absent path.
+        private static bool TryEvaluateXPathRaw(XDocument doc, string xPath, XmlNamespaceManager nsMgr, out List<object> nodes, out string? error)
         {
-            object result = doc.XPathEvaluate(xPath, nsMgr);
-            if (result is IEnumerable<object> enumerable)
-                return enumerable.ToList();
-            return new List<object> { result };
+            object result;
+            try
+            {
+                result = doc.XPathEvaluate(xPath, nsMgr);
+            }
+            catch (XPathException e)
+            {
+                nodes = new List<object>();
+                error = $"Invalid XML XPath [{xPath}]: {Logger.LogExceptionMessage(e)}";
+                return false;
+            }
+
+            nodes = result is IEnumerable<object> enumerable ? enumerable.ToList() : new List<object> { result };
+            error = null;
+            return true;
+        }
+
+        // Node-set-only evaluation for commands that mutate matched nodes (Delete/Update/Add/Rename).
+        // Beyond catching malformed XPath (via TryEvaluateXPathRaw), this also rejects XPath
+        // expressions that evaluate to a scalar (e.g. count(...), boolean(...), string(...)): a
+        // scalar is not a node the mutation switches below know how to act on, and treating it as
+        // "matched" would let these commands silently do nothing while still reporting Success.
+        // Like a syntax error, this is a user error so not covered by NoErr.
+        private static bool TryEvaluateXPathNodeSet(XDocument doc, string xPath, XmlNamespaceManager nsMgr, out List<object> nodes, out string? error)
+        {
+            if (!TryEvaluateXPathRaw(doc, xPath, nsMgr, out List<object> rawNodes, out error))
+            {
+                nodes = new List<object>();
+                return false;
+            }
+
+            if (rawNodes.Count == 1 && rawNodes[0] is not XObject)
+            {
+                nodes = new List<object>();
+                error = $"XML XPath [{xPath}] evaluated to a {rawNodes[0].GetType().Name.ToLowerInvariant()} value, not a set of XML nodes";
+                return false;
+            }
+
+            nodes = rawNodes;
+            error = null;
+            return true;
         }
 
         private static string XmlObjectToText(object node)
@@ -365,53 +457,72 @@ namespace PEBakery.Core.Commands
             };
         }
 
-        private static void SetXmlObjectValue(object node, string value)
+        private static bool SetXmlObjectValue(object node, string value)
         {
             switch (node)
             {
                 case XElement e:
                     e.Value = value;
-                    break;
+                    return true;
                 case XAttribute a:
                     a.Value = value;
-                    break;
+                    return true;
                 case XCData c:
                     c.Value = value;
-                    break;
+                    return true;
                 case XText t:
                     t.Value = value;
-                    break;
+                    return true;
+                default:
+                    return false;
             }
         }
 
-        private static void AddXmlNode(object node, XmlAddOperation operation, XmlAddType type, string name, string value, XmlNamespaceManager nsMgr)
+        private static bool AddXmlNode(object node, XmlAddOperation operation, XmlAddType type, string name, string value, XmlNamespaceManager nsMgr)
         {
             if (type == XmlAddType.Attribute)
             {
                 if (node is XElement e)
+                {
                     e.SetAttributeValue(ResolveXName(name, nsMgr), value);
-                return;
+                    return true;
+                }
+                return false;
             }
 
             object newNode = type == XmlAddType.Text ? new XText(value) : new XElement(ResolveXName(name, nsMgr), value);
             if (operation == XmlAddOperation.Insert)
             {
                 if (node is XElement e)
+                {
                     e.AddFirst(newNode);
-                else if (node is XNode xNode)
+                    return true;
+                }
+                if (node is XNode xNode)
+                {
                     xNode.AddBeforeSelf(newNode);
+                    return true;
+                }
             }
             else if (operation == XmlAddOperation.Append)
             {
                 if (node is XElement e)
+                {
                     e.Add(newNode);
-                else if (node is XNode xNode)
+                    return true;
+                }
+                if (node is XNode xNode)
+                {
                     xNode.AddAfterSelf(newNode);
+                    return true;
+                }
             }
             else if (operation == XmlAddOperation.Subnode && node is XElement elem)
             {
                 elem.Add(newNode);
+                return true;
             }
+            return false;
         }
 
         private static XName ResolveXName(string name, XmlNamespaceManager nsMgr)
@@ -430,30 +541,36 @@ namespace PEBakery.Core.Commands
                 : name;                      // unknown prefix, fall through as-is
         }
 
-        private static void RemoveXmlObject(object node)
+        private static bool RemoveXmlObject(object node)
         {
             switch (node)
             {
-                case XElement e:
+                // Guard against calling Remove() on a node that's already detached (e.g. because it
+                // was nested under another match that was removed earlier in the same batch, or the
+                // same node somehow appears twice) - XNode/XAttribute.Remove() throws
+                // InvalidOperationException if there's no parent/document to remove it from.
+                case XElement e when e.Parent != null || e.Document != null:
                     e.Remove();
-                    break;
-                case XAttribute a:
+                    return true;
+                case XAttribute a when a.Parent != null:
                     a.Remove();
-                    break;
-                case XNode n:
+                    return true;
+                case XNode n when n.Parent != null || n.Document != null:
                     n.Remove();
-                    break;
+                    return true;
+                default:
+                    return false;
             }
         }
 
-        private static void RenameXmlObject(object node, string value, XmlNamespaceManager nsMgr)
+        private static bool RenameXmlObject(object node, string value, XmlNamespaceManager nsMgr)
         {
             switch (node)
             {
                 case XElement e:
                     XName newElementName = ResolveXName(value, nsMgr);
                     e.Name = newElementName;
-                    break;
+                    return true;
                 case XAttribute a:
                     XElement? parent = a.Parent;
                     if (parent != null)
@@ -461,8 +578,11 @@ namespace PEBakery.Core.Commands
                         string attrValue = a.Value;
                         a.Remove();
                         parent.SetAttributeValue(ResolveXName(value, nsMgr), attrValue);
+                        return true;
                     }
-                    break;
+                    return false;
+                default:
+                    return false;
             }
         }
 
