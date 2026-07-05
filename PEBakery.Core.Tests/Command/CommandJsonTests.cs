@@ -37,6 +37,12 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.Eval(s, $@"JSONDelete,{jsonFile},JS_TASKBAR.smallicon", CodeType.JSONDelete, ErrorCheck.Success);
                 EngineTests.Eval(s, $@"JSONRead,{jsonFile},JS_TASKBAR.smallicon,%Value%,NOERR", CodeType.JSONRead, ErrorCheck.Success);
                 Assert.AreEqual(string.Empty, s.Variables["Value"]);
+
+                string blankJsonFile = Path.Combine(tempDir, "blank.json");
+                File.WriteAllText(blankJsonFile, string.Empty);
+                EngineTests.Eval(s, $@"JSONWrite,{blankJsonFile},JS_FILEEXPLORER.4th_filename,explorer++.exe", CodeType.JSONWrite, ErrorCheck.Success);
+                EngineTests.Eval(s, $@"JSONRead,{blankJsonFile},JS_FILEEXPLORER.4th_filename,%Value%", CodeType.JSONRead, ErrorCheck.Success);
+                Assert.AreEqual("explorer++.exe", s.Variables["Value"]);
             }
             finally
             {

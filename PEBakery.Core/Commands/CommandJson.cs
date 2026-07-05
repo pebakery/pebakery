@@ -77,10 +77,10 @@ namespace PEBakery.Core.Commands
             string path = NormalizeJsonFilter(StringEscaper.Preprocess(s, info.Path));
             string value = StringEscaper.Preprocess(s, info.Value);
 
-            if (!TryLoadJson(logs, fileName, false, out JsonNode? root))
-                return logs;
             if (path.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "JSON path cannot be empty");
+            if (!TryLoadJson(logs, fileName, false, out JsonNode? root, allowEmptyDocument: true))
+                return logs;
 
             JsonNode valueNode = ParseJsonValue(value);
             if (!SetJsonNode(ref root, path, valueNode))
@@ -336,7 +336,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static bool TryLoadJson(List<LogInfo> logs, string fileName, bool noErr, out JsonNode? root)
+        private static bool TryLoadJson(List<LogInfo> logs, string fileName, bool noErr, out JsonNode? root, bool allowEmptyDocument = false)
         {
             root = null;
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
@@ -354,10 +354,20 @@ namespace PEBakery.Core.Commands
 
             try
             {
-                root = JsonNode.Parse(File.ReadAllText(fileName, Encoding.UTF8),
+                string json = File.ReadAllText(fileName, Encoding.UTF8);
+                if (allowEmptyDocument && string.IsNullOrWhiteSpace(json))
+                {
+                    root = new JsonObject();
+                    return true;
+                }
+
+                root = JsonNode.Parse(json,
                     nodeOptions: null, documentOptions: JsoncReadOptions);
                 if (root == null)
                 {
+                    if (allowEmptyDocument)
+                        return true;
+
                     LogState state = noErr ? LogState.Ignore : LogState.Error;
                     logs.Add(new LogInfo(state, $"JSON file [{fileName}] is empty"));
                     return false;
