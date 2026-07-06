@@ -299,7 +299,7 @@ foreach ($runMode in $runModes)
     } else {
         # Flatten the location of native libraries
         Copy-Item "${DestBinDir}\runtimes\${PublishRuntimeId}\native\*" -Destination "${DestBinDir}"
-        Remove-Item "${DestBinDir}\runtimes" -Recurse
+        Remove-Item "${DestBinDir}\runtimes" -Recurse -Force -ErrorAction Stop
     }
 
     # -------------------------------------------------------------------------
