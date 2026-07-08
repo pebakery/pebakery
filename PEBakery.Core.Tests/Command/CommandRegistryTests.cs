@@ -164,6 +164,10 @@ namespace PEBakery.Core.Tests.Command
                     RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_NONE,{subKeyStr},None",
                     RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_NONE,{subKeyStr},None,FF",
+                    RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", "0xFF");
+                WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,REG_NONE,{subKeyStr},None,""DE,AD,BE,EF""",
+                    RegistryHive.CurrentUser, RegistryValueKind.None, subKeyStr, "None", "0xDEADBEEF");
 
                 WriteSuccessTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x1,{subKeyStr},String,SZ",
                     RegistryHive.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");

@@ -727,12 +727,18 @@ namespace PEBakery.Core
                             case RegistryValueKind.None:
                                 // RegWrite,HKCU,0x0,Software\PEBakery
                                 // RegWrite,HKCU,0x0,Software\PEBakery,Hello
+                                // RegWrite,HKCU,0x0,Software\PEBakery,Hello,01,02,03
                                 switch (cnt)
                                 {
                                     case 3:
                                         return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], null, null, null, noWarn);
                                     case 4:
                                         return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, null, noWarn);
+                                    case 5:
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], args[4], null, noWarn);
+                                    case 6:
+                                        string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                        return new CodeInfo_RegWrite(args[0], valueType, valueTypeInt, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.String:

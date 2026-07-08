@@ -242,9 +242,28 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.None:
                         {
+                            byte[] binData;
+                            string valueData;
+                            if (info.ValueData == null && info.ValueDataList == null)
+                            {
+                                // No Value argument was supplied, default to empty byte array.
+                                binData = Array.Empty<byte>();
+                                valueData = string.Empty;
+                            }
+                            else
+                            {
+                                (byte[]? parsedBin, string parsedStr) = ParseByteArrayFromString();
+                                if (parsedBin == null)
+                                    return LogInfo.LogErrorMessage(logs, $"[{parsedStr}] is not valid binary data");
+                                binData = parsedBin;
+                                valueData = parsedStr;
+                            }
+
                             // Do not put null to value! use empty byte array.
-                            subKey.SetValue(valueName, Array.Empty<byte>(), RegistryValueKind.None);
-                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_NONE"));
+                            subKey.SetValue(valueName, binData, RegistryValueKind.None);
+                            logs.Add(new LogInfo(LogState.Success, binData.Length > 0
+                                ? $"Registry value [{fullValuePath}] set to REG_NONE [{valueData}]"
+                                : $"Registry value [{fullValuePath}] set to REG_NONE"));
                         }
                         break;
                     case RegistryValueKind.String:
