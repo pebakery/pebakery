@@ -246,7 +246,7 @@ namespace PEBakery.Core
             { @"#$x", Environment.NewLine},
         };
         */
-        public const string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
+        public const string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n#$h = Hash/Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
         {
@@ -266,12 +266,7 @@ namespace PEBakery.Core
                     if (hIdx + 1 < str.Length)
                     {
                         char ch1 = str[hIdx + 1];
-                        if (ch1 == '#')
-                        { // ## -> [#]
-                            b.Append('#');
-                            idx = hIdx + 2;
-                        }
-                        else if (ch1 == '$')
+                        if (ch1 == '$')
                         {
                             if (hIdx + 2 < str.Length)
                             {
@@ -281,6 +276,10 @@ namespace PEBakery.Core
                                     case 'c': // #$c -> [,]
                                     case 'C':
                                         b.Append(',');
+                                        break;
+                                    case 'h': // #$h -> [#]
+                                    case 'H':
+                                        b.Append('#');
                                         break;
                                     case 'p': // #$p -> [%]
                                     case 'P':
@@ -406,7 +405,7 @@ namespace PEBakery.Core
 
                     // # (O)
                     b.Append(str[idx..hIdx]);
-                    b.Append(@"##");
+                    b.Append(@"#$h");
                     idx = hIdx + 1;
                 }
                 str = b.ToString();
@@ -544,7 +543,7 @@ namespace PEBakery.Core
                     else
                     {
                         if (s.PeekDepth == 1) // Dirty Hack for WB082 compatibility
-                            param = $"##{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
+                            param = $"#$h{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
                         else
                             param = string.Empty; // Not in entry section -> return string.Empty;
                     }

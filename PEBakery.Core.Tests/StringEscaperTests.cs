@@ -45,11 +45,11 @@ namespace PEBakery.Core.Tests
         public void Escape()
         {
             // SampleString
-            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]");
-            EscapeTemplate(SampleString, true, false, "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]");
-            EscapeTemplate(SampleString, true, true, "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]");
-            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]");
-            EscapeTemplate("Hello#$xWorld", false, false, "Hello##$xWorld");
+            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]");
+            EscapeTemplate(SampleString, true, false, "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xNewLine#$s[#$x]");
+            EscapeTemplate(SampleString, true, true, "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xNewLine#$s[#$x]");
+            EscapeTemplate(SampleString, false, false, "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]");
+            EscapeTemplate("Hello#$xWorld", false, false, "Hello#$h$xWorld");
 
             // Overload of IEnumerable<string>
             string[] srcStrs =
@@ -68,7 +68,7 @@ namespace PEBakery.Core.Tests
 
             // #$x issue
             string srcStr = "Hello#$xWorld";
-            string expectStr = "Hello##$xWorld";
+            string expectStr = "Hello#$h$xWorld";
             EscapeTemplate(srcStr, false, false, expectStr);
         }
 
@@ -91,7 +91,7 @@ namespace PEBakery.Core.Tests
         public void QuoteEscape()
         {
             // SampleString
-            QuoteEscapeTemplate(SampleString, false, false, "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"");
+            QuoteEscapeTemplate(SampleString, false, false, "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]\"");
 
             string[] srcs = ["Comma [,]", "Space [ ]", "DoubleQuote [\"]"];
             string[] expects =
@@ -121,10 +121,10 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void Unescape()
         {
-            UnescapeTemplate("Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]", false, SampleString);
-            UnescapeTemplate("Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]", true, SampleString);
-            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]", false, SampleString);
-            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]", true, SampleString);
+            UnescapeTemplate("Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]", false, SampleString);
+            UnescapeTemplate("Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]", true, SampleString);
+            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xNewLine#$s[#$x]", false, SampleString);
+            UnescapeTemplate("Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xNewLine#$s[#$x]", true, SampleString);
             UnescapeTemplate("Incomplete#$", false, "Incomplete#$");
 
             string[] srcs =
@@ -160,7 +160,7 @@ namespace PEBakery.Core.Tests
         [TestMethod]
         public void QuoteUnescape()
         {
-            QuoteUnescapeTemplate("\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"", false, SampleString);
+            QuoteUnescapeTemplate("\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xNewLine [#$x]\"", false, SampleString);
 
             string[] srcs =
             [
@@ -255,9 +255,9 @@ namespace PEBakery.Core.Tests
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
-            const string src = "%A% ##1 #1";
+            const string src = "%A% #$h1 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string comp = "%A% ##1 World";
+            const string comp = "%A% #$h1 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -269,9 +269,9 @@ namespace PEBakery.Core.Tests
 
             Variables.SetVariable(s, "#1", "World");
 
-            const string src = "%A% ##2 #1";
+            const string src = "%A% #$h2 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string comp = "%A% ##2 World";
+            const string comp = "%A% #$h2 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -285,7 +285,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string comp = "%A% ##1";
+            const string comp = "%A% #$h1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -357,9 +357,9 @@ namespace PEBakery.Core.Tests
             EngineTests.PushDepthInfo(s, 1);
             s.ReturnValue = "TEST";
 
-            const string src = "##1 ##a ##r #r";
+            const string src = "#$h1 #$ha #$hr #r";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            const string expected = "##1 ##a ##r TEST";
+            const string expected = "#$h1 #$ha #$hr TEST";
             Assert.IsTrue(dest.Equals(expected, StringComparison.Ordinal));
         }
         #endregion
@@ -491,7 +491,7 @@ namespace PEBakery.Core.Tests
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            const string comp = "Hello ##1";
+            const string comp = "Hello #$h1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
