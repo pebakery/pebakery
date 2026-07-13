@@ -28,6 +28,7 @@
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -48,6 +49,18 @@ namespace PEBakery.WPF
         private static int _count = 0;
 
         private readonly UtilityViewModel _m;
+
+        /// <summary>
+        /// True when RegConverterOutput currently holds .reg-format text (from
+        /// ScriptToRegCommand), false when it holds PEBakery script text (from
+        /// RegToScriptCommand) or is otherwise stale/empty. Save must force UTF-16 BOM
+        /// whenever this is true, regardless of the extension the user picks in the save
+        /// dialog -- Windows' own regedit.exe will refuse or mis-handle a .reg file that
+        /// isn't UTF-16 LE with BOM (or the legacy ASCII REGEDIT4 form, which this
+        /// converter never emits on output), so the save path can't rely on the file
+        /// extension alone.
+        /// </summary>
+        private bool _regConverterOutputIsRegFile = false;
 
         public UtilityWindow(FontHelper.FontInfo monoFont)
         {
@@ -285,7 +298,7 @@ namespace PEBakery.WPF
         {
             if (_m.SyntaxInputCode.Length == 0)
             {
-                _m.SyntaxCheckResult = "Please input code.";
+                _m.SyntaxCheckResult = "Please input code to check.";
                 return;
             }
 
@@ -293,7 +306,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                _m.SyntaxCheckResult = "Checking...";
+                _m.SyntaxCheckResult = "Checking syntax...";
 
                 await Task.Run(() =>
                 {
@@ -348,7 +361,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        _m.SyntaxCheckResult = "Error not found.";
+                        _m.SyntaxCheckResult = "No errors were found.";
                     }
                 });
             }
@@ -359,6 +372,214 @@ namespace PEBakery.WPF
 
                 SyntaxCheckResultTextBox.Focus();
             }
+        }
+        #endregion
+
+        #region Commands - Registry Converter
+        private void RegConverterCommands_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.TabIndex == 3 && _m.CanExecuteCommand;
+        }
+
+        /// <summary>
+        /// Toggles everything that should be locked down while a load or a convert is
+        /// running on the Registry Converter tab.
+        /// </summary>
+        private void SetRegConverterBusy(bool busy)
+        {
+            _m.CanExecuteCommand = !busy;
+            _m.RegConverterProgressVisibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            RegConverterInputTextBox.IsEnabled = !busy;
+            RegConverterLoadFileButton.IsEnabled = !busy;
+            RegConverterHivePrefixTextBox.IsEnabled = !busy;
+            RegConverterCopyButton.IsEnabled = !busy;
+            RegConverterSaveButton.IsEnabled = !busy;
+            RegConverterClearButton.IsEnabled = !busy;
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private async void RegToScriptCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            RegToScriptButton.Focus();
+
+            SetRegConverterBusy(true);
+            _m.RegConverterOutput = "Converting registry file to PEBakery script commands...";
+            try
+            {
+                RegConvertOptions opt = new RegConvertOptions
+                {
+                    HivePrefix = _m.RegConverterHivePrefix,
+                };
+                string input = _m.RegConverterInput;
+                ConversionResult result = await Task.Run(() => RegistryConverter.ConvertRegToScript(input, opt));
+                _m.RegConverterOutput = FormatWithWarnings(result);
+                _regConverterOutputIsRegFile = false;
+            }
+            finally
+            {
+                SetRegConverterBusy(false);
+                RegConverterOutputTextBox.Focus();
+            }
+        }
+
+        private async void ScriptToRegCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ScriptToRegButton.Focus();
+
+            SetRegConverterBusy(true);
+            _m.RegConverterOutput = "Converting PEBakery script commands to registry file...";
+            try
+            {
+                // HivePrefix intentionally not passed here -- it only applies to reg -> script.
+                string input = _m.RegConverterInput;
+                ConversionResult result = await Task.Run(() => RegistryConverter.ConvertScriptToReg(input));
+                _m.RegConverterOutput = FormatWithWarnings(result);
+                _regConverterOutputIsRegFile = true;
+            }
+            finally
+            {
+                SetRegConverterBusy(false);
+                RegConverterOutputTextBox.Focus();
+            }
+        }
+
+        /// <summary>
+        /// Prepends any parse warnings as comment lines:
+        /// - "//" for PEBakery script output
+        /// - ";" for .reg output
+        /// </summary>
+        private static string FormatWithWarnings(ConversionResult result)
+        {
+            if (result.Warnings.Count == 0)
+                return result.Output;
+            string warningBlock = string.Join(
+                Environment.NewLine,
+                result.Warnings.Select(w => $"{result.CommentPrefix} [WARNING] {w}"));
+            return warningBlock + Environment.NewLine + Environment.NewLine + result.Output;
+        }
+
+        private static readonly string[] RegConverterFileFilters =
+        {
+            "Registry/Script files (*.reg;*.script;*.txt)|*.reg;*.script;*.txt",
+            "Registry files (*.reg)|*.reg",
+            "PEBakery script files (*.script)|*.script",
+            "Text files (*.txt)|*.txt",
+            "All files (*.*)|*.*",
+        };
+
+        private void RegConverterInputTextBox_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void RegConverterInputTextBox_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
+
+            if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0)
+                return;
+
+            _ = LoadRegConverterInputFileAsync(paths[0]);
+        }
+
+        private async void RegConverterLoadFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = string.Join("|", RegConverterFileFilters),
+                Multiselect = false,
+            };
+            if (dialog.ShowDialog() == true)
+                await LoadRegConverterInputFileAsync(dialog.FileName);
+        }
+
+        private async Task LoadRegConverterInputFileAsync(string path)
+        {
+            SetRegConverterBusy(true);
+            _m.RegConverterOutput = "Loading File...";
+            try
+            {
+                Encoding encoding = EncodingHelper.DetectEncoding(path);
+                _m.RegConverterInput = await File.ReadAllTextAsync(path, encoding);
+                _m.RegConverterOutput = string.Empty;
+                _regConverterOutputIsRegFile = false; // stale output, no longer matches the new input
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Unable to read [{path}]:\r\n{ex.Message}", "Load Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _m.RegConverterOutput = string.Empty;
+            }
+            finally
+            {
+                SetRegConverterBusy(false);
+            }
+        }
+
+        private void RegConverterCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_m.RegConverterOutput))
+                return;
+
+            try
+            {
+                Clipboard.SetText(_m.RegConverterOutput);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Unable to copy to clipboard:\r\n{ex.Message}", "Copy Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void RegConverterSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_m.RegConverterOutput))
+                return;
+
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = string.Join("|", RegConverterFileFilters),
+                FileName = "RegistryConverterOutput.txt",
+            };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            try
+            {
+                Encoding encoding = GetEncodingForSaveFile(_regConverterOutputIsRegFile);
+                File.WriteAllText(dialog.FileName, _m.RegConverterOutput, encoding);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Unable to save [{dialog.FileName}]:\r\n{ex.Message}", "Save Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// .reg files must be UTF-16 LE with BOM or Windows may fail to recognize it as a valid reg file,
+        /// or worse mangle non-ASCII values. This converter never outputs legacy ASCII REGEDIT4 files,
+        /// so whenever the current output is detected as .reg format, UTF-16 BOM is forced regardless 
+        /// of the extension the user picked in the save dialog.
+        /// Everything else (PEBakery scripts, plain text) is saved as UTF-8 without a BOM.
+        /// </summary>
+        private static Encoding GetEncodingForSaveFile(bool isRegOutput)
+        {
+            if (isRegOutput)
+                return Encoding.Unicode; // UTF-16 LE, includes BOM via GetPreamble()
+
+            return new UTF8Encoding(false); // everything else as UTF-8, no BOM
+        }
+
+        private void RegConverterClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            _m.RegConverterInput = string.Empty;
+            _m.RegConverterOutput = string.Empty;
+            _regConverterOutputIsRegFile = false;
+            RegConverterInputTextBox.Focus();
         }
         #endregion
     }
@@ -525,6 +746,36 @@ Description=Test Commands
             set => SetProperty(ref _syntaxCheckResult, value);
         }
         #endregion
+
+        #region Registry Converter
+        private string _regConverterInput = string.Empty;
+        public string RegConverterInput
+        {
+            get => _regConverterInput;
+            set => SetProperty(ref _regConverterInput, value);
+        }
+
+        private string _regConverterOutput = string.Empty;
+        public string RegConverterOutput
+        {
+            get => _regConverterOutput;
+            set => SetProperty(ref _regConverterOutput, value);
+        }
+
+        private string _regConverterHivePrefix = "Tmp_";
+        public string RegConverterHivePrefix
+        {
+            get => _regConverterHivePrefix;
+            set => SetProperty(ref _regConverterHivePrefix, value);
+        }
+
+        private Visibility _regConverterProgressVisibility = Visibility.Collapsed;
+        public Visibility RegConverterProgressVisibility
+        {
+            get => _regConverterProgressVisibility;
+            set => SetProperty(ref _regConverterProgressVisibility, value);
+        }
+        #endregion
     }
     #endregion
 
@@ -561,6 +812,11 @@ Description=Test Commands
 
         #region Syntax Checker
         public static readonly RoutedCommand SyntaxCheckCommand = new RoutedUICommand("Run syntax check", "SyntaxCheck", typeof(UtilityViewCommands));
+        #endregion
+
+        #region Registry Converter
+        public static readonly RoutedCommand RegToScriptCommand = new RoutedUICommand("Convert reg to Script", "RegToScript", typeof(UtilityViewCommands));
+        public static readonly RoutedCommand ScriptToRegCommand = new RoutedUICommand("Convert Script to reg", "ScriptToReg", typeof(UtilityViewCommands));
         #endregion
     }
     #endregion
