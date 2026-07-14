@@ -10,7 +10,7 @@
     <Version>1.1.1.0</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="3.1.4" />
+    <PackageReference Include="MessagePack" Version="3.1.8" />
     <PackageReference Include="SharpVectors.Reloaded" Version="1.8.5">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
