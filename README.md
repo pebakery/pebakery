@@ -46,7 +46,7 @@ Nightly binaries are served by AppVeyor artifacts.
 
 ## Prerequisites
 
-PEBakery runs on .NET 6. 
+PEBakery runs on .NET 10. 
 
 - *Standalone Nightly* does not require any runtime installed, but runs only on one architecture (e.g. **x64**).
 - *Runtime Dependent Nightly* runs on both **x64**, **x86** and **arm64** Windows, but requires latest **[.NET 6 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime)** to be installed.
@@ -75,7 +75,7 @@ Testers using nightly builds should refer to the developer branch [Official PEBa
 
 ### Requirement
 
-- [.NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) to build and test `PEBakery.exe`.
+- [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) to build and test `PEBakery.exe`.
 - [Windows 10 SDK](https://developer.microsoft.com/ko-kr/windows/downloads/windows-10-sdk) to build `PEBakeryLauncher.exe`
     - Requires [Microsoft C++ Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or later
 
