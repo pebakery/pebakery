@@ -72,6 +72,9 @@ namespace PEBakery.Core.Html
         // Host Environment
         public string BuildHostWindowsVersion { get; set; } = string.Empty;
         public string BuildHostDotnetVersion { get; set; } = string.Empty;
+        public string BuildHostLanguage { get; set; } = string.Empty;
+        public string BuildHostAnsiEncoding { get; set; } = string.Empty;
+        public string BuildHostOemEncoding { get; set; } = string.Empty;
         // Data
         // type: LogStatItem[]
         public ScriptArray LogStats { get; private set; } = new ScriptArray();

@@ -4,15 +4,47 @@
     {{ include '_LogLayoutHeader.sbnhtml' }}
 
     <!-- Body -->
-    <body id="page-top" data-spy="scroll">
-        <h1 class="container mt-2 text-center">PEBakery Build &lt;{{ HeadTitle | html.escape }}&gt;</h1>
+    <body id="page-top" data-bs-spy="scroll" data-bs-target="#pbNav" data-bs-root-margin="-70px 0px -40%" tabindex="0">
+        <!-- Sticky Jump Nav -->
+        <nav id="pbNav" class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#page-top">PEBakery Build Log</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#pbNavContent" aria-controls="pbNavContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="pbNavContent">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link" href="#summary">Summary</a></li>
+                        {{ if BuildHostWindowsVersion && BuildHostDotnetVersion }}
+                        <li class="nav-item"><a class="nav-link" href="#hostenv">Host Env</a></li>
+                        {{ end }}
+                        <li class="nav-item"><a class="nav-link" href="#statistics">Statistics</a></li>
+                        {{ if 0 < ErrorSummaries.size }}
+                        <li class="nav-item"><a class="nav-link" href="#error_summary">Errors</a></li>
+                        {{ end }}
+                        {{ if 0 < WarnSummaries.size }}
+                        <li class="nav-item"><a class="nav-link" href="#warn_summary">Warnings</a></li>
+                        {{ end }}
+                        <li class="nav-item"><a class="nav-link" href="#script">Scripts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#ref-script">Ref Scripts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#vars">Variables</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#codelogs">Code Logs</a></li>
+                    </ul>
+                    <button type="button" class="btn btn-outline-light btn-sm pb-theme-toggle" title="Toggle dark mode">
+                        <i class="pb-theme-icon fas fa-fw fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <h1 class="container mt-2 text-center">{{ HeadTitle | html.escape }}</h1>
 
         <!-- Summary -->
         <header id="summary" class="container-fluid">
             <h2 class="mt-2">Summary</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
-                    <tbody> 
+                <table class="table table-striped table-bordered pb-table-content table-nonfluid">
+                    <tbody>
                         <tr>
                             <th class="table-dark">Built by</th>
                             <td>PEBakery {{ BuiltEngineVersion | html.escape }}</td>
@@ -43,7 +75,7 @@
         <section id="hostenv" class="container-fluid">
             <h2 class="mt-2">Host Environment</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                <table class="table table-striped table-bordered pb-table-content table-nonfluid">
                     <tbody>
                         <tr>
                             <th class="table-dark">Windows</th>
@@ -53,6 +85,24 @@
                             <th class="table-dark">.NET Runtime</th>
                             <td>{{ BuildHostDotnetVersion | html.escape }}</td>
                         </tr>
+                        {{ if BuildHostLanguage }}
+                        <tr>
+                            <th class="table-dark">Language</th>
+                            <td>{{ BuildHostLanguage | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                        {{ if BuildHostAnsiEncoding }}
+                        <tr>
+                            <th class="table-dark">ANSI Encoding</th>
+                            <td>{{ BuildHostAnsiEncoding | html.escape }}</td>
+                        </tr>
+                        {{ end }}
+                        {{ if BuildHostOemEncoding }}
+                        <tr>
+                            <th class="table-dark">OEM Encoding</th>
+                            <td>{{ BuildHostOemEncoding | html.escape }}</td>
+                        </tr>
+                        {{ end }}
                     </tbody>
                 </table>
             </div>
@@ -63,7 +113,7 @@
         <section id="statistics" class="container-fluid mt-2">
             <h2 class="mt-2">Log Statistics</h2>
             <table class="table table-striped table-bordered pb-table-content table-nonfluid">
-                <thead class="thead-dark text-center">
+                <thead class="table-dark text-center">
                     <tr>
                         <th class="text-nowrap">LogState</th>
                         <th>Count</th>
@@ -111,10 +161,10 @@
             <section id="{{ $sectionId }}" class="container-fluid mt-2">
                 <h2 class="mt-2">{{ $h2 }}</h2>
                 {{ for $d in $model }}
-                <span class="text-monospace">{{ $d.Codes.size }} {{ $sectionMsg }} in script &#91;{{ $d.ScriptName | html.escape }}&#93; &#40;{{ $d.ScriptPath | html.escape }}&#41;</span>
+                <span class="font-monospace">{{ $d.Codes.size }} {{ $sectionMsg }} in script &#91;{{ $d.ScriptName | html.escape }}&#93; &#40;{{ $d.ScriptPath | html.escape }}&#41;</span>
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
-                        <thead class="thead-dark text-center">
+                        <thead class="table-dark text-center">
                             <tr>
                                 <th class="text-nowrap">State</th>
                                 <th>Message</th>
@@ -151,7 +201,7 @@
             <h2>Scripts</h2>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
-                    <thead class="thead-dark">
+                    <thead class="table-dark">
                         <tr>
                             <th>Index</th>
                             <th>Script</th>
@@ -163,9 +213,9 @@
                         {{ for $item in Scripts }}
                         <tr class="py-1">
                             <td>{{ $item.IndexStr | html.escape }}</td>
-                            <td class="text-left" data-toggle="tooltip" title='{{ $item.Path | html.escape }}'><a href="#script-{{ $item.IndexStr | html.escape }}">{{ $item.Name | html.escape }}</a></td>
+                            <td class="text-start" data-bs-toggle="tooltip" title='{{ $item.Path | html.escape }}'><a href="#script-{{ $item.IndexStr | html.escape }}">{{ $item.Name | html.escape }}</a></td>
                             <td>{{ $item.Version | html.escape }}</td>
-                            <td class="text-right">{{ $item.TimeStr | html.escape }}</td>
+                            <td class="text-end">{{ $item.TimeStr | html.escape }}</td>
                         </tr>
                         {{ end }}
                     </tbody>
@@ -178,7 +228,7 @@
             <h2>Referenced Scripts</h2>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
-                    <thead class="thead-dark">
+                    <thead class="table-dark">
                         <tr>
                             <th>Index</th>
                             <th>Script</th>
@@ -189,7 +239,7 @@
                         {{ for $item in RefScripts }}
                         <tr>
                             <td>{{ $item.IndexStr | html.escape }}</td>
-                            <td class="text-left" data-toggle="tooltip" title='{{ $item.Path | html.escape }}'>{{ $item.Name | html.escape }}</td>
+                            <td class="text-start" data-bs-toggle="tooltip" title='{{ $item.Path | html.escape }}'>{{ $item.Name | html.escape }}</td>
                             <td>{{ $item.Version | html.escape }}</td>
                         </tr>
                         {{ end }}
@@ -203,7 +253,7 @@
             <h2>Variables</h2>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
-                    <thead class="thead-dark text-center">
+                    <thead class="table-dark text-center">
                         <tr>
                             <th class="text-nowrap">Type</th>
                             <th>Key</th>
@@ -239,20 +289,21 @@
             }}
             {{ if ShowLogFlags }}
                 {{ if $item.RefScriptTitle }}
-                    <td class="text-nowrap text-primary" data-toggle="tooltip" title='{{ $item.RefScriptTitle | html.escape }} '>{{ $item.FlagsStr | html.escape }}</td>
+                    <td class="text-nowrap text-primary" data-bs-toggle="tooltip" title='{{ $item.RefScriptTitle | html.escape }} '>{{ $item.FlagsStr | html.escape }}</td>
                 {{ else }}
                     <td class="text-nowrap">{{ $item.FlagsStr | html.escape }}</td>
                 {{ end }}
             {{ end }}
         {{ end }}
 
-        <h2 class="container-fluid mt-2">Code Logs</h2>
+        <h2 id="codelogs" class="container-fluid mt-2">Code Logs</h2>
         {{ for $entry in CodeLogs }}
         <div id="script-{{ $entry.Script.IndexStr }}" class="container-fluid mt-2">
-            <span class="text-monospace">&#91;{{ $entry.Script.IndexStr | html.escape }}&#47;{{ CodeLogs.size }}&#93; {{ $entry.Script.Name | html.escape }}&#40;{{ $entry.Script.Path | html.escape}}&#41;</span>
+            <h3><span class="badge bg-secondary font-monospace">{{ $entry.Script.IndexStr | html.escape }}/{{ CodeLogs.size }}</span> {{ $entry.Script.Name | html.escape }}</h3>
+            <div class="text-muted font-monospace mb-2">{{ $entry.Script.Path | html.escape }}</div>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
-                    <thead class="thead-dark text-center">
+                    <thead class="table-dark text-center">
                         <tr>
                             <th class="text-nowrap">State</th>
                             {{ if ShowLogFlags }}
@@ -274,10 +325,10 @@
             </div>
 
             {{ if 0 < $entry.Variables.size }}
-            <span class="text-monospace">Local Variables of Script &#91;{{ $entry.Script.Name | html.escape }}&#93;</span>
+            <span class="font-monospace">Local Variables of Script &#91;{{ $entry.Script.Name | html.escape }}&#93;</span>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
-                    <thead class="thead-dark text-center">
+                    <thead class="table-dark text-center">
                         <tr>
                             <th class="text-nowrap">Type</th>
                             <th>Key</th>
@@ -296,8 +347,6 @@
                 </table>
             </div>
             {{ end }}
-            <a class="float-right" href="#page-top">[ Top ]</a>
-            <div class="clearfix"></div>
         </div>
         {{ end }}
 

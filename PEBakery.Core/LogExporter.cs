@@ -142,9 +142,15 @@ namespace PEBakery.Core
                         _w.WriteLine();
                         _w.WriteLine("<Host Environment>");
                         if (dbBuild.HostWindowsVersion != null)
-                            _w.WriteLine($"Windows      | {dbBuild.HostWindowsVersion}");
+                            _w.WriteLine($"Windows       | {dbBuild.HostWindowsVersion}");
                         if (dbBuild.HostDotnetVersion != null)
-                            _w.WriteLine($".NET Runtime | {dbBuild.HostDotnetVersion}");
+                            _w.WriteLine($".NET Runtime  | {dbBuild.HostDotnetVersion}");
+                        if (dbBuild.HostLanguage != null)
+                            _w.WriteLine($"Language      | {dbBuild.HostLanguage}");
+                        if (dbBuild.HostAnsiEncoding != null)
+                            _w.WriteLine($"ANSI Encoding | {dbBuild.HostAnsiEncoding}");
+                        if (dbBuild.HostOemEncoding != null)
+                            _w.WriteLine($"OEM Encoding  | {dbBuild.HostOemEncoding}");
                         _w.WriteLine();
                         _w.WriteLine();
 
@@ -168,7 +174,7 @@ namespace PEBakery.Core
                             if (addLogState == false)
                                 continue;
 
-                            _w.WriteLine($"{state,-13}: {count}");
+                            _w.WriteLine($"{state,-13} | {count}");
                         }
                         _w.WriteLine();
                         _w.WriteLine();
@@ -177,7 +183,7 @@ namespace PEBakery.Core
                         LogModel.BuildLog[] errors = buildLogs.Where(x => x.State == LogState.Error || x.State == LogState.CriticalError).ToArray();
                         if (0 < errors.Length)
                         {
-                            _w.WriteLine("<Errors>");
+                            _w.WriteLine($"<Errors> ({errors.Length} total)");
 
                             // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
                             // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
@@ -218,7 +224,7 @@ namespace PEBakery.Core
                         LogModel.BuildLog[] warns = buildLogs.Where(x => x.State == LogState.Warning).ToArray();
                         if (0 < warns.Length)
                         {
-                            _w.WriteLine("<Warnings>");
+                            _w.WriteLine($"<Warnings> ({warns.Length} total)");
 
                             // Using List<int> and ToList() instead of int[] and ToArray() works around an issue with sqlite-net
                             // After migration from .net core 8 to .net core 10 build logs that contain errors or warnings throw an error similar to
@@ -408,6 +414,9 @@ namespace PEBakery.Core
                             // Host Environment
                             BuildHostWindowsVersion = dbBuild.HostWindowsVersion,
                             BuildHostDotnetVersion = dbBuild.HostDotnetVersion,
+                            BuildHostLanguage = dbBuild.HostLanguage,
+                            BuildHostAnsiEncoding = dbBuild.HostAnsiEncoding,
+                            BuildHostOemEncoding = dbBuild.HostOemEncoding,
                             // Embed
                             EmbedBootstrapCss = ResourceHelper.GetEmbeddedResourceString("Html.bootstrap.min.css", assembly),
                             EmbedJQuerySlimJs = ResourceHelper.GetEmbeddedResourceString("Html.jquery.slim.min.js", assembly),
@@ -628,8 +637,12 @@ namespace PEBakery.Core
                                     };
 
                                     // Referenced script
+                                    // Logger sets Macro and RefScript as mutually exclusive (a macro-call log line
+                                    // is flagged Macro, never RefScript), but both carry a meaningful RefScriptId,
+                                    // so both should surface the [Ref] flag tooltip.
                                     if (opts.ShowLogFlags &&
-                                        (log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
+                                        ((log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript ||
+                                         (log.Flags & LogModel.BuildLogFlag.Macro) == LogModel.BuildLogFlag.Macro))
                                     {
                                         if (scTitleDict.ContainsKey(log.RefScriptId))
                                             item.RefScriptTitle = scTitleDict[log.RefScriptId];

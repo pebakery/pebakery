@@ -6,15 +6,33 @@
 
     <title>{{ HeadTitle | html.escape }}</title>
 
+    <!-- Apply the dark/light theme before any CSS or body content loads so a large log doesn't
+         render in the wrong theme for several seconds and then visibly flip once the rest of the
+         page finishes loading. No jQuery dependency here on purpose: <html> already exists by the
+         time this script runs, so there's nothing to wait for. 
+    -->
+    <script>
+        document.documentElement.setAttribute('data-bs-theme', window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    </script>
+
     <!-- Bootstrap CSS -->
     {{ if EmbedBootstrapCss }}
     <style>{{ EmbedBootstrapCss }}</style>
     {{ else }}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     {{ end }}
 
     <!-- Custom CSS -->
     <style>
+        /* Bootstrap 5 underlines links by default; restore Bootstrap 4's hover-only underline. */
+        a {
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
         .pb-table-content {
             font-family: monospace;
         }
@@ -50,15 +68,15 @@
         }
 
         .text-overwrite {
-            color: #ff6600;
+            color: #ff6600 !important;
         }
 
         .text-debug {
-            color: #ae5aff;
+            color: #ae5aff !important;
         }
 
         .text-localvar {
-            color: #ff6600;
+            color: #ff6600 !important;
         }
 
         .table-nonfluid {
@@ -67,7 +85,60 @@
         }
 
         .table-debug {
-            background-color: #e6ccff;
+            background-color: #e6ccff !important;
+        }
+
+        /* Bootstrap 5 sets color/background-color directly on <td>/<th>, which
+           masks context classes (text-muted, table-debug) applied to the parent <tr>.
+	*/
+        tr.text-muted > td,
+        tr.text-muted > th {
+            color: inherit !important;
+        }
+
+        tr.table-debug > td,
+        tr.table-debug > th {
+            background-color: inherit !important;
+        }
+
+        /* scroll-padding-top compensates for the sticky nav so an anchor jump doesn't land
+           underneath it; scroll-behavior gives it the same smooth-scroll animation Bootstrap's
+           own data-bs-smooth-scroll would, but native CSS scrolling respects scroll-padding-top
+           where Bootstrap's JS version doesn't - it computes its own raw scrollTo() offset with
+           no awareness of the nav's height, so links always landed hidden underneath it. */
+        html {
+            scroll-padding-top: 4.5rem;
+            scroll-behavior: smooth;
+        }
+
+        /* Mark whatever anchor (error/warning row, script section, nav target) was just jumped to. */
+        :target {
+            outline: 3px solid #ffc107;
+            outline-offset: -2px;
+        }
+
+        /* .table-debug's light lavender background is tuned for light mode; give it a dark-mode
+           counterpart so a Debug-state row doesn't look like a bright hole in a dark table.
+	*/
+        [data-bs-theme="dark"] .table-debug {
+            background-color: #4b2f66 !important;
+        }
+
+        .pb-fab {
+            position: fixed;
+            z-index: 1030;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #pbScrollTop {
+            bottom: 1.5rem;
+            right: 1.5rem;
+            display: none;
         }
     </style>
 
@@ -75,5 +146,5 @@
     <!-- Always use CDN to avoid file size explosion. -->
     <!-- In a scale of PEBakery build log, Font Awesome JS is too slow. Use CSS for better performance. -->
     <!-- Font Awesome solid icons are thicker than Bootstrap Icons, which is better suited for PEBakery LogState icons. -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>

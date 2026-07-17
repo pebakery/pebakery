@@ -91,6 +91,10 @@ namespace PEBakery.Core.Html
             ctx.PushGlobal(root);
             ctx.TemplateLoader = new LogLayoutTemplateLoader(templateAssembly);
             ctx.LoopLimit = int.MaxValue;
+            // Disable Scriban string limit.
+			// Scriban truncates rendered output past 1MiB by default which silently corrupts
+            // large build logs (missing logs, cut-off tags, dead anchor links, etc.).
+            ctx.LimitToString = 0;
 
             try
             {

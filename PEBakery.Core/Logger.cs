@@ -328,6 +328,9 @@ namespace PEBakery.Core
                 PEBakeryVersion = Global.Const.ProgramVersionStrFull,
                 HostWindowsVersion = $"{Environment.OSVersion.Version} ({RuntimeInformation.OSArchitecture.ToString().ToLower()})",
                 HostDotnetVersion = $"{Environment.Version} ({RuntimeInformation.ProcessArchitecture.ToString().ToLower()})",
+                HostLanguage = CultureInfo.CurrentCulture.EnglishName,
+                HostAnsiEncoding = $"{EncodingHelper.DefaultAnsi.EncodingName} ({EncodingHelper.DefaultAnsi.CodePage})",
+                HostOemEncoding = $"{Console.OutputEncoding.EncodingName} ({Console.OutputEncoding.CodePage})",
                 StartTime = s.StartTime,
                 Name = name,
             };
@@ -1162,6 +1165,12 @@ namespace PEBakery.Core
             public string HostWindowsVersion { get; set; } = string.Empty;
             [MaxLength(32)]
             public string HostDotnetVersion { get; set; } = string.Empty;
+            [MaxLength(64)]
+            public string HostLanguage { get; set; } = string.Empty;
+            [MaxLength(64)]
+            public string HostAnsiEncoding { get; set; } = string.Empty;
+            [MaxLength(64)]
+            public string HostOemEncoding { get; set; } = string.Empty;
             public DateTime StartTime { get; set; }
             public DateTime FinishTime { get; set; }
             [MaxLength(256)]

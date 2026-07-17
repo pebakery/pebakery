@@ -4,12 +4,26 @@
     {{ include '_LogLayoutHeader.sbnhtml' }}
 
     <!-- Body -->
-    <body id="page-top" data-spy="scroll">
+    <body id="page-top" data-bs-spy="scroll" data-bs-target="#pbNav" data-bs-root-margin="-70px 0px -40%" tabindex="0">
+        <!-- Sticky Jump Nav -->
+        <nav id="pbNav" class="navbar navbar-dark bg-dark sticky-top">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#page-top">PEBakery System Log</a>
+                <ul class="navbar-nav flex-row">
+                    <li class="nav-item"><a class="nav-link px-2" href="#summary">Summary</a></li>
+                    <li class="nav-item"><a class="nav-link px-2" href="#codes">System Logs</a></li>
+                </ul>
+                <button type="button" class="btn btn-outline-light btn-sm pb-theme-toggle ms-auto" title="Toggle dark mode">
+                    <i class="pb-theme-icon fas fa-fw fa-moon"></i>
+                </button>
+            </div>
+        </nav>
+
         <h1 class="container mt-2 text-center">PEBakery System Log</h1>
         <header id="summary" class="container-fluid mt-2">
             <h2>Summary</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                <table class="table table-striped table-bordered pb-table-content table-nonfluid">
                     <tbody>
                         <tr>
                             <th class="table-dark">Exported by</th>
@@ -27,7 +41,7 @@
             <h2>System Logs</h2>
             <div class="table-responsive">
                 <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
-                    <thead class="thead-dark text-center">
+                    <thead class="table-dark text-center">
                         <tr>
                             <th class="text-nowrap">Time</th>
                             <th class="text-nowrap">State</th>

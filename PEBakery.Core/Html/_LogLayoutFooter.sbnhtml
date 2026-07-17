@@ -6,22 +6,86 @@
 </footer>
 <br>
 
+<!-- Floating scroll-to-top button -->
+<button type="button" id="pbScrollTop" class="btn btn-secondary rounded-circle pb-fab" title="Scroll to top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
 <!-- JS: jQuery, Popper, Bootstrap -->
 {{ if EmbedJQuerySlimJs }}
 <script>{{ EmbedJQuerySlimJs }}</script>
 {{ else }}
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-4.0.0.slim.min.js" integrity="sha384-tcspKDb5tWvyRCOWzevlAeQgHeEzYdUHJpcgnIhcP9w4CnfD7DLAcS+k9QzLbRJO" crossorigin="anonymous"></script>
 {{ end }}
 
 {{ if EmbedBootstrapJs }}
 <script>{{ EmbedBootstrapJs }}</script>
 {{ else }}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 {{ end }}
 
 <!-- Enable Bootstrap Tooltip of [Ref] flags-->
+<!-- Large build logs can have thousands of tooltip-triggering cells; constructing a
+     bootstrap.Tooltip() for each one on page load is a measurable slowdown. Lazy
+     construct an instance the first time a given cell is actually hovered/focused using
+     Bootstrap's own default trigger.
+-->
 <script>
     $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
+        function ensureTooltip(el) {
+            if (bootstrap.Tooltip.getInstance(el)) return
+            var instance = new bootstrap.Tooltip(el, { boundary: 'viewport' })
+            // Bootstrap's own hover listener was just attached now, so it missed the event
+            // that just triggered us; show it manually this one time.
+            instance.show()
+        }
+
+        // mouseenter doesn't bubble, so delegate via capture phase instead.
+        document.addEventListener('mouseenter', function (e) {
+            var el = e.target.closest && e.target.closest('[data-bs-toggle="tooltip"]')
+            if (el) ensureTooltip(el)
+        }, true)
+
+        // focusin bubbles so plain delegation on document is enough for keyboard nav.
+        document.addEventListener('focusin', function (e) {
+            var el = e.target.closest && e.target.closest('[data-bs-toggle="tooltip"]')
+            if (el) ensureTooltip(el)
+        })
+    })
+</script>
+
+<!-- Dark mode toggle. The theme itself is applied by the inline script in <head>
+     before body content loads in order to avoid a flash of the wrong theme on a large log. 
+     This just syncs the toggle button's icon now that it exists and wires up the click handler.
+-->
+<script>
+    $(function () {
+        var root = document.documentElement
+        function applyTheme(theme) {
+            root.setAttribute('data-bs-theme', theme)
+            var icon = document.querySelector('.pb-theme-icon')
+            if (icon) icon.className = 'pb-theme-icon fas fa-fw ' + (theme === 'dark' ? 'fa-sun' : 'fa-moon')
+        }
+        applyTheme(root.getAttribute('data-bs-theme') || 'light')
+        var toggleBtn = document.querySelector('.pb-theme-toggle')
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function () {
+                applyTheme(root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark')
+            })
+        }
+    })
+</script>
+
+<!-- Floating scroll-to-top button -->
+<script>
+    $(function () {
+        var btn = document.getElementById('pbScrollTop')
+        if (!btn) return
+        window.addEventListener('scroll', function () {
+            btn.style.display = window.scrollY > 400 ? 'flex' : 'none'
+        })
+        btn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        })
     })
 </script>
