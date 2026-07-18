@@ -101,7 +101,7 @@ namespace PEBakery.WPF
         {
             InitializeComponent();
 
-            EncodeMode = EncodeMode.ZLib;
+            EncodeMode = EncodeMode.XZ;
         }
         #endregion
 

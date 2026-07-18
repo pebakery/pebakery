@@ -139,6 +139,8 @@
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="35"/>
                 <RowDefinition Height="25"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="25"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
@@ -183,9 +185,21 @@
                            FontSize="14"
                            x:Name="BlueNumberBox"
                            ValueChanged="BlueNumberBox_ValueChanged"
-                           Minimum="0" 
+                           Minimum="0"
                            Maximum="255"
                            Value="0"/>
+            <TextBlock Grid.Row="8"
+                       Margin="0, 10, 0, 0"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Text="Hex"/>
+            <TextBox Grid.Row="9"
+                     FontSize="14"
+                     x:Name="HexTextBox"
+                     MaxLength="7"
+                     CharacterCasing="Upper"
+                     TextChanged="HexTextBox_TextChanged"/>
         </Grid>
     </Grid>
 </UserControl>

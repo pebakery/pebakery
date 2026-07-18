@@ -24,6 +24,7 @@
 
 using PEBakery.Helper;
 using System;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -47,6 +48,8 @@ namespace PEBakery.WPF.Controls
             HueCanvas = 2,
         }
         private FocusedElement _focusedElement = FocusedElement.None;
+
+        private static readonly Regex HexColorRegex = new Regex(@"^#?([0-9A-Fa-f]{6})$", RegexOptions.Compiled);
 
         public ColorPicker()
         {
@@ -85,6 +88,8 @@ namespace PEBakery.WPF.Controls
                 control.GreenNumberBox.Value = c.G;
             if (control.BlueNumberBox != null)
                 control.BlueNumberBox.Value = c.B;
+            if (control.HexTextBox != null)
+                control.HexTextBox.Text = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 
             if (control._focusedElement == FocusedElement.None)
             {
@@ -114,6 +119,23 @@ namespace PEBakery.WPF.Controls
             // Only if NumberBox was touched by the user, not canvases
             if (_focusedElement == FocusedElement.None)
                 Color = Color.FromRgb(Color.R, Color.G, (byte)e.NewValue);
+        }
+
+        private void HexTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Only if TextBox was touched by the user, not canvases
+            if (_focusedElement != FocusedElement.None)
+                return;
+
+            Match m = HexColorRegex.Match(HexTextBox.Text.Trim());
+            if (!m.Success)
+                return;
+
+            string hex = m.Groups[1].Value;
+            byte r = Convert.ToByte(hex.Substring(0, 2), 16);
+            byte g = Convert.ToByte(hex.Substring(2, 2), 16);
+            byte b = Convert.ToByte(hex.Substring(4, 2), 16);
+            Color = Color.FromRgb(r, g, b);
         }
         #endregion
 

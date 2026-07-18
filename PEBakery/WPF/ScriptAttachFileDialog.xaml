@@ -84,8 +84,8 @@
                   x:Name="CompressionComboBox"
                   VerticalContentAlignment="Center">
             <ComboBoxItem Content="None"/>
-            <ComboBoxItem Content="Deflate"/>
-            <ComboBoxItem Content="LZMA2"/>
+            <ComboBoxItem Content="Deflate - Winbuilder Compatible"/>
+            <ComboBoxItem Content="LZMA2 - Max Compression"/>
         </ComboBox>
 
         <StackPanel Grid.Row="6" Grid.Column="0"
