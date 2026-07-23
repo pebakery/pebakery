@@ -58,7 +58,11 @@
                             <td>{{ BuildStartTimeStr | html.escape }}</td>
                         </tr>
                         <tr>
+                            {{ if BuildIsFinished }}
                             <th class="table-dark">Finished at</th>
+                            {{ else }}
+                            <th class="table-dark">Exported at</th>
+                            {{ end }}
                             <td>{{ BuildEndTimeStr | html.escape }}</td>
                         </tr>
                         <tr>

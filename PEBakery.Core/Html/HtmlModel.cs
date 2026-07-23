@@ -66,6 +66,7 @@ namespace PEBakery.Core.Html
         // Information
         public string BuiltEngineVersion { get; set; } = string.Empty;
         public string BuildStartTimeStr { get; set; } = string.Empty;
+        public bool BuildIsFinished { get; set; }
         public string BuildEndTimeStr { get; set; } = string.Empty;
         public string BuildTookTimeStr { get; set; } = string.Empty;
         public bool ShowLogFlags { get; set; }

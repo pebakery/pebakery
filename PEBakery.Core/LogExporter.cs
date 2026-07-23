@@ -132,12 +132,14 @@ namespace PEBakery.Core
                         _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
                         _w.WriteLine();
                         _w.WriteLine($"Started  | {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
-                        if (dbBuild.FinishTime != DateTime.MinValue)
-                        { // Put these lines only if a build successfully finished
-                            _w.WriteLine($"Finished | {dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
-                            TimeSpan elapsed = dbBuild.FinishTime - dbBuild.StartTime;
-                            _w.WriteLine($"Took {elapsed:h\\:mm\\:ss}");
-                        }
+                        // A build still in progress (e.g. exported mid-build via the System,SaveLog command) has no FinishTime yet.
+						// Rather than omit the elapsed-time info entirely, show it as of the it was exported.
+                        bool buildIsFinished = dbBuild.FinishTime != DateTime.MinValue;
+                        DateTime effectiveFinishTime = buildIsFinished ? dbBuild.FinishTime : DateTime.UtcNow;
+                        string finishLabel = buildIsFinished ? "Finished" : "Exported";
+                        _w.WriteLine($"{finishLabel} | {effectiveFinishTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                        TimeSpan buildElapsed = effectiveFinishTime - dbBuild.StartTime;
+                        _w.WriteLine($"Elapsed  | {buildElapsed:h\\:mm\\:ss}");
                         _w.WriteLine();
                         _w.WriteLine();
                         _w.WriteLine("<Host Environment>");
@@ -397,7 +399,10 @@ namespace PEBakery.Core
                 case LogExportFormat.Html:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
-                        if (dbBuild.FinishTime == DateTime.MinValue)
+                        // A build still in progress (e.g. exported mid-build via the System,SaveLog command) has no FinishTime yet.
+						// Rather than omit the elapsed-time info entirely, show it as of the time it was exported.
+                        bool buildIsFinished = dbBuild.FinishTime != DateTime.MinValue;
+                        if (!buildIsFinished)
                             dbBuild.FinishTime = DateTime.UtcNow;
 
                         Assembly assembly = Assembly.GetExecutingAssembly();
@@ -408,6 +413,7 @@ namespace PEBakery.Core
                             ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             HeadTitle = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
+                            BuildIsFinished = buildIsFinished,
                             BuildEndTimeStr = dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,

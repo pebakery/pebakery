@@ -420,11 +420,11 @@ namespace PEBakery.Core.Commands
 
                         if (!s.DisableLogger)
                         { // When logger is disabled, s.BuildId is invalid.
+                            // Must write before flushing in order for this message to make it on exported log.
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
+
                             // Flush deferred logs into database
                             int realBuildId = s.Logger.Flush(s);
-
-                            // This message should make it on exported log
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
 
                             // Do not use s.BuildId, for case of FullDeferredLogging
                             s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new BuildLogOptions
