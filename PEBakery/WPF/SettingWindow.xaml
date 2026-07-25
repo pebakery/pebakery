@@ -1019,7 +1019,7 @@
                                   IsChecked="{Binding CompatOverridableFixedVariables}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
-                                  Content="Overridable loop counter (#c)"
+                                  Content="Overridable loop counter (%^LOOP_IDX%)"
                                   IsChecked="{Binding CompatOverridableLoopCounter}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
@@ -1027,12 +1027,13 @@
                                   IsChecked="{Binding CompatEnableEnvironmentVariables}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
-                                  Content="Enable legacy sharp-styled section parameters (e.g. #1, #2, ...)"
-                                  ToolTip="Sharp-styled section parameter is deprecated in favor of new percent style section parameters (%^..%)"
+                                  Content="Enable legacy sharp-styled section parameters (e.g. #1, #2, ...) and loop counter (#c)"
+                                  ToolTip="Sharp-styled section parameters are deprecated in favor of new percent style section parameters (%^..%)"
                                   IsChecked="{Binding CompatEnableAllLegacySectionParams}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
                                   Content="Disable legacy sharp-styled extended section parameters (e.g. #a, #r, ...)"
+                                  ToolTip="Sharp-styled extended section parameters are deprecated in favor of new percent style extended section parameters (%^..%). This option has no effect if the 'Enable legacy sharp-styled section parameters' option is disabled."
                                   IsChecked="{Binding CompatDisableLegacyExtendedSectionParams}" />
                     </StackPanel>
                 </StackPanel>

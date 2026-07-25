@@ -235,17 +235,7 @@ namespace PEBakery.Core
         #endregion
 
         #region EscapeString
-        /*
-        private static readonly Dictionary<string, string> unescapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { @"#$c", @"," },
-            { @"#$p", @"%" },
-            { @"#$q", "\"" },
-            { @"#$s", @" " },
-            { @"#$t", "\t"},
-            { @"#$x", Environment.NewLine},
-        };
-        */
+
         public const string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n#$h = Hash/Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
@@ -666,7 +656,6 @@ namespace PEBakery.Core
             if (str.IndexOf("%^", StringComparison.Ordinal) == -1)
                 return str;
 
-            // Expand #1 into its value
             StringBuilder b = new StringBuilder();
 
             int lastCopiedIdx = 0;

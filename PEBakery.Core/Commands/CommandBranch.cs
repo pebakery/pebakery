@@ -249,7 +249,7 @@ namespace PEBakery.Core.Commands
                     case CodeType.Loop:
                     case CodeType.LoopEx:
                         for (long i = startIdx; i <= endIdx; i++)
-                        { // Counter Variable is [%^LOOP_IDX^] (legacy: [#c])
+                        { // Counter Variable is [%^LOOP_IDX%] (legacy: [#c])
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{i}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
@@ -289,7 +289,7 @@ namespace PEBakery.Core.Commands
                     case CodeType.LoopLetter:
                     case CodeType.LoopLetterEx:
                         for (char ch = startLetter; ch <= endLetter; ch++)
-                        { // Counter Variable is [#c]
+                        { // Counter Variable is [%^LOOP_IDX%] (legacy: [#c])
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{ch}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
