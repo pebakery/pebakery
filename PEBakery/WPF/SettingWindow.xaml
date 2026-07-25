@@ -1019,11 +1019,11 @@
                                   IsChecked="{Binding CompatOverridableFixedVariables}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
-                                  Content="Overridable loop counter (%^LOOP_IDX%)"
+                                  Content="Overridable loop counter (%^LOOP__IDX%)"
                                   IsChecked="{Binding CompatOverridableLoopCounter}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"
-                                  Content="Enable environment variables"
+                                  Content="Enable legacy environment and %Version% variables"
                                   IsChecked="{Binding CompatEnableEnvironmentVariables}" />
                         <CheckBox Margin="0, 0, 0, 3"
                                   VerticalContentAlignment="Center"

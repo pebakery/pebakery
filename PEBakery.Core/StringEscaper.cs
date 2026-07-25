@@ -236,7 +236,7 @@ namespace PEBakery.Core
 
         #region EscapeString
 
-        public const string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n#$h = Hash/Sharp [#]";
+        public const string Legend = "#$c = Comma [,]\r\n#$h = Hash/Sharp [#]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine";
 
         public static string Unescape(string str, bool escapePercent = false)
         {
