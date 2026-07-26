@@ -472,6 +472,12 @@
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
+                <!-- We cannot use VirtualizingStackPanel.VirtualizationMode="Recycling" in MainTreeView
+                     becuase it breaks BringIntoView() when a  large number of nodes are expanded.
+		     Disabling Virtualization works, but can result in a noticable 3-5 second delay
+		     reloading the MainTreeView when a large number of scripts are expanded.
+		     Using Standard mode with our callbacks eliminates the delay and allows BringIntoView() to function.
+                -->
                 <TreeView x:Name="MainTreeView"
                           Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
                           Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
@@ -483,8 +489,9 @@
                           Unloaded="MainTreeView_Unloaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
-                          VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling">
+                          TreeViewItem.Expanded="MainTreeView_TreeItemExpanded"
+                          TreeViewItem.Collapsed="MainTreeView_TreeItemCollapsed"
+                          VirtualizingStackPanel.IsVirtualizing="True">
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate DataType="vm:ProjectTreeItemModel"
                                                   ItemsSource="{Binding Children}">
@@ -652,8 +659,14 @@
                     </TreeView.ItemTemplate>
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
-                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
-                            <!-- <Setter Property="IsSelected" Value="{Binding Build, Mode=TwoWay}" /> -->
+                            <!-- TreeViewItem.Expanded/Collapsed routed event handlers below
+                                 are kept as a belt-and-suspenders guard but TwoWay is the main path. -->
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                            <!-- Bouncing IsSelected false->true after a tree rebuild causes
+                                 BringIntoViewBehavior to fire TreeViewItem.Selected, which
+                                 calls BringIntoView() to scroll the item into view. -->
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                            <Setter Property="cc:BringIntoViewBehavior.BringIntoView" Value="True"/>
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreePanelForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>

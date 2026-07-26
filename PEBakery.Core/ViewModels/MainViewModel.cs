@@ -94,6 +94,13 @@ namespace PEBakery.Core.ViewModels
             }
         }
         public ProjectTreeItemModel? CurBuildTree { get; set; }
+
+        /// <summary>
+        /// Scroll the selected tree item into view after a state restore.
+        /// Called from within the ContextIdle dispatch (in code behind) so the tree is
+        /// already rendered before we try to locate and scroll to the container.
+        /// </summary>
+        public Action? BringTreeSelectionIntoViewAction { get; set; }
         #endregion
 
         #region Working Properties
@@ -904,7 +911,101 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Background Tasks
-        public Task StartLoadingProjects(bool refreshProjectEntries, bool quiet)
+        #region TreeViewState Save/Restore
+        /// <summary>
+        /// Walk the entire main tree and returns a snapshot of which nodes are
+        /// expanded and which script is currently selected.
+        /// </summary>
+        public TreeViewState CaptureMainTreeState()
+        {
+            TreeViewState state = new TreeViewState
+            {
+                SelectedScriptRealPath = CurMainTree?.Script?.RealPath
+            };
+            foreach (ProjectTreeItemModel root in MainTreeItems)
+                RecursiveCaptureExpanded(root, state.ExpandedKeys);
+            return state;
+        }
+
+        private static void RecursiveCaptureExpanded(ProjectTreeItemModel item, HashSet<string> expandedKeys)
+        {
+            if (item.IsExpanded)
+                expandedKeys.Add($"{item.Script.Level}|{item.Script.RealPath}");
+            foreach (ProjectTreeItemModel child in item.Children)
+                RecursiveCaptureExpanded(child, expandedKeys);
+        }
+
+        /// <summary>
+        /// Apply collapsed/expanded state to the current tree after it has been rebuilt.
+		/// - expands matching nodes
+		/// - re-selects the saved script (or falls back to the default project root)
+		/// - bounces IsSelected on the target so WPF's BringIntoViewBehavior scrolls it into view.
+        /// </summary>
+        private void RestoreMainTreeState(TreeViewState state)
+        {
+            // Restore expanded/collapsed state of every node.
+            foreach (ProjectTreeItemModel root in MainTreeItems)
+                RecursiveRestoreExpanded(root, state.ExpandedKeys);
+
+            // Re-select the previously selected script (if it still exists).
+            ProjectTreeItemModel? target = null;
+            if (state.SelectedScriptRealPath != null)
+            {
+                foreach (ProjectTreeItemModel root in MainTreeItems)
+                {
+                    target = ProjectTreeItemModel.FindScriptByRealPath(root, state.SelectedScriptRealPath);
+                    if (target != null)
+                        break;
+                }
+            }
+
+            // Fall back to default project root if the script no longer exists.
+            if (target == null)
+            {
+                string defaultProjectName = Global.Setting?.Project.DefaultProject ?? string.Empty;
+                target = MainTreeItems
+                    .FirstOrDefault(x => defaultProjectName.Equals(
+                        x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase))
+                    ?? MainTreeItems.LastOrDefault();
+            }
+
+            if (target == null)
+                return;
+
+            // Ensure every ancestor of the target is expanded so that WPF's
+            // virtualizing panel will realize the target's container.
+            target.ExpandAncestors();
+
+            CurMainTree = target;
+
+            // Use ContextIdle priority so the Normal-priority tree-expansion
+            // notifications (marshalled from this background thread) are fully
+            // processed and rendered before the script panel updates.
+            // Dispatcher.Invoke uses Send priority and would jump the queue,
+            // showing the script interface panel while the tree is still blank.
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                DisplayScript(target.Script);
+                // Bounce IsSelected after DisplayScript so BringIntoViewBehavior
+                // fires once the script panel is already showing.
+                target.IsSelected = false;
+                target.IsSelected = true;
+                // Scroll the selected item into view (handles off-screen items
+                // that BringIntoViewBehavior would not be able to reach becuase of virtualization).
+                BringTreeSelectionIntoViewAction?.Invoke();
+            }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+
+        private static void RecursiveRestoreExpanded(ProjectTreeItemModel item, HashSet<string> expandedKeys)
+        {
+            item.IsExpanded = expandedKeys.Contains($"{item.Script.Level}|{item.Script.RealPath}");
+            foreach (ProjectTreeItemModel child in item.Children)
+                RecursiveRestoreExpanded(child, expandedKeys);
+        }
+        #endregion
+
+        public Task StartLoadingProjects(bool refreshProjectEntries, bool quiet,
+                                         TreeViewState? stateToRestore = null)
         {
             if (IsProjectsLoading())
                 return Task.CompletedTask;
@@ -1065,17 +1166,6 @@ namespace PEBakery.Core.ViewModels
                             MainTreeItems.Add(projectRoot);
                         }
 
-                        // Select default project
-                        // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
-                        string defaultProjectName = setting.Project.DefaultProject;
-                        ProjectTreeItemModel? itemModel = MainTreeItems
-                            .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
-                        CurMainTree = itemModel ?? MainTreeItems.Last();
-                        CurMainTree.IsExpanded = true;
-                        Application.Current?.Dispatcher?.Invoke(() => { DisplayScript(CurMainTree.Script); });
-
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
-
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg;
@@ -1084,12 +1174,32 @@ namespace PEBakery.Core.ViewModels
                             double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (scriptCount + 2 * linkCount);
                             cachePercent = Math.Min(cachePercent, 100);
                             msg = $"{scriptCount + linkCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
-                            StatusBarText = msg;
                         }
                         else
                         {
                             msg = $"{scriptCount + linkCount} scripts loaded ({t:0.#}s)";
-                            StatusBarText = msg;
+                            
+                        }
+                        StatusBarText = msg;
+
+                        // Restore script selection or select default project if
+						// nothing is saved or the selction no longer exists.
+                        string defaultProjectName = setting.Project.DefaultProject;
+                        ProjectTreeItemModel? itemModel = MainTreeItems
+                            .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
+
+                        if (stateToRestore != null)
+                        {
+                            ScriptDescriptionText = "Restoring tree state...";
+                            RestoreMainTreeState(stateToRestore);
+                        }
+                        else
+                        {
+                            CurMainTree = itemModel ?? MainTreeItems.Last();
+                            CurMainTree.IsExpanded = true;
+                            Application.Current?.Dispatcher?.BeginInvoke(
+                                new Action(() => DisplayScript(CurMainTree.Script)),
+                                System.Windows.Threading.DispatcherPriority.ContextIdle);
                         }
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, msg));
@@ -1346,6 +1456,15 @@ namespace PEBakery.Core.ViewModels
             node.ParentCheckedPropagation();
             UpdateTreeViewIcon(node);
             DisplayScript(node.Script);
+
+            // Bounce IsSelected so BringIntoViewBehavior scrolls the refreshed
+            // script back into view and re-highlights it.
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                node.IsSelected = false;
+                node.IsSelected = true;
+                BringTreeSelectionIntoViewAction?.Invoke();
+            }), System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
         #endregion
 

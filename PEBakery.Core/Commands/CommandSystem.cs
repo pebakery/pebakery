@@ -215,7 +215,8 @@ namespace PEBakery.Core.Commands
                 case SystemType.RefreshAllScripts:
                     {
                         // Refresh Project
-                        s.MainViewModel.StartLoadingProjects(true, true).Wait();
+                        TreeViewState treeState = s.MainViewModel.CaptureMainTreeState();
+                        s.MainViewModel.StartLoadingProjects(true, true, treeState).Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }

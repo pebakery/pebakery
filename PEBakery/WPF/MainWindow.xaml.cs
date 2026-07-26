@@ -42,7 +42,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shell;
+using System.Reflection;
 
 namespace PEBakery.WPF
 {
@@ -74,8 +76,13 @@ namespace PEBakery.WPF
             // Setup SystemLogHasIssue event handler
             Model.SubscribeSystemLogUpdateEvent();
 
-            // Load Projects
-            Model.StartLoadingProjects(false, false);
+            // Setup the scroll-into-view callback.
+            Model.BringTreeSelectionIntoViewAction = BringSelectedTreeItemIntoView;
+
+            // Load Projects — pass any previously-saved tree state so the selection
+            // and expanded nodes are restored once loading is complete.
+            TreeViewState? savedTreeState = TreeViewState.LoadFromSetting(Global.Setting.Interface);
+            Model.StartLoadingProjects(false, false, savedTreeState);
 
             // Read Window Layout/Position
             ReadLayoutFromSetting();
@@ -199,7 +206,8 @@ namespace PEBakery.WPF
             // Force update of script interface
             ProjectRefreshButton.Focus();
 
-            Model.StartLoadingProjects(true, false);
+            TreeViewState treeState = Model.CaptureMainTreeState();
+            Model.StartLoadingProjects(true, false, treeState);
         }
 
         private void SettingWindowCommand_Executed(object? sender, ExecutedRoutedEventArgs e)
@@ -217,7 +225,8 @@ namespace PEBakery.WPF
                 // Refresh Projects
                 if (svModel.NeedProjectRefresh)
                 {
-                    Model.StartLoadingProjects(true, false);
+                    TreeViewState treeState = Model.CaptureMainTreeState();
+                    Model.StartLoadingProjects(true, false, treeState);
                 }
                 else
                 {
@@ -941,6 +950,147 @@ namespace PEBakery.WPF
         }
 
         /// <summary>
+        /// Handles TreeViewItem.Expanded routed events bubbled up to the TreeView.
+        /// Belt-and-suspenders: the TwoWay binding handles this in most cases, but
+        /// the event handler ensures correctness if the binding ever fires late.
+        /// </summary>
+        private void MainTreeView_TreeItemExpanded(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is TreeViewItem { DataContext: ProjectTreeItemModel model })
+                model.IsExpanded = true;
+        }
+
+        private void MainTreeView_TreeItemCollapsed(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is TreeViewItem { DataContext: ProjectTreeItemModel model })
+                model.IsExpanded = false;
+        }
+
+        /// <summary>
+        /// Scroll the currently-selected tree item into view after a tree state restore
+        /// or project refresh.
+        ///
+        /// Why not disable virtualization:
+        ///   Calling VirtualizingPanel.SetIsVirtualizing(false) + UpdateLayout() forces
+        ///   WPF to instantiate containers for every expanded node in the entire tree at
+        ///   once. With 250+ scripts fully expanded this causes a 3-5 second UI freeze.
+        ///
+        /// To avoid this we walk the root-to-target path one level at a time:
+        ///   1. Build the path upfront using the model's Parent chain.
+        ///   2. At each level, call UpdateLayout() to flush any pending scroll from the
+        ///      previous BringIntoView() call, then try to get the container.
+        ///   3. If the container isn't realized (item is off-screen), ask the
+        ///      VirtualizingStackPanel to scroll to that index via BringIndexIntoView(),
+        ///      then UpdateLayout() to realize just the items now in the viewport.
+        ///   4. Call BringIntoView() on the found container, then descend.
+        ///
+        ///   At each step only the containers visible in the viewport are created —
+        ///   O (viewport_items) per level, not O (total_items).
+        /// </summary>
+        private void BringSelectedTreeItemIntoView()
+        {
+            if (Model.CurMainTree is not ProjectTreeItemModel target)
+                return;
+
+            // Build root-first path via the Parent chain.
+            List<ProjectTreeItemModel> path = new List<ProjectTreeItemModel>();
+            for (ProjectTreeItemModel? node = target; node != null; node = node.Parent)
+                path.Insert(0, node);
+
+            ItemsControl container = MainTreeView;
+
+            for (int depth = 0; depth < path.Count; depth++)
+            {
+                // Flush pending layout (including any ScrollViewer scroll queued by
+                // BringIntoView() in the previous iteration).
+                container.UpdateLayout();
+
+                // Find the index of this depth's node in the container.
+                ProjectTreeItemModel depthTarget = path[depth];
+                int index = -1;
+                for (int i = 0; i < container.Items.Count; i++)
+                {
+                    if (ReferenceEquals(container.Items[i], depthTarget))
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index < 0) return;
+
+                // If the item is off-screen its container hasn't been created yet.
+                // BringIndexIntoView asks the VirtualizingStackPanel to scroll that
+                // index into the viewport without needing an existing container.
+                if (container.ItemContainerGenerator.ContainerFromIndex(index) is not TreeViewItem tvi)
+                {
+                    VirtualizingStackPanel? vsp = GetItemsPanel(container);
+                    if (vsp != null)
+                        BringIndexIntoViewInternal(vsp, index);
+                    container.UpdateLayout();
+
+                    if (container.ItemContainerGenerator.ContainerFromIndex(index) is not TreeViewItem tvi2)
+                        return;
+                    tvi = tvi2;
+                }
+
+                // Scroll this item into view.  BringIntoView() raises RequestBringIntoView
+                // which the ScrollViewer processes asynchronously (marks itself dirty).
+                // The UpdateLayout() at the top of the NEXT iteration flushes that scroll.
+                tvi.BringIntoView();
+
+                if (depth == path.Count - 1)
+                {
+                    tvi.Focus();
+                    return;
+                }
+
+                container = tvi;
+            }
+        }
+
+        /// <summary>
+        /// Returns the VirtualizingStackPanel inside container's
+        /// items presenter.  Returns null if the panel hasn't been created yet (e.g. the
+        /// container hasn't been expanded) or if the container doesn't use a VSP.
+        /// </summary>
+        private static VirtualizingStackPanel? GetItemsPanel(ItemsControl container)
+        {
+            container.UpdateLayout();
+            ItemsPresenter? presenter = FindVisualChild<ItemsPresenter>(container);
+            if (presenter == null) return null;
+            presenter.UpdateLayout();
+            return FindVisualChild<VirtualizingStackPanel>(presenter);
+        }
+
+        /// <summary>
+        /// VirtualizingStackPanel.BringIndexIntoView is protected, so
+        /// use reflection for calling it externally.
+        /// </summary>
+        private static readonly MethodInfo? _bringIndexIntoViewMethod =
+            typeof(VirtualizingStackPanel).GetMethod(
+                "BringIndexIntoView",
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null, new[] { typeof(int) }, null);
+
+        private static void BringIndexIntoViewInternal(VirtualizingStackPanel vsp, int index)
+        {
+            _bringIndexIntoViewMethod?.Invoke(vsp, new object[] { index });
+        }
+
+        /// <summary>Depth-first search for the first visual descendant of type T.</summary>
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed) return typed;
+                T? found = FindVisualChild<T>(child);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Used to ensure pressing 'Space' to toggle TreeView's checkbox.
         /// Indeterminate (null) is a derived state set automatically by the tree;
         /// keyboard toggling skips it and simply flips between true and false.
@@ -1043,6 +1193,10 @@ namespace PEBakery.WPF
                 await Task.Delay(500);
 
             Global.Cleanup();
+
+            // Save the tree state so it can be restored on next startup.
+            TreeViewState treeState = Model.CaptureMainTreeState();
+            treeState.SaveToSetting(Global.Setting.Interface);
 
             // Save Main Window Layout/Position
             WriteLayoutToSetting();
