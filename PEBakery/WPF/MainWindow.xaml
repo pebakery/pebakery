@@ -626,10 +626,14 @@
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
 
+                                <!-- IsThreeState="False": Users can only click true/false.
+                                     Indeterminate (null) is set programmatically by the
+                                     ViewModel when a directory has mixed-checked children. -->
                                 <CheckBox Grid.Row="0" Grid.Column="0"
                                           VerticalAlignment="Center"
                                           Visibility="{Binding Script, Converter={StaticResource SelectedStateToVisibilityConverter}}"
                                           IsChecked="{Binding Checked, Mode=TwoWay}"
+                                          IsThreeState="False"
                                           Focusable="False"/>
                                 <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="1"
                                                             VerticalAlignment="Center"
