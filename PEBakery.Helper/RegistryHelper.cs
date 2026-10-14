@@ -171,6 +171,31 @@ namespace PEBakery.Helper
             return rootKey;
         }
 
+        /// <summary>
+        /// Same mapping as RegHiveToString, but returns the long "HKEY_*" form (e.g. for
+        /// .reg file section headers) instead of the short form. Mirrors the existing
+        /// RegKeyToString/RegKeyToFullString short/full pairing below, but keyed off
+        /// RegistryHive instead of a live RegistryKey instance.
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        public static string? RegHiveToFullString(RegistryHive regHive)
+        {
+            string? rootKey;
+            if (regHive == RegistryHive.ClassesRoot)
+                rootKey = "HKEY_CLASSES_ROOT";
+            else if (regHive == RegistryHive.CurrentUser)
+                rootKey = "HKEY_CURRENT_USER";
+            else if (regHive == RegistryHive.LocalMachine)
+                rootKey = "HKEY_LOCAL_MACHINE";
+            else if (regHive == RegistryHive.Users)
+                rootKey = "HKEY_USERS";
+            else if (regHive == RegistryHive.CurrentConfig)
+                rootKey = "HKEY_CURRENT_CONFIG";
+            else
+                rootKey = null;
+            return rootKey;
+        }
+
         [SupportedOSPlatform("windows")]
         public static string? RegKeyToString(RegistryKey regKey)
         {
@@ -254,11 +279,11 @@ namespace PEBakery.Helper
 
         /// <summary>
         /// The dictionary to map RegistryValueKidn to WBInt values.
-        /// WBInt value does not exactly map to RegistryValueKind, so maunal conversion is necessary.
+        /// WBInt Win32 value does not exactly map to .net's RegistryValueKind, so maunal conversion is necessary.
         /// </summary>
         private static readonly Dictionary<RegistryValueKind, uint> ValueKindWBIntDict = new Dictionary<RegistryValueKind, uint>()
         {
-            [RegistryValueKind.None] = 0,
+            [RegistryValueKind.None] = 0, // .net is -1 while Win32 is 0
             [RegistryValueKind.String] = 1,
             [RegistryValueKind.ExpandString] = 2,
             [RegistryValueKind.Binary] = 3,

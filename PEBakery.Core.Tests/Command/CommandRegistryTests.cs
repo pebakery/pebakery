@@ -29,6 +29,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Win32;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -250,6 +251,76 @@ namespace PEBakery.Core.Tests.Command
                 using RegistryKey rootKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
 
                 rootKey.DeleteSubKeyTree(subKeyStr, false);
+            }
+        }
+
+        // Test of PEBakery.Core.CodeParser's line-continuation handling.
+        // (in RegistryConverterTests.cs), which only proves self-consistency within
+        // RegistryConverter's own parser. This test instead runs the exact wrapped
+        // This test constructs its own multi-line, irregularly-indented RegWrite containing
+        // mixed tabs/spaces, varying indent per line, and trailing whitespace and runs it
+		// through CodeParser + CommandRegistry (via EngineTests.EvalLines) and checks the bytes
+        // actually written to a real registry key. This provides end-to-end confirmation that 
+        // indentation of RegWrite/RegWriteEx line continuations do not corrupt the values,
+        // regardless of how the whitespace got there (via RegistryConverter, or if extra
+        // intentation/whitespace was added to the script directly by the user).
+        //
+        // CodeParser.ParseCommand directly Trim()s every raw line before parsing it,
+        // including a continuation line pulled in by a trailing ",\" so this 2-space indent
+        // is stripped before argument splitting.
+        // That makes it this test's job to prove the end-to-end result (the actual bytes)
+        // written to the registry match, via the PEBakery Engine/CommandRegistry, rather than
+        // proving the indent survives untouched (it doesn't, and isn't meant to).
+        //
+        // Deliberately uses EvalLines, not Eval: Eval calls CodeParser.ParseStatement
+        // (singular) on one raw string with no multi-line continuation merging, so it
+        // cannot parse a wrapped statement. EvalLines calls CodeParser.ParseStatements(List<string>),
+        // which is the real line-merging path.
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandRegistry")]
+        public void RegWrite_MultiLineContinuation_ArbitraryWhitespaceIsIgnored()
+        {
+            byte[] expectedBytes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e };
+
+            // Three physical lines chained by ",\" continuations, each indented differently
+            // (tab, spaces, mixed, trailing whitespace) -- deliberately irregular, the way a
+            // user editing a script by hand might leave it, rather than one consistent
+            // machine-generated indent.
+            List<string> rawLines = new List<string>
+            {
+                $"RegWrite,HKCU,0x3,{RegWritePath},Wrapped,00,01,02,03,04,\\",
+                "\t05,06,07,08,\\",
+                "      09,0a,0b,\\",
+                "  0c,0d,0e   "
+            };
+
+            EngineState s = EngineTests.CreateEngineState();
+            using (RegistryKey rootKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+            {
+                rootKey.DeleteSubKeyTree(RegWritePath, false);
+            }
+            try
+            {
+                List<LogInfo> logs = EngineTests.EvalLines(s, rawLines, ErrorCheck.Success);
+                EngineTests.CheckErrorLogs(logs, ErrorCheck.Success);
+
+                using RegistryKey rootKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+                using RegistryKey? subKey = rootKey.OpenSubKey(RegWritePath, false);
+                Assert.IsNotNull(subKey);
+
+                RegistryValueKind kind = subKey.GetValueKind("Wrapped");
+                Assert.AreEqual(RegistryValueKind.Binary, kind);
+
+                byte[]? actualBytes = subKey.GetValue("Wrapped", null, RegistryValueOptions.DoNotExpandEnvironmentNames) as byte[];
+                Assert.IsNotNull(actualBytes);
+                CollectionAssert.AreEqual(expectedBytes, actualBytes,
+                    "Bytes written via an irregularly-indented, multi-line continued RegWrite statement must exactly match the intended values.");
+            }
+            finally
+            {
+                using RegistryKey rootKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+                rootKey.DeleteSubKeyTree(RegWritePath, false);
             }
         }
 

@@ -73,6 +73,15 @@
                         Command="local:UtilityViewCommands.SyntaxCheckCommand"
                         CanExecute="SyntaxCheckCommand_CanExecute"
                         Executed="SyntaxCheckCommand_Executed"/>
+        <!-- Registry Converter -->
+        <CommandBinding x:Name="RegToScriptCommand"
+                        Command="local:UtilityViewCommands.RegToScriptCommand"
+                        CanExecute="RegConverterCommands_CanExecute"
+                        Executed="RegToScriptCommand_Executed"/>
+        <CommandBinding x:Name="ScriptToRegCommand"
+                        Command="local:UtilityViewCommands.ScriptToRegCommand"
+                        CanExecute="RegConverterCommands_CanExecute"
+                        Executed="ScriptToRegCommand_Executed"/>
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -331,6 +340,148 @@
                                  ScrollViewer.CanContentScroll="True"
                                  IsReadOnly="True"
                                  Text="{Binding SyntaxCheckResult}"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Registry Converter" Width="140">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition Height="50"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="10, 10, 10, 10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="Source"/>
+                        <TextBox Grid.Row="1"
+                                 x:Name="RegConverterInputTextBox"
+                                 AutomationProperties.Name="RegConverterInputTextBox"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="NoWrap"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 AllowDrop="True"
+                                 PreviewDragOver="RegConverterInputTextBox_PreviewDragOver"
+                                 Drop="RegConverterInputTextBox_Drop"
+                                 Text="{Binding RegConverterInput}"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="10, 10, 10, 10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Button Grid.Column="0"
+                                Margin="0, 0, 10, 0"
+                                Padding="10, 0, 10, 0"
+                                x:Name="RegConverterLoadFileButton"
+                                Content="Load File..."
+                                ToolTip="Load a .reg or PEBakery script file into the Source box"
+                                Click="RegConverterLoadFileButton_Click"/>
+                        <Button Grid.Column="1"
+                                Margin="0, 0, 10, 0"
+                                Padding="10, 0, 10, 0"
+                                x:Name="RegToScriptButton"
+                                Content="Convert Reg → Script"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Convert .reg text above into RegWrite/RegWriteEx/RegDelete commands"
+                                Command="local:UtilityViewCommands.RegToScriptCommand"/>
+                        <Button Grid.Column="2"
+                                Margin="0, 0, 10, 0"
+                                Padding="10, 0, 10, 0"
+                                x:Name="ScriptToRegButton"
+                                Content="Convert Script → Reg"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Convert RegWrite/RegWriteEx/RegDelete commands above into a .reg file"
+                                Command="local:UtilityViewCommands.ScriptToRegCommand"/>
+                        <StackPanel Grid.Column="3"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Left">
+                            <TextBlock VerticalAlignment="Center"
+                                       Margin="0, 0, 6, 0"
+                                       Text="Hive Prefix:"
+                                       ToolTip="This value will be prepended to the first path segment of every key (e.g. SYSTEM\...  ->  Tmp_SYSTEM\...) during reg → Script conversion. Clear this value to disable this functionality."/>
+                            <TextBox x:Name="RegConverterHivePrefixTextBox"
+                                     Width="80"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding RegConverterHivePrefix, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <Button Grid.Column="4"
+                                Margin="0, 0, 10, 0"
+                                Padding="10, 0, 10, 0"
+                                x:Name="RegConverterCopyButton"
+                                Content="Copy"
+                                ToolTip="Copy the Result box to the clipboard"
+                                Click="RegConverterCopyButton_Click"/>
+                        <Button Grid.Column="5"
+                                Margin="0, 0, 10, 0"
+                                Padding="10, 0, 10, 0"
+                                x:Name="RegConverterSaveButton"
+                                Content="Save..."
+                                ToolTip="Save the Result box to a file"
+                                Click="RegConverterSaveButton_Click"/>
+                        <Button Grid.Column="6"
+                                Padding="10, 0, 10, 0"
+                                x:Name="RegConverterClearButton"
+                                Content="Clear"
+                                ToolTip="Clear both the Source and Result boxes"
+                                Click="RegConverterClearButton_Click"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="10, 10, 10, 10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="Result">
+                        </TextBlock>
+                        <TextBox Grid.Row="1"
+                                 x:Name="RegConverterOutputTextBox"
+                                 AutomationProperties.Name="RegConverterOutputTextBox"
+                                 ccc:SelectTextOnFocus.Active="False"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="NoWrap"
+                                 AcceptsReturn="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 IsReadOnly="True"
+                                 Text="{Binding RegConverterOutput}">
+                        </TextBox>
+                        <ProgressBar Grid.Row="2"
+                                     x:Name="RegConverterProgressBar"
+                                     Height="4"
+                                     Margin="0, 6, 0, 0"
+                                     IsIndeterminate="True"
+                                     Visibility="{Binding RegConverterProgressVisibility}"/>
                     </Grid>
                 </Grid>
             </TabItem>
