@@ -3995,12 +3995,97 @@ namespace PEBakery.Ini.Tests
             b.AppendLine("[병]");
             b.AppendLine("UnicodeC");
             srcStr = b.ToString();
+            // Skipped section is separated from the next section by exactly one blank line
             b.Clear();
+            b.AppendLine();
             b.AppendLine("[을]");
             b.AppendLine("UnicodeB");
             b.AppendLine("[병]");
             b.AppendLine("UnicodeC");
             Template(null, srcStr, b.ToString(), true);
+
+            // copyFromNewSection: trailing blank lines of the skipped section are collapsed into one
+            b.Clear();
+            b.AppendLine("1=AAAA");
+            b.AppendLine();
+            b.AppendLine();
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine();
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            b.AppendLine();
+            srcStr = b.ToString();
+            b.Clear();
+            b.AppendLine();
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine();
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            b.AppendLine();
+            Template(null, srcStr, b.ToString(), true);
+
+            // copyFromNewSection: skipped section is the last section
+            Template(null, "1=AAAA\r\n\r\n", string.Empty, true);
+
+            // No target section: trailing blank lines at EOF are collapsed into one
+            b.Clear();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine();
+            b.AppendLine();
+            srcStr = b.ToString();
+            b.Clear();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine();
+            b.AppendLine("[NUL]");
+            Template("NUL", srcStr, b.ToString(), false);
+
+            // No target section, empty source
+            Template("NUL", string.Empty, "[NUL]\r\n", false);
+        }
+
+        [TestMethod]
+        public void BlankLinesBetweenSections()
+        {
+            // WriteRawLine: new section appended to a file which already ends with a blank line
+            WriteTemplate("[A]\r\n1=a\r\n\r\n", "[A]\r\n1=a\r\n\r\n[B]\r\nx\r\n",
+                f => IniReadWriter.WriteRawLine(f, "B", "x"));
+            WriteTemplate("[A]\r\n1=a\r\n", "[A]\r\n1=a\r\n\r\n[B]\r\nx\r\n",
+                f => IniReadWriter.WriteRawLine(f, "B", "x"));
+
+            // AddSection: new section appended to a file which already ends with a blank line
+            WriteTemplate("[A]\r\n1=a\r\n\r\n", "[A]\r\n1=a\r\n\r\n[B]\r\n",
+                f => IniReadWriter.AddSection(f, "B"));
+            WriteTemplate("[A]\r\n1=a\r\n", "[A]\r\n1=a\r\n\r\n[B]\r\n",
+                f => IniReadWriter.AddSection(f, "B"));
+
+            // WriteKeys: existing last section + new section must not produce a double blank line
+            WriteTemplate("[A]\r\n1=a\r\n", "[A]\r\n1=a\r\n2=b\r\n\r\n[B]\r\n3=c\r\n",
+                f => IniReadWriter.WriteKeys(f, [new IniKey("A", "2", "b"), new IniKey("B", "3", "c")]));
+            WriteTemplate("[A]\r\n1=a\r\n", "[A]\r\n1=a\r\n\r\n[B]\r\n3=c\r\n\r\n[C]\r\n4=d\r\n",
+                f => IniReadWriter.WriteKeys(f, [new IniKey("B", "3", "c"), new IniKey("C", "4", "d")]));
+
+            // DeleteSection: middle section
+            WriteTemplate("[A]\r\n1=a\r\n\r\n[X]\r\n2=b\r\n\r\n[C]\r\n3=c\r\n", "[A]\r\n1=a\r\n\r\n[C]\r\n3=c\r\n",
+                f => IniReadWriter.DeleteSection(f, "X"));
+            // DeleteSection: last section keeps the preceding section's single trailing blank line
+            WriteTemplate("[A]\r\n1=a\r\n\r\n[X]\r\n2=b\r\n", "[A]\r\n1=a\r\n\r\n",
+                f => IniReadWriter.DeleteSection(f, "X"));
+            // DeleteSection: deleted section glued to the previous one does not glue its neighbours
+            WriteTemplate("[A]\r\n1=a\r\n[X]\r\n2=b\r\n\r\n[C]\r\n3=c\r\n", "[A]\r\n1=a\r\n\r\n[C]\r\n3=c\r\n",
+                f => IniReadWriter.DeleteSection(f, "X"));
+            // DeleteSection: first section
+            WriteTemplate("[X]\r\n2=b\r\n\r\n[A]\r\n1=a\r\n", "[A]\r\n1=a\r\n",
+                f => IniReadWriter.DeleteSection(f, "X"));
+            // DeleteSection: trailing blank line of a kept last section is preserved
+            WriteTemplate("[X]\r\n2=b\r\n\r\n[A]\r\n1=a\r\n\r\n", "[A]\r\n1=a\r\n\r\n",
+                f => IniReadWriter.DeleteSection(f, "X"));
+            // DeleteSections: consecutive sections
+            WriteTemplate("[A]\r\n1=a\r\n\r\n[X]\r\n2=b\r\n\r\n[Y]\r\n3=c\r\n\r\n[C]\r\n4=d\r\n", "[A]\r\n1=a\r\n\r\n[C]\r\n4=d\r\n",
+                f => IniReadWriter.DeleteSections(f, ["X", "Y"]).All(x => x));
         }
         #endregion
 

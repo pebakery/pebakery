@@ -215,7 +215,6 @@ namespace PEBakery.Core.Tests.Command
                 b.AppendLine("; Descent=Freespace");
                 b.AppendLine("Descent=Sublevel Zero Redux");
                 b.AppendLine();
-                b.AppendLine();
                 b.AppendLine("[Update]");
                 b.AppendLine("Parallax=Revival");
                 resultStr = b.ToString();

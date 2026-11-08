@@ -314,7 +314,8 @@ namespace PEBakery.Ini
                 return false;
 
             #region FinalizeFile
-            void FinalizeFile(StreamWriter w, ReadOnlySpan<char> lastLine, bool firstEmptyLine)
+            // needSeparator: true if the output is non-empty and does not already end with a blank line.
+            void FinalizeFile(StreamWriter w, bool needSeparator)
             {
                 bool firstSection = true;
                 if (0 < inputKeys.Count)
@@ -328,7 +329,8 @@ namespace PEBakery.Ini
                         // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
                         IniKey[] secKeys = [.. inputKeys.Where(x => x.Section.Equals(section))];
 
-                        if ((lastLine == null || lastLine.Length != 0) && (!firstSection || firstEmptyLine))
+                        // Exactly one blank line between sections
+                        if (!firstSection || needSeparator)
                             w.WriteLine();
                         w.WriteLine($"[{section}]");
 
@@ -351,7 +353,7 @@ namespace PEBakery.Ini
             {
                 using (StreamWriter w = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
-                    FinalizeFile(w, null, false);
+                    FinalizeFile(w, false);
                 }
                 return true;
             }
@@ -441,6 +443,7 @@ namespace PEBakery.Ini
                             secKeys.RemoveAll(x =>
                                 x.Key != null && x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
                         }
+                        // A section always ends with exactly one blank line
                         w.WriteLine();
 
                         Debug.Assert(secKeys.Count == 0);
@@ -454,11 +457,19 @@ namespace PEBakery.Ini
                         string? rawLine = r.ReadLine();
                         if (rawLine == null)
                         { // Last line!
+                            bool needSeparator;
                             if (inTargetSection)
+                            { // FinalizeSection() always ends the section with exactly one blank line.
                                 FinalizeSection();
+                                needSeparator = false;
+                            }
+                            else
+                            {
+                                needSeparator = !firstLine && lastLine.Length != 0;
+                            }
 
                             // Finalize file
-                            FinalizeFile(w, lastLine, !firstLine);
+                            FinalizeFile(w, needSeparator);
                             break;
                         }
 
@@ -574,7 +585,8 @@ namespace PEBakery.Ini
                 return false;
 
             #region FinalizeFile
-            void FinalizeFile(StreamWriter w, ReadOnlySpan<char> lastLine, bool firstEmptyLine)
+            // needSeparator: true if the output is non-empty and does not already end with a blank line.
+            void FinalizeFile(StreamWriter w, bool needSeparator)
             {
                 bool firstSection = true;
                 if (0 < inputKeys.Count)
@@ -588,7 +600,8 @@ namespace PEBakery.Ini
                         // inputKeys are modified in the loop. Call ToArray() to clone inputKeys.
                         IniKey[] secKeys = [.. inputKeys.Where(x => x.Section.Equals(section))];
 
-                        if ((lastLine == null || lastLine.Length != 0) && (!firstSection || firstEmptyLine))
+                        // Exactly one blank line between sections
+                        if (!firstSection || needSeparator)
                             w.WriteLine();
                         w.WriteLine($"[{section}]");
 
@@ -611,7 +624,7 @@ namespace PEBakery.Ini
             {
                 using (StreamWriter w = new StreamWriter(filePath, false, new UTF8Encoding(false)))
                 {
-                    FinalizeFile(w, null, false);
+                    FinalizeFile(w, false);
                 }
                 return true;
             }
@@ -705,6 +718,7 @@ namespace PEBakery.Ini
                             secKeys.RemoveAll(x =>
                                 x.Key != null && x.Key.Equals(secKey.Key, StringComparison.OrdinalIgnoreCase));
                         }
+                        // A section always ends with exactly one blank line
                         w.WriteLine();
 
                         Debug.Assert(secKeys.Count == 0);
@@ -718,11 +732,19 @@ namespace PEBakery.Ini
                         string? rawLine = r.ReadLine();
                         if (rawLine == null)
                         { // Last line!
+                            bool needSeparator;
                             if (inTargetSection)
+                            { // FinalizeSection() always ends the section with exactly one blank line.
                                 FinalizeSection();
+                                needSeparator = false;
+                            }
+                            else
+                            {
+                                needSeparator = !firstLine && lastLine.Length != 0;
+                            }
 
                             // Finalize file
-                            FinalizeFile(w, lastLine, !firstLine);
+                            FinalizeFile(w, needSeparator);
                             break;
                         }
 
@@ -1058,6 +1080,9 @@ namespace PEBakery.Ini
                         // End of file
                         if (reader.Peek() == -1)
                         {
+                            // Does the output currently end with a blank line? (Avoid doubling blank lines before a new section)
+                            bool endsWithBlankLine = line.Length == 0;
+
                             // Append Mode : Add to last line of section
                             if (append && inTargetSection)
                             { // End of targetSection and start of foundSection
@@ -1076,6 +1101,7 @@ namespace PEBakery.Ini
                                         thisLineWritten = true;
 
                                         writer.WriteLine(iniKeys[i].Key);
+                                        endsWithBlankLine = false;
                                     }
                                 }
                             }
@@ -1100,12 +1126,15 @@ namespace PEBakery.Ini
                                     thisLineWritten = true;
 
                                     processedSections.Add(iniKeys[i].Section);
-                                    writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
+                                    if (!endsWithBlankLine)
+                                        writer.WriteLine();
+                                    writer.WriteLine($"[{iniKeys[i].Section}]");
                                 }
 
                                 processedKeys.Add(i);
 
                                 writer.WriteLine(iniKeys[i].Key);
+                                endsWithBlankLine = false;
                             }
                         }
 
@@ -1863,13 +1892,18 @@ namespace PEBakery.Ini
                         // End of file
                         if (r.Peek() == -1)
                         { // If sections were not added, add it now
+                            // Avoid doubling blank lines if the file already ends with a blank line
+                            bool endsWithBlankLine = line.Length == 0;
                             List<int> processedIdxs = new List<int>(sections.Count);
                             for (int i = 0; i < sections.Count; i++)
                             { // At this time, only not found section remains in iniKeys
                                 if (processedSections.Any(s => s.Equals(sections[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(sections[i]);
-                                    w.WriteLine($"\r\n[{sections[i]}]");
+                                    if (!endsWithBlankLine)
+                                        w.WriteLine();
+                                    w.WriteLine($"[{sections[i]}]");
+                                    endsWithBlankLine = false;
                                 }
                                 processedIdxs.Add(i);
                             }
@@ -2240,6 +2274,12 @@ namespace PEBakery.Ini
 
                     string? rawLine;
                     bool ignoreCurrentSection = false;
+                    // Blank line handling:
+                    // Blank lines are deferred until the next kept non-blank line,
+                    // in order to prevent two sections from being smashed together.
+                    List<string> pendingBlankLines = new List<string>(4);
+                    bool anyLineWritten = false;
+                    bool deletedSinceLastWrite = false;
 
                     // Main Logic
                     while ((rawLine = r.ReadLine()) != null)
@@ -2247,7 +2287,8 @@ namespace PEBakery.Ini
                         ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
                         // Check if encountered section head Ex) [Process]
-                        if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
+                        bool isSectionLine = IsLineSection(line, out ReadOnlySpan<char> foundSection);
+                        if (isSectionLine)
                         {
                             ignoreCurrentSection = false;
 
@@ -2267,9 +2308,33 @@ namespace PEBakery.Ini
                             }
                         }
 
-                        if (!ignoreCurrentSection)
-                            w.WriteLine(rawLine);
+                        if (ignoreCurrentSection)
+                        {
+                            deletedSinceLastWrite = true;
+                            continue;
+                        }
+
+                        if (line.Length == 0)
+                        { // Defer blank lines
+                            pendingBlankLines.Add(rawLine);
+                            continue;
+                        }
+
+                        // A section header following deleted section(s) must be separated by one blank line.
+                        if (isSectionLine && deletedSinceLastWrite && anyLineWritten && pendingBlankLines.Count == 0)
+                            w.WriteLine();
+                        foreach (string blankLine in pendingBlankLines)
+                            w.WriteLine(blankLine);
+                        pendingBlankLines.Clear();
+
+                        w.WriteLine(rawLine);
+                        anyLineWritten = true;
+                        deletedSinceLastWrite = false;
                     }
+
+                    // Keep trailing blank lines (a section conventionally ends with one blank line)
+                    foreach (string blankLine in pendingBlankLines)
+                        w.WriteLine(blankLine);
                 }
 
                 if (processed.Any(x => x))
@@ -2913,42 +2978,61 @@ namespace PEBakery.Ini
         public static void FastForwardTextWriter(TextReader tr, TextWriter tw, string? section, bool copyFromNewSection)
         {
             bool enableCopy = !copyFromNewSection;
+            bool anyLineWritten = false;
+            // Blank lines are deferred until a non-blank line arrives, so trailing blank lines at EOF can be normalized.
+            List<string> pendingBlankLines = new List<string>(4);
+
+            void FlushPendingBlankLines()
+            {
+                foreach (string blankLine in pendingBlankLines)
+                    tw.WriteLine(blankLine);
+                pendingBlankLines.Clear();
+            }
 
             string? rawLine;
             while ((rawLine = tr.ReadLine()) != null)
             { // Read text line by line
+                ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
                 if (enableCopy)
+                {
+                    if (line.Length == 0)
+                    { // Defer blank lines
+                        pendingBlankLines.Add(rawLine);
+                        continue;
+                    }
+
+                    FlushPendingBlankLines();
                     tw.WriteLine(rawLine);
+                    anyLineWritten = true;
 
-                if (section == null && !enableCopy)
-                {
-                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line))
-                    { // Start of section
-                        tw.WriteLine(rawLine);
-                        enableCopy = true;
-                    }
+                    // Found target section, so return
+                    if (section != null &&
+                        IsLineSection(line, out ReadOnlySpan<char> foundSection) &&
+                        foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        return;
                 }
-                else if (section != null)
-                {
-                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
-                    if (IsLineSection(line, out ReadOnlySpan<char> foundSection))
-                    { // Start of section
-                        if (!enableCopy)
-                            tw.WriteLine(rawLine);
-                        enableCopy = true;
+                else if (IsLineSection(line, out ReadOnlySpan<char> nextSection))
+                { // Start of the next section: resume copy, separated by exactly one blank line
+                    tw.WriteLine();
+                    tw.WriteLine(rawLine);
+                    anyLineWritten = true;
+                    enableCopy = true;
 
-                        // Found target section, so return
-                        if (foundSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                            return;
-                    }
+                    // Found target section, so return
+                    if (section != null && nextSection.Equals(section.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        return;
                 }
             }
 
-            // Target section not found, insert section header at the end of TextWriter
-            if (section != null)
-            {
-                tw.WriteLine();
+            if (section == null)
+            { // Full copy: preserve trailing blank lines as-is
+                FlushPendingBlankLines();
+            }
+            else
+            { // Target section not found, insert section header at the end of TextWriter
+                // Collapse trailing blank lines into one blank line.
+                if (anyLineWritten)
+                    tw.WriteLine();
                 tw.WriteLine($"[{section}]");
             }
         }
